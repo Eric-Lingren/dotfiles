@@ -1,0 +1,9 @@
+# This is Git's per-user configuration file.
+[user]
+	name = Eric Lingren
+	email = 44101756+Eric-Lingren@users.noreply.github.com
+# Please adapt and uncomment the following lines:
+#	name = Eric Lingren
+#	email = eric@Erics-MacBook-Pro.local
+[core]
+	excludesfile = /Users/eric/.gitignore_global
