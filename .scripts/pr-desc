@@ -1,0 +1,39 @@
+#!/bin/bash
+
+BRANCH=$(git rev-parse --abbrev-ref HEAD)
+TICKET=$(echo "$BRANCH" | grep -oE '[A-Za-z]+-[0-9]+' | tr '[:lower:]' '[:upper:]')
+LINEAR_URL="https://linear.app/standard-metrics/issue/$TICKET"
+LINEAR_LINK="Linear Ticket: [$TICKET]($LINEAR_URL)"
+COMMITS=$(git log main...HEAD --oneline)
+DIFF=$(git diff main...HEAD | head -n 300)
+
+PROMPT="Branch: $BRANCH
+Commits:
+$COMMITS
+
+Diff (truncated):
+$DIFF
+
+---
+Write a concise GitHub PR description in this exact format:
+
+### <short descriptive title>
+$LINEAR_LINK
+
+<2-3 sentences: what was broken or missing, and what this PR does to fix it>
+
+**Changes:**
+<bullet list of key code changes, skip test files unless they're the point>
+
+Rules:
+- No Testing section
+- Under 250 words
+- No other sections or commentary
+- No em dashes
+- Separate thoughts with periods or commas only
+- Concise, no run-on sentences"
+
+BODY=$(CLAUDE_CONFIG_DIR=~/.ccw command claude -p "$PROMPT")
+
+echo "$BODY" | pbcopy
+echo "SUCCESS -- PR description copied to clipboard."

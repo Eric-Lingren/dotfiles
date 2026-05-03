@@ -39,6 +39,7 @@ export EDITOR='nano'
 
 export PATH="$HOME/.console-ninja/.bin:$PATH"
 export PATH="/Applications/Ghostty.app/Contents/MacOS:$PATH"
+export PATH="$HOME/.scripts:$PATH"
 
 
 
@@ -106,11 +107,11 @@ function migrate {
 # CLAUDE CODE — multi-account aliases      #                                         
 # ─────────────────────────────────────────#
  
-alias ccw="CLAUDE_CONFIG_DIR=~/.ccw command claude"
-alias ccp="CLAUDE_CONFIG_DIR=~/.ccp command claude"
+alias cco="CLAUDE_CONFIG_DIR=~/.cco command claude"
+alias cch="CLAUDE_CONFIG_DIR=~/.cch command claude"
 
 # Disable bare `claude` to avoid accidentally using the wrong account
-alias claude="echo 'Use claude-work or claude-personal'"
+alias claude="echo 'Use cco (Claude Code office) or cch (Claude Code Home)'"
 
 
 

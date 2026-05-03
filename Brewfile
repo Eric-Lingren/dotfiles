@@ -27,3 +27,4 @@ brew "yarn", link: false
 brew "supabase/tap/supabase"
 # Reverse proxy, secure introspectable tunnels to localhost
 cask "ngrok"
+cask "font-jetbrains-mono"
