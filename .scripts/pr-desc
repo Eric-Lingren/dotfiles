@@ -33,7 +33,7 @@ Rules:
 - Separate thoughts with periods or commas only
 - Concise, no run-on sentences"
 
-BODY=$(CLAUDE_CONFIG_DIR=~/.ccw command claude -p "$PROMPT")
+BODY=$(CLAUDE_CONFIG_DIR="${CC_WORK_DIR:-$HOME/.cco}" command claude -p "$PROMPT")
 
 echo "$BODY" | pbcopy
 echo "SUCCESS -- PR description copied to clipboard."

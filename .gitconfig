@@ -6,4 +6,4 @@
 #	name = Eric Lingren
 #	email = eric@Erics-MacBook-Pro.local
 [core]
-	excludesfile = /Users/eric/.gitignore_global
+	excludesfile = ~/.gitignore_global

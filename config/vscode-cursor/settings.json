@@ -64,7 +64,7 @@
     "terminal.integrated.lineHeight": 1.3,
     "terminal.integrated.scrollback": 10000,
     "terminal.integrated.env.osx": {
-        "CLAUDE_CONFIG_DIR": "/Users/eric/.cch"
+        "CLAUDE_CONFIG_DIR": "$HOME/.cch"
     },
     "git.autofetch": true,
     "git.confirmSync": false,
@@ -76,19 +76,8 @@
     "python.analysis.extraPaths": ["app"],
     "python.analysis.typeCheckingMode": "basic",
     "python.languageServer": "None",
-    "dart.flutterSdkPath": "/Users/eric/Documents/dev/flutter",
     "biome.lspBin": "./client/node_modules/.bin/biome",
     "eslint.enable": false,
-    "eslint.options": {
-        "overrideConfigFile": "/Users/eric/Documents/dev/Quaestor-Web/client/.eslintrc.json"
-    },
-    "eslint.workingDirectories": [
-        "/Users/eric/Documents/dev/Quaestor-Web/client"
-    ],
-    "isort.args": [
-        "--settings",
-        "/Users/eric/Documents/dev/Quaestor-Web/app"
-    ],
     "js/ts.updateImportsOnFileMove.enabled": "always",
     "typescript.updateImportsOnFileMove.enabled": "always",
     "security.workspace.trust.untrustedFiles": "open",

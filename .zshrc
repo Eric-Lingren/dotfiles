@@ -134,3 +134,12 @@ fi
 # \e[2 q = steady block cursor
 _fix_cursor() { echo -ne '\e[1 q'; }
 precmd_functions+=(_fix_cursor)
+
+
+
+# ─────────────────────────────────────────#
+# MACHINE-LOCAL OVERRIDES                  #
+# ─────────────────────────────────────────#
+# Gitignored — see local/zshrc.local.template
+
+[[ -f ~/.dotfiles/local/zshrc.local ]] && source ~/.dotfiles/local/zshrc.local

@@ -1,1 +1,30 @@
-.nvmrc
+# macOS
+.DS_Store
+._*
+.Spotlight-V100
+
+# Editor
+.vscode/
+*.swp
+*~
+.idea/
+
+# Environment / secrets
+.env
+.env.*
+!.env.example
+*.local
+
+# Node
+node_modules/
+.npm/
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Runtime
+*.log
+.cache/
