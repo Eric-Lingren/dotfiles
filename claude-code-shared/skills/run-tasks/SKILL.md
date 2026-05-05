@@ -107,3 +107,41 @@ Blocked tasks requiring investigation:
 ```
 
 Do not write this summary to any file.
+
+### 6. Offer to push and open a PR
+
+After printing the summary, ask the user: **"Push and open a PR?"**
+
+If the user says yes (or any affirmative), proceed:
+
+#### a. Generate a PR description
+
+Gather context:
+- Current branch: `git rev-parse --abbrev-ref HEAD`
+- Commits on branch: `git log main...HEAD --oneline`
+- Diff (truncated to first 300 lines): `git diff main...HEAD | head -n 300`
+- Linear ticket: extract the first `[A-Za-z]+-[0-9]+` pattern from the branch name (uppercase). This is optional — many projects don't use Linear. If a ticket is found, check CLAUDE.md or `.claude/` config for a Linear workspace URL. If one is present, include `Linear Ticket: [TICKET](<workspace-url>/issue/TICKET)`. If no workspace URL is configured, include the ticket ID as plain text only. If no ticket pattern exists in the branch name, omit this line entirely.
+
+Then write the PR description in this exact format:
+
+```
+### <short descriptive title>
+<Linear ticket link, if found>
+
+<2-3 sentences: what was broken or missing, and what this PR does to fix it>
+
+**Changes:**
+<bullet list of key code changes — skip test files unless they are the point>
+```
+
+Rules for the description:
+- Under 250 words
+- No Testing section, no other sections
+- No em dashes — use periods or commas only
+- Concise, no run-on sentences
+
+#### b. Push and create the PR
+
+1. Run `git push -u origin HEAD` to push the branch.
+2. Run `gh pr create --title "<title>" --body "<description>"` using the generated title and body.
+3. Return the PR URL to the user.
