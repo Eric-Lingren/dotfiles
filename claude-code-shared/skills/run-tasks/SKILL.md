@@ -1,0 +1,109 @@
+---
+name: run-tasks
+description: Execute tasks from a tasks JSON file sequentially using TDD. Handles branching, status updates, blocker detection, and HITL pausing. Use when user wants to run AI tasks from a docs/tasks/ file.
+---
+
+# Run Tasks
+
+Execute tasks from a `docs/tasks/` JSON file sequentially, using `/tdd` for each AFK task. Updates task status in the JSON as work progresses.
+
+## Process
+
+### 1. Ask for task file and target
+
+Always ask explicitly — do not infer from context:
+
+1. **Which task file?** List available files in `docs/tasks/` and ask the user to choose.
+2. **Which task ID?** Ask for a specific task ID (e.g. `T-0005`) or leave blank to run all `not_started` tasks in order.
+
+Read the chosen JSON file and the PRD it references (`prd` field).
+
+### 2. Determine the run queue
+
+If a specific task ID was given:
+- Run that single task regardless of its current status.
+- Still check its `blocked_by` dependencies (see step 4).
+
+If no task ID was given, build the queue:
+- Include all tasks with status `not_started`, in `id` order.
+- Skip tasks with status `in_progress`, `done`, `merged`, or `blocked`.
+
+### 3. Set up branching
+
+Read `branching.strategy` from the JSON:
+
+- **`"single"`** — check out or create `branching.branch` once before starting the queue. All tasks run on this branch.
+- **`"per-task"`** — create each task's `branch` field value immediately before that task runs.
+
+### 4. For each task in the queue
+
+#### a. Check blockers
+
+Look up each ID in `blocked_by`. If any blocking task has a status other than `done` or `merged`:
+- Mark the current task `blocked` in the JSON.
+- Determine if any other `not_started` task in the queue depends on this task (i.e. has this task's ID in its `blocked_by`).
+  - **If yes (it is a blocker):** halt the entire run immediately. Report which task is blocked and why. Do not process further tasks.
+  - **If no (standalone):** park it, continue to the next task in the queue, add to the end-of-run summary.
+
+#### b. Handle HITL tasks
+
+If `type` is `"HITL"`:
+- Determine if any other `not_started` task in the queue depends on this task.
+  - **If yes (it is a blocker):** update status to `in_progress` in the JSON, print the task's title, description, and acceptance criteria, tell the user this requires human action, and halt the run.
+  - **If no (standalone):** skip it, continue to the next task, add to the end-of-run summary.
+
+#### c. Execute AFK tasks
+
+1. Update task status to `in_progress` in the JSON.
+2. If `branching.strategy` is `"per-task"`, create and check out the task's branch now.
+3. Seed `/tdd` with the following context, then invoke it:
+
+```
+## Task context for TDD
+
+**Task:** {id} — {title}
+**Type:** AFK
+
+**Description:**
+{description}
+
+**Acceptance criteria:**
+{acceptance_criteria as a checklist}
+
+## PRD context
+
+{full contents of the PRD file}
+```
+
+4. If TDD completes successfully:
+   - Update task status to `done` in the JSON.
+   - Set `pr` to a suggested `gh pr create` command the user can run (do not run it).
+
+5. If TDD fails or gets stuck:
+   - Determine if any other `not_started` task depends on this one.
+     - **If yes (blocker):** update status to `blocked`, halt the run, report the failure.
+     - **If no (standalone):** update status to `blocked`, continue to next task, add to end-of-run summary.
+
+### 5. End-of-run summary
+
+Print a status table in the conversation:
+
+```
+Run complete — docs/tasks/0001-user-auth-flow.json
+
+ ID      Title                        Result
+ ──────  ───────────────────────────  ──────────────
+ T-0023  Bootstrap auth schema        done
+ T-0024  Login endpoint               done
+ T-0025  Design review (HITL)         parked (HITL — not blocking)
+ T-0026  Token refresh flow           blocked (TDD failed)
+ T-0027  Logout endpoint              skipped (blocked by T-0026)
+
+Parked HITL tasks requiring human action:
+  T-0025 — Design review: confirm token storage approach
+
+Blocked tasks requiring investigation:
+  T-0026 — Token refresh flow: TDD could not pass acceptance criteria
+```
+
+Do not write this summary to any file.

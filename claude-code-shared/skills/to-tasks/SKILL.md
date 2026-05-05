@@ -1,0 +1,115 @@
+---
+name: to-tasks
+description: Break a PRD into independently-grabbable tasks using tracer-bullet vertical slices, then write a JSON task file to docs/tasks/. Use when user wants to convert a PRD into AI-ready tasks.
+---
+
+# To Tasks
+
+Break a PRD into independently-grabbable tasks using vertical slices (tracer bullets) and write the result as a JSON file to `docs/tasks/`.
+
+## Process
+
+### 1. Locate the PRD
+
+Always ask the user to provide the PRD file path. List the available files in `docs/prd/` so they can choose, but require an explicit selection — never auto-pick. If `docs/prd/` doesn't exist or is empty, tell the user to run `/to-prd` first.
+
+### 2. Explore the codebase (optional)
+
+If you haven't already explored the codebase in this session, do a light exploration to understand the current state. Task titles and descriptions should use the project's domain vocabulary.
+
+### 3. Draft vertical slices
+
+Break the PRD into **tracer bullet** tasks. Each task is a thin vertical slice that cuts through ALL integration layers end-to-end, NOT a horizontal slice of one layer.
+
+Slices may be **HITL** (requires human interaction — architectural decision, design review) or **AFK** (can be implemented and merged without human interaction). Prefer AFK over HITL where possible.
+
+<vertical-slice-rules>
+- Each slice delivers a narrow but COMPLETE path through every layer (schema, API, UI, tests)
+- A completed slice is demoable or verifiable on its own
+- Prefer many thin slices over few thick ones
+</vertical-slice-rules>
+
+### 4. Quiz the user
+
+Present the proposed breakdown as a numbered list. For each slice show:
+
+- **Title**: short descriptive name
+- **Type**: HITL / AFK
+- **Blocked by**: which other slices must complete first (by number)
+- **User stories covered**: which user stories from the PRD this addresses
+
+Ask:
+- Does the granularity feel right? (too coarse / too fine)
+- Are the dependency relationships correct?
+- Should any slices be merged or split further?
+- Are the correct slices marked as HITL vs AFK?
+
+Iterate until the user approves the breakdown.
+
+### 5. Determine the next task ID
+
+Before assigning IDs, scan **all existing JSON files** in `docs/tasks/` and find the highest numeric suffix across every task `id` field in every file. The first task in the new file gets that number + 1. This ensures IDs are globally unique across all task files in the repo and agents never confuse tasks from different PRDs.
+
+Example: if `docs/tasks/auth.json` contains tasks up to `T-014` and `docs/tasks/search.json` up to `T-022`, the next file starts at `T-023`.
+
+If `docs/tasks/` is empty or doesn't exist yet, start at `T-0001`.
+
+### 6. Ask about branching strategy
+
+Before writing the file, ask the user which branching strategy they want for this task file:
+
+- **One branch / one PR for all tasks** — the user provides a branch name; all tasks share it (e.g. contributing micro-work to a single feature branch)
+- **One branch / one PR per task** — the skill generates a branch name per task from the `branch` field
+
+Record the answer in the `branching` field of the JSON.
+
+### 7. Write the JSON file
+
+Derive the slug from the PRD filename by stripping any leading `NNNN-` prefix (e.g. `0001-user-auth-flow.md` → slug `user-auth-flow`).
+
+Determine the file prefix by scanning `docs/tasks/` for files matching `NNNN-*.json` and taking the highest existing number + 1, zero-padded to 4 digits. If the directory is empty or doesn't exist, start at `0001`.
+
+Write to `docs/tasks/{prefix}-{slug}.json` (e.g. `0001-user-auth-flow.json`). Create `docs/tasks/` if it doesn't exist.
+
+If a file for this slug already exists (any prefix), ask the user whether to:
+- **Overwrite** — replace the file entirely with the new breakdown (re-scan all other files to find the next task ID, excluding this file; keep the existing filename prefix)
+- **Merge** — keep existing task statuses/PRs and add/update task definitions (new tasks continue from the current global max; keep the existing filename prefix)
+
+<task-json-schema>
+{
+  "prd": "docs/prd/0001-{slug}.md",
+  "generated_at": "<ISO 8601 timestamp>",
+  "branching": {
+    "strategy": "single",
+    "branch": "feat/my-feature"
+  },
+  "tasks": [
+    {
+      "id": "T-023",
+      "title": "Short descriptive title",
+      "type": "AFK",
+      "description": "End-to-end behavior description — not layer-by-layer implementation",
+      "acceptance_criteria": [
+        "Criterion 1",
+        "Criterion 2"
+      ],
+      "blocked_by": [],
+      "status": "not_started",
+      "branch": "feat/t-023-short-title",
+      "pr": null
+    }
+  ]
+}
+</task-json-schema>
+
+**Field rules:**
+- `id`: globally sequential across all task files, zero-padded to 4 digits (`T-0001`, `T-0002`, …)
+- `type`: `"AFK"` or `"HITL"`
+- `status`: `"not_started"` | `"in_progress"` | `"done"` | `"merged"` | `"blocked"`
+- `blocked_by`: array of `id` strings (e.g. `["T-0023"]`), empty if none
+- `branch`: `feat/t-{id-number}-{kebab-title}`, lowercase, max ~40 chars total — only used when `branching.strategy` is `"per-task"`
+- `pr`: `null` until merged; then PR URL or number as a string
+- `branching.strategy`: `"single"` (one shared branch, user-provided) or `"per-task"` (auto-generated per task)
+- `branching.branch`: only present when `strategy` is `"single"`
+
+Tell the user the output path and the ID range used (e.g. `T-0023 – T-0031`) once written.
