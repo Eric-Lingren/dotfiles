@@ -31,6 +31,17 @@
         ]
       }
     ],
+    "UserPromptSubmit": [
+      {
+        "matcher": ".*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo 'STYLE RULE (hard): Never use em dashes (—). Write shorter sentences. Use periods to end thoughts. Use commas for natural breaks. No long, run-on, or disjointed sentences.'"
+          }
+        ]
+      }
+    ],
     "Stop": [
       {
         "hooks": [
