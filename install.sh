@@ -102,6 +102,11 @@ setup_claude_accounts() {
   done
 }
 
+setup_claude_plugins() {
+  info "Installing Claude Code plugins..."
+  $DRY_RUN || bash "$DOTFILES/claude-code-shared/scripts/install-plugins.sh"
+}
+
 setup_local_overrides() {
   info "Setting up local override files..."
 
@@ -140,6 +145,7 @@ main() {
   run_brewfile
   link_dotfiles
   setup_claude_accounts
+  setup_claude_plugins
   setup_local_overrides
   run_macos_defaults
 

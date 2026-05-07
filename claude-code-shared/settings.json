@@ -1,12 +1,4 @@
 {
-  "statusLine": {
-    "type": "command",
-    "command": "bash \"$CLAUDE_CONFIG_DIR/plugins/cache/caveman/caveman/84cc3c14fa1e/hooks/caveman-statusline.sh\""
-  },
-  "enabledPlugins": {
-    "caveman@caveman": true,
-    "chrome-devtools-mcp@claude-plugins-official": true
-  },
   "hooks": {
     "PreToolUse": [
       {
@@ -52,6 +44,14 @@
         ]
       }
     ]
+  },
+  "statusLine": {
+    "type": "command",
+    "command": "bash \"$HOME/.claude-code-shared/scripts/context-bar.sh\""
+  },
+  "enabledPlugins": {
+    "caveman@caveman": true,
+    "chrome-devtools-mcp@claude-plugins-official": true
   },
   "extraKnownMarketplaces": {
     "caveman": {
