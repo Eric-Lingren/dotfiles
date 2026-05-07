@@ -1,0 +1,16 @@
+{
+  "prefersReducedMotion": false,
+  "permissions": {
+    "allow": [
+      "Bash(cch doctor *)",
+      "Bash(cco doctor *)",
+      "Read(//Library/Fonts/**)",
+      "Bash(brew install *)",
+      "Bash(brew --prefix)",
+      "Bash(sw_vers)",
+      "Bash(bash /Users/eric/.dotfiles/claude-code-shared/scripts/context-bar.sh)",
+      "Read(//Users/eric/Documents/Standard-Metrics/claude-artifacts/**)",
+      "Read(//Users/eric/Documents/dev/Quaestor-Web/**)"
+    ]
+  }
+}
