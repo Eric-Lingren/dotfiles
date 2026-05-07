@@ -1,0 +1,20 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python3 -m json.tool)",
+      "Bash(python3 -c ' *)",
+      "Bash(python3 *)",
+      "Bash(claude --version)",
+      "Bash(claude -v)",
+      "Bash(cch --version)",
+      "Bash(cco --version)",
+      "WebSearch",
+      "Bash(curl -s https://code.claude.com/docs/en/statusline.md)",
+      "Read(//Users/eric/.claude/**)",
+      "Read(//Users/eric/.cch/**)",
+      "Read(//Users/eric/.cco/**)",
+      "Read(//Users/eric/**)",
+      "Bash(chmod +x *)"
+    ]
+  }
+}
