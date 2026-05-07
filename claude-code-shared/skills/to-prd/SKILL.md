@@ -15,13 +15,30 @@ This skill takes the current conversation context and codebase understanding and
 
    Check with the user that these modules match their expectations and which ones they want tests written for.
 
-3. **Derive a slug** from the feature name — lowercase, kebab-case, max ~40 chars (e.g. `user-auth-flow`).
+3. **Derive a slug** from the feature name, lowercase, kebab-case, max ~40 chars (e.g. `user-auth-flow`).
 
-4. **Determine the file prefix** by scanning `docs/prd/` for files matching the pattern `NNNN-*.md` and taking the highest existing number + 1, zero-padded to 4 digits. If the directory is empty or doesn't exist, start at `0001`.
+4. **Ask where to write.** Before writing, ask the user:
 
-5. **Write the PRD** to `docs/prd/{prefix}-{slug}.md` (e.g. `0001-user-auth-flow.md`). Create `docs/prd/` if it doesn't exist.
+   ```
+   Where should this PRD go?
+   1. Current branch
+   2. New spike branch
+   3. New staged branch
+   ```
 
-6. Tell the user the path and suggest running `/to-tasks` next.
+   If the user picks **2** or **3**:
+   - Propose a branch name derived from the slug: `spike/{slug}` or `staged/{slug}`.
+   - Let the user accept or type a custom name (e.g. a Linear ticket slug).
+   - Run `git switch -c {branch-name}`. If the switch fails (dirty working tree), tell the user to commit or stash first and stop.
+   - Continue on the new branch.
+
+   If the user picks **1**, continue on the current branch (existing behavior).
+
+5. **Determine the file prefix** by scanning `docs/prd/` for files matching the pattern `NNNN-*.md` and taking the highest existing number + 1, zero-padded to 4 digits. If the directory is empty or doesn't exist, start at `0001`.
+
+6. **Write the PRD** to `docs/prd/{prefix}-{slug}.md` (e.g. `0001-user-auth-flow.md`). Create `docs/prd/` if it doesn't exist. Never auto-commit.
+
+7. Tell the user the path and suggest running `/to-tasks` next.
 
 <prd-template>
 

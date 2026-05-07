@@ -11,7 +11,13 @@ Break a PRD into independently-grabbable tasks using vertical slices (tracer bul
 
 ### 1. Locate the PRD
 
-Always ask the user to provide the PRD file path. List the available files in `docs/prd/` so they can choose, but require an explicit selection — never auto-pick. If `docs/prd/` doesn't exist or is empty, tell the user to run `/to-prd` first.
+Always ask the user to provide the PRD file path. List the available files in `docs/prd/` so they can choose, but require an explicit selection. Never auto-pick.
+
+If `docs/prd/` doesn't exist or is empty on the current branch:
+- Run `git branch --list "spike/*" "staged/*"` to check for work branches.
+- If work branches exist, tell the user: "No PRDs found on this branch. These spike/staged branches exist:" and list them. Ask if they want to switch to one.
+- If the user picks a branch, run `git switch {branch-name}` and re-list `docs/prd/`.
+- If no work branches exist either, tell the user to run `/to-prd` first.
 
 ### 2. Explore the codebase (optional)
 

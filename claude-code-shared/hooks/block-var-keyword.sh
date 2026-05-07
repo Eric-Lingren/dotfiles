@@ -1,4 +1,8 @@
 #!/bin/bash
+# PreToolUse hook: blocks ES5 'var' keyword in JS/TS file writes.
+# Only triggers when writing to .js/.ts/.tsx/.jsx files via redirect/heredoc.
+# Enforces const/let per ES6+ conventions.
+# Exits 2 to block, 0 to allow.
 INPUT=$(cat)
 COMMAND=$(echo "$INPUT" | jq -r '.tool_input.command')
 

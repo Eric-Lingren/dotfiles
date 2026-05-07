@@ -1,4 +1,8 @@
 #!/bin/bash
+# PreToolUse hook: blocks destructive git commands.
+# Catches: push --force, reset --hard, clean -f, branch -D, checkout ., restore .,
+# stash drop/clear, filter-branch, rebase -i.
+# Exits 2 to block, 0 to allow.
 INPUT=$(cat)
 COMMAND=$(echo "$INPUT" | jq -r '.tool_input.command')
 

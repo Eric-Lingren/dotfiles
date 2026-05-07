@@ -1,4 +1,7 @@
 #!/bin/bash
+# PreToolUse hook: blocks sed -i (in-place editing).
+# Enforces using the Edit tool for file modifications instead.
+# Exits 2 to block, 0 to allow.
 INPUT=$(cat)
 COMMAND=$(echo "$INPUT" | jq -r '.tool_input.command // ""')
 

@@ -1,4 +1,7 @@
 #!/bin/bash
+# PreToolUse hook: blocks destructive SQL operations.
+# Catches: DROP (table, database, schema, view, etc.), TRUNCATE, DELETE FROM.
+# Exits 2 to block, 0 to allow.
 INPUT=$(cat)
 COMMAND=$(echo "$INPUT" | jq -r '.tool_input.command')
 

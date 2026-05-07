@@ -1,4 +1,9 @@
 {
+  "attribution": {
+    "commit": "",
+    "pr": ""
+  },
+  "model": "claude-opus-4-6",
   "hooks": {
     "PreToolUse": [
       {
@@ -19,6 +24,18 @@
           {
             "type": "command",
             "command": "bash \"$HOME/.claude-code-shared/hooks/block-destructive-sed.sh\""
+          },
+          {
+            "type": "command",
+            "command": "bash \"$HOME/.claude-code-shared/hooks/block-destructive-fs.sh\""
+          },
+          {
+            "type": "command",
+            "command": "bash \"$HOME/.claude-code-shared/hooks/block-remote-exec.sh\""
+          },
+          {
+            "type": "command",
+            "command": "bash \"$HOME/.claude-code-shared/hooks/block-package-publish.sh\""
           }
         ]
       }
@@ -67,8 +84,7 @@
       }
     }
   },
-  "attribution": {
-    "commit": "",
-    "pr": ""
+  "env": {
+    "ENABLE_TOOL_SEARCH": "true"
   }
 }
