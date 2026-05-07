@@ -6,7 +6,10 @@
 INPUT=$(cat)
 COMMAND=$(echo "$INPUT" | jq -r '.tool_input.command // ""')
 
-MATCHED=$(echo "$COMMAND" | grep -ioE \
+# Strip harmless stderr suppression before checking for /dev/ writes
+SANITIZED=$(echo "$COMMAND" | sed 's/2>\/dev\/null//g')
+
+MATCHED=$(echo "$SANITIZED" | grep -ioE \
   "rm[[:space:]]+-[a-zA-Z]*f\
 |rm[[:space:]]+\*\
 |chmod[[:space:]]+777\
