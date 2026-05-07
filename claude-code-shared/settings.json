@@ -66,5 +66,9 @@
         "repo": "ChromeDevTools/chrome-devtools-mcp"
       }
     }
+  },
+  "attribution": {
+    "commit": "",
+    "pr": ""
   }
 }
