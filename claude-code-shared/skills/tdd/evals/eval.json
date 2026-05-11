@@ -1,0 +1,72 @@
+{
+  "skill": "tdd",
+  "scenarios": [
+    {
+      "name": "simple_utility_fn",
+      "prompt": "Build a `calculateDiscount(price, customerTier)` function that applies percentage discounts: bronze 5%, silver 10%, gold 20%. Unknown tiers return 0 discount.",
+      "context": "TypeScript, vitest"
+    },
+    {
+      "name": "api_endpoint_crud",
+      "prompt": "Build a REST endpoint `POST /api/bookmarks` that accepts `{url, title, tags}`, validates the URL format, and stores the bookmark. Return 201 on success, 400 on invalid URL.",
+      "context": "Node.js, Express, vitest"
+    },
+    {
+      "name": "state_machine",
+      "prompt": "Build a `OrderWorkflow` that transitions through states: draft → submitted → approved → fulfilled. Only valid transitions are allowed. Submitted orders cannot go back to draft.",
+      "context": "TypeScript, vitest"
+    },
+    {
+      "name": "data_transformation",
+      "prompt": "Build a `parseCSV(input)` function that converts CSV strings into arrays of objects using the header row as keys. Handle quoted fields containing commas and newlines.",
+      "context": "TypeScript, vitest"
+    },
+    {
+      "name": "refactor_existing",
+      "prompt": "Refactor the existing `UserService` class (has `getUser`, `createUser`, `deleteUser`) to extract validation logic into a separate concern. All existing tests must keep passing.",
+      "context": "TypeScript, vitest, existing codebase"
+    }
+  ],
+  "assertions": [
+    {
+      "name": "vertical_slices",
+      "description": "Does the output write exactly one test, then implement code to pass it, before writing the next test?"
+    },
+    {
+      "name": "no_horizontal_slicing",
+      "description": "Does the output avoid writing multiple tests in bulk before any implementation?"
+    },
+    {
+      "name": "test_behavior_not_implementation",
+      "description": "Do the tests verify observable behavior through public interfaces rather than testing internal methods or implementation details?"
+    },
+    {
+      "name": "tracer_bullet_first",
+      "description": "Does the output start with a single tracer bullet test that proves the end-to-end path works?"
+    },
+    {
+      "name": "minimal_code",
+      "description": "Does the implementation contain only enough code to pass the current test, with no speculative features?"
+    },
+    {
+      "name": "planning_phase",
+      "description": "Does the output include a planning step that lists behaviors to test and asks for user confirmation before writing code?"
+    },
+    {
+      "name": "no_refactor_while_red",
+      "description": "Does the output avoid refactoring code while any test is failing?"
+    },
+    {
+      "name": "refactor_after_green",
+      "description": "Does the output include a refactor step only after all tests pass?"
+    },
+    {
+      "name": "tests_use_public_interface",
+      "description": "Do all tests interact only through public APIs, not private methods or internal state?"
+    },
+    {
+      "name": "run_tests_after_refactor",
+      "description": "Does the output run the test suite after each refactor step?"
+    }
+  ]
+}

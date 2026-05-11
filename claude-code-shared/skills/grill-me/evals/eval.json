@@ -1,0 +1,60 @@
+{
+  "skill": "grill-me",
+  "scenarios": [
+    {
+      "name": "simple_api_endpoint",
+      "prompt": "I want to add a REST endpoint for user preferences. Grill me.",
+      "context": "A typical web app with Express/Node backend, PostgreSQL database, existing REST API."
+    },
+    {
+      "name": "migration_strategy",
+      "prompt": "We need to migrate from PostgreSQL to a multi-tenant architecture. Grill me on the plan.",
+      "context": "SaaS product with ~50 tenants, single shared database, Django backend."
+    },
+    {
+      "name": "auth_system_redesign",
+      "prompt": "I'm redesigning our auth system to support SSO via SAML and OIDC. Grill me.",
+      "context": "B2B SaaS with existing email/password auth, Rails backend, enterprise customers requesting SSO."
+    },
+    {
+      "name": "event_driven_refactor",
+      "prompt": "We're moving from synchronous API calls to an event-driven architecture with Kafka. Grill me on this.",
+      "context": "Microservices in Go, currently using REST for inter-service communication, experiencing latency issues at scale."
+    },
+    {
+      "name": "frontend_state_management",
+      "prompt": "I want to replace our Redux store with React Server Components and server actions. Grill me.",
+      "context": "Next.js app, heavy client-side state, migrating from Pages Router to App Router."
+    }
+  ],
+  "assertions": [
+    {
+      "name": "one_question_at_a_time",
+      "description": "Does the output ask exactly one question (not multiple questions in the same turn)?"
+    },
+    {
+      "name": "provides_recommendation",
+      "description": "Does the output provide its own recommended answer or suggestion for the question it asks?"
+    },
+    {
+      "name": "explores_codebase_when_possible",
+      "description": "When the question could be answered by reading code or project files, does the output indicate it would explore the codebase rather than asking the user?"
+    },
+    {
+      "name": "walks_decision_tree",
+      "description": "Does the output identify a specific branch of the design decision tree and drill into it with specificity, rather than staying at a high-level overview?"
+    },
+    {
+      "name": "resolves_dependencies",
+      "description": "Does the output address prerequisite or foundational decisions before asking about dependent downstream decisions?"
+    },
+    {
+      "name": "relentless_depth",
+      "description": "Does the output push for concrete specifics and deeper exploration rather than accepting vague or surface-level framing?"
+    },
+    {
+      "name": "covers_all_aspects",
+      "description": "Does the output demonstrate awareness of multiple aspects of the plan (not fixating on just one area), either by addressing multiple aspects or by indicating a systematic plan to cover them?"
+    }
+  ]
+}

@@ -1,0 +1,3 @@
+## 2026-05-09 - Iteration 3
+- **explores_codebase_when_possible**: When codebase doesn't match scenario tech stack, still explore for analogous patterns. E.g., if scenario is "Go microservices" but codebase is Django monolith, look for inter-service communication patterns (Celery tasks, webhooks, API clients) that could inform the answer. Don't just acknowledge the mismatch and move on.
+- **one_question_at_a_time**: When signaling the decision tree branches you plan to cover, phrase it as a roadmap ("I'll walk through X, Y, Z"), not as a list of questions. The roadmap signals coverage without triggering "multiple questions" perception.

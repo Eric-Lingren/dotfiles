@@ -1,0 +1,48 @@
+{
+  "runs": [
+    {
+      "timestamp": "2026-05-09T00:00:00Z",
+      "iterations_so_far": 1,
+      "scores": [
+        {
+          "iteration": 1,
+          "total": 50,
+          "passed": 44,
+          "percentage": 88,
+          "failures": [
+            {
+              "scenario": "api_endpoint_crud",
+              "assertion": "run_tests_after_refactor",
+              "reason": "Output does not explicitly state tests were run after refactor step"
+            },
+            {
+              "scenario": "state_machine",
+              "assertion": "vertical_slices",
+              "reason": "Output summarizes cycles without showing granular write-one-test-then-implement sequence"
+            },
+            {
+              "scenario": "state_machine",
+              "assertion": "test_behavior_not_implementation",
+              "reason": "Language like 'Forces transition() method to exist' suggests tests drive implementation"
+            },
+            {
+              "scenario": "state_machine",
+              "assertion": "planning_phase",
+              "reason": "Shows planning but does not mention asking user for confirmation"
+            },
+            {
+              "scenario": "data_transformation",
+              "assertion": "run_tests_after_refactor",
+              "reason": "No explicit statement that tests were run after refactoring"
+            },
+            {
+              "scenario": "refactor_existing",
+              "assertion": "tracer_bullet_first",
+              "reason": "Doesn't start with single end-to-end tracer bullet"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

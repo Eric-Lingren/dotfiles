@@ -1,0 +1,66 @@
+{
+  "runs": [
+    {
+      "timestamp": "2026-05-09T12:00:00Z",
+      "iterations": 4,
+      "exit_reason": "perfect_score",
+      "scores": [
+        {
+          "iteration": 1,
+          "total": 35,
+          "passed": 29,
+          "percentage": 83,
+          "failures": [
+            {"scenario": "auth_system_redesign", "assertion": "one_question_at_a_time", "reason": "Asked two distinct sub-questions about SAML scope and OIDC scope"},
+            {"scenario": "event_driven_refactor", "assertion": "one_question_at_a_time", "reason": "Asked primary driver plus bottleneck type as separate questions"},
+            {"scenario": "frontend_state_mgmt", "assertion": "one_question_at_a_time", "reason": "A/B/C sub-options count as multiple questions"},
+            {"scenario": "simple_api_endpoint", "assertion": "explores_codebase_when_possible", "reason": "Asked user for preference keys instead of scanning code for config patterns"},
+            {"scenario": "event_driven_refactor", "assertion": "explores_codebase_when_possible", "reason": "Did not explore codebase at all (context was Go/Kafka, not this repo)"},
+            {"scenario": "event_driven_refactor", "assertion": "covers_all_aspects", "reason": "Focused narrowly on Kafka justification without signaling broader decision space"}
+          ]
+        },
+        {
+          "iteration": 2,
+          "total": 35,
+          "passed": 22,
+          "percentage": 63,
+          "failures": [
+            {"scenario": "simple_api_endpoint", "assertion": "provides_recommendation", "reason": "No recommended answer provided"},
+            {"scenario": "migration_strategy", "assertion": "provides_recommendation", "reason": "No recommended answer provided"},
+            {"scenario": "auth_system_redesign", "assertion": "provides_recommendation", "reason": "No recommended answer provided"},
+            {"scenario": "event_driven_refactor", "assertion": "provides_recommendation", "reason": "No recommended answer provided"},
+            {"scenario": "frontend_state_mgmt", "assertion": "provides_recommendation", "reason": "No recommended answer provided"},
+            {"scenario": "simple_api_endpoint", "assertion": "covers_all_aspects", "reason": "Focused narrowly on preference scope"},
+            {"scenario": "migration_strategy", "assertion": "explores_codebase_when_possible", "reason": "Could have explored for clues about the problem"},
+            {"scenario": "event_driven_refactor", "assertion": "explores_codebase_when_possible", "reason": "Dismissed codebase exploration"},
+            {"scenario": "event_driven_refactor", "assertion": "covers_all_aspects", "reason": "Focused narrowly on root cause diagnosis"},
+            {"scenario": "frontend_state_mgmt", "assertion": "one_question_at_a_time", "reason": "Multiple questions bundled together"},
+            {"scenario": "frontend_state_mgmt", "assertion": "walks_decision_tree", "reason": "Stayed at high-level framing"},
+            {"scenario": "frontend_state_mgmt", "assertion": "relentless_depth", "reason": "Accepted vague framing without pushing past contradiction"},
+            {"scenario": "frontend_state_mgmt", "assertion": "covers_all_aspects", "reason": "Focused only on state management aspect"}
+          ]
+        },
+        {
+          "iteration": 3,
+          "total": 35,
+          "passed": 33,
+          "percentage": 94,
+          "failures": [
+            {"scenario": "event_driven_refactor", "assertion": "explores_codebase_when_possible", "reason": "Acknowledged mismatch but did not explore for analogous patterns"},
+            {"scenario": "frontend_state_mgmt", "assertion": "one_question_at_a_time", "reason": "Signaling upcoming branches perceived as multiple questions"}
+          ]
+        },
+        {
+          "iteration": 4,
+          "total": 35,
+          "passed": 35,
+          "percentage": 100,
+          "failures": []
+        }
+      ],
+      "promotions": ["one_question_at_a_time", "explores_codebase_when_possible", "covers_all_aspects"],
+      "learnings_added": 5,
+      "learnings_pruned": 3
+    }
+  ]
+}
