@@ -7,7 +7,7 @@ This skill takes the current conversation context and codebase understanding and
 
 ## Process
 
-1. **Explore the repo** to understand the current state of the codebase, if you haven't already. Use the project's domain vocabulary (from `CONTEXT.md` and ADRs in `docs/adr/` if they exist) throughout the PRD.
+1. **Explore the repo** to understand the current state of the codebase, if you haven't already. Use the project's domain vocabulary (from `CONTEXT.md` and ADRs in `docs/adr/` if they exist) throughout the PRD. If neither `CONTEXT.md` nor `docs/adr/` exist, explicitly note that no project-specific vocabulary sources were found and proceed with the best domain terms available from the conversation context.
 
 2. **Sketch the major modules** you will need to build or modify. Actively look for opportunities to extract deep modules that can be tested in isolation.
 
@@ -17,7 +17,7 @@ This skill takes the current conversation context and codebase understanding and
 
 3. **Derive a slug** from the feature name, lowercase, kebab-case, max ~40 chars (e.g. `user-auth-flow`).
 
-4. **Ask where to write.** Before writing, ask the user:
+4. **Ask where to write (MANDATORY).** You MUST ask before writing anything to disk. Do not skip this step:
 
    ```
    Where should this PRD go?
@@ -34,56 +34,17 @@ This skill takes the current conversation context and codebase understanding and
 
    If the user picks **1**, continue on the current branch (existing behavior).
 
-5. **Determine the file prefix** by scanning `docs/prd/` for files matching the pattern `NNNN-*.md` and taking the highest existing number + 1, zero-padded to 4 digits. If the directory is empty or doesn't exist, start at `0001`.
+5. **Confirm output directory (MANDATORY).** Resolve the absolute path of `docs/prd/` relative to the current working directory. Ask the user before writing:
 
-6. **Write the PRD** to `docs/prd/{prefix}-{slug}.md` (e.g. `0001-user-auth-flow.md`). Create `docs/prd/` if it doesn't exist. Never auto-commit.
+   ```
+   PRD will be saved to: /absolute/path/to/docs/prd/
+   Is that correct? If not, provide the path you'd like instead.
+   ```
 
-7. Tell the user the path and suggest running `/to-tasks` next.
+   Use whatever path the user confirms (create it if it doesn't exist). Do not skip this step.
 
-<prd-template>
+6. **Determine the file prefix** by running the `next-prefix.sh` script in this skill's directory: `~/.dotfiles/claude-code-shared/skills/to-prd/next-prefix.sh`. It returns a `YYYYMMDD-HHMM` timestamp prefix.
 
-## Problem Statement
+7. **Write the PRD** to `{confirmed-dir}/{prefix}-{slug}.md` (e.g. `20260511-1423-user-auth-flow.md`). Never auto-commit. Use the template from `~/.dotfiles/claude-code-shared/skills/to-prd/template.md` for the PRD structure.
 
-The problem that the user is facing, from the user's perspective.
-
-## Solution
-
-The solution to the problem, from the user's perspective.
-
-## User Stories
-
-A numbered list of user stories. Each in the format:
-
-1. As a `<actor>`, I want `<feature>`, so that `<benefit>`
-
-This list should be extensive and cover all aspects of the feature.
-
-## Implementation Decisions
-
-A list of implementation decisions:
-
-- The modules that will be built/modified
-- The interfaces of those modules
-- Technical clarifications from the developer
-- Architectural decisions
-- Schema changes
-- API contracts
-- Specific interactions
-
-Do NOT include specific file paths or code snippets — they go stale quickly.
-
-## Testing Decisions
-
-- What makes a good test for this feature (test external behavior, not implementation details)
-- Which modules will be tested
-- Prior art in the codebase (similar test patterns to follow)
-
-## Out of Scope
-
-What is explicitly not being built in this PRD.
-
-## Further Notes
-
-Any additional context.
-
-</prd-template>
+8. Tell the user the path and suggest running `/to-tasks` next.

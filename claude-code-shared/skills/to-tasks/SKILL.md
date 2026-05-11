@@ -69,13 +69,22 @@ Before writing the file, ask the user which branching strategy they want for thi
 
 Record the answer in the `branching` field of the JSON.
 
-### 7. Write the JSON file
+### 7. Confirm output directory (MANDATORY)
 
-Derive the slug from the PRD filename by stripping any leading `NNNN-` prefix (e.g. `0001-user-auth-flow.md` → slug `user-auth-flow`).
+Resolve the absolute path of `docs/tasks/` relative to the current working directory. Ask the user before writing:
 
-Determine the file prefix by scanning `docs/tasks/` for files matching `NNNN-*.json` and taking the highest existing number + 1, zero-padded to 4 digits. If the directory is empty or doesn't exist, start at `0001`.
+```
+Tasks file will be saved to: /absolute/path/to/docs/tasks/
+Is that correct? If not, provide the path you'd like instead.
+```
 
-Write to `docs/tasks/{prefix}-{slug}.json` (e.g. `0001-user-auth-flow.json`). Create `docs/tasks/` if it doesn't exist.
+Use whatever path the user confirms (create it if it doesn't exist). Do not skip this step.
+
+### 8. Write the JSON file
+
+Derive the slug from the PRD filename by stripping the leading timestamp prefix (e.g. `20260511-1423-user-auth-flow.md` → slug `user-auth-flow`). The timestamp prefix format is `YYYYMMDD-HHMM-`.
+
+Generate the file prefix as a `YYYYMMDD-HHMM` timestamp (current time). Write to `{confirmed-dir}/{prefix}-{slug}.json`.
 
 If a file for this slug already exists (any prefix), ask the user whether to:
 - **Overwrite** — replace the file entirely with the new breakdown (re-scan all other files to find the next task ID, excluding this file; keep the existing filename prefix)
@@ -83,7 +92,7 @@ If a file for this slug already exists (any prefix), ask the user whether to:
 
 <task-json-schema>
 {
-  "prd": "docs/prd/0001-{slug}.md",
+  "prd": "docs/prd/YYYYMMDD-HHMM-{slug}.md",
   "generated_at": "<ISO 8601 timestamp>",
   "branching": {
     "strategy": "single",
