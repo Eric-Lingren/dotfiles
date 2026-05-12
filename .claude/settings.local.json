@@ -1,5 +1,4 @@
 {
-  "prefersReducedMotion": false,
   "permissions": {
     "allow": [
       "Bash(cch doctor *)",
@@ -10,7 +9,11 @@
       "Bash(sw_vers)",
       "Bash(bash /Users/eric/.dotfiles/claude-code-shared/scripts/context-bar.sh)",
       "Read(//Users/eric/Documents/Standard-Metrics/claude-artifacts/**)",
-      "Read(//Users/eric/Documents/dev/Quaestor-Web/**)"
+      "Read(//Users/eric/Documents/dev/Quaestor-Web/**)",
+      "WebFetch(domain:x.com)",
+      "WebSearch",
+      "Bash(chmod +x *)"
     ]
-  }
+  },
+  "prefersReducedMotion": false
 }

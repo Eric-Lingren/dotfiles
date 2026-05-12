@@ -11,9 +11,13 @@ Execute tasks from a `docs/tasks/` JSON file sequentially, using `/tdd` for each
 
 ### 1. Ask for task file and target
 
-Always ask explicitly — do not infer from context:
+Always ask explicitly. Do not infer from context:
 
-1. **Which task file?** List available files in `docs/tasks/` and ask the user to choose.
+1. **Which task file?** List ALL `*.json` files in `docs/tasks/` (use `ls docs/tasks/*.json` or equivalent). Files may use either naming convention:
+   - Legacy: `NNNN-slug.json` (e.g. `0002-invite-domain-check.json`)
+   - Timestamped: `YYYYMMDD-HHMM-slug.json` (e.g. `20260512-1600-invite-domain-check-pr-fixes.json`)
+
+   Show every file found regardless of prefix format. Present them as numbered options with the full filename.
 2. **Which task ID?** Ask for a specific task ID (e.g. `T-0005`) or leave blank to run all `not_started` tasks in order.
 
 Read the chosen JSON file and the PRD it references (`prd` field).
@@ -89,7 +93,7 @@ If `type` is `"HITL"`:
 Print a status table in the conversation:
 
 ```
-Run complete — docs/tasks/0001-user-auth-flow.json
+Run complete — docs/tasks/20260512-1423-user-auth-flow.json
 
  ID      Title                        Result
  ──────  ───────────────────────────  ──────────────

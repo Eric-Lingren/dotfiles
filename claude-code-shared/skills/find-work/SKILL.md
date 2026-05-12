@@ -1,11 +1,11 @@
 ---
 name: find-work
-description: List spike/*, staged/*, and feat/* branches in the current repo with last commit dates. Use when user wants to find previous spikes, staged work, feature branches, or in-progress research branches.
+description: List spike/*, feat/*, fix/*, and staged/* branches in the current repo with last commit dates. Use when user wants to find previous spikes, feature branches, fix branches, staged work, or in-progress research branches.
 ---
 
 # Find Work
 
-List all `spike/*`, `staged/*`, and `feat/*` branches in the current repo to help rediscover previous research or in-progress feature work.
+List all `spike/*`, `feat/*`, `fix/*`, and `staged/*` branches in the current repo to help rediscover previous research or in-progress feature work.
 
 ## Process
 

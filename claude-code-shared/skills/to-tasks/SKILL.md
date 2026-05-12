@@ -11,11 +11,13 @@ Break a PRD into independently-grabbable tasks using vertical slices (tracer bul
 
 ### 1. Locate the PRD
 
-Always ask the user to provide the PRD file path. List the available files in `docs/prd/` so they can choose, but require an explicit selection. Never auto-pick.
+Always ask the user to provide the PRD file path. List the available files in `docs/prd/` (both `.md` and `.html`) so they can choose, but require an explicit selection. Never auto-pick.
+
+**HTML PRDs:** If the selected file is `.html`, run `~/.dotfiles/claude-code-shared/skills/to-tasks/extract-prd-json.sh <path>` to extract the embedded JSON. Use that output as the primary source for user stories, implementation decisions, and testing decisions. Do NOT use inline python or other ad-hoc extraction. The script handles both `.md` and `.html` files.
 
 If `docs/prd/` doesn't exist or is empty on the current branch:
-- Run `git branch --list "spike/*" "staged/*"` to check for work branches.
-- If work branches exist, tell the user: "No PRDs found on this branch. These spike/staged branches exist:" and list them. Ask if they want to switch to one.
+- Run `git branch --list "spike/*" "feat/*" "fix/*"` to check for work branches.
+- If work branches exist, tell the user: "No PRDs found on this branch. These work branches exist:" and list them. Ask if they want to switch to one.
 - If the user picks a branch, run `git switch {branch-name}` and re-list `docs/prd/`.
 - If no work branches exist either, tell the user to run `/to-prd` first.
 
@@ -82,7 +84,7 @@ Use whatever path the user confirms (create it if it doesn't exist). Do not skip
 
 ### 8. Write the JSON file
 
-Derive the slug from the PRD filename by stripping the leading timestamp prefix (e.g. `20260511-1423-user-auth-flow.md` → slug `user-auth-flow`). The timestamp prefix format is `YYYYMMDD-HHMM-`.
+Derive the slug from the PRD filename by stripping the leading timestamp prefix and extension (e.g. `20260511-1423-user-auth-flow.md` → slug `user-auth-flow`, or `20260511-1423-user-auth-flow.html` → slug `user-auth-flow`). The timestamp prefix format is `YYYYMMDD-HHMM-`.
 
 Generate the file prefix as a `YYYYMMDD-HHMM` timestamp (current time). Write to `{confirmed-dir}/{prefix}-{slug}.json`.
 
@@ -92,7 +94,7 @@ If a file for this slug already exists (any prefix), ask the user whether to:
 
 <task-json-schema>
 {
-  "prd": "docs/prd/YYYYMMDD-HHMM-{slug}.md",
+  "prd": "docs/prd/YYYYMMDD-HHMM-{slug}.md (or .html)",
   "generated_at": "<ISO 8601 timestamp>",
   "branching": {
     "strategy": "single",
@@ -122,7 +124,7 @@ If a file for this slug already exists (any prefix), ask the user whether to:
 - `type`: `"AFK"` or `"HITL"`
 - `status`: `"not_started"` | `"in_progress"` | `"done"` | `"merged"` | `"blocked"`
 - `blocked_by`: array of `id` strings (e.g. `["T-0023"]`), empty if none
-- `branch`: `feat/t-{id-number}-{kebab-title}`, lowercase, max ~40 chars total — only used when `branching.strategy` is `"per-task"`
+- `branch`: `{prefix}/t-{id-number}-{kebab-title}`, lowercase, max ~40 chars total. Only used when `branching.strategy` is `"per-task"`. Derive `{prefix}` from the current branch name (`feat/`, `fix/`, or `spike/`). If the current branch has no recognized prefix (e.g. `main`), ask the user whether this is a `feat` or `fix`.
 - `pr`: `null` until merged; then PR URL or number as a string
 - `branching.strategy`: `"single"` (one shared branch, user-provided) or `"per-task"` (auto-generated per task)
 - `branching.branch`: only present when `strategy` is `"single"`
