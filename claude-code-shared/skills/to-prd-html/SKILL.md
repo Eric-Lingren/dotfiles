@@ -15,7 +15,7 @@ This skill takes the current conversation context and codebase understanding and
 
    Check with the user that these modules match their expectations and which ones they want tests written for.
 
-3. **Ask: work or personal?**
+3. **Ask: work or personal? (MANDATORY).** You MUST ask before proceeding. Do not skip this step. Do not assume or infer the answer. Always prompt the user:
 
    ```
    Is this PRD for work or personal?
