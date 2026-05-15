@@ -1,0 +1,153 @@
+{
+  "skill": "to-prd",
+  "scenarios": [
+    {
+      "name": "simple_crud_feature",
+      "prompt": "We discussed adding a notes feature to portfolios. Users can create, edit, delete notes attached to a portfolio. Notes are markdown, max 10k chars.",
+      "context": "Django REST backend, React frontend, existing Portfolio model"
+    },
+    {
+      "name": "complex_integration",
+      "prompt": "We need to integrate with Plaid for bank account verification. Users link their bank, we pull transaction history nightly, and surface it in a dashboard.",
+      "context": "Python backend, existing user auth system, no current third-party integrations"
+    },
+    {
+      "name": "refactor_existing",
+      "prompt": "The reporting module is a mess. We want to extract it into a clean service that other parts of the app can call. Currently it's spread across 4 controllers.",
+      "context": "Existing monolith with CONTEXT.md defining domain terms, docs/adr/ with 3 existing ADRs"
+    },
+    {
+      "name": "frontend_only",
+      "prompt": "Add a dark mode toggle to the settings page. Should persist preference and apply globally.",
+      "context": "React app with Tailwind CSS, no existing theme system"
+    },
+    {
+      "name": "data_pipeline",
+      "prompt": "Build an ETL pipeline that ingests CSV uploads from LPs, validates schema, normalizes data, and loads into our fund_metrics table. Must handle partial failures.",
+      "context": "Python, existing PostgreSQL schema, CONTEXT.md with LP/fund terminology"
+    }
+  ],
+  "assertions": [
+    {
+      "name": "no_interviewing",
+      "description": "Output synthesizes from existing context. Does not ask the user discovery questions to gather requirements.",
+      "rubric": {
+        "0": "Output is entirely questions asking user what they want",
+        "25": "Output asks multiple discovery questions before producing content",
+        "50": "Output produces some PRD content but intersperses questions gathering new requirements",
+        "75": "Output synthesizes from context, asks only the required module-check and write-location questions",
+        "100": "Output synthesizes entirely from context, only asks the two mandated process questions (module check + write location)"
+      }
+    },
+    {
+      "name": "explores_repo",
+      "description": "Output demonstrates awareness of codebase structure, existing patterns, or domain vocabulary.",
+      "rubric": {
+        "0": "No mention of codebase, existing code, or project structure",
+        "25": "Generic mention of 'exploring the repo' without any specific findings",
+        "50": "References some codebase elements but superficially, no real analysis",
+        "75": "Demonstrates awareness of specific patterns, models, or architecture in the codebase",
+        "100": "Deep codebase awareness shown through specific references to existing patterns, models, services, and how the new feature fits"
+      }
+    },
+    {
+      "name": "domain_vocabulary",
+      "description": "Output uses project-specific terminology from CONTEXT.md/ADRs when available. When unavailable, explicitly notes their absence and uses best domain terms from conversation context.",
+      "rubric": {
+        "0": "Uses only generic software terms, no domain language, does not check for CONTEXT.md/ADRs",
+        "25": "Checks for CONTEXT.md/ADRs but does not note their absence or use any domain terms",
+        "50": "Uses some domain terms but does not check for or note the status of CONTEXT.md/ADRs",
+        "75": "When CONTEXT.md/ADRs exist: uses them consistently. When they do not exist: explicitly notes their absence and uses best available domain terms from conversation context",
+        "100": "All domain concepts use project-specific terminology from CONTEXT.md/ADRs throughout the PRD. Or, if none exist, explicitly notes absence and uses rich domain language from conversation context with a note in Further Notes"
+      }
+    },
+    {
+      "name": "sketches_modules",
+      "description": "Output identifies major modules to build/modify and discusses deep module extraction opportunities.",
+      "rubric": {
+        "0": "No module discussion at all",
+        "25": "Mentions 'modules' generically without identifying any",
+        "50": "Lists modules but no discussion of interfaces or deep module extraction",
+        "75": "Identifies specific modules with interfaces, but no deep module analysis",
+        "100": "Identifies modules, discusses interfaces, and explicitly looks for deep module extraction opportunities"
+      }
+    },
+    {
+      "name": "asks_write_location",
+      "description": "Output asks the user where to write the PRD (current branch, spike, staged) before writing.",
+      "rubric": {
+        "0": "Writes PRD without asking, or never mentions file location",
+        "25": "Mentions writing but does not ask the user to choose a location",
+        "50": "Asks where to write but does not offer the three specific options (current branch, spike, staged)",
+        "75": "Asks where to write with the three options but does not wait for user response before proceeding",
+        "100": "Explicitly asks where to write with all three options (current branch, new spike branch, new staged branch) and waits for user choice"
+      }
+    },
+    {
+      "name": "derives_slug",
+      "description": "Output derives a kebab-case slug from the feature name, max ~40 chars.",
+      "rubric": {
+        "0": "No slug derived or mentioned",
+        "25": "Mentions a filename but not in kebab-case or derived from feature name",
+        "50": "Derives a slug but wrong format (camelCase, snake_case, or over 40 chars)",
+        "75": "Correct kebab-case slug derived from feature name, reasonable length",
+        "100": "Correct kebab-case slug, clearly derived from feature name, under 40 chars, used consistently in file path"
+      }
+    },
+    {
+      "name": "correct_file_prefix",
+      "description": "Output determines file prefix by scanning docs/prd/ for existing NNNN pattern.",
+      "rubric": {
+        "0": "No file prefix logic mentioned",
+        "25": "Uses a hardcoded prefix without scanning",
+        "50": "Mentions scanning docs/prd/ but does not describe the NNNN incrementing logic",
+        "75": "Describes scanning for NNNN pattern and incrementing, but minor errors in zero-padding or edge cases",
+        "100": "Correctly describes scanning docs/prd/ for NNNN-*.md, taking highest + 1, zero-padded to 4 digits, defaulting to 0001"
+      }
+    },
+    {
+      "name": "template_compliance",
+      "description": "PRD contains all required sections: Problem Statement, Solution, User Stories, Implementation Decisions, Testing Decisions, Out of Scope, Further Notes.",
+      "rubric": {
+        "0": "No recognizable PRD structure",
+        "25": "Has 1-2 of the 7 required sections",
+        "50": "Has 3-4 of the 7 required sections",
+        "75": "Has 5-6 of the 7 required sections, or all 7 but some are empty or trivial",
+        "100": "All 7 sections present with substantive content in each"
+      }
+    },
+    {
+      "name": "user_story_format",
+      "description": "User stories follow 'As a X, I want Y, so that Z' format. List is extensive (5+).",
+      "rubric": {
+        "0": "No user stories section",
+        "25": "User stories exist but wrong format, or fewer than 3",
+        "50": "3-4 user stories in correct format",
+        "75": "5+ user stories in correct format but some are vague or redundant",
+        "100": "5+ user stories in correct 'As a X, I want Y, so that Z' format, each distinct and covering different aspects"
+      }
+    },
+    {
+      "name": "no_file_paths_in_decisions",
+      "description": "Implementation Decisions section avoids specific file paths or code snippets.",
+      "rubric": {
+        "0": "Implementation Decisions is full of file paths and code snippets",
+        "25": "Multiple file paths or code blocks in Implementation Decisions",
+        "50": "1-2 file paths or small code references in Implementation Decisions",
+        "75": "No file paths but includes minor code-like references (function signatures, etc.)",
+        "100": "Implementation Decisions contains only architectural and design decisions, no file paths or code"
+      }
+    },
+    {
+      "name": "suggests_to_tasks",
+      "description": "Output tells user the file path and suggests running /to-tasks next.",
+      "rubric": {
+        "0": "No mention of next steps or file path",
+        "25": "Mentions file path but no next step suggestion",
+        "50": "Mentions next steps but does not specifically suggest /to-tasks",
+        "75": "Suggests /to-tasks but does not mention the file path",
+        "100": "Clearly states the PRD file path and suggests running /to-tasks next"
+      }
+    }
+  ]
+}
