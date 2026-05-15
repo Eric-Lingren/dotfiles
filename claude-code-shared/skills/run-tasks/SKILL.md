@@ -83,7 +83,15 @@ If `type` is `"HITL"`:
    - Update task status to `done` in the JSON.
    - Set `pr` to a suggested `gh pr create` command the user can run (do not run it).
 
-5. If TDD fails or gets stuck:
+5. **Discover follow-ups** after each successful task:
+   - Review the diff produced by this task (`git diff` of changes).
+   - Infer any manual follow-up actions: new env vars referenced but not provisioned, migration files created, external service configuration needed, manual testing required, etc.
+   - Check `~/.dotfiles/claude-code-shared/skills/run-followups/templates.md` for matching templates. Use template steps when available. Fill in project-specific values.
+   - Before appending, deduplicate: compare the inferred follow-up title against existing `follow_ups` in the JSON. Skip if a similar title already exists.
+   - Append new follow-ups to the `follow_ups` array in the JSON with `"source": "discovered"` and `"trigger_task"` set to the current task ID.
+   - Write the updated JSON immediately (same write as the status update).
+
+6. If TDD fails or gets stuck:
    - Determine if any other `not_started` task depends on this one.
      - **If yes (blocker):** update status to `blocked`, halt the run, report the failure.
      - **If no (standalone):** update status to `blocked`, continue to next task, add to end-of-run summary.
@@ -108,11 +116,32 @@ Parked HITL tasks requiring human action:
 
 Blocked tasks requiring investigation:
   T-0026 — Token refresh flow: TDD could not pass acceptance criteria
+
+Manual follow-ups (2):
+  1. Add STRIPE_KEY to Cloudflare [T-0024, discovered]
+     a. Go to Cloudflare dashboard > Workers & Pages > your-app > Settings > Variables
+     b. Click 'Add variable'
+     c. Name: STRIPE_KEY, Value: from Stripe dashboard > API keys
+     d. Click 'Encrypt' then 'Save'
+
+  2. Run database migration [T-0023, planned]
+     a. Run `npx drizzle-kit push`
+     b. Verify tables created with `npx drizzle-kit studio`
+
+Run `/run-followups` for interactive walkthrough with step-by-step guidance.
 ```
 
 Do not write this summary to any file.
 
-### 6. Offer to push and open a PR
+### 6. Offer follow-up walkthrough
+
+If the `follow_ups` array in the JSON is non-empty, print:
+
+```
+Run `/run-followups` to walk through manual follow-ups interactively.
+```
+
+### 7. Offer to push and open a PR
 
 After printing the summary, ask the user: **"Push and open a PR?"**
 

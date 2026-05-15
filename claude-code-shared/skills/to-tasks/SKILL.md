@@ -37,6 +37,18 @@ Slices may be **HITL** (requires human interaction — architectural decision, d
 - Prefer many thin slices over few thick ones
 </vertical-slice-rules>
 
+### 3b. Infer follow-ups from the PRD
+
+Scan the PRD for manual actions outside the task graph: env var provisioning, DNS config, external service setup, database migrations, manual testing, deployment steps, credential rotation, etc.
+
+Draft a `follow_ups` list. Each item has:
+- **title**: what needs doing
+- **steps**: ordered, specific instructions (platform-specific click paths when known)
+- **trigger_task**: which task ID creates the need, or `null` if general
+- **source**: `"planned"`
+
+Check `~/.dotfiles/claude-code-shared/skills/run-followups/templates.md` for existing templates that match. Use template steps when available. Fill in project-specific values.
+
 ### 4. Quiz the user
 
 Present the proposed breakdown as a numbered list. For each slice show:
@@ -46,11 +58,17 @@ Present the proposed breakdown as a numbered list. For each slice show:
 - **Blocked by**: which other slices must complete first (by number)
 - **User stories covered**: which user stories from the PRD this addresses
 
+Then present inferred follow-ups as a separate list. For each follow-up show:
+- **Title**: what manual action is needed
+- **Trigger task**: which task creates the need (or "general")
+- **Steps**: the step-by-step instructions
+
 Ask:
 - Does the granularity feel right? (too coarse / too fine)
 - Are the dependency relationships correct?
 - Should any slices be merged or split further?
 - Are the correct slices marked as HITL vs AFK?
+- Are the follow-ups correct? Any missing? Any unnecessary?
 
 Iterate until the user approves the breakdown.
 
@@ -115,6 +133,19 @@ If a file for this slug already exists (any prefix), ask the user whether to:
       "branch": "feat/t-023-short-title",
       "pr": null
     }
+  ],
+  "follow_ups": [
+    {
+      "title": "Add STRIPE_KEY to Cloudflare",
+      "steps": [
+        "Go to Cloudflare dashboard > Workers & Pages > your-app > Settings > Variables",
+        "Click 'Add variable'",
+        "Name: STRIPE_KEY, Value: from Stripe dashboard > API keys",
+        "Click 'Encrypt' then 'Save'"
+      ],
+      "trigger_task": "T-0024",
+      "source": "planned"
+    }
   ]
 }
 </task-json-schema>
@@ -128,5 +159,12 @@ If a file for this slug already exists (any prefix), ask the user whether to:
 - `pr`: `null` until merged; then PR URL or number as a string
 - `branching.strategy`: `"single"` (one shared branch, user-provided) or `"per-task"` (auto-generated per task)
 - `branching.branch`: only present when `strategy` is `"single"`
+
+**Follow-up field rules:**
+- `follow_ups`: top-level array, sibling to `tasks`
+- `title`: short description of the manual action
+- `steps`: ordered array of specific instructions. Use platform-specific click paths when known.
+- `trigger_task`: task ID string (e.g. `"T-0024"`) or `null` if general
+- `source`: `"planned"` (from PRD) or `"discovered"` (found during `run-tasks`)
 
 Tell the user the output path and the ID range used (e.g. `T-0023 – T-0031`) once written.

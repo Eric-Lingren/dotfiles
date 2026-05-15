@@ -12,7 +12,8 @@
       "Read(//Users/eric/Documents/dev/Quaestor-Web/**)",
       "WebFetch(domain:x.com)",
       "WebSearch",
-      "Bash(chmod +x *)"
+      "Bash(chmod +x *)",
+      "Bash(echo \"exit: $?\")"
     ]
   },
   "prefersReducedMotion": false
