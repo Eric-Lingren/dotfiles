@@ -59,6 +59,7 @@
         "default": "right",
         "jupyter-notebook": "left"
     },
+    "terminal.integrated.gpuAcceleration": "off",
     "terminal.integrated.fontFamily": "JetBrains Mono",
     "terminal.integrated.fontSize": 13,
     "terminal.integrated.lineHeight": 1.3,
