@@ -74,6 +74,16 @@ If `type` is `"HITL"`:
 **Acceptance criteria:**
 {acceptance_criteria as a checklist}
 
+## Test requirements
+
+Tests are mandatory for every task. This applies to new code, refactors, and moves equally.
+
+For refactoring or restructuring tasks: check if the code being changed has existing test coverage. If not, write characterization tests for the current behavior BEFORE making any changes. Then refactor while keeping tests green.
+
+For new code: follow the standard RED-GREEN-REFACTOR loop.
+
+A task is not done until tests exist that verify the behavior described in the acceptance criteria.
+
 ## PRD context
 
 {full contents of the PRD file}
@@ -86,7 +96,7 @@ If `type` is `"HITL"`:
 5. **Discover follow-ups** after each successful task:
    - Review the diff produced by this task (`git diff` of changes).
    - Infer any manual follow-up actions: new env vars referenced but not provisioned, migration files created, external service configuration needed, manual testing required, etc.
-   - Check `~/.dotfiles/claude-code-shared/skills/run-followups/templates.md` for matching templates. Use template steps when available. Fill in project-specific values.
+   - Check `~/.dotfiles/claude-code-shared/skills/run-task-followups/templates.md` for matching templates. Use template steps when available. Fill in project-specific values.
    - Before appending, deduplicate: compare the inferred follow-up title against existing `follow_ups` in the JSON. Skip if a similar title already exists.
    - Append new follow-ups to the `follow_ups` array in the JSON with `"source": "discovered"` and `"trigger_task"` set to the current task ID.
    - Write the updated JSON immediately (same write as the status update).
@@ -128,7 +138,7 @@ Manual follow-ups (2):
      a. Run `npx drizzle-kit push`
      b. Verify tables created with `npx drizzle-kit studio`
 
-Run `/run-followups` for interactive walkthrough with step-by-step guidance.
+Run `/run-task-followups` for interactive walkthrough with step-by-step guidance.
 ```
 
 Do not write this summary to any file.
@@ -138,7 +148,7 @@ Do not write this summary to any file.
 If the `follow_ups` array in the JSON is non-empty, print:
 
 ```
-Run `/run-followups` to walk through manual follow-ups interactively.
+Run `/run-task-followups` to walk through manual follow-ups interactively.
 ```
 
 ### 7. Offer to push and open a PR

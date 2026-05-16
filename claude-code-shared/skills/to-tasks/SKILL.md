@@ -35,6 +35,8 @@ Slices may be **HITL** (requires human interaction — architectural decision, d
 - Each slice delivers a narrow but COMPLETE path through every layer (schema, API, UI, tests)
 - A completed slice is demoable or verifiable on its own
 - Prefer many thin slices over few thick ones
+- Every slice MUST include tests, whether it is new code, a refactor, or a move
+- For refactoring slices: the description must state that characterization tests for existing behavior are written BEFORE any restructuring begins. If the code being refactored has no test coverage, the first step is capturing current behavior in tests. Then refactor while keeping tests green.
 </vertical-slice-rules>
 
 ### 3b. Infer follow-ups from the PRD
@@ -47,7 +49,7 @@ Draft a `follow_ups` list. Each item has:
 - **trigger_task**: which task ID creates the need, or `null` if general
 - **source**: `"planned"`
 
-Check `~/.dotfiles/claude-code-shared/skills/run-followups/templates.md` for existing templates that match. Use template steps when available. Fill in project-specific values.
+Check `~/.dotfiles/claude-code-shared/skills/run-task-followups/templates.md` for existing templates that match. Use template steps when available. Fill in project-specific values.
 
 ### 4. Quiz the user
 
@@ -123,9 +125,9 @@ If a file for this slug already exists (any prefix), ask the user whether to:
       "id": "T-023",
       "title": "Short descriptive title",
       "type": "AFK",
-      "description": "End-to-end behavior description — not layer-by-layer implementation",
+      "description": "End-to-end behavior description, not layer-by-layer implementation. For refactor tasks: state that characterization tests must be written for existing behavior before restructuring begins.",
       "acceptance_criteria": [
-        "Criterion 1",
+        "Criterion 1 (always include test-related criteria)",
         "Criterion 2"
       ],
       "blocked_by": [],
