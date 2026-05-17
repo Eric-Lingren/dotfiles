@@ -16,7 +16,7 @@ You are running an automated skill improvement loop. Follow this process exactly
 
 The user provides: `/improve-skill <skill-name>` with optional `--reset` flag.
 
-Parse the skill name from ARGUMENTS. If `--reset` is present, delete the target skill's `evals/` directory before proceeding.
+Parse the skill name from ARGUMENTS. If `--reset` is present, delete the runs directory for this skill before proceeding.
 
 ## Step 1: Locate the target skill
 
@@ -27,12 +27,14 @@ If not found, tell the user and stop.
 
 Read the target SKILL.md. Store its full contents for later use.
 
+Derive the runs directory for this skill: `~/.dotfiles/claude-code-shared/skills/improve-skill/runs/<skill-name>/`. All eval artifacts (eval.json, learnings.md, scores.json) live here, not in the target skill's own directory.
+
 ## Step 2: Check for existing evals
 
-Run the scaffold script to check/create the evals directory:
-`~/.dotfiles/claude-code-shared/skills/improve-skill/scripts/scaffold-evals.sh <target-skill-dir> [--reset]`
+Run the scaffold script to check/create the runs directory:
+`~/.dotfiles/claude-code-shared/skills/improve-skill/scripts/scaffold-evals.sh <skill-name> [--reset]`
 
-Then check for `<target-skill-dir>/evals/eval.json`.
+Then check for `<runs-dir>/eval.json`.
 
 - If it exists and `--reset` was NOT passed, skip to **Step 4**.
 - Otherwise, proceed to **Step 3**.
@@ -83,15 +85,15 @@ Present the auto-generated assertions and scenarios to the user. Ask exactly the
 1. "Here are the assertions and rubrics I extracted. Any behaviors I missed? Any rubric anchors need adjustment?"
 2. "Here are the 5 scenarios. Do these cover enough variety?"
 
-Do not ask additional questions. Incorporate feedback, then write the final eval.json to `<target-skill-dir>/evals/eval.json`.
+Do not ask additional questions. Incorporate feedback, then write the final eval.json to `<runs-dir>/eval.json`.
 
 ## Step 4: Run the improvement loop
 
 Read these files:
 - `<target-skill-dir>/SKILL.md` (current skill definition)
-- `<target-skill-dir>/evals/eval.json` (scenarios + assertions)
-- `<target-skill-dir>/evals/learnings.md` (if exists, prior learnings)
-- `<target-skill-dir>/evals/scores.json` (if exists, prior scores)
+- `<runs-dir>/eval.json` (scenarios + assertions)
+- `<runs-dir>/learnings.md` (if exists, prior learnings)
+- `<runs-dir>/scores.json` (if exists, prior scores)
 
 Initialize iteration counter at 1. Max iterations: 3.
 
@@ -143,7 +145,7 @@ Build a report with:
 
 #### 4d: Update learnings.md
 
-For each cell scoring 50 or below, append a dated entry to `<target-skill-dir>/evals/learnings.md`:
+For each cell scoring 50 or below, append a dated entry to `<runs-dir>/learnings.md`:
 
 ```markdown
 ## <date> - Iteration <N>
@@ -194,7 +196,7 @@ Score = (items passed / 5) * 100. This score is independent of the behavioral sc
 
 ## Step 6: Write scores.json
 
-Append the run result to `<target-skill-dir>/evals/scores.json`. See `examples/scores-json-schema.md` for the expected format.
+Append the run result to `<runs-dir>/scores.json`. See `examples/scores-json-schema.md` for the expected format.
 
 ## Step 7: Final report
 

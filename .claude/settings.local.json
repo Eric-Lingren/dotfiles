@@ -13,7 +13,10 @@
       "WebFetch(domain:x.com)",
       "WebSearch",
       "Bash(chmod +x *)",
-      "Bash(echo \"exit: $?\")"
+      "Bash(echo \"exit: $?\")",
+      "Bash(cat)",
+      "Read(//tmp/**)",
+      "Bash(git mv *)"
     ]
   },
   "prefersReducedMotion": false
