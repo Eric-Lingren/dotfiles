@@ -45,11 +45,11 @@ Scan the PRD for manual actions outside the task graph: env var provisioning, DN
 
 Draft a `follow_ups` list. Each item has:
 - **title**: what needs doing
-- **steps**: ordered, specific instructions (platform-specific click paths when known)
+- **steps**: ordered, specific instructions. Each step must include the exact command, exact SQL, exact config key, or exact dashboard click path. Never write a step that says "update X" or "add Y" without specifying where and how.
 - **trigger_task**: which task ID creates the need, or `null` if general
 - **source**: `"planned"`
 
-Check `~/.dotfiles/claude-code-shared/skills/run-task-followups/templates.md` for existing templates that match. Use template steps when available. Fill in project-specific values.
+Check `~/.dotfiles/claude-code-shared/resources/hitl-steps-runbooks.md` for existing runbooks that match. Use runbook steps when available. Run the runbook's `Enrichment:` instructions to gather project-specific values from the codebase. Fill placeholders with concrete values.
 
 ### 4. Quiz the user
 

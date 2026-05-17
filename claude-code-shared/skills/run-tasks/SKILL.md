@@ -96,7 +96,8 @@ A task is not done until tests exist that verify the behavior described in the a
 5. **Discover follow-ups** after each successful task:
    - Review the diff produced by this task (`git diff` of changes).
    - Infer any manual follow-up actions: new env vars referenced but not provisioned, migration files created, external service configuration needed, manual testing required, etc.
-   - Check `~/.dotfiles/claude-code-shared/skills/run-task-followups/templates.md` for matching templates. Use template steps when available. Fill in project-specific values.
+   - Check `~/.dotfiles/claude-code-shared/resources/hitl-steps-runbooks.md` for matching runbooks. Use runbook steps when available. Run the runbook's `Enrichment:` instructions to gather specifics from the diff and codebase. Fill placeholders with concrete values.
+   - Each follow-up step must include the exact command, exact SQL, exact config key, or exact dashboard click path. Never write a step that says "update X" or "add Y" without specifying where and how.
    - Before appending, deduplicate: compare the inferred follow-up title against existing `follow_ups` in the JSON. Skip if a similar title already exists.
    - Append new follow-ups to the `follow_ups` array in the JSON with `"source": "discovered"` and `"trigger_task"` set to the current task ID.
    - Write the updated JSON immediately (same write as the status update).

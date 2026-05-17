@@ -27,6 +27,9 @@ source $ZSH/oh-my-zsh.sh
 
 # Default editor for git commits, crontab, etc.
 export EDITOR='nano'
+# Isolate history to the current terminal
+unset HISTFILE
+setopt INC_APPEND_HISTORY
 setopt NO_SHARE_HISTORY
 
 # Uncomment to set timestamp format (mm/dd/yyyy | dd.mm.yyyy | yyyy-mm-dd)

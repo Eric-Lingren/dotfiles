@@ -1,6 +1,6 @@
 ---
 name: run-task-followups
-description: Interactive walkthrough of manual follow-up actions from a tasks JSON file. Guides user through each follow-up step-by-step, offers help when stuck, and captures friction to improve templates. Use when user wants guided help completing manual follow-ups after run-tasks.
+description: Interactive walkthrough of manual follow-up actions from a tasks JSON file. Guides user through each follow-up step-by-step, enriches steps with codebase context, offers help when stuck, and captures friction to improve shared runbooks. Use when user wants guided help completing manual follow-ups after run-tasks.
 ---
 
 # Run Follow-ups
@@ -35,7 +35,17 @@ Starting from #1. Say "skip" to jump to the next item.
 
 For each follow-up in order:
 
-#### a. Present the steps
+#### a. Enrich steps before presenting
+
+Before showing the follow-up to the user, enrich its steps:
+
+1. Read `~/.dotfiles/claude-code-shared/resources/hitl-steps-runbooks.md`.
+2. Find a matching template by title keyword or category.
+   - **If matched:** run the template's `Enrichment:` instructions. Grep the codebase, read config files, check diffs. Replace vague steps with specific values found.
+   - **If no match:** run generic enrichment. Grep the codebase for keywords from the follow-up title. Surface relevant file paths, env var names, config keys, table/column names. Replace any step that says "update X" or "add Y" with the exact command, SQL, or dashboard path.
+3. Every step must pass the quality bar from hitl-steps-runbooks.md. If a step still says "update X" without specifying where and how, rewrite it with the best info available from the codebase.
+
+#### b. Present the enriched steps
 
 Print the title and numbered steps clearly:
 
@@ -46,54 +56,66 @@ Source: discovered (from T-0024)
 Steps:
   1. Go to Cloudflare dashboard > Workers & Pages > your-app > Settings > Variables
   2. Click 'Add variable'
-  3. Name: STRIPE_KEY, Value: from Stripe dashboard > API keys
+  3. Name: STRIPE_KEY, Value: from Stripe dashboard > API keys > Secret key (sk_live_...)
   4. Click 'Encrypt' then 'Save'
 
 Done? (yes / skip / help)
 ```
 
-#### b. Handle user response
+#### c. Handle user response
 
 - **"yes" or "done"**: Mark complete, move to next.
 - **"skip"**: Move to next without marking complete.
 - **"help"** or any question: Assist the user. Provide additional context, clarify steps, troubleshoot issues. Stay on this follow-up until resolved.
 
-#### c. Detect friction
+#### d. Detect friction
 
 If the user asks for help, reports confusion, or corrects a step, this is a friction signal. After resolving the issue, ask:
 
 ```
 The steps for this type of follow-up were unclear/incorrect.
-Want me to update the global templates so this is better next time? (yes / no)
+Want me to update the shared runbooks so this is better next time? (yes / no)
 ```
 
 If yes, proceed to step 4 (template update) for this item before continuing.
 
-### 4. Update templates on friction
+#### e. Offer template creation for unmatched follow-ups
 
-When the user confirms a template update:
+If no template matched this follow-up (step 3a used generic enrichment), offer after the user completes it:
+
+```
+No template exists for this type of follow-up.
+Want me to create one so future follow-ups like this are more specific? (yes / no)
+```
+
+If yes, proceed to step 4 to create a new runbook with an `Enrichment:` section.
+
+### 4. Update runbooks on friction
+
+When the user confirms a runbook update:
 
 1. Ask: "What was wrong, and what are the correct steps?"
 2. Collect the corrected steps from the user.
-3. Read `~/.dotfiles/claude-code-shared/skills/run-task-followups/templates.md`.
-4. Check if a template for this type already exists (match by title keyword or category).
-   - If exists: update the steps in place.
-   - If new: append a new template entry.
-5. Write the updated `templates.md`.
+3. Read `~/.dotfiles/claude-code-shared/resources/hitl-steps-runbooks.md`.
+4. Check if a runbook for this type already exists (match by title keyword or category).
+   - If exists: update the steps and enrichment in place.
+   - If new: append a new runbook entry with Steps, Notes (if needed), and Enrichment sections.
+5. Write the updated `hitl-steps-runbooks.md`.
 
-Template format in `templates.md`:
+Runbook format (see `~/.dotfiles/claude-code-shared/resources/hitl-steps-runbooks.md` for examples):
 
 ```markdown
-## Add env var to Cloudflare
+## Short title for the action
 
 Steps:
-1. Go to Cloudflare dashboard > Workers & Pages > {app-name} > Settings > Variables
-2. Click 'Add variable'
-3. Name: {VAR_NAME}, Value: {description of where to find the value}
-4. Click 'Encrypt' then 'Save'
+1. Exact command or dashboard path
+2. Next step with concrete values
+
+Enrichment:
+- What to grep/check in codebase to fill placeholders
 ```
 
-Use `{placeholder}` syntax for project-specific values. The agent fills these in when generating follow-ups.
+Use `{placeholder}` syntax for project-specific values. Include an `Enrichment:` section with lookup instructions.
 
 ### 5. End-of-walkthrough summary
 
@@ -108,7 +130,7 @@ Follow-up walkthrough complete.
  2    Run database migration             done
  3    Visual test: login flow            skipped
 
-Templates updated: 1 (Cloudflare env var steps corrected)
+Runbooks updated: 1 (Cloudflare env var steps corrected)
 ```
 
 ### 6. Offer to push and open a PR
