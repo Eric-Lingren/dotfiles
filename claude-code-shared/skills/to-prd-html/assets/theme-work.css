@@ -1,0 +1,23 @@
+/* Work theme — Standard Metrics design system (dark, professional, blue-anchored) */
+:root {
+  --bg: #0D1117;
+  --bg-surface: #161B22;
+  --bg-hover: #1C2430;
+  --text: #E6EDF3;
+  --text-muted: #8B949E;
+  --text-heading: #C9D1D9;
+  --border: #30363D;
+  --accent: #4A9EFF;
+  --accent-dim: #2D7CD6;
+  --risk-high: #F85149;
+  --risk-med: #F0C040;
+  --risk-low: #3FB950;
+  --pill-bg: #1A2740;
+  --tab-active: #4A9EFF;
+  --tab-inactive: #484F58;
+  --check-done: #3FB950;
+  --progress-bg: #21262D;
+  --progress-fill: #4A9EFF;
+  --font-body: 'Inter', 'Helvetica Neue', system-ui, sans-serif;
+  --font-heading: 'Inter', 'Helvetica Neue', system-ui, sans-serif;
+}
