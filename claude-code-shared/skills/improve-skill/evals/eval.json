@@ -1,0 +1,197 @@
+{
+  "skill": "improve-skill",
+  "scenarios": [
+    {
+      "name": "simple_small_skill",
+      "prompt": "Run /improve-skill on a skill called 'greet' that has a 20-line SKILL.md with 3 simple rules: greet the user by name, use formal tone, end with a question. evals/ directory does not exist. Simulate the full process including what you would output at each step.",
+      "context": "Minimal skill, first run, no prior evals. The skill directory exists at ~/.dotfiles/claude-code-shared/skills/greet/SKILL.md"
+    },
+    {
+      "name": "existing_evals_skip",
+      "prompt": "Run /improve-skill on a skill called 'summarize' that already has evals/eval.json with 4 assertions and 5 scenarios. evals/learnings.md has 2 entries from a previous run. evals/scores.json has 1 prior run with avg score 62. Simulate the full process including what you would output at each step.",
+      "context": "Second run, should skip eval scaffolding and go directly to Step 4. Has prior learnings and scores to incorporate."
+    },
+    {
+      "name": "reset_flag",
+      "prompt": "Run /improve-skill summarize --reset on a skill that has an existing evals/ directory with eval.json, learnings.md, and scores.json. Simulate the full process including what you would output at each step.",
+      "context": "Tests --reset flag handling. Should delete evals/ directory contents and re-scaffold from scratch."
+    },
+    {
+      "name": "complex_skill_many_rules",
+      "prompt": "Run /improve-skill on a skill called 'code-review' that has a 300-line SKILL.md with 15+ behavioral rules covering: severity classification (critical/major/minor/nit), file-by-file analysis, security scanning for OWASP top 10, performance checks, style enforcement against .editorconfig, PR description generation, and approval/reject decision logic. evals/ directory does not exist. Simulate the full process including what you would output at each step.",
+      "context": "Complex skill with many extractable rules. Tests thoroughness of assertion extraction and scenario variety across many skill aspects."
+    },
+    {
+      "name": "promotion_trigger",
+      "prompt": "Run /improve-skill on a skill called 'deploy-check' that has existing evals. scores.json shows the assertion 'rollback_plan' scored 25 in the previous run (iteration 1 of run 1). During this run's iteration 1, the judges score 'rollback_plan' at 0 across all scenarios. This should trigger a promotion to SKILL.md. Simulate the full process including how you detect the consecutive failure and what edit you make to SKILL.md.",
+      "context": "Tests promotion logic. The 2-consecutive-iteration failure condition spans across runs (previous run's last iteration + current run's iteration 1)."
+    }
+  ],
+  "assertions": [
+    {
+      "name": "argument_parsing",
+      "description": "The output correctly parses the skill name from arguments, handles the --reset flag (deleting evals/ when present), and stops with a message if the target skill is not found.",
+      "rubric": {
+        "0": "Ignores args entirely, uses hardcoded skill name, no --reset handling",
+        "25": "Parses skill name but ignores --reset, or crashes on missing args without helpful message",
+        "50": "Parses both but doesn't delete evals/ on --reset, or doesn't stop when skill not found",
+        "75": "Correct parsing with one minor edge case missed (e.g., extra whitespace in args not trimmed)",
+        "100": "Parses skill name and --reset correctly, deletes evals/ on reset, stops with clear message if skill not found"
+      }
+    },
+    {
+      "name": "builtin_assertions_included",
+      "description": "The eval.json output always includes the 3 built-in consistency assertions (number_consistency, no_contradictions, plan_cohesion) with their specified rubrics.",
+      "rubric": {
+        "0": "None of the 3 built-in assertions present in the generated eval.json",
+        "25": "Only 1 of 3 built-in assertions present",
+        "50": "2 of 3 present, or all 3 present but with altered names/descriptions that deviate from the spec",
+        "75": "All 3 present with correct names, minor rubric wording differences from spec",
+        "100": "All 3 built-in assertions present with correct names, descriptions, and rubric tiers matching the spec"
+      }
+    },
+    {
+      "name": "rubric_quality",
+      "description": "Each assertion has 5 tiers (0/25/50/75/100) with specific, observable anchors. No vague language like 'mostly', 'partially', 'somewhat'.",
+      "rubric": {
+        "0": "Rubrics missing or use only vague terms like 'bad/okay/good/great/perfect' with no observable criteria",
+        "25": "Rubrics exist but 3+ tiers across assertions use vague language ('mostly correct', 'partially done') without observable anchors",
+        "50": "Rubrics have some specificity but 1-2 tiers lack observable anchors or describe internal states rather than output features",
+        "75": "All tiers have observable anchors, one tier slightly vague but still usable for scoring",
+        "100": "Every tier across all assertions describes concrete, observable output behavior with zero vague language"
+      }
+    },
+    {
+      "name": "scenario_variety",
+      "description": "Generates exactly 5 scenarios varying from simple to complex, covering different aspects of the target skill's behavior.",
+      "rubric": {
+        "0": "Fewer than 3 scenarios generated, or all scenarios test the same skill behavior",
+        "25": "3-4 scenarios generated, or 5 scenarios but minimal variety (all same complexity level or same aspect)",
+        "50": "5 scenarios but clustered in 1-2 complexity levels, or missing coverage of a major skill aspect",
+        "75": "5 scenarios with good complexity spread, one significant skill aspect left uncovered",
+        "100": "Exactly 5 scenarios spanning simple to complex, each targeting a distinct skill behavior or aspect"
+      }
+    },
+    {
+      "name": "user_grilling",
+      "description": "Presents auto-generated assertions and scenarios to the user and asks for feedback before writing eval.json. Does not skip this interaction step.",
+      "rubric": {
+        "0": "Writes eval.json without showing user anything or asking for feedback",
+        "25": "Shows assertions OR scenarios but not both, or asks a generic 'looks good?' without the two specific required questions",
+        "50": "Shows both but asks only one of the two required questions, or presents them in a format hard to review",
+        "75": "Shows both and asks both questions, minor formatting issue making review harder",
+        "100": "Clearly presents all assertions with rubrics and all scenarios, asks both required questions about gaps and coverage, waits for feedback before writing"
+      }
+    },
+    {
+      "name": "model_selection",
+      "description": "Uses model 'haiku' for all judge subagents and model 'sonnet' for skill execution subagents. Never swaps the two.",
+      "rubric": {
+        "0": "Uses wrong models for both roles or uses a single model for everything",
+        "25": "Uses correct model for one role but wrong for the other",
+        "50": "Correct models mentioned in text but inconsistent in actual agent spawning parameters",
+        "75": "All agents use correct models with one minor inconsistency (e.g., consistency auditor model unspecified)",
+        "100": "Every judge agent uses haiku, every skill execution agent uses sonnet, consistency auditor uses sonnet as specified"
+      }
+    },
+    {
+      "name": "score_aggregation",
+      "description": "Averages 3 judge scores per cell, snaps to nearest tier using specified thresholds (0-12=0, 13-37=25, 38-62=50, 63-87=75, 88-100=100), and collects failure reasons.",
+      "rubric": {
+        "0": "No averaging performed, uses single judge score, or applies wrong snap thresholds entirely",
+        "25": "Averages scores but uses wrong snap thresholds or simple rounding instead of tier snapping",
+        "50": "Correct averaging and snapping but fails to collect failure reasons from judges scoring 0 or 25",
+        "75": "Correct aggregation with one minor error in threshold boundary handling (e.g., 12 snaps to 25 instead of 0)",
+        "100": "Averages 3 scores, snaps using exact thresholds from spec, collects all failure reasons from judges scoring 0 or 25"
+      }
+    },
+    {
+      "name": "exit_conditions",
+      "description": "Stops the improvement loop at the correct conditions: avg>=85 (strong_score), plateau at iter>=3 with delta<5 (plateau), or max 3 iterations (max_iterations).",
+      "rubric": {
+        "0": "No exit condition checking, runs a fixed number of iterations ignoring scores",
+        "25": "Checks one exit condition but misses the other two",
+        "50": "Checks two of three conditions, or checks all three but with wrong thresholds (e.g., >=90 instead of >=85)",
+        "75": "All three conditions checked with correct thresholds, one minor logic error (e.g., wrong exit_reason string)",
+        "100": "All three exit conditions implemented with correct thresholds and correct exit_reason strings (strong_score, plateau, max_iterations)"
+      }
+    },
+    {
+      "name": "promotion_logic",
+      "description": "Promotes fixes to SKILL.md when an assertion scores 25 or below for 2 consecutive iterations. Makes surgical SKILL.md edit and removes the promoted learning from learnings.md.",
+      "rubric": {
+        "0": "No promotion mechanism exists in the output",
+        "25": "Promotes but ignores the '2 consecutive iterations' requirement, promoting after a single failure",
+        "50": "Correct trigger condition but doesn't remove promoted learning from learnings.md, or rewrites SKILL.md too aggressively instead of surgical edit",
+        "75": "Correct trigger, removes learning, edits SKILL.md surgically, one minor issue (e.g., doesn't check cross-run history in scores.json)",
+        "100": "Checks scores.json history for 2-consecutive-iteration failures at 25 or below, makes minimal surgical SKILL.md edit, removes promoted learning from learnings.md"
+      }
+    },
+    {
+      "name": "report_format",
+      "description": "Final report includes all 8 required sections: run summary, score progression, final matrix, failure details, low scores, structural analysis, changes made, recommendation.",
+      "rubric": {
+        "0": "No report generated, or only raw data dumped without structure",
+        "25": "Report has 1-3 of the 8 required sections",
+        "50": "Report has 4-5 sections, or all sections present but matrix table malformed or missing data",
+        "75": "Report has 6-7 sections with correct formatting, one section missing or incomplete",
+        "100": "All 8 sections present with correct formatting, matrix table shows tier scores, failure/low details include actionable suggestions"
+      }
+    },
+    {
+      "name": "structural_analysis",
+      "description": "After the eval loop, checks 5 structural items: token weight (<=5000), inline knowledge extraction (>200 word blocks), example extraction (>10 line examples), missing resource files (3+ references), and script candidates.",
+      "rubric": {
+        "0": "No structural analysis performed after the eval loop",
+        "25": "Checks 1-2 of 5 structural items",
+        "50": "Checks 3-4 items, or checks all 5 but with wrong thresholds (e.g., wrong token limit or word count)",
+        "75": "All 5 items checked with correct thresholds, one item's pass/fail logic slightly off",
+        "100": "All 5 items checked with correct thresholds, binary pass/fail for each, structural score calculated as (passed/5)*100"
+      }
+    },
+    {
+      "name": "autonomous_iteration",
+      "description": "Runs all improvement loop iterations without pausing for user approval between them. Only pauses during Step 3 eval scaffolding for user input.",
+      "rubric": {
+        "0": "Pauses after every step or iteration for user approval",
+        "25": "Pauses between iterations asking 'should I continue?' or similar",
+        "50": "Runs autonomously but pauses mid-iteration for unnecessary confirmation",
+        "75": "Fully autonomous iterations with one unnecessary user prompt within the loop",
+        "100": "All iterations run autonomously with zero user prompts inside the loop. Only Step 3 eval scaffolding involves user interaction"
+      }
+    },
+    {
+      "name": "number_consistency",
+      "description": "All counts, quantities, list lengths, and numeric references are internally consistent. If the output says '5 items' then exactly 5 items appear. Step numbers are sequential with no gaps or duplicates.",
+      "rubric": {
+        "0": "Multiple numeric contradictions: stated counts don't match actual counts, step numbers skip or repeat, quantities referenced earlier differ from later usage",
+        "25": "One clear numeric mismatch: a stated count disagrees with actual items, or a step number is wrong",
+        "50": "Numbers are technically correct but ambiguous: vague quantities like 'several' alongside exact counts, or implicit counts that require reader inference to verify",
+        "75": "All numbers consistent with at most one trivially unclear reference that does not mislead",
+        "100": "Every count, step number, list length, and numeric reference is exact and verifiable against the output content"
+      }
+    },
+    {
+      "name": "no_contradictions",
+      "description": "No statement in the output contradicts another statement in the same output. Instructions do not conflict. Constraints stated in one section are not violated in another.",
+      "rubric": {
+        "0": "Direct contradictions: output says X in one place and not-X in another, or gives conflicting instructions for the same action",
+        "25": "One clear contradiction or two statements that are difficult to reconcile without assuming one is wrong",
+        "50": "No direct contradictions but some tension between sections that could confuse a reader about intended behavior",
+        "75": "Fully consistent with at most one minor ambiguity that does not create a real conflict",
+        "100": "Zero contradictions. Every statement is compatible with every other statement. Constraints are honored throughout"
+      }
+    },
+    {
+      "name": "plan_cohesion",
+      "description": "The output presents a cohesive path from start to finish. Steps build on each other logically. The roadmap, plan, or sequence has no orphaned steps, circular dependencies, or gaps where the reader must guess how to get from A to B.",
+      "rubric": {
+        "0": "Disjointed output: steps reference things not yet introduced, sections appear unrelated, or the overall flow has no clear direction",
+        "25": "General direction exists but significant gaps: a step depends on something never mentioned, or sections are loosely connected with missing transitions",
+        "50": "Flow is followable but has one structural gap or an orphaned section that does not connect to the rest",
+        "75": "Cohesive flow with clear progression. At most one minor ordering issue that does not block understanding",
+        "100": "Fully cohesive: each section builds on prior context, dependencies are introduced before use, and the output reads as a unified whole"
+      }
+    }
+  ]
+}
