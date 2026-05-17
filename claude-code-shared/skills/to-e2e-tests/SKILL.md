@@ -120,7 +120,7 @@ Once workflows are approved, stress-test the test plan. Apply the same rigor as 
 
 **Cross-reference diff.** If the diff contains error handling, branching logic, or state transitions not covered by a test, flag it. "The diff shows a retry loop in the API handler. No test covers the retry path."
 
-**Update CONTEXT.md inline** if new terms crystallize during the grill. Use the format in `~/.dotfiles/claude-code-shared/skills/grill-with-docs/CONTEXT-FORMAT.md`.
+**Update CONTEXT.md inline** if new terms crystallize during the grill. Use the format in `~/.dotfiles/claude-code-shared/skills/grill-with-docs/resources/CONTEXT-FORMAT.md`.
 
 Ask questions one at a time. Provide your recommended answer for each. Iterate until the test plan is solid.
 

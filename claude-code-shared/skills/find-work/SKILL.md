@@ -12,7 +12,7 @@ List all `spike/*`, `feat/*`, `fix/*`, and `staged/*` branches in the current re
 1. Run the `find-work.sh` script from this skill's directory:
 
    ```bash
-   bash "$(dirname "$0")/find-work.sh"
+   bash "$(dirname "$0")/scripts/find-work.sh"
    ```
 
    The script outputs a table with branch name, last commit date, commit message, and whether a `docs/prd/` directory exists on the branch.

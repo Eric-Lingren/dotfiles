@@ -13,7 +13,7 @@ Break a PRD into independently-grabbable tasks using vertical slices (tracer bul
 
 Always ask the user to provide the PRD file path. List the available files in `docs/prd/` (both `.md` and `.html`) so they can choose, but require an explicit selection. Never auto-pick.
 
-**HTML PRDs:** If the selected file is `.html`, run `~/.dotfiles/claude-code-shared/skills/to-tasks/extract-prd-json.sh <path>` to extract the embedded JSON. Use that output as the primary source for user stories, implementation decisions, and testing decisions. Do NOT use inline python or other ad-hoc extraction. The script handles both `.md` and `.html` files.
+**HTML PRDs:** If the selected file is `.html`, run `~/.dotfiles/claude-code-shared/skills/to-tasks/scripts/extract-prd-json.sh <path>` to extract the embedded JSON. Use that output as the primary source for user stories, implementation decisions, and testing decisions. Do NOT use inline python or other ad-hoc extraction. The script handles both `.md` and `.html` files.
 
 If `docs/prd/` doesn't exist or is empty on the current branch:
 - Run `git branch --list "spike/*" "feat/*" "fix/*"` to check for work branches.

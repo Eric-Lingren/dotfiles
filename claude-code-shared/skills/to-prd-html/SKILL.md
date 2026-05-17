@@ -24,12 +24,12 @@ This skill takes the current conversation context and codebase understanding and
    ```
 
    This determines the color theme and branding applied to the HTML output:
-   - **Work**: use `theme-work.css` from this skill's directory. Light, professional, blue-anchored palette. Include the company logo SVG at the top of the page (see `logo-work.svg` in this skill's directory).
-   - **Personal**: use `theme-personal.css` from this skill's directory. Dark, warm, ochre/earth-tone palette. No logo.
+   - **Work**: use `assets/theme-work.css` from this skill's directory. Light, professional, blue-anchored palette. Include the company logo SVG at the top of the page (see `assets/logo-work.svg` in this skill's directory).
+   - **Personal**: use `assets/theme-personal.css` from this skill's directory. Dark, warm, ochre/earth-tone palette. No logo.
 
    Read the chosen theme file and replace the `:root` CSS custom properties block in the template with the values from the theme file. Also update the `font-family` declarations on `body` and heading elements to use `var(--font-body)` and `var(--font-heading)` respectively.
 
-   For **work** PRDs, insert the logo SVG (from `logo-work.svg`) right after the opening `<body>` tag, wrapped in a `<div class="logo" style="margin-bottom: 1.5rem;">` container. Set the SVG height to `36px`.
+   For **work** PRDs, insert the logo SVG (from `assets/logo-work.svg`) right after the opening `<body>` tag, wrapped in a `<div class="logo" style="margin-bottom: 1.5rem;">` container. Set the SVG height to `36px`.
 
 4. **Derive a slug** from the feature name, lowercase, kebab-case, max ~40 chars (e.g. `user-auth-flow`).
 
@@ -60,9 +60,9 @@ This skill takes the current conversation context and codebase understanding and
 
    Use whatever path the user confirms (create it if it doesn't exist). Do not skip this step.
 
-7. **Determine the file prefix** by running the `next-prefix.sh` script in this skill's directory: `~/.dotfiles/claude-code-shared/skills/to-prd-html/next-prefix.sh`. It returns a `YYYYMMDD-HHMM` timestamp prefix.
+7. **Determine the file prefix** by running the `next-prefix.sh` script in this skill's directory: `~/.dotfiles/claude-code-shared/skills/to-prd-html/scripts/next-prefix.sh`. It returns a `YYYYMMDD-HHMM` timestamp prefix.
 
-8. **Write the HTML PRD** to `{confirmed-dir}/{prefix}-{slug}.html`. Never auto-commit. Use the template from `~/.dotfiles/claude-code-shared/skills/to-prd-html/template.html` for the HTML structure.
+8. **Write the HTML PRD** to `{confirmed-dir}/{prefix}-{slug}.html`. Never auto-commit. Use the template from `~/.dotfiles/claude-code-shared/skills/to-prd-html/resources/template.html` for the HTML structure.
 
 9. Tell the user the path and suggest running `/to-tasks` next.
 
@@ -70,7 +70,7 @@ This skill takes the current conversation context and codebase understanding and
 
 ### Template usage
 
-The template file (`template.html`) provides the outer shell: CSS, JavaScript for interactivity, and layout skeleton. You fill in the content sections. Do NOT modify the shell CSS/JS unless the content requires it.
+The template file (`resources/template.html`) provides the outer shell: CSS, JavaScript for interactivity, and layout skeleton. You fill in the content sections. Do NOT modify the shell CSS/JS unless the content requires it.
 
 ### Embedded JSON for machine consumption
 

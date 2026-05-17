@@ -122,13 +122,13 @@ Capture the full text output from each subagent.
 
 #### 4b: Score with multi-judge panel
 
-For each (scenario, assertion) pair, spawn **3** Agents (subagent_type: "general-purpose", model: "haiku"). Use the judge prompt template from `examples/judge-prompt.md`.
+For each (scenario, assertion) pair, spawn **3** Agents (subagent_type: "general-purpose", model: "haiku"). Use the judge prompt template from `resources/judge-prompt.md`.
 
 **Aggregation:** Average the 3 judge scores, then snap to the nearest tier (0/25/50/75/100). Snap thresholds: 0-12 = 0, 13-37 = 25, 38-62 = 50, 63-87 = 75, 88-100 = 100. Collect any "reason" strings from judges that scored 0 or 25.
 
 #### 4b-2: Consistency cross-check
 
-After all per-assertion judges complete, spawn one Agent (subagent_type: "general-purpose", model: "sonnet") per scenario output. Use the consistency auditor prompt from `examples/consistency-auditor-prompt.md`.
+After all per-assertion judges complete, spawn one Agent (subagent_type: "general-purpose", model: "sonnet") per scenario output. Use the consistency auditor prompt from `resources/consistency-auditor-prompt.md`.
 
 #### 4c: Generate report
 
@@ -178,7 +178,7 @@ Exit conditions are strict. Apply them in order. Never override based on judgmen
 
 After the eval loop completes, analyze the target skill's directory structure against this checklist. Each item is binary pass/fail.
 
-### Checklist items (exactly these 5)
+### Checklist items (exactly these 7)
 
 **1. Token weight:** Count tokens in SKILL.md + all referenced files. Pass if total <= 5000 tokens. Fail if over. Report the count.
 
@@ -190,13 +190,32 @@ After the eval loop completes, analyze the target skill's directory structure ag
 
 **5. Script candidates:** Identify deterministic steps (file scaffolding, directory creation, JSON validation, file listing/counting) that could be shell scripts. Pass if none. Fail if found.
 
+**6. Misplaced files:** Read the directory conventions from `~/.dotfiles/claude-code-shared/resources/skill-directory-conventions.md`. Scan all non-SKILL.md files at the skill root. Classify each by file type and check if it belongs in a canonical subdirectory (`scripts/`, `resources/`, or `assets/`). Pass if all files are in their canonical locations. Fail if any file is misplaced. List each misplaced file with its current location and target directory.
+
+**7. Stale references:** After identifying misplaced files, grep all of `~/.dotfiles/claude-code-shared/` for references to the old file paths. Pass if no references would break after a move. Fail if references exist. List each reference with file path and line number.
+
+### Auto-fix for items 6 and 7
+
+If either item 6 or 7 fails, present the user with a single confirmation prompt listing all proposed changes:
+
+1. Files to move (old path -> new path)
+2. References to update (file:line, old ref -> new ref)
+
+On confirmation:
+- Create any missing subdirectories
+- Move each file to its canonical location
+- Update every reference found by the grep across all of `~/.dotfiles/claude-code-shared/`
+- Re-verify no broken references remain after the moves
+
+Do not proceed without user confirmation. Do not move files one at a time. Batch all moves and reference updates into a single operation.
+
 ### Structural score
 
-Score = (items passed / 5) * 100. This score is independent of the behavioral score.
+Score = (items passed / 7) * 100. This score is independent of the behavioral score.
 
 ## Step 6: Write scores.json
 
-Append the run result to `<runs-dir>/scores.json`. See `examples/scores-json-schema.md` for the expected format.
+Append the run result to `<runs-dir>/scores.json`. See `resources/scores-json-schema.md` for the expected format.
 
 ## Step 7: Final report
 

@@ -43,8 +43,8 @@ This skill takes the current conversation context and codebase understanding and
 
    Use whatever path the user confirms (create it if it doesn't exist). Do not skip this step.
 
-6. **Determine the file prefix** by running the `next-prefix.sh` script in this skill's directory: `~/.dotfiles/claude-code-shared/skills/to-prd/next-prefix.sh`. It returns a `YYYYMMDD-HHMM` timestamp prefix.
+6. **Determine the file prefix** by running the `next-prefix.sh` script in this skill's directory: `~/.dotfiles/claude-code-shared/skills/to-prd-md/scripts/next-prefix.sh`. It returns a `YYYYMMDD-HHMM` timestamp prefix.
 
-7. **Write the PRD** to `{confirmed-dir}/{prefix}-{slug}.md` (e.g. `20260511-1423-user-auth-flow.md`). Never auto-commit. Use the template from `~/.dotfiles/claude-code-shared/skills/to-prd/template.md` for the PRD structure.
+7. **Write the PRD** to `{confirmed-dir}/{prefix}-{slug}.md` (e.g. `20260511-1423-user-auth-flow.md`). Never auto-commit. Use the template from `~/.dotfiles/claude-code-shared/skills/to-prd-md/resources/template.md` for the PRD structure.
 
 8. Tell the user the path and suggest running `/to-tasks` next.
