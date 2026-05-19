@@ -134,14 +134,12 @@ After the grill, build the task list:
 - Is type `AFK`
 - Is `blocked_by` the fixtures task only (or nothing if no fixtures task)
 - Has no dependencies on other test tasks
-- Includes `test_metadata` with workflow, test type, pages touched, and setup fixtures
 - Has acceptance criteria describing expected test behavior
+- Embeds page objects, fixtures, and workflow context directly in `description` so `/tdd` receives full context (e.g. "Use InvoiceFormPage and InvoiceDetailPage page objects. Setup fixtures: authenticated-user, test-organization. Workflow: invoice creation happy path.")
 
 ### 7. Determine the next task ID
 
-Scan **all existing JSON files** in `docs/tasks/` and find the highest numeric suffix across every task `id` field. The first task in the new file gets that number + 1. This ensures globally unique IDs.
-
-If `docs/tasks/` is empty or doesn't exist, start at `T-0001`.
+Run `~/.dotfiles/claude-code-shared/scripts/next-task-id.sh docs/tasks/` to get the next available ID.
 
 ### 8. Confirm output directory
 
@@ -156,27 +154,23 @@ Use whatever path the user confirms. Create it if it doesn't exist.
 
 ### 9. Confirm branching strategy
 
-**MANDATORY.** Before writing the JSON file, ask the user which branch the e2e tasks should be created on. Use `AskUserQuestion` with these options:
-
-1. **Current branch** (`git rev-parse --abbrev-ref HEAD`). Show the actual branch name.
-2. **New branch**. Ask the user for the branch name.
-3. **Per-task branches**. Each task gets its own branch derived from task ID and title.
+**MANDATORY.** Follow `~/.dotfiles/claude-code-shared/resources/branching-strategy.md` for how to present the choice and record the result in the `branching` field.
 
 Also confirm: should the JSON file itself be saved on the current branch, or on the task branch? Default to current branch.
-
-Set `branching.strategy` to `"single"` for options 1-2, or `"per-task"` for option 3. Set `branching.branch` to the confirmed branch name (or `null` for per-task).
 
 ### 10. Write the JSON file
 
 Derive the slug from the PRD filename if available (strip timestamp prefix and extension). If no PRD, derive from the branch name.
 
-Generate filename: `YYYYMMDD-HHMM-e2e-{slug}.json`.
+Run `~/.dotfiles/claude-code-shared/scripts/task-filename.sh e2e-<slug>` to generate the filename.
 
 If a file for this slug already exists (any prefix), ask whether to overwrite or merge (same logic as `/to-tasks`).
 
+See `~/.dotfiles/claude-code-shared/resources/task-schema.md` for the canonical schema and field rules. The structure below is illustrative:
+
 <task-json-schema>
 {
-  "prd": "docs/prd/YYYYMMDD-HHMM-{slug}.md (or .html, or null if no PRD)",
+  "prd": "docs/prd/YYYYMMDD-HHMM-{slug}.md (or null if no PRD)",
   "generated_at": "<ISO 8601 timestamp>",
   "source_branch": "<branch name these tests were generated from>",
   "branching": {
@@ -188,19 +182,13 @@ If a file for this slug already exists (any prefix), ask whether to overwrite or
       "id": "T-0030",
       "title": "Create page objects and fixtures for invoice flow",
       "type": "AFK",
-      "description": "Set up reusable Playwright page objects and fixtures for the invoice creation and export workflows. Create page objects for LoginPage, DashboardPage, InvoiceFormPage, InvoiceDetailPage. Create fixtures for authenticated user state and test organization with sample data.",
+      "description": "Set up reusable Playwright page objects and fixtures for the invoice creation and export workflows. Pages: LoginPage, DashboardPage, InvoiceFormPage, InvoiceDetailPage. Fixtures: authenticated-user (cached browser state), test-organization (seeded test data).",
       "acceptance_criteria": [
         "Page object classes exist for each page touched by test scenarios",
         "Auth fixture creates and caches authenticated browser state",
         "Test data fixture seeds required entities",
         "A smoke test using the fixtures passes"
       ],
-      "test_metadata": {
-        "workflow": "shared",
-        "test_type": "fixtures",
-        "pages_touched": ["login", "dashboard", "invoice-form", "invoice-detail"],
-        "setup_fixtures": []
-      },
       "blocked_by": [],
       "status": "not_started",
       "branch": null,
@@ -210,19 +198,13 @@ If a file for this slug already exists (any prefix), ask whether to overwrite or
       "id": "T-0031",
       "title": "Test: create invoice with valid data",
       "type": "AFK",
-      "description": "E2E test covering the happy path of invoice creation. User navigates to invoice form, fills all required fields, submits, and sees the created invoice on the detail page.",
+      "description": "E2E test for invoice creation happy path. Workflow: user navigates to invoice form, fills all required fields, submits, and sees the created invoice on the detail page. Use InvoiceFormPage and InvoiceDetailPage page objects. Setup fixtures: authenticated-user, test-organization.",
       "acceptance_criteria": [
         "Test navigates to /invoices/new",
         "Test fills all required fields using page object methods",
         "Test submits the form and asserts redirect to invoice detail",
         "Test verifies invoice data appears correctly on detail page"
       ],
-      "test_metadata": {
-        "workflow": "invoice creation",
-        "test_type": "e2e",
-        "pages_touched": ["invoice-form", "invoice-detail"],
-        "setup_fixtures": ["authenticated-user", "test-organization"]
-      },
       "blocked_by": ["T-0030"],
       "status": "not_started",
       "branch": null,
@@ -233,19 +215,13 @@ If a file for this slug already exists (any prefix), ask whether to overwrite or
 }
 </task-json-schema>
 
-**Field rules (same as `/to-tasks` plus extensions):**
-- `id`: globally sequential across all task files, zero-padded to 4 digits
-- `type`: always `"AFK"` for e2e test tasks
-- `status`: `"not_started"` | `"in_progress"` | `"done"` | `"merged"` | `"blocked"`
-- `blocked_by`: fixtures task ID only, or empty for the fixtures task itself
-- `branch`: `null` (single branch strategy, uses `branching.branch`)
-- `pr`: `null` until merged
-- `source_branch`: the branch these tests analyze (for traceability)
-- `branching.strategy`: `"single"` or `"per-task"` (user-confirmed in step 9)
-- `branching.branch`: user-confirmed branch name, or `null` for per-task strategy
-- `test_metadata.workflow`: which user-facing workflow this test covers, or `"shared"` for fixtures
-- `test_metadata.test_type`: `"fixtures"`, `"e2e"`, or `"smoke"`
-- `test_metadata.pages_touched`: array of page names matching page object names
-- `test_metadata.setup_fixtures`: array of fixture names this test requires
+Note: `source_branch` is an e2e-specific top-level field recording which branch the tests were generated from. All other fields follow the canonical schema.
 
-Tell the user the output path and ID range once written. Remind them to run `/run-tasks` on the file to generate the actual tests.
+Tell the user the output path and ID range once written.
+
+Output the handoff block:
+
+```
+Next steps:
+  /run-tasks docs/tasks/<filename>   — generate the actual e2e tests with TDD
+```

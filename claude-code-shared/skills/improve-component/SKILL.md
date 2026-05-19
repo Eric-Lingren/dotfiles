@@ -115,11 +115,11 @@ Check whether a colocated test file exists for the target component.
 
 **Check for:** `ComponentName.test.tsx`, `ComponentName.spec.tsx`, or a `__tests__/` directory containing a matching test file.
 
-**If no test file exists:** Flag it. A component without tests is a refactoring hazard. Note the gap and recommend `/tdd` to backfill.
+**If no test file exists:** Flag it as a structural finding. A component without tests is a refactoring hazard.
 
 **If a test file exists:** Glance at it. Flag if it only tests trivial rendering ("renders without crashing") and lacks coverage of meaningful behavior, props, or edge cases.
 
-**This principle does not write tests.** It surfaces the gap. `/tdd` handles the fix.
+**Scope:** This principle surfaces the gap. Tests are written in the execution step (step 7).
 
 ### 10. File Size as a Signal
 
@@ -127,6 +127,36 @@ Not a hard limit, but files over ~200 lines usually contain extractable pieces. 
 
 **Split when:** Distinct responsibilities exist within the file. Independent testability would improve. A section is reusable elsewhere.
 **Don't split when:** The pieces only make sense together. Splitting just creates a file-hopping burden. The file is long but linear and readable.
+
+### 11. TypeScript Hygiene
+
+Type safety is structural, not cosmetic. Loose types mask bugs and break refactor confidence.
+
+**Signals of violation:**
+- `any` casts that are not explicitly justified
+- Missing generics where type parameters would narrow behavior
+- Overly broad union types (`string | object | undefined`) where a discriminated union would work
+- Props typed as `object` or `Record<string, any>` instead of a named interface
+- Return types omitted on exported functions and hooks
+- Type assertions (`as Foo`) instead of narrowing
+
+### 12. Accessibility
+
+React components must be usable by keyboard and screen reader without extra work.
+
+**Check:**
+- Interactive elements use semantic HTML (`<button>`, `<a>`, `<input>`) not `<div onClick>`
+- Images have `alt` text (empty string `alt=""` for decorative images is correct)
+- Form inputs have associated `<label>` elements or `aria-label`
+- Modals and dialogs trap focus and restore it on close
+- Dynamic content changes are announced via `aria-live` where appropriate
+- Color is not the only means of conveying information
+
+**Signals of violation:**
+- `onClick` on a `<div>` or `<span>` with no `role` or `tabIndex`
+- `<img>` without `alt`
+- `<input>` without a label association
+- Focus lost after a modal closes
 
 ## Process
 
@@ -140,11 +170,13 @@ If the user points at a directory, list the files in it and ask which to focus o
 
 Read the target file(s) fully. Also read:
 - Direct imports (one level deep) to understand dependencies
+- Sibling files (`ComponentName.css`, `ComponentName.types.ts`, `ComponentName.utils.ts`)
 - The test file if one exists
-- CONTEXT.md if present (for domain vocabulary)
+- `CONTEXT.md` if present (for domain vocabulary and bounded context boundaries)
+- Any ADRs in `docs/adr/` that touch this component's area (architecture decisions explain intentional trade-offs that look like violations)
 - The project's design system directory (scan for available components)
 
-Understand what the component does before evaluating how it's structured.
+Understand what the component does before evaluating how it's structured. An ADR may explain why a principle appears violated.
 
 ### 3. Identify the design system
 
@@ -174,6 +206,8 @@ Group findings by severity:
 - Business logic mixed with presentation
 - Missing design system usage where DS components exist
 - Components doing multiple unrelated things
+- TypeScript `any` casts or missing generics on public interfaces
+- Accessibility violations on interactive elements
 
 **Hygiene** (affects readability and maintainability):
 - Naming issues
@@ -185,42 +219,56 @@ Group findings by severity:
 Format each finding as:
 
 ```
-<file>:L<line> — <principle>: <problem>. <fix>.
+<file>:L<line> - <principle>: <problem>. <fix>.
 ```
 
 End with a prioritized recommendation: "Start with X because it unlocks Y."
 
-### 6. Clean bill of health path
-
-**MANDATORY.** When analysis finds no structural or hygiene violations worth flagging, you MUST still check for test coverage before ending. This step is not optional.
-
-After presenting the clean summary table:
+**Clean bill of health path:** If analysis finds no structural or hygiene violations worth flagging, check for test coverage before ending.
 
 1. Look for a colocated test file (`ComponentName.test.tsx`, `ComponentName.spec.tsx`, or `__tests__/ComponentName.*`).
-2. If no test file exists or the test file only has trivial "renders without crashing" coverage:
-   - You MUST use the `AskUserQuestion` tool to prompt the user with a Yes/No question: "Component looks good. No test coverage found. Want me to run `/tdd` to backfill tests?"
-   - If user picks Yes: invoke the `/tdd` skill with the target file path.
-   - If user picks No: end.
-3. If adequate test coverage already exists: note it in the summary and end.
+2. If no test file exists or the file only has trivial "renders without crashing" coverage: use `AskUserQuestion` to ask: "Component looks good. No meaningful test coverage found. Want me to generate a task to backfill tests via `/run-tasks`?" If yes, go to step 7 with one task: backfill characterization tests. If no, end.
+3. If adequate test coverage exists: note it and end.
 
-**Do NOT skip this step. Do NOT just mention `/tdd` in text. You MUST use `AskUserQuestion` to prompt.**
+### 6. Discuss and refine
 
-### 7. Discuss and refine
+Don't start refactoring immediately. Ask the user which findings they want to act on. Some may be intentional trade-offs. An ADR you found may already justify a finding.
 
-Don't start refactoring immediately. Ask the user which findings they want to act on. Some may be intentional trade-offs.
+Present findings as a numbered list and ask: "Which of these do you want to act on?"
 
-### 8. Execute via TDD
+### 7. Write tasks file
 
-Every approved change goes through `/tdd`. Invoke it with the approved findings and the target file path. TDD handles characterization tests, refactoring, and new behavior on its own.
+After the user approves changes, write a tasks file before touching any code.
 
-Seed `/tdd` with:
+**Get the next task ID:** Run `~/.dotfiles/claude-code-shared/scripts/next-task-id.sh docs/tasks/`
+
+**Generate the filename:** Run `~/.dotfiles/claude-code-shared/scripts/task-filename.sh improve-<component-slug>`
+
+Write one task per approved finding (or group tightly coupled findings into one task with compound acceptance criteria). Each task must be self-contained. Embed the specific file path, line numbers, principle violated, and exact fix approach in the description.
+
+Follow the canonical schema in `~/.dotfiles/claude-code-shared/resources/task-schema.md`. Do not define the JSON structure inline.
+
+Key field values for improve-component tasks:
+- `prd`: `null` (no PRD for component improvement runs)
+- `branching.strategy`: `"single"`
+- `branching.branch`: `"refactor/<component-slug>-improvements"`
+- `description`: `"Principle violated: <name>. Location: <file:line>. Problem: <what is wrong and why it matters>. Fix: <concrete steps>."`
+- `acceptance_criteria[0]`: always a test criterion (`"Characterization test exists at <path> covering the behavior being changed before any refactor"` for refactors, or `"Failing test exists at <path>"` for new behavior)
+
+After writing the file, output:
 
 ```
-**Target:** {file path}
-**Approved changes:**
-{numbered list of approved findings with specific fixes from step 6}
+Tasks written: docs/tasks/<filename>
+Tasks: <T-XXXX list>
 ```
 
-TDD will check for existing test coverage, write characterization tests if needed, then refactor while keeping tests green. Let it drive the process.
+### 8. Hand off to run-tasks
 
-Do not make changes the user didn't approve. Do not bundle "bonus" cleanups.
+Tell the user:
+
+```
+Next steps:
+  /run-tasks docs/tasks/<filename>   -- execute approved changes with TDD and status tracking
+```
+
+Do not invoke `/tdd` directly. Do not make any code changes. All execution happens in `/run-tasks`.

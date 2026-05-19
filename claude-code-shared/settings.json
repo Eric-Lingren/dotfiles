@@ -1,9 +1,11 @@
 {
+  "env": {
+    "ENABLE_TOOL_SEARCH": "true"
+  },
   "attribution": {
     "commit": "",
     "pr": ""
   },
-  "model": "claude-opus-4-6",
   "hooks": {
     "PreToolUse": [
       {
@@ -83,8 +85,5 @@
         "repo": "ChromeDevTools/chrome-devtools-mcp"
       }
     }
-  },
-  "env": {
-    "ENABLE_TOOL_SEARCH": "true"
   }
 }

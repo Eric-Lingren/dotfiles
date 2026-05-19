@@ -76,20 +76,11 @@ Iterate until the user approves the breakdown.
 
 ### 5. Determine the next task ID
 
-Before assigning IDs, scan **all existing JSON files** in `docs/tasks/` and find the highest numeric suffix across every task `id` field in every file. The first task in the new file gets that number + 1. This ensures IDs are globally unique across all task files in the repo and agents never confuse tasks from different PRDs.
-
-Example: if `docs/tasks/auth.json` contains tasks up to `T-014` and `docs/tasks/search.json` up to `T-022`, the next file starts at `T-023`.
-
-If `docs/tasks/` is empty or doesn't exist yet, start at `T-0001`.
+Run `~/.dotfiles/claude-code-shared/scripts/next-task-id.sh docs/tasks/` to get the next available ID. The script scans all JSON files in the directory and returns the next globally unique ID.
 
 ### 6. Ask about branching strategy
 
-Before writing the file, ask the user which branching strategy they want for this task file:
-
-- **One branch / one PR for all tasks** — the user provides a branch name; all tasks share it (e.g. contributing micro-work to a single feature branch)
-- **One branch / one PR per task** — the skill generates a branch name per task from the `branch` field
-
-Record the answer in the `branching` field of the JSON.
+Follow `~/.dotfiles/claude-code-shared/resources/branching-strategy.md` for how to present the choice, derive branch names, and record the result in the `branching` field of the JSON.
 
 ### 7. Confirm output directory (MANDATORY)
 
@@ -104,13 +95,15 @@ Use whatever path the user confirms (create it if it doesn't exist). Do not skip
 
 ### 8. Write the JSON file
 
-Derive the slug from the PRD filename by stripping the leading timestamp prefix and extension (e.g. `20260511-1423-user-auth-flow.md` → slug `user-auth-flow`, or `20260511-1423-user-auth-flow.html` → slug `user-auth-flow`). The timestamp prefix format is `YYYYMMDD-HHMM-`.
+Derive the slug from the PRD filename by stripping the leading timestamp prefix and extension (e.g. `20260511-1423-user-auth-flow.md` → slug `user-auth-flow`). The timestamp prefix format is `YYYYMMDD-HHMM-`.
 
-Generate the file prefix as a `YYYYMMDD-HHMM` timestamp (current time). Write to `{confirmed-dir}/{prefix}-{slug}.json`.
+Run `~/.dotfiles/claude-code-shared/scripts/task-filename.sh <slug>` to generate the filename. Write to `{confirmed-dir}/<filename>`.
 
 If a file for this slug already exists (any prefix), ask the user whether to:
 - **Overwrite** — replace the file entirely with the new breakdown (re-scan all other files to find the next task ID, excluding this file; keep the existing filename prefix)
 - **Merge** — keep existing task statuses/PRs and add/update task definitions (new tasks continue from the current global max; keep the existing filename prefix)
+
+See `~/.dotfiles/claude-code-shared/resources/task-schema.md` for the canonical schema and all field rules. The structure below is illustrative:
 
 <task-json-schema>
 {
@@ -122,7 +115,7 @@ If a file for this slug already exists (any prefix), ask the user whether to:
   },
   "tasks": [
     {
-      "id": "T-023",
+      "id": "T-0023",
       "title": "Short descriptive title",
       "type": "AFK",
       "description": "End-to-end behavior description, not layer-by-layer implementation. For refactor tasks: state that characterization tests must be written for existing behavior before restructuring begins.",
@@ -132,12 +125,13 @@ If a file for this slug already exists (any prefix), ask the user whether to:
       ],
       "blocked_by": [],
       "status": "not_started",
-      "branch": "feat/t-023-short-title",
+      "branch": "feat/t-0023-short-title",
       "pr": null
     }
   ],
   "follow_ups": [
     {
+      "id": "FU-001",
       "title": "Add STRIPE_KEY to Cloudflare",
       "steps": [
         "Go to Cloudflare dashboard > Workers & Pages > your-app > Settings > Variables",
@@ -152,21 +146,12 @@ If a file for this slug already exists (any prefix), ask the user whether to:
 }
 </task-json-schema>
 
-**Field rules:**
-- `id`: globally sequential across all task files, zero-padded to 4 digits (`T-0001`, `T-0002`, …)
-- `type`: `"AFK"` or `"HITL"`
-- `status`: `"not_started"` | `"in_progress"` | `"done"` | `"merged"` | `"blocked"`
-- `blocked_by`: array of `id` strings (e.g. `["T-0023"]`), empty if none
-- `branch`: `{prefix}/t-{id-number}-{kebab-title}`, lowercase, max ~40 chars total. Only used when `branching.strategy` is `"per-task"`. Derive `{prefix}` from the current branch name (`feat/`, `fix/`, or `spike/`). If the current branch has no recognized prefix (e.g. `main`), ask the user whether this is a `feat` or `fix`.
-- `pr`: `null` until merged; then PR URL or number as a string
-- `branching.strategy`: `"single"` (one shared branch, user-provided) or `"per-task"` (auto-generated per task)
-- `branching.branch`: only present when `strategy` is `"single"`
+Tell the user the output path and the ID range used (e.g. `T-0023 to T-0031`) once written.
 
-**Follow-up field rules:**
-- `follow_ups`: top-level array, sibling to `tasks`
-- `title`: short description of the manual action
-- `steps`: ordered array of specific instructions. Use platform-specific click paths when known.
-- `trigger_task`: task ID string (e.g. `"T-0024"`) or `null` if general
-- `source`: `"planned"` (from PRD) or `"discovered"` (found during `run-tasks`)
+Output the handoff block:
 
-Tell the user the output path and the ID range used (e.g. `T-0023 – T-0031`) once written.
+```
+Next steps:
+  /run-tasks docs/tasks/<filename>   — implement tasks with TDD
+  /to-e2e-tests                      — add e2e coverage after run-tasks (optional)
+```

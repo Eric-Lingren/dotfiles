@@ -5,6 +5,26 @@ description: Test-driven development with red-green-refactor loop. Use when user
 
 # Test-Driven Development
 
+## Entry check: task file detection
+
+Before doing anything else, check how you were invoked.
+
+If the user's input contains any of the following, pause and ask before proceeding:
+- A path matching `docs/tasks/*.json`
+- A task ID pattern like `T-XXXX`
+- Content that looks like a pasted task JSON block (`"acceptance_criteria"`, `"blocked_by"`, `"status"`)
+
+Ask:
+
+> It looks like you're passing a task file directly to `/tdd`. Were you meaning to run `/run-tasks` instead?
+>
+> `/run-tasks` is the correct entry point for task files. It handles branching, status tracking, follow-up discovery, and PR creation. It also seeds `/tdd` with additional test requirements that do not apply when `/tdd` is called directly.
+>
+> - **Yes, use `/run-tasks`** — stop here. Tell the user to run `/run-tasks docs/tasks/<filename>`.
+> - **No, I want raw `/tdd`** — continue, but warn: "Note: test requirements from run-tasks are not active. Tests are still mandatory."
+
+If the input is a free-form feature description, bug report, or characterization request with no task file reference, skip this check and proceed normally.
+
 ## Philosophy
 
 **Core principle**: Tests should verify behavior through public interfaces, not implementation details. Code can change entirely; tests shouldn't.
@@ -93,6 +113,22 @@ Use this mode when adding tests to existing code with no planned changes. No new
 - No refactor step. Leave the code untouched.
 
 ## Workflow
+
+### 0. "No testable seam" claims
+
+If the task's `acceptance_criteria[0]` says `"Visual regression verified manually — no automated test seam exists..."`, treat this as a claim to verify, not a directive to skip tests.
+
+Before accepting it:
+
+1. Read the files named in the task description.
+2. Identify the conditional, flag, or prop that controls the behavior.
+3. Try to write a test: RTL render with the relevant context/props, assert DOM output.
+
+The only valid reason to skip writing a test is if the failure mode is a **CSS property difference** (e.g. `blur(3px)` vs `background: gray`) that the DOM cannot reflect. Conditional renders, query `enabled` flags, and prop threading are always testable.
+
+If you find a seam, write the test regardless of what the acceptance criteria says. If you genuinely cannot find one, state explicitly why before proceeding without tests.
+
+**A task is never done without at least one automated test. Manual verification does not satisfy the TDD loop.**
 
 ### 1. Planning
 

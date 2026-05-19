@@ -82,7 +82,9 @@ For refactoring or restructuring tasks: check if the code being changed has exis
 
 For new code: follow the standard RED-GREEN-REFACTOR loop.
 
-A task is not done until tests exist that verify the behavior described in the acceptance criteria.
+**If `acceptance_criteria[0]` says "Visual regression verified manually — no automated test seam exists":** this is a claim to verify, not a directive to skip tests. Read the code first. The following are always testable: conditional renders, query `enabled` flags, auth state branches, prop threading. The only valid skip is a CSS property difference (e.g. `blur(3px)` vs `background`) the DOM cannot reflect. If you find a seam, write the test. State why no seam exists before proceeding without one.
+
+A task is not done until tests exist that verify the behavior described in the acceptance criteria. "Verified manually" does not satisfy this requirement.
 
 ## PRD context
 
@@ -99,6 +101,7 @@ A task is not done until tests exist that verify the behavior described in the a
    - Check `~/.dotfiles/claude-code-shared/resources/hitl-steps-runbooks.md` for matching runbooks. Use runbook steps when available. Run the runbook's `Enrichment:` instructions to gather specifics from the diff and codebase. Fill placeholders with concrete values.
    - Each follow-up step must include the exact command, exact SQL, exact config key, or exact dashboard click path. Never write a step that says "update X" or "add Y" without specifying where and how.
    - Before appending, deduplicate: compare the inferred follow-up title against existing `follow_ups` in the JSON. Skip if a similar title already exists.
+   - Assign `"id"` by counting existing `follow_ups` in the file and using the next sequential `FU-XXX` (zero-padded to 3 digits).
    - Append new follow-ups to the `follow_ups` array in the JSON with `"source": "discovered"` and `"trigger_task"` set to the current task ID.
    - Write the updated JSON immediately (same write as the status update).
 
@@ -144,12 +147,22 @@ Run `/run-task-followups` for interactive walkthrough with step-by-step guidance
 
 Do not write this summary to any file.
 
-### 6. Offer follow-up walkthrough
+### 6. Output handoff block
 
-If the `follow_ups` array in the JSON is non-empty, print:
+After the summary, always output:
 
 ```
-Run `/run-task-followups` to walk through manual follow-ups interactively.
+Next steps:
+  /run-task-followups docs/tasks/<filename>   — walk through manual follow-ups interactively
+  /to-e2e-tests                               — add e2e coverage (optional, ~10-20% of changes)
+```
+
+If `follow_ups` is empty, note that in the handoff block:
+
+```
+Next steps:
+  /run-task-followups   — no follow-ups found, but run to confirm
+  /to-e2e-tests         — add e2e coverage (optional)
 ```
 
 ### 7. Offer to push and open a PR

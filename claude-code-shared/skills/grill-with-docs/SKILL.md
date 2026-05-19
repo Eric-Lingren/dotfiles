@@ -86,3 +86,27 @@ Only offer to create an ADR when all three are true:
 If any of the three is missing, skip the ADR. Use the format in [ADR-FORMAT.md](./resources/ADR-FORMAT.md).
 
 </supporting-info>
+
+<session-end-protocol>
+
+## Session end
+
+When all major branches are resolved and terminology is stable, signal the end explicitly:
+
+> "Grill session complete. All branches resolved."
+
+Then ask the user ONE question using `AskUserQuestion`:
+
+> "What would you like to do with this?"
+
+Options:
+- **Create a PRD** - write a PRD doc to `docs/prd/` to share with your team
+- **Create a task file** - write a tasks JSON for `/run-tasks` to start building
+- **Nothing yet** - session was just for thinking it through
+
+**CRITICAL RULES:**
+- Do NOT implement any code, create any files (other than CONTEXT.md and ADR updates during the session), or make any changes after the grill session ends without explicit user authorization from this question.
+- Answering "yes" or "yep" to a specific scoped question during the session ("do I have permission to delete X?") does NOT authorize broader implementation. Specific questions have specific scope.
+- Wait for the user's answer before doing anything.
+
+</session-end-protocol>

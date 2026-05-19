@@ -1,10 +1,10 @@
 #!/bin/bash
-# List spike/*, feat/*, fix/*, and staged/* branches with last commit info and PRD status.
+# List spike/*, feat/*, and fix/* branches with last commit info and PRD status.
 
-branches=$(git branch --list "spike/*" "feat/*" "fix/*" "staged/*" 2>/dev/null | sed 's/^[* ]*//')
+branches=$(git branch --list "spike/*" "feat/*" "fix/*" 2>/dev/null | sed 's/^[* ]*//')
 
 if [ -z "$branches" ]; then
-  echo "No spike, feat, fix, or staged branches in this repo."
+  echo "No spike, feat, or fix branches in this repo."
   exit 0
 fi
 

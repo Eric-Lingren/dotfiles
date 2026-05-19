@@ -11,3 +11,23 @@ For each question:
 3. When asking your first question, briefly signal the other major branches of the decision tree you plan to explore later, so the user knows you see the full picture.
 
 Before formulating your question, explore the codebase first. If a question can be answered by reading code or project files, explore the codebase instead of asking the user.
+
+## Session end protocol
+
+When all major branches are resolved, signal the end explicitly:
+
+> "Grill session complete. All branches resolved."
+
+Then ask the user ONE question using `AskUserQuestion`:
+
+> "What would you like to do with this?"
+
+Options:
+- **Create a PRD** - write a PRD doc to `docs/prd/` to share with your team
+- **Create a task file** - write a tasks JSON for `/run-tasks` to start building
+- **Nothing yet** - session was just for thinking it through
+
+**CRITICAL RULES:**
+- Do NOT implement any code, create any files, or make any changes after the grill session ends without explicit user authorization from this question.
+- Answering "yes" or "yep" to a specific scoped question during the session ("do I have permission to delete X?") does NOT authorize broader implementation. Specific questions have specific scope.
+- Wait for the user's answer before doing anything.

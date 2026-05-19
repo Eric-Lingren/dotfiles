@@ -23,11 +23,11 @@ This skill takes the current conversation context and codebase understanding and
    Where should this PRD go?
    1. Current branch
    2. New spike branch
-   3. New staged branch
+   3. New feat branch
    ```
 
    If the user picks **2** or **3**:
-   - Propose a branch name derived from the slug: `spike/{slug}` or `staged/{slug}`.
+   - Propose a branch name derived from the slug: `spike/{slug}` or `feat/{slug}`.
    - Let the user accept or type a custom name (e.g. a Linear ticket slug).
    - Run `git switch -c {branch-name}`. If the switch fails (dirty working tree), tell the user to commit or stash first and stop.
    - Continue on the new branch.
