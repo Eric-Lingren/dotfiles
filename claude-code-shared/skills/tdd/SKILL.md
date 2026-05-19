@@ -148,6 +148,19 @@ Ask: "What should the public interface look like? Which behaviors are most impor
 
 **You can't test everything.** Confirm with the user exactly which behaviors matter most. Focus testing effort on critical paths and complex logic, not every possible edge case.
 
+### ENFORCEMENT: Pre-implementation gate
+
+Before writing or editing any implementation file, answer this question:
+
+> Does a currently-failing test exist for this specific behavior?
+
+- **Yes (RED exists):** proceed.
+- **No:** write the test first. Do not write any implementation. Run the test and confirm it fails before continuing.
+
+This gate fires every time, for every file, for every behavior. There are no exceptions.
+
+If you find yourself writing implementation code without a RED test, stop immediately. Delete the implementation. Write the test first.
+
 ### 2. Tracer Bullet
 
 Write ONE test that confirms ONE thing about the system:
