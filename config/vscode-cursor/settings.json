@@ -92,5 +92,8 @@
         "https://www.schemastore.org/": true,
         "https://json-schema.org/": true,
         "https://biomejs.dev": true
-    }
+    },
+    "chat.disableAIFeatures": true,
+    "workbench.navigationControl.enabled": false,
+    "window.commandCenter": false
 }
