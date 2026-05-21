@@ -8,4 +8,4 @@ if [ -z "${1:-}" ]; then
   exit 1
 fi
 
-echo "$(date +%Y%m%d-%H%M)-${1}.json"
+"$(dirname "$0")/doc-filename.sh" "${1}" "json"

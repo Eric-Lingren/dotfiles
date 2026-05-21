@@ -128,9 +128,9 @@ if [ -n "$CMUX_WORKSPACE_ID" ]; then
   BOOT_TIME=$(sysctl -n kern.boottime | awk '{print $4}' | tr -d ',')
   SESSIONLOCK="/tmp/cmux-session-${BOOT_TIME}.lock"
   if [ ! -f "$SESSIONLOCK" ]; then
-    rm -f /tmp/cmux-session-*.lock
+    rm -f /tmp/cmux-session-*.lock 2>/dev/null
     touch "$SESSIONLOCK"
-    ~/.cmux-startup.sh &
+    ~/.cmux-startup.sh > /tmp/cmux-startup.log 2>&1 &
     trap 'rm -f /tmp/cmux-session-*.lock' EXIT  # only set in the first shell
   fi
 fi

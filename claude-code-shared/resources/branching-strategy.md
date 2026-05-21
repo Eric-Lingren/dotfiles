@@ -12,6 +12,12 @@ All task-generating skills reference this document for branching decisions.
 - **`single`**: one shared branch for all tasks. User provides the name. All tasks run on this branch.
 - **`per-task`**: each task gets its own branch, auto-derived from task ID and title.
 
+## Local-only prefixes
+
+Some branches are **never pushed and never PRed**. They are scaffolding, not product.
+
+- **`prototype/proto-<slug>`**: created by the `/prototype` skill for throwaway exploration code. Always local. Deleted after the session ends. Only `docs/prototypes/<slug>.md` survives and gets committed back to the originating branch. No other skill should push or PR a `prototype/*` branch.
+
 ## Presenting the choice
 
 Ask the user:

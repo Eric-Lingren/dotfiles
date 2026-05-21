@@ -9,13 +9,7 @@ This skill takes the current conversation context and codebase understanding and
 
 1. **Explore the repo** to understand the current state of the codebase, if you haven't already. Use the project's domain vocabulary (from `CONTEXT.md` and ADRs in `docs/adr/` if they exist) throughout the PRD. If neither `CONTEXT.md` nor `docs/adr/` exist, explicitly note that no project-specific vocabulary sources were found and proceed with the best domain terms available from the conversation context.
 
-2. **Sketch the major modules** you will need to build or modify. Actively look for opportunities to extract deep modules that can be tested in isolation.
-
-   A deep module encapsulates a lot of functionality in a simple, testable interface that rarely changes.
-
-   Check with the user that these modules match their expectations and which ones they want tests written for.
-
-3. **Ask: work or personal? (MANDATORY).** You MUST ask before proceeding. Do not skip this step. Do not assume or infer the answer. Always prompt the user:
+2. **Ask: work or personal? (MANDATORY).** You MUST ask before proceeding. Do not skip this step. Do not assume or infer the answer. Always prompt the user:
 
    ```
    Is this PRD for work or personal?
@@ -31,9 +25,9 @@ This skill takes the current conversation context and codebase understanding and
 
    For **work** PRDs, insert the logo SVG (from `assets/logo-work.svg`) right after the opening `<body>` tag, wrapped in a `<div class="logo" style="margin-bottom: 1.5rem;">` container. Set the SVG height to `36px`.
 
-4. **Derive a slug** from the feature name, lowercase, kebab-case, max ~40 chars (e.g. `user-auth-flow`).
+3. **Derive a slug** from the feature name, lowercase, kebab-case, max ~40 chars (e.g. `user-auth-flow`).
 
-5. **Ask where to write (MANDATORY).** You MUST ask before writing anything to disk. Do not skip this step:
+4. **Ask where to write (MANDATORY).** You MUST ask before writing anything to disk. Do not skip this step:
 
    ```
    Where should this PRD go?
@@ -51,7 +45,7 @@ This skill takes the current conversation context and codebase understanding and
 
    If the user picks **1**, continue on the current branch (existing behavior).
 
-6. **Confirm output directory (MANDATORY).** Resolve the absolute path of `docs/prd/` relative to the current working directory. Ask the user before writing:
+5. **Confirm output directory (MANDATORY).** Resolve the absolute path of `docs/prd/` relative to the current working directory. Ask the user before writing:
 
    ```
    PRD will be saved to: /absolute/path/to/docs/prd/
@@ -60,11 +54,11 @@ This skill takes the current conversation context and codebase understanding and
 
    Use whatever path the user confirms (create it if it doesn't exist). Do not skip this step.
 
-7. **Determine the file prefix** by running the `next-prefix.sh` script in this skill's directory: `~/.dotfiles/claude-code-shared/skills/to-prd-html/scripts/next-prefix.sh`. It returns a `YYYYMMDD-HHMM` timestamp prefix.
+6. **Determine the output filename** by running `~/.dotfiles/claude-code-shared/scripts/doc-filename.sh <slug> html`. It returns `YYYYMMDD-HHMM-{slug}.html`.
 
-8. **Write the HTML PRD** to `{confirmed-dir}/{prefix}-{slug}.html`. Never auto-commit. Use the template from `~/.dotfiles/claude-code-shared/skills/to-prd-html/resources/template.html` for the HTML structure.
+7. **Write the HTML PRD** to `{confirmed-dir}/{filename}`. Never auto-commit. Use the template from `~/.dotfiles/claude-code-shared/skills/to-prd-html/resources/template.html` for the HTML structure.
 
-9. Tell the user the path and suggest running `/to-tasks` next.
+8. Tell the user the path and suggest running `/to-tasks` next.
 
 ## HTML Output Rules
 
@@ -85,6 +79,11 @@ JSON structure:
   "created": "ISO 8601 timestamp",
   "problem_statement": "The problem in plain text",
   "solution": "The solution in plain text",
+  "evidence": "One or two sentences: the data, complaints, or research that motivated this. Concise.",
+  "success_metrics": [
+    "Specific measurable metric 1",
+    "Specific measurable metric 2"
+  ],
   "user_stories": [
     {
       "actor": "developer",
@@ -103,6 +102,10 @@ JSON structure:
   "out_of_scope": [
     "Item 1",
     "Item 2"
+  ],
+  "risks_and_tradeoffs": [
+    "Risk or tradeoff 1",
+    "Risk or tradeoff 2"
   ],
   "further_notes": [
     "Note 1",
@@ -147,7 +150,11 @@ Include these ONLY when the PRD content warrants them:
 
 ### Content rules (same as markdown PRD)
 
+- Tone: write with clear, direct confidence. No passive hedging, no filler. Not motivational, just not dry.
 - User stories: minimum 5, extensive coverage, format: As a `<actor>`, I want `<feature>`, so that `<benefit>`
 - Implementation decisions: modules, interfaces, architecture, schema changes, API contracts. No file paths or code snippets.
 - Testing decisions: what makes a good test, which modules, prior art in codebase.
 - Out of scope: explicit exclusions.
+- `evidence`: one or two sentences max. A concrete data point or user signal. Not a research section.
+- `success_metrics`: specific and measurable. Not category labels like "improve performance."
+- `risks_and_tradeoffs`: what breaks or regresses if this goes wrong. Distinct from out-of-scope (which is exclusions).

@@ -34,12 +34,12 @@ S1=$(cmux tree --workspace "$WS" | grep 'surface ' | head -1 | grep -o 'surface:
 # Set Workspace Name
 cmux rename-workspace --workspace "$WS" "Quaestor Dev Env"
 
-# Top-left: Client
-cmux rename-tab --surface "$S1" "Client"
-cmux send --surface "$S1" "source ~/.zshrc && fnm use 22.22.0 && cd ~/Documents/dev/Quaestor-Web/client && yarn dev"
+# Left (full height): Dev
+cmux rename-tab --surface "$S1" "Dev"
+cmux send --surface "$S1" "source ~/.zshrc && cd ~/Documents/dev/Quaestor-Web && dev start"
 cmux send-key --surface "$S1" Return
 
-# Top-right: Storybook (split right from Client)
+# Top-right: Storybook (split right from Dev)
 S2=$(cmux new-split right --surface "$S1" --workspace "$WS" | grep -o 'surface:[0-9]*' | head -1)
 [ -z "$S2" ] && { echo "ERROR: S2 split failed" >&2; exit 1; }
 wait_for_surface "$S2"
@@ -47,18 +47,10 @@ cmux rename-tab --surface "$S2" "Storybook"
 cmux send --surface "$S2" "source ~/.zshrc && cd ~/Documents/dev/Quaestor-Web/client && yarn storybook"
 cmux send-key --surface "$S2" Return
 
-# Bottom-left: Backend (split down from Client)
-S3=$(cmux new-split down --surface "$S1" --workspace "$WS" | grep -o 'surface:[0-9]*' | head -1)
+# Bottom-right: Celery (split down from Storybook)
+S3=$(cmux new-split down --surface "$S2" --workspace "$WS" | grep -o 'surface:[0-9]*' | head -1)
 [ -z "$S3" ] && { echo "ERROR: S3 split failed" >&2; exit 1; }
 wait_for_surface "$S3"
-cmux rename-tab --surface "$S3" "Backend"
-cmux send --surface "$S3" "source ~/.zshrc && runserver"
+cmux rename-tab --surface "$S3" "Celery"
+cmux send --surface "$S3" "source ~/.zshrc && cd ~/Documents/dev/Quaestor-Web/app && runcelery"
 cmux send-key --surface "$S3" Return
-
-# Bottom-right: Celery (split down from Storybook)
-S4=$(cmux new-split down --surface "$S2" --workspace "$WS" | grep -o 'surface:[0-9]*' | head -1)
-[ -z "$S4" ] && { echo "ERROR: S4 split failed" >&2; exit 1; }
-wait_for_surface "$S4"
-cmux rename-tab --surface "$S4" "Celery"
-cmux send --surface "$S4" "source ~/.zshrc && cd ~/Documents/dev/Quaestor-Web/app && runcelery"
-cmux send-key --surface "$S4" Return
