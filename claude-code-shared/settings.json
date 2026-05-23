@@ -6,7 +6,8 @@
   ],
   "permissions": {
     "allow": [
-      "Bash(~/.dotfiles/claude-code-shared/scripts/*)"
+      "Bash(~/.dotfiles/claude-code-shared/scripts/*)",
+      "Read(~/.dotfiles/**)"
     ]
   },
   "env": {
