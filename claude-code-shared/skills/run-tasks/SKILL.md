@@ -91,7 +91,23 @@ A task is not done until tests exist that verify the behavior described in the a
 {full contents of the PRD file}
 ```
 
-4. If TDD completes successfully:
+4. If TDD completes successfully, run a validation gate before marking done:
+
+   **a. TypeScript check**
+   - Look for `tsconfig.json` in the project root (or `tsconfig.app.json` / `tsconfig.build.json` as fallbacks).
+   - If found, run `npx tsc --noEmit`. Capture output.
+
+   **b. Lint check**
+   - Inspect `package.json` scripts for a `lint` key. If present, run `npm run lint`. Otherwise try `npx eslint . --ext .ts,.tsx` as fallback. Capture output.
+
+   **c. Auto-fix pass**
+   - If either check reports errors, run the auto-fix variant (`npx eslint . --fix` and/or `npm run lint -- --fix` if the script accepts it) then re-run both checks.
+
+   **d. Gate decision**
+   - If errors remain after auto-fix: print a **Validation errors** block listing every file:line error, update task status to `blocked` in the JSON, and halt the run (same blocker logic as a TDD failure in step 6 below).
+   - If checks pass (or no config found): continue to mark done.
+
+   **e. Mark done**
    - Update task status to `done` in the JSON.
    - Set `pr` to a suggested `gh pr create` command the user can run (do not run it).
 

@@ -1,4 +1,14 @@
 {
+  "theme": "dark",
+  "allowedTools": [
+    "Bash(cat ~/.dotfiles/claude-code-shared/**)",
+    "Read(~/.dotfiles/claude-code-shared/**)"
+  ],
+  "permissions": {
+    "allow": [
+      "Bash(~/.dotfiles/claude-code-shared/scripts/*)"
+    ]
+  },
   "env": {
     "ENABLE_TOOL_SEARCH": "true"
   },

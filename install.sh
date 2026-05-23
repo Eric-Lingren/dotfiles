@@ -94,7 +94,7 @@ setup_claude_accounts() {
   link "$DOTFILES/claude-code-shared" "$HOME/.claude-code-shared"
 
   # Wire both accounts to the shared config
-  for account in .cco .cch; do
+  for account in .claude .cco .cch; do
     $DRY_RUN || mkdir -p "$HOME/$account"
     link "$DOTFILES/claude-code-shared/settings.json" "$HOME/$account/settings.json"
     link "$DOTFILES/claude-code-shared/agents"        "$HOME/$account/agents"
