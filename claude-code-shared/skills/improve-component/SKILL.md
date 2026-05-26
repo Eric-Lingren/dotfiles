@@ -240,9 +240,23 @@ Present findings as a numbered list and ask: "Which of these do you want to act 
 
 After the user approves changes, write a tasks file before touching any code.
 
-**Get the next task ID:** Run `~/.dotfiles/claude-code-shared/scripts/next-task-id.sh docs/tasks/`
+**Step 7a: Branching.** Run `git branch --show-current`. Then ask:
 
-**Generate the filename:** Run `~/.dotfiles/claude-code-shared/scripts/task-filename.sh improve-<component-slug>`
+```
+Branching strategy:
+1. Single branch for all tasks (you provide the name) — best for a focused refactor or if you want to stay on your current branch
+2. Per-task branches (auto-generated) — best for independent improvements reviewed separately
+
+Which do you prefer?
+```
+
+If single: ask "Branch name?" and suggest `refactor/<component-slug>-improvements` as a default. If the user is already on a feature or fix branch, note that they can stay on it. If per-task: derive branch names per branching-strategy.md.
+
+**Wait for user response before continuing.**
+
+See `~/.dotfiles/claude-code-shared/resources/branching-strategy.md` for branch naming rules, derivation format, and JSON recording format.
+
+**Step 7b: Write the file.** Run `~/.dotfiles/claude-code-shared/scripts/next-task-id.sh docs/tasks/` and `~/.dotfiles/claude-code-shared/scripts/task-filename.sh improve-<component-slug>`.
 
 Write one task per approved finding (or group tightly coupled findings into one task with compound acceptance criteria). Each task must be self-contained. Embed the specific file path, line numbers, principle violated, and exact fix approach in the description.
 
@@ -250,8 +264,7 @@ Follow the canonical schema in `~/.dotfiles/claude-code-shared/resources/task-sc
 
 Key field values for improve-component tasks:
 - `prd`: `null` (no PRD for component improvement runs)
-- `branching.strategy`: `"single"`
-- `branching.branch`: `"refactor/<component-slug>-improvements"`
+- `branching`: use the strategy and branch from Step 7a (see branching-strategy.md for JSON format)
 - `description`: `"Principle violated: <name>. Location: <file:line>. Problem: <what is wrong and why it matters>. Fix: <concrete steps>."`
 - `acceptance_criteria[0]`: always a test criterion (`"Characterization test exists at <path> covering the behavior being changed before any refactor"` for refactors, or `"Failing test exists at <path>"` for new behavior)
 

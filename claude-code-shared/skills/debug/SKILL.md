@@ -146,21 +146,23 @@ Do not proceed to Phase 4 until both steps are complete.
 
 ### Step 1: Branch
 
-Run `git branch --show-current`. Propose a fix branch name derived from the confirmed hypotheses (e.g. `fix/token-expiry-off-by-one`).
-
-Present to the user:
+Run `git branch --show-current`. Then ask the user:
 
 ```
-Current branch: <branch>
-Proposed branch: fix/<slug>
-Switch? (yes / no / use a different name)
+Branching strategy:
+1. Single branch for all tasks (you provide the name) — best for a focused fix
+2. Per-task branches (auto-generated) — best for independent bugs reviewed separately
+
+Which do you prefer?
 ```
 
-If on `main` or `master`, push strongly toward switching. If already on a `fix/`, `feat/`, or `hotfix/` branch, still show both and let the user decide.
+For most debug sessions a single `fix/<slug>` branch is the right choice. If the user is on `main` or `master`, push strongly toward switching to a fix branch.
+
+If single: ask "Branch name?" and suggest `fix/<slug>` derived from the confirmed root cause. If per-task: derive branch names per the format in branching-strategy.md.
 
 **Wait for user response before continuing.**
 
-See `~/.dotfiles/claude-code-shared/resources/branching-strategy.md` for branch naming rules and JSON recording format.
+See `~/.dotfiles/claude-code-shared/resources/branching-strategy.md` for branch naming rules, derivation format, and JSON recording format.
 
 ### Step 2: Write the tasks file
 
@@ -194,16 +196,26 @@ If a seam exists but Phase 1 could not build a feedback loop, set the first acce
 
 **Generate the filename:** Run `~/.dotfiles/claude-code-shared/scripts/task-filename.sh debug-<slug>`
 
-Write to `docs/tasks/<filename>` using this structure:
+Write to `docs/tasks/<filename>` using this structure.
+
+For single strategy:
+```json
+"branching": { "strategy": "single", "branch": "<branch from Step 1>" }
+```
+
+For per-task strategy:
+```json
+"branching": { "strategy": "per-task" }
+```
+(Each task's `branch` field holds its own auto-derived branch name.)
+
+Full structure:
 
 ```json
 {
   "prd": null,
   "generated_at": "<ISO 8601 timestamp>",
-  "branching": {
-    "strategy": "single",
-    "branch": "<fix branch from Step 1>"
-  },
+  "branching": { "strategy": "single", "branch": "<fix branch from Step 1>" },
   "tasks": [
     {
       "id": "<from next-task-id.sh>",
