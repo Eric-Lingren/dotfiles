@@ -20,7 +20,10 @@
       "Bash(bash /Users/eric/.dotfiles/claude-code-shared/scripts/next-task-id.sh /tmp)",
       "Bash(bash /Users/eric/.dotfiles/claude-code-shared/scripts/task-filename.sh debug-auth-token)",
       "Bash(ln -s /Users/eric/.dotfiles/.claude/CLAUDE.md /Users/eric/.claude/CLAUDE.md)",
-      "Skill(update-config)"
+      "Skill(update-config)",
+      "Read(//Users/eric/**)",
+      "Bash(claude --version)",
+      "Bash(break)"
     ]
   },
   "prefersReducedMotion": false

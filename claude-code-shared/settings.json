@@ -12,7 +12,7 @@
       "Read(~/.dotfiles/**)"
     ]
   },
-  "model": "opus[1m]",
+  "model": "opus",
   "hooks": {
     "PreToolUse": [
       {
@@ -93,6 +93,7 @@
       }
     }
   },
+  "effortLevel": "xhigh",
   "theme": "dark",
   "allowedTools": [
     "Bash(cat ~/.dotfiles/claude-code-shared/**)",

@@ -28,3 +28,5 @@ venv/
 # Runtime
 *.log
 .cache/
+
+**/.claude/settings.local.json

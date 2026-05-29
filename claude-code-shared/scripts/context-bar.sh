@@ -8,6 +8,8 @@ COLOR="blue"
 C_RESET='\033[0m'
 C_GRAY='\033[38;5;245m'  # explicit gray for default text
 C_BAR_EMPTY='\033[38;5;238m'
+C_EFFORT='\033[38;5;172m'  # match caveman badge color
+C_WARN='\033[38;5;196m'  # red for context window warning
 case "$COLOR" in
     orange)   C_ACCENT='\033[38;5;173m' ;;
     blue)     C_ACCENT='\033[38;5;74m' ;;
@@ -23,8 +25,9 @@ esac
 
 input=$(cat)
 
-# Extract model, directory, and cwd
+# Extract model, effort level, directory, and cwd
 model=$(echo "$input" | jq -r '.model.display_name // .model.id // "?"')
+effort=$(echo "$input" | jq -r '.effort.level // empty')
 cwd=$(echo "$input" | jq -r '.cwd // empty')
 dir=$(basename "$cwd" 2>/dev/null || echo "?")
 
@@ -129,6 +132,27 @@ done
 
 ctx="${bar} ${C_GRAY}${pct}% ${pct_label}"
 
+# Current conversation context window usage (compact/restart signal).
+# Only show when the bar is tracking the 5h session — otherwise the bar
+# already displays the context window pct and this would duplicate it.
+ctxwin=""
+cw_pct=$(echo "$input" | jq -r '.context_window.used_percentage // empty')
+if [[ -n "$session_pct" && "$session_pct" != "null" && -n "$cw_pct" && "$cw_pct" != "null" ]]; then
+    cw_pct=$(printf '%.0f' "$cw_pct")
+    cw_pct=$(( cw_pct > 100 ? 100 : cw_pct ))
+    cw_tokens=$(echo "$input" | jq -r '.context_window.current_usage | (.input_tokens + .cache_read_input_tokens + .cache_creation_input_tokens + .output_tokens) // empty' 2>/dev/null)
+    if [[ -n "$cw_tokens" && "$cw_tokens" != "null" ]]; then
+        cw_k=$((cw_tokens / 1000))
+    else
+        cw_k=$(( max_context * cw_pct / 100 / 1000 ))
+    fi
+    if [[ $cw_pct -ge 80 ]]; then
+        ctxwin="  |  ${C_WARN}${cw_k}k/${max_display} (${cw_pct}%)"
+    else
+        ctxwin="  |  ${C_GRAY}${cw_k}k/${max_display} (${cw_pct}%)"
+    fi
+fi
+
 # Calculate time until token refresh from rate_limits.five_hour.resets_at (Unix epoch seconds)
 resets_at=$(echo "$input" | jq -r '.rate_limits.five_hour.resets_at // empty')
 token_refresh=""
@@ -168,11 +192,14 @@ else
     caveman_badge="  |  \033[38;5;196m[CAVEMAN:DISABLED]\033[0m"
 fi
 
-# Line 1: Model | Dir | Branch
-line1="${C_ACCENT}${model}${C_GRAY}  |  📁 ${dir}"
-[[ -n "$branch" ]] && line1+="  | 🔀 ${branch} ${git_status}."
+# Line 1: Model [effort] | 5h usage | Context window | Token refresh
+line1="${C_ACCENT}${model}"
+[[ -n "$effort" ]] && line1+=" ${C_EFFORT}[${effort}]"
+line1+="${C_GRAY}  |  ${ctx}${ctxwin}${token_refresh}${C_RESET}"
 
-# Line 2: Context bar | Token refresh countdown | Caveman badge
-line2="${ctx}${token_refresh}${caveman_badge}${C_RESET}"
+# Line 2: Dir | Branch | Caveman badge
+line2="${C_GRAY}📁 ${dir}"
+[[ -n "$branch" ]] && line2+="  | 🔀 ${branch} ${git_status}."
+line2+="${caveman_badge}${C_RESET}"
 
 printf '%b\n%b\n' "$line1" "$line2"

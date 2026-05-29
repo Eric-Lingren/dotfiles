@@ -111,11 +111,17 @@ function migrate {
 # CLAUDE CODE — multi-account aliases      #                                         
 # ─────────────────────────────────────────#
  
-alias cco="CLAUDE_CONFIG_DIR=~/.cco command claude"
-alias cch="CLAUDE_CONFIG_DIR=~/.cch command claude"
+alias cco="CLAUDE_CONFIG_DIR=$HOME/.cco $HOME/.cco-npm/bin/claude"
+alias cch="CLAUDE_CONFIG_DIR=$HOME/.cch $HOME/.cch-npm/bin/claude"
+
+# Per-instance updaters (isolated npm prefixes, zero cross-pollution)
+alias cch-update="npm install -g --prefix $HOME/.cch-npm @anthropic-ai/claude-code@latest"
+alias cco-update="npm install -g --prefix $HOME/.cco-npm @anthropic-ai/claude-code@latest"
+alias cch-doctor="CLAUDE_CONFIG_DIR=$HOME/.cch $HOME/.cch-npm/bin/claude doctor"
+alias cco-doctor="CLAUDE_CONFIG_DIR=$HOME/.cco $HOME/.cco-npm/bin/claude doctor"
 
 # Disable bare `claude` to avoid accidentally using the wrong account
-alias claude="echo 'Use cco (Claude Code office) or cch (Claude Code Home)'"
+alias claude="echo 'Use cco (office) or cch (home). Update: cch-update / cco-update'"
 
 
 
