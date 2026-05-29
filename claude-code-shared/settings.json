@@ -1,15 +1,4 @@
 {
-  "theme": "dark",
-  "allowedTools": [
-    "Bash(cat ~/.dotfiles/claude-code-shared/**)",
-    "Read(~/.dotfiles/claude-code-shared/**)"
-  ],
-  "permissions": {
-    "allow": [
-      "Bash(~/.dotfiles/claude-code-shared/scripts/*)",
-      "Read(~/.dotfiles/**)"
-    ]
-  },
   "env": {
     "ENABLE_TOOL_SEARCH": "true"
   },
@@ -17,6 +6,13 @@
     "commit": "",
     "pr": ""
   },
+  "permissions": {
+    "allow": [
+      "Bash(~/.dotfiles/claude-code-shared/scripts/*)",
+      "Read(~/.dotfiles/**)"
+    ]
+  },
+  "model": "opus[1m]",
   "hooks": {
     "PreToolUse": [
       {
@@ -96,5 +92,10 @@
         "repo": "ChromeDevTools/chrome-devtools-mcp"
       }
     }
-  }
+  },
+  "theme": "dark",
+  "allowedTools": [
+    "Bash(cat ~/.dotfiles/claude-code-shared/**)",
+    "Read(~/.dotfiles/claude-code-shared/**)"
+  ]
 }

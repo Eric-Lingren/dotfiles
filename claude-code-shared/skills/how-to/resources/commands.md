@@ -375,6 +375,11 @@ git commit -m "..."
 git push
 ```
 
+**Resync a local file with main** (pull main's copy over local)
+```bash
+git checkout main path/to/file
+```
+
 **Fix merge conflicts in generated files**
 ```bash
 git checkout <branch-name>
