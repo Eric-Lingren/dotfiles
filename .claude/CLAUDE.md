@@ -12,3 +12,7 @@ Key shared paths:
 - Scripts: `~/.dotfiles/claude-code-shared/scripts/`
 - Skills: `~/.dotfiles/claude-code-shared/skills/`
 - Resources: `~/.dotfiles/claude-code-shared/resources/`
+
+## Delegate menial work to Haiku
+
+Push pure read-only lookups (multi-file grep/glob, "where is X", mapping a dir, reading many files to locate something, fetching a URL) to the `caveman:cavecrew-investigator` subagent (Haiku) instead of running them on the session model. Keep reasoning and edits on the session model. Skills that do heavy searching restate this; this is the default everywhere else.

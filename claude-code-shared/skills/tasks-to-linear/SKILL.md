@@ -1,6 +1,8 @@
 ---
 name: tasks-to-linear
 description: Convert a docs/tasks/ JSON file into Linear tickets, preserving blocked-by relationships and writing Linear URLs back to the JSON. Use when the user wants to push tasks to Linear, create Linear issues from a task file, or sync tasks to Linear.
+model: sonnet
+effort: medium
 ---
 
 # Tasks to Linear

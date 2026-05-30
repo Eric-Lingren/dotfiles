@@ -1,0 +1,37 @@
+#!/bin/bash
+# Pre-commit: keep skill frontmatter in sync with the central tier map.
+#
+# Runs sync-skill-tiers.py --apply so skill model/effort + delegation blocks can
+# never drift from resources/skill-tiers.json. Any file the sync rewrites is
+# re-staged into THIS commit, so the config and skills always land together.
+#
+# Auto-fix, not block: you never have to remember to run the sync by hand.
+# Only the files the sync actually changed get re-staged (not unrelated edits).
+#
+# Enabled via: git config core.hooksPath .githooks  (set once per clone).
+# Skip a single commit with: git commit --no-verify
+
+set -euo pipefail
+
+REPO="$(git rev-parse --show-toplevel)"
+SYNC="$REPO/claude-code-shared/scripts/sync-skill-tiers.py"
+
+[ -f "$SYNC" ] || exit 0   # tiering system absent, nothing to do
+
+OUT="$(python3 "$SYNC" --apply --print-changed)" || {
+  echo "pre-commit: skill-tier sync FAILED. Fix the error above or commit with --no-verify." >&2
+  echo "$OUT" >&2
+  exit 1
+}
+
+# Re-stage exactly the files the sync rewrote.
+CHANGED="$(echo "$OUT" | grep '^CHANGED' | cut -f2- || true)"
+if [ -n "$CHANGED" ]; then
+  echo "$CHANGED" | while IFS= read -r f; do
+    [ -n "$f" ] && git add -- "$f"
+  done
+  echo "pre-commit: re-synced + staged skill tiers:" >&2
+  echo "$CHANGED" | sed 's/^/  /' >&2
+fi
+
+exit 0

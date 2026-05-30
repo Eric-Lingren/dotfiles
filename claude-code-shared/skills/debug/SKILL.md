@@ -1,7 +1,23 @@
 ---
 name: diagnose
 description: Disciplined diagnosis loop for hard bugs and performance regressions. Reproduce → minimise → hypothesise → instrument → fix → regression-test. Use when user says "diagnose this" / "debug this", reports a bug, says something is broken/throwing/failing, or describes a performance regression.
+model: opus
+effort: xhigh
 ---
+
+<!-- tier-delegate: managed by sync-skill-tiers.py -->
+## Delegate menial lookups to Haiku (cost control)
+
+During this skill, push pure read-only lookups DOWN to a cheap subagent instead
+of running them on the current model. This covers: multi-file grep/glob,
+"where is X defined / what calls Y", mapping a directory, reading many files to
+locate something, or fetching a URL for reference.
+
+Use the Agent tool with the `caveman:cavecrew-investigator` subagent (Haiku,
+returns a compressed file:line answer). If that subagent is unavailable, spawn a
+general agent with `model: haiku`. Keep all reasoning, decisions, and edits on
+the current model. Delegate only the menial searching.
+<!-- /tier-delegate -->
 
 # Diagnose
 
