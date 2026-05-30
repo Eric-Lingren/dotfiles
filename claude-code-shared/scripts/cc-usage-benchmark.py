@@ -47,6 +47,14 @@ PRICE = {
     "haiku":  {"in": 1.0,  "out": 5.0,  "cache_w": 1.25,  "cache_r": 0.10},
 }
 
+# ---- weekly digest (snapshot + delta header + terminal nudge) ----
+REPORT_DIR = os.path.expanduser(
+    os.environ.get("CC_USAGE_REPORT_DIR", "~/.cache/cc-usage-reports"))
+SNAPSHOT_PATH = os.path.join(REPORT_DIR, "snapshots.json")
+# Adherence pre-dates tiering; weeks before rollout used the session model and
+# read as fake-low. None = use all weeks. Pin e.g. "2026-W21" to ignore noise.
+ROLLOUT_WEEK = None
+
 def model_family(m):
     if not m or m == "<synthetic>":
         return "synthetic"
@@ -392,8 +400,8 @@ def _iso_week(ts):
         return None
 
 
-def trend_report(roots):
-    """Weekly model-mix + est cost. Shows the shift over time (e.g. post-tiering)."""
+def compute_trend(roots):
+    """Weekly model-mix + est cost, bucketed by ISO week. Returns {week: W}."""
     weeks = {}
     for name, root in roots.items():
         for f in sorted(glob(os.path.join(root, "*", "*.jsonl"))):
@@ -419,7 +427,21 @@ def trend_report(roots):
                 W["tok"][fam]["out"] += u.get("output_tokens", 0)
                 W["tok"][fam]["cache_w"] += u.get("cache_creation_input_tokens", 0)
                 W["tok"][fam]["cache_r"] += u.get("cache_read_input_tokens", 0)
+    return weeks
 
+
+def week_cost(W):
+    _, cost = cost_of(W["tok"])
+    return cost
+
+
+def week_opus_pct(W):
+    t = W["turns"]
+    tot = sum(t.values()) or 1
+    return 100 * t["opus"] // tot
+
+
+def print_trend(weeks):
     print("=" * 64)
     print("WEEKLY MODEL TREND (assistant turns + est cost)")
     print("=" * 64)
@@ -428,10 +450,13 @@ def trend_report(roots):
         W = weeks[wk]
         t = W["turns"]
         tot = sum(t.values()) or 1
-        _, cost = cost_of(W["tok"])
         print(f"  {wk:9s} {tot:6d} {100*t['opus']//tot:5d}% "
-              f"{100*t['sonnet']//tot:5d}% {100*t['haiku']//tot:5d}% ${cost:8,.0f}")
+              f"{100*t['sonnet']//tot:5d}% {100*t['haiku']//tot:5d}% ${week_cost(W):8,.0f}")
     print()
+
+
+def trend_report(roots):
+    print_trend(compute_trend(roots))
 
 
 SKILL_BODY_RE = re.compile(r"skills/([a-z0-9-]+)/SKILL\.md", re.I)
@@ -443,16 +468,17 @@ def detect_skill(raw, cmd):
     return m.group(1) if m else None
 
 
-def adherence_report(roots, config_path):
-    """Per-skill expected (config) vs actual model used during its invocations."""
-    try:
-        cfg = json.load(open(config_path))
-    except Exception as e:
-        print(f"cannot read tier config {config_path}: {e}", file=sys.stderr)
-        return
+def compute_adherence(roots, config_path):
+    """Per-skill expected (config) vs actual model, bucketed by ISO week.
+
+    Returns (expected, per_week) where per_week[week][skill] = Counter(actual
+    dominant model per invocation). The invocation's week is the ISO week of the
+    user prompt that launched the skill.
+    """
+    cfg = json.load(open(config_path))
     tiers, assign = cfg["tiers"], cfg["skills"]
     expected = {s: tiers[t]["model"] for s, t in assign.items()}
-    per = defaultdict(Counter)  # skill -> Counter(actual dominant model)
+    per_week = defaultdict(lambda: defaultdict(Counter))
 
     for name, root in roots.items():
         for f in sorted(glob(os.path.join(root, "*", "*.jsonl"))):
@@ -465,9 +491,10 @@ def adherence_report(roots, config_path):
             def flush(cur):
                 if cur is None or not cur["skill"] or not cur["models"]:
                     return
-                if cur["skill"] not in expected:
+                if cur["skill"] not in expected or not cur["week"]:
                     return
-                per[cur["skill"]][cur["models"].most_common(1)[0][0]] += 1
+                dom = cur["models"].most_common(1)[0][0]
+                per_week[cur["week"]][cur["skill"]][dom] += 1
 
             for d in recs:
                 t = d.get("type")
@@ -483,7 +510,8 @@ def adherence_report(roots, config_path):
                         cur = None
                         continue
                     flush(cur)
-                    cur = {"skill": detect_skill(raw, cmd), "models": Counter()}
+                    cur = {"skill": detect_skill(raw, cmd), "models": Counter(),
+                           "week": _iso_week(d.get("timestamp", ""))}
                 elif t == "assistant":
                     if d.get("isSidechain") or cur is None:
                         continue
@@ -491,6 +519,30 @@ def adherence_report(roots, config_path):
                     if fam in ("opus", "sonnet", "haiku"):
                         cur["models"][fam] += 1
             flush(cur)
+
+    return expected, per_week
+
+
+def adherence_for_week(expected, per_week, wk):
+    """Adherence summary for one ISO week: overall %, match/n, per-skill mix."""
+    skills = per_week.get(wk, {})
+    match = n = 0
+    out = {}
+    for s, c in skills.items():
+        cn = sum(c.values())
+        match += c.get(expected[s], 0)
+        n += cn
+        out[s] = {"exp": expected[s], "mix": dict(c)}
+    return {"overall_pct": round(100.0 * match / n, 1) if n else None,
+            "match": match, "n": n, "skills": out}
+
+
+def print_adherence(expected, per_week):
+    # all-time view = sum across weeks
+    per = defaultdict(Counter)
+    for wk, skills in per_week.items():
+        for s, c in skills.items():
+            per[s].update(c)
 
     print("=" * 64)
     print("TIER ADHERENCE (skill invocations: expected vs actual model)")
@@ -512,6 +564,177 @@ def adherence_report(roots, config_path):
     print()
 
 
+def adherence_report(roots, config_path):
+    try:
+        expected, per_week = compute_adherence(roots, config_path)
+    except Exception as e:
+        print(f"cannot read tier config {config_path}: {e}", file=sys.stderr)
+        return
+    print_adherence(expected, per_week)
+
+
+# ---------------------------------------------------------------------------
+# WEEKLY DIGEST: snapshot persistence + delta header (adherence-centric)
+# ---------------------------------------------------------------------------
+
+def load_snapshot():
+    try:
+        return json.load(open(SNAPSHOT_PATH))
+    except Exception:
+        return {}
+
+
+def write_snapshot(expected, per_week):
+    """Backfill every week present in the logs. Idempotent: re-run overwrites
+    the week's entry, never duplicates."""
+    snap = load_snapshot()
+    for wk in per_week:
+        snap[wk] = {"adherence": adherence_for_week(expected, per_week, wk)}
+    os.makedirs(REPORT_DIR, exist_ok=True)
+    with open(SNAPSHOT_PATH, "w") as fh:
+        json.dump(snap, fh, indent=2, sort_keys=True)
+    return snap
+
+
+def current_iso_week():
+    y, w, _ = datetime.date.today().isocalendar()
+    return f"{y}-W{w:02d}"
+
+
+def _eligible_weeks(weeks, current):
+    """Complete weeks (strictly before the current, partial week), honoring
+    the optional ROLLOUT_WEEK floor. Sorted ascending."""
+    ws = [w for w in weeks if w < current]
+    if ROLLOUT_WEEK:
+        ws = [w for w in ws if w >= ROLLOUT_WEEK]
+    return sorted(ws)
+
+
+def drift_weeks(snap, skill, this_wk):
+    """Consecutive weeks (counting back from this_wk) the skill drifted.
+    Breaks at the first clean OR absent week. Honors ROLLOUT_WEEK floor."""
+    wks = sorted((w for w in snap if w <= this_wk
+                  and (not ROLLOUT_WEEK or w >= ROLLOUT_WEEK)), reverse=True)
+    streak = 0
+    for w in wks:
+        sk = snap[w]["adherence"]["skills"].get(skill)
+        if not sk:
+            break
+        if any(m != sk["exp"] for m in sk["mix"]):
+            streak += 1
+        else:
+            break
+    return streak
+
+
+def action_for(exp):
+    if exp == "haiku":
+        return "T1 ran pricier -> check launch path / hook"
+    if exp == "sonnet":
+        return "re-tier up or add model override"
+    if exp == "opus":
+        return "ran cheaper -> check model override / hook"
+    return "review"
+
+
+def _delta_pct(cur, prev):
+    if prev in (None, 0):
+        return "n/a"
+    d = 100.0 * (cur - prev) / prev
+    arrow = "^" if d > 0 else ("v" if d < 0 else "=")
+    return f"{arrow}{abs(d):.0f}%"
+
+
+def _delta_pt(cur, prev):
+    if cur is None or prev is None:
+        return "n/a"
+    d = cur - prev
+    arrow = "^" if d > 0 else ("v" if d < 0 else "=")
+    return f"{arrow}{abs(d):.0f}pt"
+
+
+def digest_report(roots, config_path):
+    """TL;DR header: spend/opus from trend, adherence/drift from snapshot.
+    Writes the snapshot (backfill all weeks) as a side effect."""
+    weeks = compute_trend(roots)
+    try:
+        expected, per_week = compute_adherence(roots, config_path)
+    except Exception as e:
+        print(f"cannot read tier config {config_path}: {e}", file=sys.stderr)
+        return
+    snap = write_snapshot(expected, per_week)
+    cur = current_iso_week()
+
+    tw = _eligible_weeks(weeks, cur)
+    this_wk = tw[-1] if tw else None
+    prev_wk = tw[-2] if len(tw) >= 2 else None
+
+    print("=" * 64)
+    if not this_wk:
+        print("CC USAGE DIGEST -- no complete week of data yet")
+        print("=" * 64)
+        print()
+        return
+    hdr = f"CC USAGE DIGEST -- {this_wk}"
+    hdr += f" (vs {prev_wk}, last complete weeks)" if prev_wk else " (baseline, no prior week)"
+    print(hdr)
+    print("=" * 64)
+
+    # spend + opus% from trend (raw logs, ISO-week bucketed)
+    Wc = weeks[this_wk]
+    cost_c, opus_c = week_cost(Wc), week_opus_pct(Wc)
+    cost_p = opus_p = None
+    if prev_wk:
+        Wp = weeks[prev_wk]
+        cost_p, opus_p = week_cost(Wp), week_opus_pct(Wp)
+    print(f"  spend    ${cost_c:>7,.0f}   {_delta_pct(cost_c, cost_p)}")
+    print(f"  opus%    {opus_c:>6d}%   {_delta_pt(opus_c, opus_p)}")
+
+    # adherence from snapshot (THE signal)
+    a_c = snap[this_wk]["adherence"]
+    a_p = snap[prev_wk]["adherence"] if (prev_wk and prev_wk in snap) else None
+    ac = a_c["overall_pct"]
+    ap = a_p["overall_pct"] if a_p else None
+    ac_s = f"{ac:.0f}%" if ac is not None else "n/a"
+    print(f"  adher.   {ac_s:>7}   {_delta_pt(ac, ap)}   ({a_c['match']}/{a_c['n']})")
+    print()
+
+    # drift list: skills with any off-tier invocation this week
+    drift = []
+    for s, info in a_c["skills"].items():
+        exp, mix = info["exp"], info["mix"]
+        off = sum(v for m, v in mix.items() if m != exp)
+        if off == 0:
+            continue
+        drift.append((s, exp, mix, off, sum(mix.values()), drift_weeks(snap, s, this_wk)))
+
+    if not drift:
+        print("  DRIFT: none -- all skills on-tier this week.")
+        print()
+        return
+
+    def line(d):
+        s, exp, mix, off, n, streak = d
+        actual = ",".join(f"{m}:{v}" for m, v in
+                          sorted(mix.items(), key=lambda kv: -kv[1]) if m != exp)
+        return (f"  {s:26s} exp {exp:6s} -> {actual:13s} "
+                f"{off}/{n}  {streak}wk  -> {action_for(exp)}")
+
+    act = [d for d in drift if d[5] >= 2 or d[3] >= 3]
+    minor = [d for d in drift if d not in act]
+    act.sort(key=lambda d: (-d[5], -d[3]))
+    minor.sort(key=lambda d: (-d[5], -d[3]))
+    if act:
+        print("  DRIFT (act):")
+        for d in act:
+            print(line(d))
+    if minor:
+        print("  DRIFT (minor / watch):")
+        for d in minor:
+            print(line(d))
+    print()
+
+
 def main():
     ap = argparse.ArgumentParser(description="Claude Code usage benchmark across profiles.")
     ap.add_argument("--profile", choices=list(PROFILES) + ["all"], default="all",
@@ -521,6 +744,8 @@ def main():
                     help="weekly model-mix + est cost trend (shows the shift over time)")
     ap.add_argument("--adherence", action="store_true",
                     help="per-skill expected (config) vs actual model used")
+    ap.add_argument("--digest", action="store_true",
+                    help="TL;DR delta header (writes weekly snapshot as a side effect)")
     ap.add_argument("--config", default=TIER_CONFIG, help="path to skill-tiers.json")
     args = ap.parse_args()
 
@@ -531,6 +756,9 @@ def main():
     else:
         roots = {args.profile: PROFILES[args.profile]}
 
+    if args.digest:
+        digest_report(roots, args.config)
+        return
     if args.trend:
         trend_report(roots)
         return

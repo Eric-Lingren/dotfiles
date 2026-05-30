@@ -146,6 +146,10 @@ _fix_cursor() { echo -ne '\e[1 q'; }
 precmd_functions+=(_fix_cursor)
 
 
+# Weekly Claude Code usage digest nudge (once per new report). Re-read: ccusage
+[[ -f ~/.dotfiles/claude-code-shared/scripts/cc-usage-nudge.sh ]] && \
+  source ~/.dotfiles/claude-code-shared/scripts/cc-usage-nudge.sh
+
 
 # ─────────────────────────────────────────#
 # MACHINE-LOCAL OVERRIDES                  #

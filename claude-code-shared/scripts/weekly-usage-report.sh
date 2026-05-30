@@ -13,8 +13,16 @@ mkdir -p "$OUTDIR"
 
 STAMP=$(date +%Y-%m-%d)
 OUT="$OUTDIR/usage-$STAMP.txt"
+DIGEST="$OUTDIR/digest-latest.txt"
+
+# Digest first: it backfills the snapshot and prints the TL;DR delta header.
+# Capture once, reuse for both the standalone nudge file and the report top.
+DIGEST_TEXT="$("$PY" "$SCRIPT" --digest 2>&1)"
+printf '%s\n' "$DIGEST_TEXT" > "$DIGEST"
 
 {
+  printf '%s\n' "$DIGEST_TEXT"
+  echo
   echo "Claude Code usage report — $STAMP"
   echo "================================================================"
   echo
@@ -32,3 +40,4 @@ OUT="$OUTDIR/usage-$STAMP.txt"
 } > "$OUT" 2>&1
 
 echo "wrote $OUT"
+echo "wrote $DIGEST"
