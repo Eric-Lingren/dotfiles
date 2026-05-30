@@ -9,7 +9,8 @@ C_RESET='\033[0m'
 C_GRAY='\033[38;5;245m'  # explicit gray for default text
 C_BAR_EMPTY='\033[38;5;238m'
 C_EFFORT='\033[38;5;172m'  # match caveman badge color
-C_WARN='\033[38;5;196m'  # red for context window warning
+C_WARN='\033[38;5;196m'  # red for context window warning (>=80%)
+C_NUDGE='\033[38;5;214m'  # amber nudge for context window (>=50%)
 C_OFFICE='\033[1;38;5;39m'   # bold blue: office (CCO)
 C_HOME='\033[1;38;5;39m'     # bold blue: home (CCH)
 case "$COLOR" in
@@ -167,6 +168,8 @@ if [[ -n "$session_pct" && "$session_pct" != "null" && -n "$cw_pct" && "$cw_pct"
     fi
     if [[ $cw_pct -ge 80 ]]; then
         ctxwin="  |  ${C_WARN}${cw_k}k/${max_display} (${cw_pct}%)"
+    elif [[ $cw_pct -ge 50 ]]; then
+        ctxwin="  |  ${C_NUDGE}${cw_k}k/${max_display} (${cw_pct}%)"
     else
         ctxwin="  |  ${C_GRAY}${cw_k}k/${max_display} (${cw_pct}%)"
     fi

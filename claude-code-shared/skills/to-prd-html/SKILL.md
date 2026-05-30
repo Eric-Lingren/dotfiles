@@ -19,13 +19,11 @@ This skill takes the current conversation context and codebase understanding and
    2. Personal
    ```
 
-   This determines the color theme and branding applied to the HTML output:
-   - **Work**: use `assets/theme-work.css` from this skill's directory. Light, professional, blue-anchored palette. Include the company logo SVG at the top of the page (see `assets/logo-work.svg` in this skill's directory).
-   - **Personal**: use `assets/theme-personal.css` from this skill's directory. Dark, warm, ochre/earth-tone palette. No logo.
+   This determines the color theme applied to the HTML output. Both themes are dark; the chosen theme file is the single source of truth for the palette:
+   - **Work**: use `assets/theme-work.css` from this skill's directory. Dark, professional, blue-anchored palette.
+   - **Personal**: use `assets/theme-personal.css` from this skill's directory. Dark, warm, ochre/earth-tone palette.
 
    Read the chosen theme file and replace the `:root` CSS custom properties block in the template with the values from the theme file. Also update the `font-family` declarations on `body` and heading elements to use `var(--font-body)` and `var(--font-heading)` respectively.
-
-   For **work** PRDs, insert the logo SVG (from `assets/logo-work.svg`) right after the opening `<body>` tag, wrapped in a `<div class="logo" style="margin-bottom: 1.5rem;">` container. Set the SVG height to `36px`.
 
 3. **Derive a slug** from the feature name, lowercase, kebab-case, max ~40 chars (e.g. `user-auth-flow`).
 
@@ -72,49 +70,7 @@ The template file (`resources/template.html`) provides the outer shell: CSS, Jav
 
 Every HTML PRD MUST contain a `<script type="application/json" id="prd-data">` block at the bottom of `<body>`, before the closing `</body>` tag. This block contains the PRD content as structured JSON so that `/to-tasks` and other agents can extract it without parsing HTML.
 
-JSON structure:
-
-```json
-{
-  "title": "PRD title",
-  "slug": "kebab-case-slug",
-  "created": "ISO 8601 timestamp",
-  "problem_statement": "The problem in plain text",
-  "solution": "The solution in plain text",
-  "evidence": "One or two sentences: the data, complaints, or research that motivated this. Concise.",
-  "success_metrics": [
-    "Specific measurable metric 1",
-    "Specific measurable metric 2"
-  ],
-  "user_stories": [
-    {
-      "actor": "developer",
-      "feature": "what they want",
-      "benefit": "why they want it"
-    }
-  ],
-  "implementation_decisions": [
-    "Decision 1 as plain text",
-    "Decision 2 as plain text"
-  ],
-  "testing_decisions": [
-    "Testing decision 1",
-    "Testing decision 2"
-  ],
-  "out_of_scope": [
-    "Item 1",
-    "Item 2"
-  ],
-  "risks_and_tradeoffs": [
-    "Risk or tradeoff 1",
-    "Risk or tradeoff 2"
-  ],
-  "further_notes": [
-    "Note 1",
-    "Note 2"
-  ]
-}
-```
+JSON structure: see `resources/prd-data-schema.json` in this skill's directory for the full field list and a worked example. Populate every field with specific values. Do not emit the placeholder text from the example.
 
 ### Mandatory interactive features
 
@@ -144,7 +100,7 @@ Include these ONLY when the PRD content warrants them:
 ### Design constraints
 
 - Single self-contained `.html` file. No external dependencies. CSS in `<style>`, JS in `<script>`.
-- Dark mode by default. Dark background (#1a1a2e or similar), light text, high contrast.
+- Dark mode. Colors come from the chosen theme file's `:root` variables. Do not hardcode hex values in the PRD. Light text on dark surface, high contrast.
 - Minimal aesthetic. No gradients, no glass morphism, no emoji headers, no decorative elements.
 - Serif or clean sans-serif body text. 60-75ch line width. Generous spacing.
 - Mobile responsive. Include viewport meta tag.

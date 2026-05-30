@@ -1,0 +1,9 @@
+# Learnings: to-prd-html
+
+## 2026-05-29 - Iteration 1
+
+- **mandatory_questions_asked** [40 avg; cells: S1=50, S2=0, S4=25, S5=50]: The 3 mandatory questions (work/personal, branch target, output-dir confirm) leave NO durable trace in the written HTML, so neither an auditor nor the eval harness can confirm they were asked. Judges split wildly (0 vs 100) on the same artifact. Fix options: (a) have the skill echo the 3 answers into a small HTML comment or the prd-data JSON (e.g. `"_provenance": {"profile":"work","branch":"...","dir":"..."}`), making the gate verifiable; (b) clarify in SKILL.md that the questions are interactive-only and not expected in the artifact. Option (a) is better: it also documents how the PRD was generated.
+
+- **WORK-theme vs dark-mode contradiction** [theme=95, design=95; surfaced as S2 theme=25 / design=50 by one judge]: SKILL.md Step 2 defines Work theme as "Light, professional, blue-anchored palette" but the Design constraints section says "Dark mode by default. Dark background (#1a1a2e or similar)." These directly conflict for Work PRDs. Execution agents resolved it inconsistently (some shipped a light work theme, some a dark one). Fix: reconcile the two sections. Either scope "dark mode by default" to Personal only, or state explicitly that the Work theme overrides the dark-mode default. The theme CSS files (assets/theme-work.css) should be the single source of truth and SKILL.md should say "use the palette from the theme file" rather than hardcoding "#1a1a2e".
+
+- **no_auto_commit** [85 avg; cells: S2=75, S4=75]: Same artifact-visibility issue as mandatory_questions. Whether the skill reported the path and suggested /to-tasks is a closing-message behavior invisible in the HTML. Judges defaulted to 50-75 when they could not confirm. Not a skill defect; an eval-observability limit. No action unless provenance (above) is added.

@@ -1,0 +1,39 @@
+{
+  "title": "PRD title",
+  "slug": "kebab-case-slug",
+  "created": "ISO 8601 timestamp",
+  "problem_statement": "The problem in plain text",
+  "solution": "The solution in plain text",
+  "evidence": "One or two sentences: the data, complaints, or research that motivated this. Concise.",
+  "success_metrics": [
+    "Specific measurable metric 1",
+    "Specific measurable metric 2"
+  ],
+  "user_stories": [
+    {
+      "actor": "developer",
+      "feature": "what they want",
+      "benefit": "why they want it"
+    }
+  ],
+  "implementation_decisions": [
+    "Decision 1 as plain text",
+    "Decision 2 as plain text"
+  ],
+  "testing_decisions": [
+    "Testing decision 1",
+    "Testing decision 2"
+  ],
+  "out_of_scope": [
+    "Item 1",
+    "Item 2"
+  ],
+  "risks_and_tradeoffs": [
+    "Risk or tradeoff 1",
+    "Risk or tradeoff 2"
+  ],
+  "further_notes": [
+    "Note 1",
+    "Note 2"
+  ]
+}

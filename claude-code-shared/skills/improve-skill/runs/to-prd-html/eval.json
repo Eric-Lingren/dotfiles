@@ -1,0 +1,165 @@
+{
+  "skill": "to-prd-html",
+  "version": "1",
+  "assertions": [
+    {
+      "name": "mandatory_questions_asked",
+      "description": "Skill asks all 3 mandatory questions in order (work/personal, branch target, output dir confirmation) before writing anything to disk.",
+      "rubric": {
+        "0": "Writes file without asking any mandatory question",
+        "25": "Asks only one of three mandatory questions, or asks after writing",
+        "50": "Asks two of three questions, or asks all three but out of order or after writing begins",
+        "75": "All three asked in correct order but one phrased ambiguously or allows skipping",
+        "100": "All three asked in correct order with no file written until each is explicitly answered"
+      }
+    },
+    {
+      "name": "theme_applied_correctly",
+      "description": "Work choice applies theme-work.css values and logo SVG after opening body tag. Personal choice applies theme-personal.css with no logo. Root CSS vars replaced, font-family uses CSS vars.",
+      "rubric": {
+        "0": "No theme applied, wrong theme used, or logo missing for work / present for personal",
+        "25": "Theme partially applied (some vars replaced but not all), or logo not wrapped in correct container",
+        "50": "Theme vars present but font-family does not use CSS vars, or logo present but not immediately after opening body tag",
+        "75": "Theme correct with at most one minor deviation (e.g. logo height not 36px)",
+        "100": "Correct theme CSS vars applied, font-family uses var(--font-body)/var(--font-heading), logo positioned correctly for work or absent for personal"
+      }
+    },
+    {
+      "name": "embedded_json_complete",
+      "description": "PRD contains a script block with type application/json and id prd-data before the closing body tag, with all required fields populated.",
+      "rubric": {
+        "0": "No JSON block present in the output",
+        "25": "JSON block present but missing 3 or more required fields, or the JSON is malformed",
+        "50": "JSON block present with all fields, but 1-2 fields are empty, null, or contain generic placeholder text",
+        "75": "All fields present and populated with at most one weak field value",
+        "100": "JSON block present with all 12+ required fields populated with specific non-placeholder values, valid JSON, positioned before closing body tag"
+      }
+    },
+    {
+      "name": "mandatory_interactive_features",
+      "description": "All 5 mandatory features present: collapsible sections via details/summary (expanded by default), tabbed views for User Stories / Implementation / Testing, color-coded risk tags, sticky TOC with anchor links, review checklist with progress bar.",
+      "rubric": {
+        "0": "Fewer than 2 mandatory features present",
+        "25": "2-3 features present, with tabs or collapsible sections missing",
+        "50": "4 of 5 features present, or all 5 present but one is non-functional",
+        "75": "All 5 present and functional, at most one minor gap (e.g. progress bar absent but checkboxes present)",
+        "100": "All 5 mandatory features present, functional, and implemented as specified in the skill"
+      }
+    },
+    {
+      "name": "content_sections_complete",
+      "description": "At least 5 user stories in As/I want/so that format. All required sections present: problem, solution, evidence, success metrics, user stories, implementation decisions, testing decisions, out of scope, risks, notes.",
+      "rubric": {
+        "0": "Fewer than 3 sections present, or fewer than 3 user stories",
+        "25": "All sections present but fewer than 5 user stories, or user stories missing the 3-part actor/feature/benefit format",
+        "50": "All sections present, 5+ user stories in correct format, but one major section is a single vague sentence",
+        "75": "All sections present, 5+ user stories in correct format, minor thinness in one section",
+        "100": "All sections present and substantive, 5+ user stories in correct format, comprehensive coverage of all required content areas"
+      }
+    },
+    {
+      "name": "json_quality",
+      "description": "success_metrics are specific and measurable (not category labels). evidence is 1-2 sentences max with a concrete data signal. risks_and_tradeoffs are distinct from out_of_scope items.",
+      "rubric": {
+        "0": "success_metrics are category labels like 'improve performance', evidence is a multi-paragraph section, risks and out_of_scope are the same list",
+        "25": "Most metrics are vague, evidence is 3+ sentences, risks and out_of_scope substantially overlap",
+        "50": "Mix of specific and vague metrics, evidence slightly long, risks partially distinct from out_of_scope",
+        "75": "Metrics mostly specific with at most one vague entry, evidence is 1-2 sentences, risks clearly distinct from scope",
+        "100": "All metrics specific and measurable with concrete targets, evidence is 1-2 sentences with a concrete signal, risks and out_of_scope fully distinct with no overlap"
+      }
+    },
+    {
+      "name": "design_constraints_met",
+      "description": "Single self-contained HTML file (CSS in style tag, JS in script tag), no external dependencies, dark mode default, mobile responsive with viewport meta tag, minimal aesthetic with no decorative color or gradients.",
+      "rubric": {
+        "0": "External CSS or JS links present, or light mode default, or no viewport meta tag",
+        "25": "Mostly self-contained but 1-2 external dependencies, or missing dark mode",
+        "50": "Self-contained and dark mode present, but no viewport meta tag, or decorative gradient used",
+        "75": "All constraints met with at most one minor violation such as a subtle decorative element",
+        "100": "Fully self-contained, dark mode default, viewport meta present, mobile responsive CSS, zero external deps, zero decorative color"
+      }
+    },
+    {
+      "name": "conditional_features_respected",
+      "description": "SVG architecture diagram only appears when 3+ modules have non-trivial relationships. Side-by-side comparison only when the PRD presents explicit alternatives. Neither added gratuitously.",
+      "rubric": {
+        "0": "SVG diagram added for a simple single-module PRD, or comparison added when no alternatives were discussed",
+        "25": "Conditional feature present but triggered incorrectly (e.g. diagram for 2 modules with trivial relationships)",
+        "50": "Conditional features absent even when PRD has 3+ modules with non-trivial relationships (missed opportunity, not a hard violation)",
+        "75": "Features triggered correctly with minor formatting issue in the conditional element",
+        "100": "Diagram present when 3+ modules warrant it and absent otherwise. Comparison present when explicit alternatives exist and absent otherwise."
+      }
+    },
+    {
+      "name": "no_auto_commit",
+      "description": "Skill writes file to disk but does not auto-commit or push. It reports the file path to the user and suggests running /to-tasks next.",
+      "rubric": {
+        "0": "Skill auto-commits and/or pushes to remote without user request",
+        "25": "Skill proposes or hints at committing without explicit user request",
+        "50": "Skill writes file but fails to report the path or omits the /to-tasks suggestion",
+        "75": "Writes file, reports path, suggests /to-tasks, with minor phrasing gap",
+        "100": "File written, absolute path reported to user, /to-tasks suggested, no commit or push attempt"
+      }
+    },
+    {
+      "name": "number_consistency",
+      "description": "All counts, quantities, list lengths, and numeric references are internally consistent. If the output says '5 items' then exactly 5 items appear. Step numbers are sequential with no gaps or duplicates.",
+      "rubric": {
+        "0": "Multiple numeric contradictions: stated counts don't match actual counts, step numbers skip or repeat, quantities referenced earlier differ from later usage",
+        "25": "One clear numeric mismatch: a stated count disagrees with actual items, or a step number is wrong",
+        "50": "Numbers are technically correct but ambiguous: vague quantities like 'several' alongside exact counts, or implicit counts that require reader inference to verify",
+        "75": "All numbers consistent with at most one trivially unclear reference that does not mislead",
+        "100": "Every count, step number, list length, and numeric reference is exact and verifiable against the output content"
+      }
+    },
+    {
+      "name": "no_contradictions",
+      "description": "No statement in the output contradicts another statement in the same output. Instructions do not conflict. Constraints stated in one section are not violated in another.",
+      "rubric": {
+        "0": "Direct contradictions: output says X in one place and not-X in another, or gives conflicting instructions for the same action",
+        "25": "One clear contradiction or two statements that are difficult to reconcile without assuming one is wrong",
+        "50": "No direct contradictions but some tension between sections that could confuse a reader about intended behavior",
+        "75": "Fully consistent with at most one minor ambiguity that does not create a real conflict",
+        "100": "Zero contradictions. Every statement is compatible with every other statement. Constraints are honored throughout"
+      }
+    },
+    {
+      "name": "plan_cohesion",
+      "description": "The output presents a cohesive path from start to finish. Steps build on each other logically. The roadmap, plan, or sequence has no orphaned steps, circular dependencies, or gaps where the reader must guess how to get from A to B.",
+      "rubric": {
+        "0": "Disjointed output: steps reference things not yet introduced, sections appear unrelated, or the overall flow has no clear direction",
+        "25": "General direction exists but significant gaps: a step depends on something never mentioned, or sections are loosely connected with missing transitions",
+        "50": "Flow is followable but has one structural gap or an orphaned section that does not connect to the rest",
+        "75": "Cohesive flow with clear progression. At most one minor ordering issue that does not block understanding",
+        "100": "Fully cohesive: each section builds on prior context, dependencies are introduced before use, and the output reads as a unified whole"
+      }
+    }
+  ],
+  "scenarios": [
+    {
+      "name": "simple_work_crud_feature",
+      "prompt": "Based on our conversation about adding a bulk-invite feature to the investor portal (admins can upload a CSV of email addresses to invite multiple investors at once), produce a PRD. This is for work.",
+      "context": "Single feature, one module, no alternatives discussed. Minimal PRD. No SVG diagram warranted. Work profile, so theme-work.css and logo apply."
+    },
+    {
+      "name": "complex_multi_module_feature",
+      "prompt": "We have been discussing a real-time notifications system. It needs three components: a websocket gateway, a fan-out service, and a persistence layer for notification history. We considered two approaches: push delivery via persistent websocket connections, or client-side polling every 30 seconds. Create a PRD for this.",
+      "context": "3+ modules with non-trivial relationships (should trigger SVG diagram). Explicit trade-off between two approaches (should trigger side-by-side comparison). Work profile."
+    },
+    {
+      "name": "personal_project_prd",
+      "prompt": "Create a PRD for my personal project: a daily journaling app with AI reflection prompts. I want to track mood trends over time and use local-first storage so nothing leaves my device.",
+      "context": "Personal profile. No company logo, personal dark theme. No Linear or work tooling context."
+    },
+    {
+      "name": "minimal_context_prd",
+      "prompt": "Make a PRD for adding dark mode to the dashboard.",
+      "context": "Very brief prompt. Skill must synthesize without interviewing. Must still ask all 3 mandatory questions before writing. Should produce a complete PRD despite minimal input."
+    },
+    {
+      "name": "feature_with_explicit_risks",
+      "prompt": "Create a PRD for the data export feature. Key risks: GDPR compliance requirements for data portability, large file timeouts for exports over 100MB, and race conditions when two concurrent exports are triggered for the same account.",
+      "context": "Explicit risks provided by user. risks_and_tradeoffs must be populated from these, clearly distinct from out_of_scope. Work profile."
+    }
+  ]
+}

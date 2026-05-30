@@ -1,0 +1,59 @@
+{
+  "runs": [
+    {
+      "timestamp": "2026-05-29",
+      "iterations": 1,
+      "exit_reason": "strong_score",
+      "behavioral_score": 93,
+      "structural_score": 71,
+      "scores": [
+        {
+          "iteration": 1,
+          "total_cells": 60,
+          "average_score": 93,
+          "per_assertion_average": {
+            "mandatory_questions_asked": 40,
+            "theme_applied_correctly": 95,
+            "embedded_json_complete": 100,
+            "mandatory_interactive_features": 100,
+            "content_sections_complete": 100,
+            "json_quality": 100,
+            "design_constraints_met": 95,
+            "conditional_features_respected": 100,
+            "no_auto_commit": 85,
+            "number_consistency": 100,
+            "no_contradictions": 100,
+            "plan_cohesion": 100
+          },
+          "per_scenario_average": {
+            "simple_work_crud_feature": 94,
+            "complex_multi_module_feature": 85,
+            "personal_project_prd": 98,
+            "minimal_context_prd": 92,
+            "feature_with_explicit_risks": 96
+          },
+          "notable_cells": [
+            {"scenario": "complex_multi_module_feature", "assertion": "mandatory_questions_asked", "score": 0, "judge_scores": [0, 0, 0], "reason": "No durable trace of the 3 mandatory questions in the HTML artifact."},
+            {"scenario": "minimal_context_prd", "assertion": "mandatory_questions_asked", "score": 25, "judge_scores": [100, 0, 0], "reason": "Judges split; gate not verifiable from artifact."},
+            {"scenario": "simple_work_crud_feature", "assertion": "mandatory_questions_asked", "score": 50, "judge_scores": [100, 50, 0], "reason": "Gate not verifiable from artifact."},
+            {"scenario": "feature_with_explicit_risks", "assertion": "mandatory_questions_asked", "score": 50, "judge_scores": [0, 75, 100], "reason": "Gate not verifiable from artifact."},
+            {"scenario": "complex_multi_module_feature", "assertion": "theme_applied_correctly", "score": 75, "judge_scores": [25, 100, 100], "reason": "One judge flagged light work theme vs dark-mode constraint."},
+            {"scenario": "complex_multi_module_feature", "assertion": "design_constraints_met", "score": 75, "judge_scores": [50, 100, 100], "reason": "WORK theme is light, conflicts with dark-mode-default design constraint."}
+          ]
+        }
+      ],
+      "structural_recommendations": [
+        {"item": "token_weight", "pass": false, "detail": "~10.1k tokens total (SKILL.md ~2.0k + template.html ~3.7k + logo-work.svg ~4.1k + theme CSS ~0.3k), over the 5k threshold. Driver is runtime-loaded assets (logo SVG + template), largely irreducible; instruction prose itself is lean at ~2k."},
+        {"item": "inline_knowledge_extraction", "pass": true, "detail": "No prose blocks over 200 words; content is bulleted."},
+        {"item": "example_extraction", "pass": false, "detail": "The embedded prd-data JSON structure example (~30 lines) is inline in SKILL.md. Extract to resources/prd-data-schema.json and reference it."},
+        {"item": "missing_resource_files", "pass": true, "detail": "No undefined concept referenced 3+ times."},
+        {"item": "script_candidates", "pass": true, "detail": "Deterministic filename step already uses doc-filename.sh; remaining steps are interactive or trivial."},
+        {"item": "misplaced_files", "pass": true, "detail": "All files in canonical dirs: assets/ (svg, css), resources/ (template.html), scripts/ (next-prefix.sh), SKILL.md at root."},
+        {"item": "stale_references", "pass": true, "detail": "No moves required, no references to update."}
+      ],
+      "promotions": [],
+      "learnings_added": 3,
+      "learnings_pruned": 0
+    }
+  ]
+}

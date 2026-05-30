@@ -23,7 +23,26 @@
       "Skill(update-config)",
       "Read(//Users/eric/**)",
       "Bash(claude --version)",
-      "Bash(break)"
+      "Bash(break)",
+      "Bash(python3 analyze.py)",
+      "Bash(awk -F/ '{print NF}')",
+      "Bash(awk -F/ 'NF>7')",
+      "Bash(python3 -c ' *)",
+      "Bash(awk -F/ 'NF==7')",
+      "Bash(xargs -I{} stat -f \"%Sm\" -t \"%Y-%m-%d\" {})",
+      "Bash(python3 /Users/eric/.dotfiles/claude-code-shared/scripts/cc-usage-bench.py)",
+      "WebFetch(domain:www.mindstudio.ai)",
+      "WebFetch(domain:dev.to)",
+      "Bash(python3 *)",
+      "Bash(bash /Users/eric/.dotfiles/claude-code-shared/hooks/tier-advisor.sh)",
+      "Bash(CLAUDE_TIER_ADVISOR=0 bash -c 'echo \"{\\\\\"prompt\\\\\":\\\\\"architect this\\\\\"}\" | bash /Users/eric/.dotfiles/claude-code-shared/hooks/tier-advisor.sh')",
+      "Bash(ls -d resources)",
+      "Bash(ls resources/)",
+      "Bash(bash hooks/tier-advisor.sh)",
+      "Bash(launchctl list *)",
+      "Bash([ -f \"$d/package.json\" ])",
+      "Bash([ -x \"$d/node_modules/.bin/$b\" ])",
+      "Bash(echo \"exit:$?\")"
     ]
   },
   "prefersReducedMotion": false
