@@ -12,6 +12,7 @@
     "find-work": "T1",
     "tasks-to-linear": "T2",
     "run-task-followups": "T2",
+    "usage": "T2",
     "run-tasks": "T3",
     "tdd": "T3",
     "improve-component": "T3",

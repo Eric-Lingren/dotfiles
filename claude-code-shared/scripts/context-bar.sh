@@ -10,6 +10,8 @@ C_GRAY='\033[38;5;245m'  # explicit gray for default text
 C_BAR_EMPTY='\033[38;5;238m'
 C_EFFORT='\033[38;5;172m'  # match caveman badge color
 C_WARN='\033[38;5;196m'  # red for context window warning
+C_OFFICE='\033[1;38;5;39m'   # bold blue: office (CCO)
+C_HOME='\033[1;38;5;39m'     # bold blue: home (CCH)
 case "$COLOR" in
     orange)   C_ACCENT='\033[38;5;173m' ;;
     blue)     C_ACCENT='\033[38;5;74m' ;;
@@ -30,6 +32,23 @@ model=$(echo "$input" | jq -r '.model.display_name // .model.id // "?"')
 effort=$(echo "$input" | jq -r '.effort.level // empty')
 cwd=$(echo "$input" | jq -r '.cwd // empty')
 dir=$(basename "$cwd" 2>/dev/null || echo "?")
+
+# Profile badge: CCO (office) vs CCH (home), so it's clear which instance this
+# terminal is when several run at once. Derived from the active config dir,
+# falling back to the transcript path.
+profile=""
+profile_color=""
+case "${CLAUDE_CONFIG_DIR:-}" in
+    *.cco*) profile="CCO"; profile_color="$C_OFFICE" ;;
+    *.cch*) profile="CCH"; profile_color="$C_HOME" ;;
+esac
+if [[ -z "$profile" ]]; then
+    tp=$(echo "$input" | jq -r '.transcript_path // empty')
+    case "$tp" in
+        */.cco/*) profile="CCO"; profile_color="$C_OFFICE" ;;
+        */.cch/*) profile="CCH"; profile_color="$C_HOME" ;;
+    esac
+fi
 
 # Get git branch, uncommitted file count, and sync status
 branch=""
@@ -192,8 +211,10 @@ else
     caveman_badge="  |  \033[38;5;196m[CAVEMAN:DISABLED]\033[0m"
 fi
 
-# Line 1: Model [effort] | 5h usage | Context window | Token refresh
-line1="${C_ACCENT}${model}"
+# Line 1: [CCO|CCH] Model [effort] | 5h usage | Context window | Token refresh
+line1=""
+[[ -n "$profile" ]] && line1+="${profile_color}${profile} ${C_RESET}"
+line1+="${C_ACCENT}${model}"
 [[ -n "$effort" ]] && line1+=" ${C_EFFORT}[${effort}]"
 line1+="${C_GRAY}  |  ${ctx}${ctxwin}${token_refresh}${C_RESET}"
 

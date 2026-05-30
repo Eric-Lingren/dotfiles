@@ -47,6 +47,26 @@
             "command": "bash \"$HOME/.claude-code-shared/hooks/block-package-publish.sh\""
           }
         ]
+      },
+      {
+        "matcher": "Edit|Write|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$HOME/.claude-code-shared/hooks/block-edit-on-trunk.sh\""
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$HOME/.claude-code-shared/hooks/lint-edited-file.sh\""
+          }
+        ]
       }
     ],
     "UserPromptSubmit": [
