@@ -1,6 +1,8 @@
 ---
 name: tdd
 description: Test-driven development with red-green-refactor loop. Use when user wants to build features or fix bugs using TDD, mentions "red-green-refactor", wants integration tests, asks for test-first development, or wants to backfill tests for existing code.
+model: sonnet
+effort: xhigh
 ---
 
 # Test-Driven Development

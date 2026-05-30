@@ -1,0 +1,38 @@
+{
+  "_doc": "Single source of truth for per-skill model+effort tiering. Edit this, then run scripts/sync-skill-tiers.py --apply (or just commit; the pre-commit hook applies it). Full docs: resources/skill-tiers.md",
+  "tiers": {
+    "T1": { "model": "haiku",  "effort": "low",    "_meaning": "Lookup. No reasoning. File search, status, how-to." },
+    "T2": { "model": "sonnet", "effort": "medium", "_meaning": "Mechanical. Narrow, well-defined scope." },
+    "T3": { "model": "sonnet", "effort": "xhigh",  "_meaning": "Standard build. Context-aware. THIS IS THE SESSION DEFAULT." },
+    "T4": { "model": "opus",   "effort": "xhigh",  "_meaning": "Deep reasoning. Architecture, complex debug, planning." }
+  },
+  "default": "T3",
+  "skills": {
+    "how-to": "T1",
+    "find-work": "T1",
+    "tasks-to-linear": "T2",
+    "run-task-followups": "T2",
+    "run-tasks": "T3",
+    "tdd": "T3",
+    "improve-component": "T3",
+    "code-review": "T3",
+    "to-e2e-tests": "T3",
+    "prototype": "T3",
+    "tldr-tech": "T3",
+    "improve-skill": "T3",
+    "to-prd-html": "T3",
+    "to-tasks": "T3",
+    "grill-me": "T4",
+    "grill-with-docs": "T4",
+    "debug": "T4",
+    "improve-codebase-architecture": "T4"
+  },
+  "delegate": [
+    "run-tasks",
+    "improve-component",
+    "code-review",
+    "to-e2e-tests",
+    "debug",
+    "improve-codebase-architecture"
+  ]
+}

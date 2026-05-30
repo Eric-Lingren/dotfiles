@@ -6,6 +6,8 @@ description: >
   the skill through a learning loop. Also analyzes skill structure for optimization
   opportunities. Use when user says "improve skill", "eval skill", "run evals",
   "optimize skill", "self-improve", or invokes /improve-skill.
+model: sonnet
+effort: xhigh
 ---
 
 # Improve Skill

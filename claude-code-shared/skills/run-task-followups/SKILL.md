@@ -1,6 +1,8 @@
 ---
 name: run-task-followups
 description: Interactive walkthrough of manual follow-up actions from a tasks JSON file. Guides user through each follow-up step-by-step, enriches steps with codebase context, offers help when stuck, and captures friction to improve shared runbooks. Use when user wants guided help completing manual follow-ups after run-tasks.
+model: sonnet
+effort: medium
 ---
 
 # Run Follow-ups

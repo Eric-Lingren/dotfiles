@@ -1,7 +1,23 @@
 ---
 name: run-tasks
 description: Execute tasks from a tasks JSON file sequentially using TDD. Handles branching, status updates, blocker detection, and HITL pausing. Use when user wants to run AI tasks from a docs/tasks/ file.
+model: sonnet
+effort: xhigh
 ---
+
+<!-- tier-delegate: managed by sync-skill-tiers.py -->
+## Delegate menial lookups to Haiku (cost control)
+
+During this skill, push pure read-only lookups DOWN to a cheap subagent instead
+of running them on the current model. This covers: multi-file grep/glob,
+"where is X defined / what calls Y", mapping a directory, reading many files to
+locate something, or fetching a URL for reference.
+
+Use the Agent tool with the `caveman:cavecrew-investigator` subagent (Haiku,
+returns a compressed file:line answer). If that subagent is unavailable, spawn a
+general agent with `model: haiku`. Keep all reasoning, decisions, and edits on
+the current model. Delegate only the menial searching.
+<!-- /tier-delegate -->
 
 # Run Tasks
 

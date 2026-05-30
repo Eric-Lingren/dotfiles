@@ -1,6 +1,8 @@
 ---
 name: find-work
 description: List spike/*, feat/*, and fix/* branches in the current repo with last commit dates. Use when user wants to find previous spikes, feature branches, fix branches, or in-progress research branches.
+model: haiku
+effort: low
 ---
 
 # Find Work

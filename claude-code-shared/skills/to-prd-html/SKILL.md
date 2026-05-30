@@ -1,6 +1,8 @@
 ---
 name: to-prd-html
 description: Turn the current conversation context into an interactive HTML PRD and save it to docs/prd/. Use when user wants to create a PRD from the current context with rich interactive output.
+model: sonnet
+effort: xhigh
 ---
 
 This skill takes the current conversation context and codebase understanding and produces an interactive HTML PRD. Do NOT interview the user. Synthesize what you already know.
