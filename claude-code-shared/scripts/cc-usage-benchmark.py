@@ -24,12 +24,15 @@ Usage:
   cc-usage-bench.py --roots /path/a /path/b   # override roots
 """
 import argparse
+import datetime
 import json
 import os
 import re
 import sys
 from collections import Counter, defaultdict
 from glob import glob
+
+TIER_CONFIG = os.path.expanduser("~/.dotfiles/claude-code-shared/resources/skill-tiers.json")
 
 # profile -> projects root
 PROFILES = {
@@ -381,11 +384,144 @@ def report(title, S, detailed=True):
     print()
 
 
+def _iso_week(ts):
+    try:
+        y, w, _ = datetime.date.fromisoformat(ts[:10]).isocalendar()
+        return f"{y}-W{w:02d}"
+    except Exception:
+        return None
+
+
+def trend_report(roots):
+    """Weekly model-mix + est cost. Shows the shift over time (e.g. post-tiering)."""
+    weeks = {}
+    for name, root in roots.items():
+        for f in sorted(glob(os.path.join(root, "*", "*.jsonl"))):
+            try:
+                recs = [json.loads(l) for l in open(f) if l.strip()]
+            except Exception:
+                continue
+            for d in recs:
+                if d.get("type") != "assistant" or d.get("isSidechain"):
+                    continue
+                wk = _iso_week(d.get("timestamp", ""))
+                if not wk:
+                    continue
+                m = d.get("message", {})
+                fam = model_family(m.get("model"))
+                if fam not in ("opus", "sonnet", "haiku"):
+                    continue
+                W = weeks.setdefault(wk, {"turns": Counter(),
+                                          "tok": defaultdict(lambda: defaultdict(int))})
+                W["turns"][fam] += 1
+                u = m.get("usage", {}) or {}
+                W["tok"][fam]["in"] += u.get("input_tokens", 0)
+                W["tok"][fam]["out"] += u.get("output_tokens", 0)
+                W["tok"][fam]["cache_w"] += u.get("cache_creation_input_tokens", 0)
+                W["tok"][fam]["cache_r"] += u.get("cache_read_input_tokens", 0)
+
+    print("=" * 64)
+    print("WEEKLY MODEL TREND (assistant turns + est cost)")
+    print("=" * 64)
+    print(f"  {'week':9s} {'turns':>6} {'opus%':>6} {'son%':>6} {'hai%':>6} {'est$':>9}")
+    for wk in sorted(weeks):
+        W = weeks[wk]
+        t = W["turns"]
+        tot = sum(t.values()) or 1
+        _, cost = cost_of(W["tok"])
+        print(f"  {wk:9s} {tot:6d} {100*t['opus']//tot:5d}% "
+              f"{100*t['sonnet']//tot:5d}% {100*t['haiku']//tot:5d}% ${cost:8,.0f}")
+    print()
+
+
+SKILL_BODY_RE = re.compile(r"skills/([a-z0-9-]+)/SKILL\.md", re.I)
+
+def detect_skill(raw, cmd):
+    if cmd:
+        return cmd
+    m = SKILL_BODY_RE.search(raw)
+    return m.group(1) if m else None
+
+
+def adherence_report(roots, config_path):
+    """Per-skill expected (config) vs actual model used during its invocations."""
+    try:
+        cfg = json.load(open(config_path))
+    except Exception as e:
+        print(f"cannot read tier config {config_path}: {e}", file=sys.stderr)
+        return
+    tiers, assign = cfg["tiers"], cfg["skills"]
+    expected = {s: tiers[t]["model"] for s, t in assign.items()}
+    per = defaultdict(Counter)  # skill -> Counter(actual dominant model)
+
+    for name, root in roots.items():
+        for f in sorted(glob(os.path.join(root, "*", "*.jsonl"))):
+            try:
+                recs = [json.loads(l) for l in open(f) if l.strip()]
+            except Exception:
+                continue
+            cur = None
+
+            def flush(cur):
+                if cur is None or not cur["skill"] or not cur["models"]:
+                    return
+                if cur["skill"] not in expected:
+                    return
+                per[cur["skill"]][cur["models"].most_common(1)[0][0]] += 1
+
+            for d in recs:
+                t = d.get("type")
+                if t == "user":
+                    if d.get("isSidechain"):
+                        continue
+                    c = d.get("message", {}).get("content")
+                    if is_tool_result_turn(c):
+                        continue
+                    raw = c if isinstance(c, str) else text_of(c)
+                    cmd = slash_cmd(raw if isinstance(c, str) else json.dumps(c))
+                    if is_noise(raw, cmd):
+                        cur = None
+                        continue
+                    flush(cur)
+                    cur = {"skill": detect_skill(raw, cmd), "models": Counter()}
+                elif t == "assistant":
+                    if d.get("isSidechain") or cur is None:
+                        continue
+                    fam = model_family(d.get("message", {}).get("model"))
+                    if fam in ("opus", "sonnet", "haiku"):
+                        cur["models"][fam] += 1
+            flush(cur)
+
+    print("=" * 64)
+    print("TIER ADHERENCE (skill invocations: expected vs actual model)")
+    print("=" * 64)
+    print("  Only meaningful for sessions AFTER tiering rollout (older runs used the session model).")
+    print(f"  {'skill':32s} {'exp':7s} {'match':>6} {'n':>5}  actual-mix")
+    tot_match = tot = 0
+    for s in sorted(expected):
+        c = per.get(s)
+        if not c:
+            continue
+        n = sum(c.values())
+        match = c.get(expected[s], 0)
+        tot_match += match
+        tot += n
+        mix = ", ".join(f"{k}:{v}" for k, v in c.most_common())
+        print(f"  {s:32s} {expected[s]:7s} {pct(match,n).strip():>6} {n:5d}  {mix}")
+    print(f"\n  OVERALL adherence: {pct(tot_match,tot).strip()} ({tot_match}/{tot})")
+    print()
+
+
 def main():
     ap = argparse.ArgumentParser(description="Claude Code usage benchmark across profiles.")
     ap.add_argument("--profile", choices=list(PROFILES) + ["all"], default="all",
                     help="which session profile to scan (default: all)")
     ap.add_argument("--roots", nargs="+", help="override: explicit projects roots to scan")
+    ap.add_argument("--trend", action="store_true",
+                    help="weekly model-mix + est cost trend (shows the shift over time)")
+    ap.add_argument("--adherence", action="store_true",
+                    help="per-skill expected (config) vs actual model used")
+    ap.add_argument("--config", default=TIER_CONFIG, help="path to skill-tiers.json")
     args = ap.parse_args()
 
     if args.roots:
@@ -394,6 +530,13 @@ def main():
         roots = PROFILES
     else:
         roots = {args.profile: PROFILES[args.profile]}
+
+    if args.trend:
+        trend_report(roots)
+        return
+    if args.adherence:
+        adherence_report(roots, args.config)
+        return
 
     per = {}
     agg = new_stats()
