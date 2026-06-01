@@ -26,7 +26,9 @@
     "grill-me": "T4",
     "grill-with-docs": "T4",
     "debug": "T4",
-    "improve-codebase-architecture": "T4"
+    "improve-codebase-architecture": "T4",
+    "fact-check": "T2",
+    "register-skill": "T2"
   },
   "delegate": [
     "run-tasks",
