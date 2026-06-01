@@ -9,7 +9,10 @@
   "permissions": {
     "allow": [
       "Bash(~/.dotfiles/claude-code-shared/scripts/*)",
-      "Read(~/.dotfiles/**)"
+      "Bash(grep *)",
+      "Read(~/.dotfiles/**)",
+      "WebSearch(*)",
+      "WebFetch(*)"
     ]
   },
   "model": "sonnet",
