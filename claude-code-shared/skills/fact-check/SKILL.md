@@ -1,6 +1,6 @@
 ---
 name: fact-check
-description: Manual factual-claim verification. Paste any input (tweet, article, PRD, document) and the skill spawns the fact-checker agent to extract verifiable claims, check each against live web sources, and return a severity-grouped report with citable links. Use when the user invokes /fact-check or asks to verify claims before acting on content.
+description: Manual factual-claim verification. Paste any input (tweet, article, PRD, document) and the skill spawns the fact-checker agent to extract verifiable claims, check each against live web sources, and return a report in original claim order with citable links. Use when the user invokes /fact-check or asks to verify claims before acting on content.
 model: sonnet
 effort: medium
 ---
@@ -39,7 +39,7 @@ The agent will:
 - Run `extract-claims.py` as a deterministic pre-pass to surface candidate claims
 - Extract any additional verifiable claims it finds on its own
 - Verify each claim with live web search (never reasoning-only)
-- Return findings grouped by verdict severity with citations
+- Return findings in original claim order with verdict labels and citation URLs
 
 Wait for the agent to return its structured report before proceeding.
 
@@ -47,7 +47,7 @@ Wait for the agent to return its structured report before proceeding.
 
 #### 4a. Small input — inline
 
-Render the agent's full report inline in the conversation. No file written.
+Relay the agent's full report verbatim inline in the conversation. Do NOT summarize, paraphrase, or strip citation URLs. Every link the agent produced must appear in your output so the user can verify findings directly. No file written.
 
 #### 4b. Document-scale input — file + summary
 
