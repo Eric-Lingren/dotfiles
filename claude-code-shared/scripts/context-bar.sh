@@ -168,7 +168,7 @@ if [[ -n "$session_pct" && "$session_pct" != "null" && -n "$cw_pct" && "$cw_pct"
     fi
     if [[ $cw_pct -ge 80 ]]; then
         ctxwin="  |  ${C_WARN}${cw_k}k/${max_display} (${cw_pct}%)"
-    elif [[ $cw_pct -ge 50 ]]; then
+    elif [[ $cw_pct -ge 60 ]]; then
         ctxwin="  |  ${C_NUDGE}${cw_k}k/${max_display} (${cw_pct}%)"
     else
         ctxwin="  |  ${C_GRAY}${cw_k}k/${max_display} (${cw_pct}%)"

@@ -51,14 +51,7 @@ If both exist (unusual), ask the user which path they want to register.
 
 ### 2a. Skill path — choose a tier
 
-Read `claude-code-shared/resources/skill-tiers.json` and show the user the tier options:
-
-| Tier | Model | Effort | Meaning |
-|------|-------|--------|---------|
-| T1 | haiku | low | Lookup only. No reasoning. File search, status, how-to. |
-| T2 | sonnet | medium | Mechanical. Narrow, well-defined, short scope. |
-| T3 | sonnet | xhigh | Standard build. Context-aware. Session default. |
-| T4 | opus | xhigh | Deep reasoning. Architecture, complex debug, planning. |
+Read `claude-code-shared/resources/skill-tiers.json` — it is the source of truth for all tier definitions. The `tiers` map contains each tier's model, effort, and meaning. Present those to the user directly from the file rather than from a hardcoded table here.
 
 Read the skill's `description:` field from its `SKILL.md` frontmatter. Recommend a tier based on what it does:
 - T1: lookup, navigation, status display

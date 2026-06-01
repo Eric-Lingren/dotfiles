@@ -19,8 +19,28 @@ INPUT=$(cat)
 PROMPT=$(echo "$INPUT" | jq -r '.prompt // ""' 2>/dev/null)
 [ -z "$PROMPT" ] && exit 0
 
-# Skill invocations self-tier via frontmatter; skip them.
-echo "$PROMPT" | grep -q "<command-name>" && exit 0
+# Skill invocations: look up expected tier and always nudge.
+# Skills do NOT auto-switch models via frontmatter — the hook must nudge.
+#
+# <command-name> is injected AFTER hooks fire, so detect raw /skill-name instead.
+# Keep <command-name> path as fallback for any future harness that pre-expands skills.
+SKILL_NAME=""
+if echo "$PROMPT" | grep -q "<command-name>"; then
+  SKILL_NAME=$(echo "$PROMPT" | sed -n 's/.*<command-name>\/*\([^<]*\)<\/command-name>.*/\1/p' | head -1)
+elif echo "$PROMPT" | grep -qE '(^|[[:space:]])/[a-z][a-z0-9-]+([[:space:]]|$)'; then
+  SKILL_NAME=$(echo "$PROMPT" | grep -oE '(^|[[:space:]])/[a-z][a-z0-9-]+' | tail -1 | sed 's/^[[:space:]]*//' | sed 's/^\///')
+fi
+TIERS_FILE="$HOME/.dotfiles/claude-code-shared/resources/skill-tiers.json"
+if [ -n "$SKILL_NAME" ] && [ -f "$TIERS_FILE" ]; then
+  TIER=$(jq -r --arg s "$SKILL_NAME" '.skills[$s] // ""' "$TIERS_FILE" 2>/dev/null)
+  if [ -n "$TIER" ]; then
+    MODEL=$(jq -r --arg t "$TIER" '.tiers[$t].model // "sonnet"' "$TIERS_FILE" 2>/dev/null)
+    EFFORT=$(jq -r --arg t "$TIER" '.tiers[$t].effort // "xhigh"' "$TIERS_FILE" 2>/dev/null)
+    printf '┌─────────────────────────────────────────────────────────────────────┐\n│  ⚡  TIER ADVISORY  │  /%s is %s\n│     → /model %s  then  /effort %s\n└─────────────────────────────────────────────────────────────────────┘\n' "$SKILL_NAME" "$TIER" "$MODEL" "$EFFORT"
+    printf 'ASSISTANT DIRECTIVE: Relay the above tier advisory to the user NOW as your first output, before running the skill. Output exactly these lines (no extra text before or after):\n`────────────────────────────────────────────────────────────────────────`\n**⚡ /%s is %s. Run `/model %s` then `/effort %s` before we start.**\n`────────────────────────────────────────────────────────────────────────`\n' "$SKILL_NAME" "$TIER" "$MODEL" "$EFFORT"
+    exit 0
+  fi
+fi
 
 # ---- UPGRADE (T4 / Opus): strong deep-reasoning signals only ----
 T4_PATTERN="architect|architecture|system design|design (the|a) (system|schema|data model|api)\

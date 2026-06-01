@@ -42,7 +42,9 @@
       "Bash(launchctl list *)",
       "Bash([ -f \"$d/package.json\" ])",
       "Bash([ -x \"$d/node_modules/.bin/$b\" ])",
-      "Bash(echo \"exit:$?\")"
+      "Bash(echo \"exit:$?\")",
+      "Bash(git *)",
+      "Bash(bash claude-code-shared/hooks/tier-advisor.sh)"
     ]
   },
   "prefersReducedMotion": false

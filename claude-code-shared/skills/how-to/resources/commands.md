@@ -163,6 +163,11 @@ yarn vitest biome-errors.vitest.test.ts -u
 yarn prettier -w src/pages/path/to/File.tsx
 ```
 
+**Kill stale Next.js server on port 3000**
+```bash
+kill -9 $(lsof -ti :3000)
+```
+
 **Generate client API schema**
 ```bash
 dev gen-client-api
