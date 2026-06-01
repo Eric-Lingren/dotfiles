@@ -1,0 +1,71 @@
+---
+name: fact-check
+description: Manual factual-claim verification. Paste any input (tweet, article, PRD, document) and the skill spawns the fact-checker agent to extract verifiable claims, check each against live web sources, and return a severity-grouped report with citable links. Use when the user invokes /fact-check or asks to verify claims before acting on content.
+model: sonnet
+effort: medium
+---
+
+# Fact-Check
+
+Verify factual claims in any pasted input — from a single tweet to a full PRD — against live web sources.
+
+The verification engine lives in the `fact-checker` agent. This skill captures your input, spawns the agent in an isolated context (so its many web searches do not pollute the main thread), and routes its report to the right output format.
+
+The same `fact-checker` agent is the reuse point for future inline fact-checking in other skills (to-prd-html, to-tasks, run-tasks). Logic is never duplicated here.
+
+## Steps
+
+### 1. Capture input
+
+Accept whatever the user pastes or provides as the content to verify. This may be:
+- A single claim or tweet
+- A paragraph, article, or blog post
+- A full PRD, document, or task description
+
+If no input is provided, ask: "Paste the content you want fact-checked."
+
+### 2. Assess scale
+
+Count the approximate number of verifiable claims in the input to determine output routing:
+
+- **Small** (1-5 verifiable claims): route to inline output (step 4a)
+- **Document-scale** (6+ verifiable claims or multi-section content): route to file output (step 4b)
+
+### 3. Spawn the fact-checker agent
+
+Use the Agent tool with `subagent_type: fact-checker`. Pass the full input as the prompt to the agent.
+
+The agent will:
+- Run `extract-claims.py` as a deterministic pre-pass to surface candidate claims
+- Extract any additional verifiable claims it finds on its own
+- Verify each claim with live web search (never reasoning-only)
+- Return findings grouped by verdict severity with citations
+
+Wait for the agent to return its structured report before proceeding.
+
+### 4. Route output
+
+#### 4a. Small input — inline
+
+Render the agent's full report inline in the conversation. No file written.
+
+#### 4b. Document-scale input — file + summary
+
+Write the report to `docs/fact-checks/YYYYMMDD-HHMM-<slug>.md` where `<slug>` is a 2-3 word kebab-case description of the content checked (e.g. `q3-prd-claims`, `techcrunch-article`).
+
+Then render a brief inline summary:
+```
+Fact-check complete. N claims checked.
+- X FALSE/MOSTLY_FALSE — action recommended
+- Y PARTLY_TRUE — review suggested
+- Z UNVERIFIABLE — insufficient sources found
+- W TRUE/MOSTLY_TRUE — no issues
+
+Full report: docs/fact-checks/<filename>.md
+```
+
+### 5. Relay findings
+
+Always present findings as advisory. Never block the user's next action. The verdict and citations are information — what to do with them is the user's call.
+
+If any claims are FALSE or MOSTLY_FALSE, surface them explicitly in the inline summary so they are not buried in a file the user may not immediately open.

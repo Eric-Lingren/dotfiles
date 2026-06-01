@@ -67,6 +67,8 @@ Example: `shadcn-component-architecture: Directory consolidation`
 The description must be fully self-contained — the agent picking up this ticket will not have access to the PRD or any other file. Structure it as follows:
 
 ```
+(Ticket authored by Claude Code. Scope vetted and approved by <eng-enter-name-manually>)
+
 ## Context
 
 {Problem Statement from the PRD — why this work exists}
