@@ -44,7 +44,10 @@
       "Bash([ -x \"$d/node_modules/.bin/$b\" ])",
       "Bash(echo \"exit:$?\")",
       "Bash(git *)",
-      "Bash(bash claude-code-shared/hooks/tier-advisor.sh)"
+      "Bash(bash claude-code-shared/hooks/tier-advisor.sh)",
+      "Bash(bash *)",
+      "Bash(~/.dotfiles/claude-code-shared/skills/improve-skill/scripts/scaffold-evals.sh greet *)",
+      "Bash(~/.dotfiles/claude-code-shared/skills/improve-skill/scripts/scaffold-evals.sh code-review *)"
     ]
   },
   "prefersReducedMotion": false

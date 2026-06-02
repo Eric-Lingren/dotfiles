@@ -1,15 +1,19 @@
 # Learnings
 
-## 2026-05-17 - Iteration 1
+## 2026-05-17 - Iteration 1 (partial — stale entries pruned 2026-06-01)
 
-- **builtin_assertions_included** [0]: Execution agents substitute custom consistency assertions (e.g., "Run-to-run stability", "Format consistency") instead of the 3 spec'd built-in assertions. SKILL.md must emphasize that the built-in assertions are EXACTLY `number_consistency`, `no_contradictions`, `plan_cohesion` with the EXACT rubrics provided. Never rename or replace them.
+- **builtin_assertions_included** [0]: Execution agents substitute custom consistency assertions instead of the 3 spec'd built-in assertions. SKILL.md must emphasize that the built-in assertions are EXACTLY `number_consistency`, `no_contradictions`, `plan_cohesion` with the EXACT rubrics provided. Never rename or replace them. When the target skill has domain-specific context, do NOT adapt the built-in rubrics — copy the exact text from resources/builtin-assertions.md verbatim.
 
-- **structural_analysis** [0-50]: Execution agents perform informal structural observations instead of the 5 specific checklist items. SKILL.md must emphasize: the 5 items are (1) token weight <=5000, (2) inline knowledge >200 word blocks, (3) example extraction >10 line examples, (4) missing resource files with 3+ references, (5) script candidates. Each item is binary pass/fail. Structural score = (passed/5)*100.
+- **score_aggregation** [25]: One execution agent used a 70/30 weighting scheme instead of simple average. SKILL.md must emphasize: score = simple average of ALL snapped cell scores. Snap thresholds: 0-12->0, 13-37->25, 38-62->50, 63-87->75, 88-100->100. No weighting. Also: always collect and show failure reason strings from all judges who scored 0 or 25 — do not skip even when the cause seems obvious from the scenario description.
 
-- **report_format** [25-50]: Final reports use ad-hoc section structures instead of the 8 required sections. SKILL.md must list the 8 sections explicitly: (1) run summary, (2) score progression, (3) final matrix (scenario x assertion grid with tier scores), (4) failure details (cells <=25), (5) low scores (cells =50), (6) structural analysis, (7) changes made, (8) recommendation.
+## 2026-06-01 - Iteration 1
 
-- **score_aggregation** [25]: One execution agent used a 70/30 weighting scheme instead of simple average. SKILL.md must emphasize: score = simple average of ALL snapped cell scores. Snap thresholds: 0-12->0, 13-37->25, 38-62->50, 63-87->75, 88-100->100. No weighting.
+- **number_consistency** [25] (existing_evals_skip): Score stated as 86 in the iteration header and 90 in the body calculation for the same iteration — two different numbers for the same result. Skill must compute the iteration score exactly once using the simple average of all snapped cell scores, state it in one place, and not introduce alternative calculation methods (e.g., "snapping row means then averaging") that produce a different number.
 
-- **exit_conditions** [50]: One execution agent continued iterating past strong_score threshold (96.6 >= 85) based on subjective judgment. SKILL.md must clarify: exit conditions are STRICT. If avg >= 85, stop immediately with exit_reason "strong_score". Do not override.
+- **no_contradictions** [25] (existing_evals_skip): Header and body contradict each other (86 vs 90 for the same iteration's final score). Skill must derive the score via one consistent formula per spec and use that single number in both the iteration header and the body calculation sections.
 
-- **user_grilling** [50]: One execution agent asked 5 custom questions instead of the 2 required questions. The 2 required questions are: (1) "Any behaviors I missed? Any rubric anchors need adjustment?" (2) "Do these cover enough variety?"
+- **builtin_assertions_included** [50] (complex_skill_many_rules): Built-in assertion rubrics adapted to domain context (e.g., "Summary count differs from listed count by 3+") instead of using the spec's generic rubric text ("Multiple numeric contradictions: stated counts don't match actual counts, step numbers skip or repeat…"). Always copy the EXACT rubric descriptions from resources/builtin-assertions.md verbatim.
+
+- **number_consistency** [25] (promotion_trigger): Cell sum stated as 1530 but actual sum of the listed addends is 1700; stated average 51.0 is therefore also wrong (correct: 56.67). Skill must verify arithmetic by summing each addend explicitly before reporting the total — do not rely on mental arithmetic for cell-sum calculations.
+
+- **score_aggregation / no_contradictions** [50] (promotion_trigger): Judge failure reasons not collected for rollback_plan cells scoring 0; arithmetic error in cell sum creates internal tension. Spec requires showing reason strings from all 0/25-scored judge calls. Verify all arithmetic before stating totals.

@@ -1,6 +1,6 @@
 ---
 name: architecture-auditor
-description: Read-only agent that audits a target SKILL.md for architecture anti-patterns and agent extraction opportunities. Detects 7 signals (A1-A7) across three categories: context-blowup risk, extraction candidates, and reuse opportunities. Returns a JSON array of structured finding records. Spawned by the improve-skill Architecture pillar. Also usable from register-skill at registration time.
+description: Read-only agent that audits a target SKILL.md for architecture anti-patterns and agent extraction opportunities. Detects 8 signals (A1-A8) across three categories: context-blowup risk, extraction candidates, and reuse opportunities. Returns a JSON array of structured finding records. Spawned by the improve-skill Architecture pillar. Also usable from register-skill at registration time.
 tools: Read, Grep, Glob, Bash
 model: sonnet
 ---
@@ -22,7 +22,7 @@ You will receive:
 python3 {SHARED_ROOT}/scripts/architecture-skill-audit/detect_architecture_signals.py {TARGET_SKILL_PATH} {REGISTRY_PATH}
 ```
 
-Capture the JSON output. These are your confirmed A1, A2, and A7 findings. They are deterministic — accept them as-is without second-guessing.
+Capture the JSON output. These are your confirmed A1, A2, A7, and A8 findings. They are deterministic — accept them as-is without second-guessing.
 
 ## Step 2: Read the target skill
 
@@ -30,7 +30,7 @@ Read `{TARGET_SKILL_PATH}` fully. You need its contents for judgment signals (A3
 
 Also read `{REGISTRY_PATH}` to know what agents exist.
 
-## Step 3: Detect judgment signals (A3, A4, A5, A6)
+## Step 3: Detect judgment signals (A3, A4, A5, A6, and note A8)
 
 These require your reasoning. For each, emit a candidate finding only if the evidence is strong. When unsure, do not emit. False negatives are preferred over false positives here — the panel will confirm your findings.
 
@@ -117,7 +117,7 @@ Merge the deterministic findings from Step 1 with your judgment findings from St
 ```json
 [
   {
-    "signal": "A1|A2|A3|A4|A5|A6|A7",
+    "signal": "A1|A2|A3|A4|A5|A6|A7|A8",
     "finding": "one sentence describing what was found",
     "location": "path/to/SKILL.md:line-number",
     "recommendation": "one sentence on what to do",
@@ -128,6 +128,8 @@ Merge the deterministic findings from Step 1 with your judgment findings from St
   }
 ]
 ```
+
+A8 findings from the detection script carry additional structured fields: `loop_location`, `offending_steps`, `coordinator_inputs`, `coordinator_return_schema`, `estimated_tokens_saved_per_iteration`. Pass these through unchanged.
 
 Return `[]` if no findings.
 

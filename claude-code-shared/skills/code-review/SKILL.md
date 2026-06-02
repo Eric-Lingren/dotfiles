@@ -94,8 +94,8 @@ One finding per line. Format: `<file>:L<line>: <label>: <problem>. <fix>.`
 - Restating what the code does — the reviewer can read the diff
 - Any hedging — if uncertain, use ❓
 
-**Acknowledge good work:**
-Genuine praise belongs in the review. If you see a well-designed abstraction, a clever fix, or unusually clean test coverage, call it out explicitly. Keep it brief and specific — one line, tied to a file and line range. Don't manufacture compliments, but don't suppress real ones either.
+**Acknowledge good work (required, not optional):**
+Genuine praise belongs in the review. If you see a well-designed abstraction, a clever fix, or unusually clean test coverage, call it out explicitly. Keep it brief and specific — one line, tied to a file and line range. Don't manufacture compliments, but don't suppress real ones either. A review with zero positive findings when praiseworthy code is present is an incomplete review.
 
 **Keep:**
 - Exact line numbers
@@ -152,6 +152,8 @@ Run through this for every changed file:
 - [ ] Network calls use MSW, not internal function stubs
 
 ## Step 9: Security checklist
+
+Run this checklist against **every changed file**, not just files that appear security-related.
 
 **Injection & input validation**
 - [ ] No user input concatenated into SQL, shell commands, or HTML — use parameterized queries and escaping

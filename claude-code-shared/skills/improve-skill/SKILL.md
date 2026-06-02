@@ -47,38 +47,16 @@ This step creates the evaluation definition. Two phases.
 
 ### Phase A: Auto-generate from SKILL.md
 
-Read the target SKILL.md and extract every concrete behavioral rule, constraint, or requirement. For each one, create a candidate assertion with a 5-tier rubric:
-
-```json
-{
-  "name": "snake_case_short_name",
-  "description": "Natural language description of what the output must demonstrate.",
-  "rubric": {
-    "0": "Concrete description of what a 0 score looks like",
-    "25": "Concrete description of what a 25 score looks like",
-    "50": "Concrete description of what a 50 score looks like",
-    "75": "Concrete description of what a 75 score looks like",
-    "100": "Concrete description of what a 100 score looks like"
-  }
-}
-```
+Read the target SKILL.md and extract every concrete behavioral rule, constraint, or requirement. For each one, create a candidate assertion with a 5-tier rubric. See `resources/eval-json-example.md` for the assertion and scenario JSON formats.
 
 Each rubric tier must be specific and anchored to observable behavior. No vague language like "mostly" or "partially."
 
-**Always include the 3 built-in consistency assertions.** Read them from `resources/builtin-assertions.md` in this skill's directory. The exact names are `number_consistency`, `no_contradictions`, `plan_cohesion`. Never rename or substitute them.
+**Always include the 3 built-in consistency assertions.** Read them from `resources/builtin-assertions.md` in this skill's directory. The exact names are `number_consistency`, `no_contradictions`, `plan_cohesion`. Never rename or substitute them. Copy the EXACT rubric descriptions from `resources/builtin-assertions.md` verbatim. Never adapt rubric text to the target skill domain context.
 
 Also generate 5 synthetic scenarios. Each scenario should:
 - Be a realistic task the skill would handle
 - Vary in complexity (simple to complex)
 - Cover different aspects of the skill's behavior
-
-```json
-{
-  "name": "snake_case_scenario_name",
-  "prompt": "The full prompt/task to give the skill",
-  "context": "Optional setup context (language, framework, project type)"
-}
-```
 
 ### Phase B: Grill user on gaps
 
@@ -99,38 +77,21 @@ Read these files:
 
 Initialize iteration counter at 1. Max iterations: 3.
 
+**File re-read guard:** SKILL.md, eval.json, and scores.json are read once before the loop begins and do not change during iteration (unless a promotion fires in Step 4e). Do not re-read them each iteration. Re-read learnings.md after Step 4d. Re-read SKILL.md after Step 4e only if a promotion was made.
+
 ### For each iteration:
 
-#### 4a: Execute skill against each scenario
+#### 4a-4b-2: Run iteration runner
 
-For each scenario in eval.json, spawn an Agent (subagent_type: "general-purpose", model: "sonnet") with this prompt structure:
+Spawn one Agent (subagent_type: "general-purpose", model: "sonnet") per iteration using the role defined in `resources/iteration-runner-prompt.md`. Pass it:
+- `SKILL_MD`: current SKILL.md contents
+- `LEARNINGS_MD`: current learnings.md contents (empty string if none)
+- `EVAL_JSON`: full eval.json object
+- `ITERATION`: current iteration number
 
-```
-You are executing a skill. Follow the skill instructions below exactly.
+The iteration runner internally executes all scenario simulations (sonnet), all judge panels (haiku), and the consistency cross-check (sonnet). It returns a compact JSON object: `{iteration, cell_scores[], failure_reasons[]}`.
 
-## Skill Instructions
-<contents of target SKILL.md>
-
-## Learnings (apply these)
-<contents of learnings.md, if any>
-
-## Your Task
-<scenario prompt and context>
-
-Produce your full output as if you were executing this skill for a real user.
-```
-
-Capture the full text output from each subagent.
-
-#### 4b: Score with multi-judge panel
-
-For each (scenario, assertion) pair, spawn **3** Agents (subagent_type: "general-purpose", model: "haiku"). Use the judge prompt template from `resources/judge-prompt.md`.
-
-**Aggregation:** Average the 3 judge scores, then snap to the nearest tier (0/25/50/75/100). Snap thresholds: 0-12 = 0, 13-37 = 25, 38-62 = 50, 63-87 = 75, 88-100 = 100. Collect any "reason" strings from judges that scored 0 or 25.
-
-#### 4b-2: Consistency cross-check
-
-After all per-assertion judges complete, spawn one Agent (subagent_type: "general-purpose", model: "sonnet") per scenario output. Use the consistency auditor prompt from `resources/consistency-auditor-prompt.md`.
+Session model receives only this compact JSON. Raw scenario execution outputs do not accumulate in session context. For every entry in `failure_reasons`, show the reason string in the iteration report. Do not skip, even when the cause is obvious from the scenario context.
 
 #### 4c: Generate report
 
@@ -138,6 +99,8 @@ Build a report with:
 
 1. **Header:** `Iteration N/3 - Score: X/100 - prev: Y/100`
    - Score = simple average of all snapped cell scores across all (scenario, assertion) pairs. No weighting.
+   - Compute the iteration average as sum(all snapped cell scores) / total_cells. State this single number in the header and nowhere else. Do not introduce alternative calculation methods.
+   - When showing cell sums, list each addend explicitly, sum them, then divide. Do not estimate for matrices with more than 10 cells.
 
 2. **Matrix table:** A scenario x assertion grid showing individual cell tier scores.
 
@@ -182,7 +145,7 @@ After the eval loop completes, analyze the target skill's directory structure ag
 
 ### Checklist items (exactly these 7)
 
-**1. Token weight:** Count tokens in SKILL.md + all referenced files. Pass if total <= 5000 tokens. Fail if over. Report the count.
+**1. Token weight:** Run `scripts/count-tokens.sh <skill-name>` to get the token estimate. Pass if output <= 5000. Fail if over. Report the count.
 
 **2. Inline knowledge extraction:** Scan SKILL.md for prose blocks over 200 words. Pass if none found. Fail if found. List candidates with suggested filenames.
 
@@ -194,7 +157,7 @@ After the eval loop completes, analyze the target skill's directory structure ag
 
 **6. Misplaced files:** Read the directory conventions from `~/.dotfiles/claude-code-shared/resources/skill-directory-conventions.md`. Scan all non-SKILL.md files at the skill root. Classify each by file type and check if it belongs in a canonical subdirectory (`scripts/`, `resources/`, or `assets/`). Pass if all files are in their canonical locations. Fail if any file is misplaced. List each misplaced file with its current location and target directory.
 
-**7. Stale references:** After identifying misplaced files, grep all of `~/.dotfiles/claude-code-shared/` for references to the old file paths. Pass if no references would break after a move. Fail if references exist. List each reference with file path and line number.
+**7. Stale references:** After identifying misplaced files, run `scripts/check-stale-refs.sh <old-path>` for each misplaced file's current path. The script outputs `file:line:match` hits, one per line. Pass if no hits. Fail if hits exist. List each reference from the script output.
 
 ### Auto-fix for items 6 and 7
 
@@ -217,59 +180,7 @@ Score = (items passed / 7) * 100. This score is independent of the behavioral sc
 
 ## Step 6: Architecture audit
 
-Run on every invocation. No opt-out.
-
-### 6a: Spawn the auditor
-
-Spawn `Agent(subagent_type: "architecture-auditor")` with:
-- `TARGET_SKILL_PATH`: absolute path to the target skill's SKILL.md
-- `REGISTRY_PATH`: `~/.dotfiles/claude-code-shared/agents/registry.json`
-- `SHARED_ROOT`: `~/.dotfiles/claude-code-shared`
-
-The auditor returns a JSON array of raw findings (A1–A7). Capture it.
-
-### 6b: Split verification
-
-**Deterministic signals (A1, A2, A7):** Accept directly. No panel needed.
-
-**Judgment signals (A3, A4, A5, A6):** For each raw finding, spawn 3 judges (subagent_type: "general-purpose", model: "haiku") in parallel using the template in `resources/architecture-panel-prompt.md`. Pass each judge the finding + ~20-line excerpt from the skill around the flagged location.
-
-After all 3 judges reply, call:
-```bash
-python3 ~/.dotfiles/claude-code-shared/scripts/architecture-skill-audit/verify_judgment_findings.py
-```
-Or apply `aggregate_panel_votes(finding, votes)` from `verify_judgment_findings.py` directly.
-Confirmed if `confirm_count >= 2`. Drop unconfirmed findings.
-
-### 6c: Score (session model)
-
-```bash
-python3 ~/.dotfiles/claude-code-shared/scripts/architecture-skill-audit/architecture_score.py
-```
-Or call `findings_to_signal_results(confirmed_findings)` then `calculate_architecture_score(signal_results)` from `architecture_score.py`.
-
-`architecture_score = confirmed_passed / 7 * 100`
-
-A signal PASSES if no confirmed finding fired for it. Every signal starts as pass; a finding demotes it to fail.
-
-Cross-skill signals (A5, A6) read `registry.json` as the corpus cache. Do not scan the entire skills tree.
-
-### 6d: Lifecycle tracking
-
-Load the prior run's `architecture.recommendations` from `<runs-dir>/scores.json` (the most recent run entry, if any). Pass it with the current run's confirmed findings to:
-
-```python
-from lifecycle_tracking import compute_lifecycle
-labeled = compute_lifecycle(current_confirmed_findings, prior_recommendations)
-```
-
-Or call `~/.dotfiles/claude-code-shared/scripts/architecture-skill-audit/lifecycle_tracking.py` via Bash.
-
-Use `labeled` as the recommendations array for scores.json and the report. Findings carry NEW, PERSISTING, or RESOLVED. All three lifecycle states appear in the Architecture report section — RESOLVED findings confirm debt is cleared.
-
-### 6e: Architecture is a separate pillar
-
-The architecture pillar is independent of the behavioral assertion matrix. No behavioral assertions are added or affected. It produces its own `architecture_score` alongside `behavioral_score` and `structural_score`.
+Follow the steps in `resources/architecture-audit-steps.md`.
 
 ## Step 7: Write scores.json
 
@@ -285,7 +196,7 @@ Display results to the user with exactly these 9 sections:
 4. **Failure details:** From the last iteration, cells scoring 25 or below with suggestions
 5. **Low scores:** Cells scoring 50 with suggestions
 6. **Structural analysis:** Structural score (X/100), each checklist item pass/fail with detail, recommendations
-7. **Architecture analysis:** Architecture score (X/100), per-signal A1–A7 pass/fail table, confirmed findings with lifecycle labels (NEW / PERSISTING / RESOLVED), propose-only recommendations
+7. **Architecture analysis:** Architecture score (X/100), per-signal A1–A8 pass/fail table, confirmed findings with lifecycle labels (NEW / PERSISTING / RESOLVED), propose-only recommendations
 8. **Changes made:** Learnings added, promotions made, learnings pruned
 9. **Recommendation:** What to focus on next
 
