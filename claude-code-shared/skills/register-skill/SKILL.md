@@ -136,6 +136,26 @@ If any field is missing, edit the agent file to add it.
 
 Confirm explicitly: **no entry in `skill-tiers.json` is needed for agents.** Agents are not tracked by tier-advisor or the usage benchmark. This is by design.
 
+### 3b. Agent path — update registry.json
+
+After verifying frontmatter, upsert the agent into `claude-code-shared/agents/registry.json`:
+
+```bash
+python3 claude-code-shared/scripts/registry_sync.py \
+  claude-code-shared/agents/registry.json \
+  '{"name":"<name>","file":"agents/<name>.md","model":"<model>","description":"<description>","consumers":["<skill-1>","<skill-2>"]}'
+```
+
+Ask the user: "Which skills consume this agent?" Use their answer for the `consumers` list. If unknown, use `[]` and note it can be updated later.
+
+After the upsert, run validate-registry.py to confirm consistency:
+
+```bash
+python3 claude-code-shared/scripts/validate_registry.py
+```
+
+If validation fails, fix the registry before proceeding.
+
 ### 4. Report
 
 Print a short summary:
