@@ -19,7 +19,7 @@
         "Verification gate (not a unit test): .githooks/pre-commit runs the renamed script and a test commit leaves skill + agent frontmatter and registry models consistent with model-tiers.json"
       ],
       "blocked_by": [],
-      "status": "in_progress",
+      "status": "done",
       "branch": "feat/context-loader-agent",
       "pr": null,
       "browser_verify": null
@@ -36,7 +36,7 @@
         "Verification gate (not a unit test): cc-usage-analytics and weekly-usage-report run without error and reference agent tiers"
       ],
       "blocked_by": ["T-0011"],
-      "status": "not_started",
+      "status": "in_progress",
       "branch": "feat/context-loader-agent",
       "pr": null,
       "browser_verify": null

@@ -37,10 +37,10 @@ Weekly report (`scripts/weekly-usage-report.sh`):
 
 ## Re-tiering from the data
 
-If the data suggests a skill should move tiers:
-1. Edit `~/.dotfiles/claude-code-shared/resources/skill-tiers.json`.
-2. `python3 ~/.dotfiles/claude-code-shared/scripts/sync-skill-tiers.py --apply`
-3. Full tiering docs: `~/.dotfiles/claude-code-shared/resources/skill-tiers.md`
+If the data suggests a skill or agent should move tiers:
+1. Edit `~/.dotfiles/claude-code-shared/resources/model-tiers.json` (skills map for skills, agents map for agents).
+2. `python3 ~/.dotfiles/claude-code-shared/scripts/sync-model-tiers.py --apply`
+3. Full tiering docs: `~/.dotfiles/claude-code-shared/resources/model-tiers.md`
 
 ## Notes
 

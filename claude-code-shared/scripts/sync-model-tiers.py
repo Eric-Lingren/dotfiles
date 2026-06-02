@@ -54,7 +54,7 @@ general agent with `model: haiku`. Keep all reasoning, decisions, and edits on
 the current model. Delegate only the menial searching.
 {DELEGATE_END}"""
 
-# Strip both old (sync-skill-tiers.py) and new (sync-model-tiers.py) managed blocks.
+# Matches both legacy (sync-skill-tiers variant) and current managed delegate blocks.
 DELEGATE_RE = re.compile(
     r"<!-- tier-delegate: managed by sync-(?:skill|model)-tiers\.py -->.*?<!-- /tier-delegate -->\n*",
     re.S)

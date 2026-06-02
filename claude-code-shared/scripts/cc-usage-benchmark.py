@@ -32,7 +32,7 @@ import sys
 from collections import Counter, defaultdict
 from glob import glob
 
-TIER_CONFIG = os.path.expanduser("~/.dotfiles/claude-code-shared/resources/skill-tiers.json")
+TIER_CONFIG = os.path.expanduser("~/.dotfiles/claude-code-shared/resources/model-tiers.json")
 
 # profile -> projects root
 PROFILES = {
@@ -478,6 +478,7 @@ def compute_adherence(roots, config_path):
     cfg = json.load(open(config_path))
     tiers, assign = cfg["tiers"], cfg["skills"]
     expected = {s: tiers[t]["model"] for s, t in assign.items()}
+    expected.update({a: tiers[t]["model"] for a, t in cfg.get("agents", {}).items()})
     per_week = defaultdict(lambda: defaultdict(Counter))
 
     for name, root in roots.items():
@@ -545,7 +546,7 @@ def print_adherence(expected, per_week):
             per[s].update(c)
 
     print("=" * 64)
-    print("TIER ADHERENCE (skill invocations: expected vs actual model)")
+    print("TIER ADHERENCE (skills + agents: expected vs actual model)")
     print("=" * 64)
     print("  Only meaningful for sessions AFTER tiering rollout (older runs used the session model).")
     print(f"  {'skill':32s} {'exp':7s} {'match':>6} {'n':>5}  actual-mix")
@@ -746,7 +747,7 @@ def main():
                     help="per-skill expected (config) vs actual model used")
     ap.add_argument("--digest", action="store_true",
                     help="TL;DR delta header (writes weekly snapshot as a side effect)")
-    ap.add_argument("--config", default=TIER_CONFIG, help="path to skill-tiers.json")
+    ap.add_argument("--config", default=TIER_CONFIG, help="path to model-tiers.json")
     args = ap.parse_args()
 
     if args.roots:
