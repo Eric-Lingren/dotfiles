@@ -1,6 +1,9 @@
-"""Architecture audit scoring utilities for the improve-skill Architecture pillar."""
+"""Architecture audit scoring utilities for the improve-skill Architecture pillar.
 
-ALL_SIGNALS = ["A1", "A2", "A3", "A4", "A5", "A6", "A7"]
+Signals A1-A8: 8-signal denominator as of the A8 addition.
+"""
+
+ALL_SIGNALS = ["A1", "A2", "A3", "A4", "A5", "A6", "A7", "A8"]
 
 
 def findings_to_signal_results(confirmed_findings: list) -> dict:

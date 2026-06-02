@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Detect deterministic architecture signals (A1, A2, A7) in a SKILL.md file.
+"""Detect deterministic architecture signals (A1, A2, A7, A8) in a SKILL.md file.
 
 Returns a JSON array of finding records. Exit 0 always (findings are not errors).
 
@@ -92,8 +92,48 @@ def _make_finding(signal, finding, location, recommendation,
     }
 
 
+def _count_spawn_lines_in_loop(lines, loop_line, window=80):
+    """Count agent spawn lines and collect their line numbers within the loop window."""
+    start = loop_line - 1
+    end = min(len(lines), loop_line + window)
+    spawn_lines = []
+    for i, line in enumerate(lines[start:end], start + 1):
+        for pat in AGENT_SPAWN_PATTERNS:
+            if re.search(pat, line, re.IGNORECASE):
+                spawn_lines.append(i)
+                break
+    return spawn_lines
+
+
+def _find_max_iterations(lines):
+    """Find 'Max iterations: N' or similar and return N, else default 3."""
+    for line in lines:
+        m = re.search(r"[Mm]ax\s+iterations[:\s]+(\d+)", line)
+        if m:
+            return int(m.group(1))
+    return 3
+
+
+def _has_schema_near(lines, spawn_line, window=5):
+    """Return True if 'schema:' appears within `window` lines of spawn_line."""
+    start = max(0, spawn_line - 2)
+    end = min(len(lines), spawn_line + window)
+    for line in lines[start:end]:
+        if re.search(r"\bschema\b", line, re.IGNORECASE):
+            return True
+    return False
+
+
+def _extract_step_name(lines, spawn_line):
+    """Walk backwards from spawn_line to find the nearest heading (#### / ### / ## line)."""
+    for i in range(spawn_line - 2, max(-1, spawn_line - 20), -1):
+        if re.match(r"#{2,4}\s+", lines[i]):
+            return lines[i].strip().lstrip("#").strip()
+    return f"line {spawn_line}"
+
+
 def detect_deterministic(skill_path, registry):
-    """Detect A1, A2, A7 signals. Returns list of finding dicts."""
+    """Detect A1, A2, A7, A8 signals. Returns list of finding dicts."""
     findings = []
     lines = _read_lines(skill_path)
     skill_name = os.path.basename(os.path.dirname(skill_path))
@@ -137,6 +177,64 @@ def detect_deterministic(skill_path, registry):
                 benefit="Prevents session context bloat across iterations.",
                 effort="medium",
             ))
+
+        # A8: loop with many free-text agent spawns whose output feeds session model
+        spawn_line_nums = _count_spawn_lines_in_loop(lines, loop_line)
+        max_iter = _find_max_iterations(lines)
+        agent_count = len(spawn_line_nums) * max_iter
+
+        if agent_count >= 6:
+            free_text_spawns = [
+                ln for ln in spawn_line_nums
+                if not _has_schema_near(lines, ln)
+            ]
+            has_downstream_read = read_line > 0 or _find_pattern_near(
+                lines, LARGE_READ_PATTERNS, loop_line, window=120
+            ) > 0
+
+            if free_text_spawns and has_downstream_read:
+                offending_steps = list({_extract_step_name(lines, ln) for ln in free_text_spawns})
+                estimated_savings = len(free_text_spawns) * 2000
+                findings.append({
+                    "signal": "A8",
+                    "finding": (
+                        f"Loop at line {loop_line} spawns {len(spawn_line_nums)} agents/iteration "
+                        f"x {max_iter} iterations = {agent_count} total agent calls; "
+                        f"{len(free_text_spawns)} return free-text output consumed by session model."
+                    ),
+                    "location": f"{skill_path}:{loop_line}",
+                    "recommendation": (
+                        "Introduce a coordinator agent per iteration that runs all sub-agent calls "
+                        "internally and returns only a compact JSON result to the session model."
+                    ),
+                    "loop_location": f"{skill_path}:{loop_line}",
+                    "offending_steps": offending_steps,
+                    "coordinator_inputs": [
+                        "skill_md_contents",
+                        "learnings_md_contents",
+                        "eval_json",
+                        "scenario_list",
+                        "iteration_number",
+                    ],
+                    "coordinator_return_schema": {
+                        "iteration": "integer",
+                        "cell_scores": [
+                            {"scenario": "string", "assertion": "string", "score": "integer"}
+                        ],
+                        "failure_reasons": [
+                            {"scenario": "string", "assertion": "string",
+                             "score": "integer", "reason": "string"}
+                        ],
+                    },
+                    "estimated_tokens_saved_per_iteration": estimated_savings,
+                    "proposed_agent": None,
+                    "consumers": [skill_name],
+                    "benefit": (
+                        f"Estimated {estimated_savings} tokens/iteration saved; "
+                        "session context no longer accumulates raw agent outputs across iterations."
+                    ),
+                    "effort": "medium",
+                })
 
     registered_names = {a["name"] for a in registry.get("agents", [])}
     for i, line in enumerate(lines, 1):

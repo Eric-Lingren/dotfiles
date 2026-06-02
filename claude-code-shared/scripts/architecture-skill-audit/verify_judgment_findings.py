@@ -6,7 +6,7 @@ Judgment signals (A3, A4, A5, A6): require majority (>=2/3) panel confirmation.
 """
 
 JUDGMENT_SIGNALS = {"A3", "A4", "A5", "A6"}
-DETERMINISTIC_SIGNALS = {"A1", "A2", "A7"}
+DETERMINISTIC_SIGNALS = {"A1", "A2", "A7", "A8"}
 
 
 def is_judgment_signal(signal: str) -> bool:

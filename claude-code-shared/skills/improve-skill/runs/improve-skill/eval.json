@@ -3,28 +3,28 @@
   "scenarios": [
     {
       "name": "simple_small_skill",
-      "prompt": "Run /improve-skill on a skill called 'greet' that has a 20-line SKILL.md with 3 simple rules: greet the user by name, use formal tone, end with a question. evals/ directory does not exist. Simulate the full process including what you would output at each step.",
-      "context": "Minimal skill, first run, no prior evals. The skill directory exists at ~/.dotfiles/claude-code-shared/skills/greet/SKILL.md"
+      "prompt": "Run /improve-skill on a hypothetical skill called 'greet-sim' that has a 20-line SKILL.md with 3 simple rules: greet the user by name, use formal tone, end with a question. The runs directory does not exist yet. Simulate the full process including what you would output at each step. Do not run any shell commands or create any files.",
+      "context": "Minimal hypothetical skill, first run, no prior evals. This skill does not exist on disk — simulate all file reads and script output."
     },
     {
       "name": "existing_evals_skip",
-      "prompt": "Run /improve-skill on a skill called 'summarize' that already has evals/eval.json with 4 assertions and 5 scenarios. evals/learnings.md has 2 entries from a previous run. evals/scores.json has 1 prior run with avg score 62. Simulate the full process including what you would output at each step.",
-      "context": "Second run, should skip eval scaffolding and go directly to Step 4. Has prior learnings and scores to incorporate."
+      "prompt": "Run /improve-skill on a hypothetical skill called 'summarize-sim' that already has runs/eval.json with 4 assertions and 5 scenarios. runs/learnings.md has 2 entries from a previous run. runs/scores.json has 1 prior run with avg score 62. Simulate the full process including what you would output at each step. Do not run any shell commands or create any files.",
+      "context": "Second run, should skip eval scaffolding and go directly to Step 4. Has prior learnings and scores to incorporate. This skill does not exist on disk — simulate all file reads."
     },
     {
       "name": "reset_flag",
-      "prompt": "Run /improve-skill summarize --reset on a skill that has an existing evals/ directory with eval.json, learnings.md, and scores.json. Simulate the full process including what you would output at each step.",
-      "context": "Tests --reset flag handling. Should delete evals/ directory contents and re-scaffold from scratch."
+      "prompt": "Run /improve-skill summarize-sim --reset on a hypothetical skill that has an existing runs/ directory with eval.json, learnings.md, and scores.json. Simulate the full process including what you would output at each step. Do not run any shell commands or create any files.",
+      "context": "Tests --reset flag handling. Should describe deleting runs/ directory contents and re-scaffolding from scratch. This skill does not exist on disk — simulate all file operations."
     },
     {
       "name": "complex_skill_many_rules",
-      "prompt": "Run /improve-skill on a skill called 'code-review' that has a 300-line SKILL.md with 15+ behavioral rules covering: severity classification (critical/major/minor/nit), file-by-file analysis, security scanning for OWASP top 10, performance checks, style enforcement against .editorconfig, PR description generation, and approval/reject decision logic. evals/ directory does not exist. Simulate the full process including what you would output at each step.",
-      "context": "Complex skill with many extractable rules. Tests thoroughness of assertion extraction and scenario variety across many skill aspects."
+      "prompt": "Run /improve-skill on a hypothetical skill called 'code-analyzer-sim' that has a 300-line SKILL.md with 15+ behavioral rules covering: severity classification (critical/major/minor/nit), file-by-file analysis, security scanning for OWASP top 10, performance checks, style enforcement against .editorconfig, PR description generation, and approval/reject decision logic. The runs directory does not exist yet. Simulate the full process including what you would output at each step. Do not run any shell commands or create any files.",
+      "context": "Complex hypothetical skill with many extractable rules. Tests thoroughness of assertion extraction and scenario variety. This skill does not exist on disk — simulate all file reads and script output."
     },
     {
       "name": "promotion_trigger",
-      "prompt": "Run /improve-skill on a skill called 'deploy-check' that has existing evals. scores.json shows the assertion 'rollback_plan' scored 25 in the previous run (iteration 1 of run 1). During this run's iteration 1, the judges score 'rollback_plan' at 0 across all scenarios. This should trigger a promotion to SKILL.md. Simulate the full process including how you detect the consecutive failure and what edit you make to SKILL.md.",
-      "context": "Tests promotion logic. The 2-consecutive-iteration failure condition spans across runs (previous run's last iteration + current run's iteration 1)."
+      "prompt": "Run /improve-skill on a hypothetical skill called 'deploy-sim' that has existing runs/. scores.json shows the assertion 'rollback_plan' scored 25 in the previous run (iteration 1 of run 1). During this run's iteration 1, the judges score 'rollback_plan' at 0 across all scenarios. This should trigger a promotion to SKILL.md. Simulate the full process including how you detect the consecutive failure and what edit you make to SKILL.md. Do not run any shell commands or create any files.",
+      "context": "Tests promotion logic. The 2-consecutive-iteration failure condition spans across runs (previous run's last iteration + current run's iteration 1). This skill does not exist on disk — simulate all file operations."
     }
   ],
   "assertions": [
