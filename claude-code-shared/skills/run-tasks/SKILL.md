@@ -121,9 +121,40 @@ A task is not done until tests exist that verify the behavior described in the a
 
    **d. Gate decision**
    - If errors remain after auto-fix: print a **Validation errors** block listing every file:line error, update task status to `blocked` in the JSON, and halt the run (same blocker logic as a TDD failure in step 6 below).
-   - If checks pass (or no config found): continue to mark done.
+   - If checks pass (or no config found): continue to browser check (if applicable) or mark done.
 
-   **e. Mark done**
+   **e. Browser verify (when task has `browser_verify`)**
+
+   Only run this step if the task has a non-null `browser_verify` field. If `browser_verify` is absent or `null`, skip to step f.
+
+   See `~/.dotfiles/claude-code-shared/resources/app-launch-detection.md` for full discovery rules.
+
+   1. **Discover launch context** from `app-launch-detection.md`: resolve `start_command`, `base_url`, `storageState` path, and Playwright module location.
+
+   2. **Health-check the server.** Run:
+      ```bash
+      curl -s -o /dev/null -w "%{http_code}" <base_url>
+      ```
+      - If the server responds (any 2xx or 3xx): reuse it. Record that run-tasks did NOT start it.
+      - If no response: start the server via `start_command` using `run_in_background: true`. Poll `base_url` every 2 s until it responds, with a 60 s hard timeout. If the server never comes up, mark the task `blocked` and halt.
+      - Track whether run-tasks started the server (boolean `server_started_by_run_tasks`).
+
+   3. **Iterate (cap 3):** Maintain an iteration log. For each attempt (max 3 total):
+      a. Spawn the `browser-checker` agent with: `base_url`, `url_path` (from `browser_verify.url_path`), `assertions` (from `browser_verify.assertions`), `storageState`, Playwright module location, `run_slug` (derived from task id + iteration index, e.g. `t-0023-check-1`), `cwd` (project root).
+      b. Parse the JSON result per `~/.dotfiles/claude-code-shared/resources/browser-check-result.md`.
+      c. **`status: "pass"`**: proceed to step f (mark done). Clean the run dir (agent already did this on success).
+      d. **`status: "skipped"`**: do not block. Log `skipped_reason` in the run summary. Proceed to step f.
+      e. **`status: "fail"`**: append the failing assertions and screenshot path to the iteration log. If this is not the last attempt: attempt to fix the source. If two consecutive runs produced identical failing assertions (no-progress): bail early.
+
+   4. **On cap or no-progress bail:**
+      - Tear down the server if `server_started_by_run_tasks` is true.
+      - Print a **Browser check failed** block with: failing assertions from the final run, the iteration log, and absolute screenshot paths from `docs/browser-checks/`.
+      - Update task status to `blocked` in the JSON.
+      - Halt the run (same blocker logic as a TDD failure in step 6 below).
+
+   5. **Tear down.** After a pass or skipped result: if `server_started_by_run_tasks` is true, kill the dev server process. Never kill a server that was already running before this task.
+
+   **f. Mark done**
    - Update task status to `done` in the JSON.
    - Set `pr` to a suggested `gh pr create` command the user can run (do not run it).
 
@@ -186,7 +217,7 @@ After the summary, always output:
 ```
 Next steps:
   /run-task-followups docs/tasks/<filename>   — walk through manual follow-ups interactively
-  /to-e2e-tests                               — add e2e coverage (optional, ~10-20% of changes)
+  /to-e2e-tasks                               — add e2e coverage (optional, ~10-20% of changes)
 ```
 
 If `follow_ups` is empty, note that in the handoff block:
@@ -194,7 +225,7 @@ If `follow_ups` is empty, note that in the handoff block:
 ```
 Next steps:
   /run-task-followups   — no follow-ups found, but run to confirm
-  /to-e2e-tests         — add e2e coverage (optional)
+  /to-e2e-tasks         — add e2e coverage (optional)
 ```
 
 ### 7. Offer to push and open a PR

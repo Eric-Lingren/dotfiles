@@ -6,7 +6,15 @@ model: sonnet
 effort: medium
 ---
 
-Write a handoff document summarising the current conversation so a fresh agent can continue the work. Save to the temporary directory of the user's OS - not the current workspace.
+Write a handoff document summarising the current conversation so a fresh agent can continue the work. Save to `docs/handoffs/` in the current workspace. Create the directory if it does not exist.
+
+Name the file by running:
+
+```bash
+~/.dotfiles/claude-code-shared/scripts/doc-filename.sh <slug> md
+```
+
+Where `<slug>` is a short kebab-case description of the work (e.g. `auth-refactor`). The output is `YYYYMMDD-HHMM-<slug>.md`.
 
 Include a "suggested skills" section in the document, which suggests skills that the agent should invoke.
 

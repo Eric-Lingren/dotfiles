@@ -58,7 +58,7 @@ Spend disproportionate effort here. **Be aggressive. Be creative. Refuse to give
 1. **Failing test** at whatever seam reaches the bug — unit, integration, e2e.
 2. **Curl / HTTP script** against a running dev server.
 3. **CLI invocation** with a fixture input, diffing stdout against a known-good snapshot.
-4. **Headless browser script** (Playwright / Puppeteer) — drives the UI, asserts on DOM/console/network.
+4. **Headless browser check via browser-checker agent** — spawn the `browser-checker` agent (see `agents/browser-checker.md`) with launch context resolved per `~/.dotfiles/claude-code-shared/resources/app-launch-detection.md`. Pass: `base_url`, `url_path`, `assertions` (as falsifiable observable behaviors), `storageState`, Playwright module location, and `run_slug`. Feed the JSON result per `~/.dotfiles/claude-code-shared/resources/browser-check-result.md` directly into the observation log. Re-spawn as the assertion set evolves across hypothesis tests. The agent is stateless — the debug skill owns the retry loop and server lifecycle. CDP MCP (Chrome DevTools) is reserved for live interactive inspection in Phase 3; do not mix it into the browser-checker agent.
 5. **Replay a captured trace.** Save a real network request / payload / event log to disk; replay it through the code path in isolation.
 6. **Throwaway harness.** Spin up a minimal subset of the system (one service, mocked deps) that exercises the bug code path with a single function call.
 7. **Property / fuzz loop.** If the bug is "sometimes wrong output", run 1000 random inputs and look for the failure mode.
@@ -125,8 +125,9 @@ Each probe must map to a specific prediction from Phase 2. **Change one variable
 Tool preference:
 
 1. **Debugger / REPL inspection** if the env supports it. One breakpoint beats ten logs.
-2. **Targeted logs** at the boundaries that distinguish hypotheses.
-3. Never "log everything and grep".
+2. **Chrome DevTools MCP** — use this for live interactive browser inspection in the main session when an automated repro already exists but live browser state must be observed: network waterfall, memory profile, live console, live DOM inspection. CDP MCP runs in the main session only. Do not use it inside the browser-checker subagent.
+3. **Targeted logs** at the boundaries that distinguish hypotheses.
+4. Never "log everything and grep".
 
 **Tag every debug log** with a unique prefix, e.g. `[DEBUG-a4f2]`. Cleanup at the end becomes a single grep. Untagged logs survive; tagged logs die.
 
@@ -245,7 +246,14 @@ Full structure:
       "blocked_by": [],
       "status": "not_started",
       "branch": "<fix branch from Step 1>",
-      "pr": null
+      "pr": null,
+      "browser_verify": {
+        "url_path": "<route where the bug manifested>",
+        "assertions": [
+          "<observable behavior that was broken>",
+          "<observable behavior after fix — what the user sees when fixed>"
+        ]
+      }
     }
   ],
   "follow_ups": [
@@ -258,6 +266,8 @@ Full structure:
         "Remove all [DEBUG-...] tagged instrumentation",
         "Re-run test suite and confirm no new failures vs baseline",
         "Delete any throwaway harness files created during diagnosis",
+        "Run: find docs/browser-checks -mindepth 1 -maxdepth 1 -type d | sort — list all browser-check run dirs",
+        "Delete any stale docs/browser-checks run dirs from this debug session: rm -rf docs/browser-checks/<run_dir>",
         "State the winning hypothesis in the PR description",
         "If no correct test seam existed, open /improve-codebase-architecture with the specific coupling details"
       ],
@@ -267,6 +277,8 @@ Full structure:
   ]
 }
 ```
+
+**browser_verify note:** Populate `browser_verify` on each fix task for any bug that manifested as a user-visible UI issue. The URL and assertions come directly from the Phase 1 headless browser feedback loop. Omit `browser_verify` for pure backend or non-UI bugs.
 
 ### Step 3: Stop and hand off
 
@@ -279,7 +291,7 @@ Tasks: <T-XXXX list>
 Next steps:
   /run-tasks docs/tasks/<filename>   — apply fixes with TDD
   /run-task-followups                — walk through FU-001 cleanup after run-tasks completes
-  /to-e2e-tests                      — add e2e coverage (optional)
+  /to-e2e-tasks                      — add e2e coverage (optional)
 ```
 
 **Phase 4 is complete. Do not open any source file. Do not write any fix code. The debug skill is done.**

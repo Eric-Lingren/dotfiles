@@ -121,7 +121,7 @@
       }
     }
   },
-  "effortLevel": "high",
+  "effortLevel": "xhigh",
   "theme": "dark",
   "allowedTools": [
     "Bash(cat ~/.dotfiles/claude-code-shared/**)",
