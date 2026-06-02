@@ -51,9 +51,112 @@
         {"item": "misplaced_files", "pass": true, "detail": "All files in canonical dirs: assets/ (svg, css), resources/ (template.html), scripts/ (next-prefix.sh), SKILL.md at root."},
         {"item": "stale_references", "pass": true, "detail": "No moves required, no references to update."}
       ],
+      "architecture": {
+        "score": null,
+        "recommendations": []
+      },
       "promotions": [],
       "learnings_added": 3,
       "learnings_pruned": 0
+    },
+    {
+      "timestamp": "2026-06-02",
+      "iterations": 2,
+      "exit_reason": "strong_score",
+      "behavioral_score": 96,
+      "structural_score": 86,
+      "scores": [
+        {
+          "iteration": 1,
+          "total_cells": 60,
+          "average_score": 79,
+          "per_assertion_average": {
+            "mandatory_questions_asked": 75,
+            "theme_applied_correctly": 70,
+            "embedded_json_complete": 75,
+            "mandatory_interactive_features": 75,
+            "content_sections_complete": 70,
+            "json_quality": 70,
+            "design_constraints_met": 75,
+            "conditional_features_respected": 95,
+            "no_auto_commit": 75,
+            "number_consistency": 90,
+            "no_contradictions": 85,
+            "plan_cohesion": 95
+          },
+          "per_scenario_average": {
+            "simple_work_crud_feature": 83,
+            "complex_multi_module_feature": 77,
+            "personal_project_prd": 81,
+            "minimal_context_prd": 71,
+            "feature_with_explicit_risks": 83
+          },
+          "notable_cells": [
+            {"scenario": "minimal_context_prd", "assertion": "theme_applied_correctly", "score": 50, "reason": "Theme vars not consistently applied without confirmed work/personal choice."},
+            {"scenario": "minimal_context_prd", "assertion": "content_sections_complete", "score": 50, "reason": "Implementation and testing sections thin with only 'dark mode' as input."},
+            {"scenario": "minimal_context_prd", "assertion": "json_quality", "score": 50, "reason": "success_metrics defaulted to category labels; evidence borderline at 2-3 sentences."}
+          ]
+        },
+        {
+          "iteration": 2,
+          "total_cells": 60,
+          "average_score": 96,
+          "per_assertion_average": {
+            "mandatory_questions_asked": 100,
+            "theme_applied_correctly": 75,
+            "embedded_json_complete": 95,
+            "mandatory_interactive_features": 100,
+            "content_sections_complete": 95,
+            "json_quality": 95,
+            "design_constraints_met": 100,
+            "conditional_features_respected": 100,
+            "no_auto_commit": 100,
+            "number_consistency": 100,
+            "no_contradictions": 100,
+            "plan_cohesion": 95
+          },
+          "per_scenario_average": {
+            "simple_work_crud_feature": 98,
+            "complex_multi_module_feature": 98,
+            "personal_project_prd": 98,
+            "minimal_context_prd": 90,
+            "feature_with_explicit_risks": 98
+          },
+          "notable_cells": [
+            {"scenario": "all", "assertion": "theme_applied_correctly", "score": 75, "reason": "Logo placement and exact CSS var completeness not fully verifiable from simulation; at most one minor deviation across all scenarios."},
+            {"scenario": "minimal_context_prd", "assertion": "embedded_json_complete", "score": 75, "reason": "One synthesized field may read slightly generic with sparse input."},
+            {"scenario": "minimal_context_prd", "assertion": "content_sections_complete", "score": 75, "reason": "Evidence field is synthesized rather than from real user data."},
+            {"scenario": "minimal_context_prd", "assertion": "json_quality", "score": 75, "reason": "One metric lacks specific numeric target."},
+            {"scenario": "minimal_context_prd", "assertion": "plan_cohesion", "score": 75, "reason": "Notes section references theming token system not grounded in implementation decisions."}
+          ]
+        }
+      ],
+      "structural_recommendations": [
+        {"item": "token_weight", "pass": false, "detail": "5760 tokens — over the 5000 threshold. Driver is runtime-loaded assets (logo SVG + template.html). Instruction prose is lean; assets are largely irreducible."},
+        {"item": "inline_knowledge_extraction", "pass": true, "detail": "No prose blocks over 200 words."},
+        {"item": "example_extraction", "pass": true, "detail": "prd-data-schema.json extracted to resources/; no inline examples >10 lines remain."},
+        {"item": "missing_resource_files", "pass": true, "detail": "No undefined concept referenced 3+ times."},
+        {"item": "script_candidates", "pass": true, "detail": "Deterministic filename step uses doc-filename.sh; remaining steps are interactive or trivial."},
+        {"item": "misplaced_files", "pass": true, "detail": "All files in canonical dirs: assets/ (svg, css), resources/ (template.html, prd-data-schema.json), scripts/ (next-prefix.sh)."},
+        {"item": "stale_references", "pass": true, "detail": "No moves required."}
+      ],
+      "architecture": {
+        "score": 88,
+        "recommendations": [
+          {
+            "signal": "A6",
+            "lifecycle": "NEW",
+            "finding": "The inline repo exploration pattern (read CONTEXT.md + scan docs/adr/ for domain vocabulary) is identically re-implemented in 5 skills: to-prd-html, to-tasks, improve-codebase-architecture, improve-component, to-e2e-tests.",
+            "recommendation": "Extract to a new shared context-loader agent that reads CONTEXT.md and docs/adr/, returns a compact JSON payload of domain terms and ADR constraints. All five skills spawn this agent instead of reading inline.",
+            "proposed_agent": "context-loader",
+            "consumers": ["to-prd-html", "to-tasks", "improve-codebase-architecture", "improve-component", "to-e2e-tests"],
+            "effort": "medium"
+          }
+        ]
+      },
+      "promotions": [],
+      "learnings_added": 3,
+      "learnings_pruned": 3
     }
   ]
 }

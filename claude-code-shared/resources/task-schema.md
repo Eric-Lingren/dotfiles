@@ -1,6 +1,6 @@
 ---
 name: task-schema
-description: Canonical task JSON schema for all task-generating skills (to-tasks, debug, to-e2e-tests). Single source of truth for field definitions, ID assignment, file naming, and follow_ups structure.
+description: Canonical task JSON schema for all task-generating skills (to-tasks, debug, to-e2e-tasks). Single source of truth for field definitions, ID assignment, file naming, and follow_ups structure.
 ---
 
 # Task JSON Schema
@@ -40,7 +40,11 @@ All task-generating skills reference this document. Do not define task JSON sche
   "blocked_by": [],
   "status": "not_started",
   "branch": "feat/t-0023-short-title",
-  "pr": null
+  "pr": null,
+  "browser_verify": {
+    "url_path": "/route",
+    "assertions": ["Observable behavior description"]
+  }
 }
 ```
 
@@ -51,6 +55,27 @@ Field rules:
 - `blocked_by`: array of `id` strings, empty if none
 - `branch`: see `branching-strategy.md`. Only populated when `branching.strategy` is `"per-task"`.
 - `pr`: `null` until merged, then PR URL or number as a string
+- `browser_verify`: optional. When present, run-tasks spawns the browser-checker agent after TDD passes and gates `done` on both checks passing. When `null` or absent, no browser check is run.
+
+### browser_verify field
+
+Shape:
+
+```json
+"browser_verify": {
+  "url_path": "/the-route-to-check",
+  "assertions": [
+    "Visible text 'Dashboard' appears in the heading",
+    "Nav link 'Reports' is visible"
+  ]
+}
+```
+
+- `url_path`: relative path appended to `base_url` (from `app-launch-detection.md`). Must start with `/`.
+- `assertions`: array of strings describing **observable behaviors** — visible elements, navigation targets, redirect destinations. Not implementation details.
+- Set to `null` or omit entirely for non-UI tasks (pure backend, config, refactor).
+- E2e-authoring tasks (from `to-e2e-tasks`) must **not** carry `browser_verify` — TDD runs the Playwright spec directly as its gate.
+- A `browser_verify` task reaches `done` only when **both** TDD acceptance criteria **and** the browser check pass. A `skipped` browser check result does not block; a `fail` triggers the retry loop described in `browser-check-result.md`.
 
 ## Follow-up object
 

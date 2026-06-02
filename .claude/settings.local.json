@@ -47,7 +47,9 @@
       "Bash(bash claude-code-shared/hooks/tier-advisor.sh)",
       "Bash(bash *)",
       "Bash(~/.dotfiles/claude-code-shared/skills/improve-skill/scripts/scaffold-evals.sh greet *)",
-      "Bash(~/.dotfiles/claude-code-shared/skills/improve-skill/scripts/scaffold-evals.sh code-review *)"
+      "Bash(~/.dotfiles/claude-code-shared/skills/improve-skill/scripts/scaffold-evals.sh code-review *)",
+      "Bash(~/.dotfiles/claude-code-shared/skills/improve-skill/scripts/count-tokens.sh to-prd-html *)",
+      "Bash(shellcheck claude-code-shared/scripts/doc-filename.sh)"
     ]
   },
   "prefersReducedMotion": false

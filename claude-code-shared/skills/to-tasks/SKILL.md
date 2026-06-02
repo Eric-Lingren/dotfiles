@@ -41,6 +41,18 @@ Slices may be **HITL** (requires human interaction — architectural decision, d
 - For refactoring slices: the description must state that characterization tests for existing behavior are written BEFORE any restructuring begins. If the code being refactored has no test coverage, the first step is capturing current behavior in tests. Then refactor while keeping tests green.
 </vertical-slice-rules>
 
+#### browser_verify field
+
+For **user-facing feature and fix tasks** (tasks that change UI routes, visible elements, or user flows), populate the `browser_verify` field using PRD intent. This is the least-arbitrary moment to set it: to-tasks already has full PRD context.
+
+Shape and semantics are defined in `~/.dotfiles/claude-code-shared/resources/task-schema.md`. Do not inline the schema here — reference that file.
+
+Rules:
+- Set `url_path` to the route the feature lives on (e.g. `/dashboard`, `/settings/billing`).
+- Set `assertions` to **concrete observable behaviors**: visible text, navigation targets, redirect destinations. Not implementation details or vague prose ("works correctly" is not an assertion; "Text 'Welcome back' is visible in the heading" is).
+- **Omit `browser_verify` entirely** (do not set to `null`) for: pure backend tasks, config tasks, refactor tasks, infra tasks, and any task with no user-visible route change.
+- E2e-authoring tasks (from `to-e2e-tasks`) must **never** carry `browser_verify` — TDD runs the Playwright spec directly as its gate.
+
 ### 3b. Infer follow-ups from the PRD
 
 Scan the PRD for manual actions outside the task graph: env var provisioning, DNS config, external service setup, database migrations, manual testing, deployment steps, credential rotation, etc.
@@ -155,5 +167,5 @@ Output the handoff block:
 ```
 Next steps:
   /run-tasks docs/tasks/<filename>   — implement tasks with TDD
-  /to-e2e-tests                      — add e2e coverage after run-tasks (optional)
+  /to-e2e-tasks                      — add e2e coverage after run-tasks (optional)
 ```

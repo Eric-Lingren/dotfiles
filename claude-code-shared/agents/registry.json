@@ -21,6 +21,13 @@
       "model": "sonnet",
       "description": "Read-only agent that audits a target SKILL.md for architecture anti-patterns and agent extraction opportunities. Detects 7 signals (A1-A7). Returns a JSON array of structured finding records.",
       "consumers": ["improve-skill", "register-skill"]
+    },
+    {
+      "name": "browser-checker",
+      "file": "agents/browser-checker.md",
+      "model": "sonnet",
+      "description": "Stateless single-run agent. Navigates to a URL, evaluates observable assertions via inline Playwright, and returns a JSON result per browser-check-result.md. Spawned by run-tasks and debug after TDD passes. The caller owns the retry loop and server lifecycle.",
+      "consumers": ["run-tasks", "debug"]
     }
   ]
 }

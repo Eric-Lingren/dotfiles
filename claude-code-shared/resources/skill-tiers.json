@@ -17,7 +17,7 @@
     "tdd": "T3",
     "improve-component": "T3",
     "code-review": "T3",
-    "to-e2e-tests": "T3",
+    "to-e2e-tasks": "T3",
     "prototype": "T3",
     "tldr-tech": "T3",
     "improve-skill": "T3",
@@ -35,7 +35,7 @@
     "run-tasks",
     "improve-component",
     "code-review",
-    "to-e2e-tests",
+    "to-e2e-tasks",
     "debug",
     "improve-codebase-architecture"
   ]
