@@ -5,7 +5,7 @@ model: opus
 effort: xhigh
 ---
 
-<!-- tier-delegate: managed by sync-skill-tiers.py -->
+<!-- tier-delegate: managed by sync-model-tiers.py -->
 ## Delegate menial lookups to Haiku (cost control)
 
 During this skill, push pure read-only lookups DOWN to a cheap subagent instead

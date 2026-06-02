@@ -5,7 +5,7 @@ model: sonnet
 effort: xhigh
 ---
 
-<!-- tier-delegate: managed by sync-skill-tiers.py -->
+<!-- tier-delegate: managed by sync-model-tiers.py -->
 ## Delegate menial lookups to Haiku (cost control)
 
 During this skill, push pure read-only lookups DOWN to a cheap subagent instead
@@ -184,25 +184,23 @@ If the user points at a directory, list the files in it and ask which to focus o
 
 ### 2. Read and understand
 
-Read the target file(s) fully. Also read:
-- Direct imports (one level deep) to understand dependencies
-- Sibling files (`ComponentName.css`, `ComponentName.types.ts`, `ComponentName.utils.ts`)
-- The test file if one exists
-- `CONTEXT.md` if present (for domain vocabulary and bounded context boundaries)
-- Any ADRs in `docs/adr/` that touch this component's area (architecture decisions explain intentional trade-offs that look like violations)
-- The project's design system directory (scan for available components)
+Read the target file(s) fully. Also:
+- Read direct imports (one level deep) to understand dependencies
+- Read sibling files (`ComponentName.css`, `ComponentName.types.ts`, `ComponentName.utils.ts`)
+- Read the test file if one exists
+- **Load project context**: Spawn the `context-loader` agent (`subagent_type: context-loader`, repo root). Use `vocabulary` terms throughout your analysis for domain concepts. From `adrs[]`, deep-read full text only for those whose `path` is relevant to this component's area — they explain intentional trade-offs that look like violations. Do not glob `docs/adr/` directly. From `sources[]`, deep-read any typed sources relevant to this component (e.g. `design-system`, `brand-colors`, `brand-typography`).
 
 Understand what the component does before evaluating how it's structured. An ADR may explain why a principle appears violated.
 
 ### 3. Identify the design system
 
-Locate the project's design system. Check these locations in order:
+Use `sources[]` from the context-loader payload first (type `design-system`). If a pointer was returned, Read the file it points to for available components. If no `design-system` source was returned, locate the design system manually by checking these locations in order:
 1. `/src/design-system/` or `/src/ds/`
 2. shadcn component directory (often `/src/components/ui/`)
 3. A component library in `package.json` (e.g. `@radix-ui`, `@chakra-ui`, `@mui`)
 4. `/src/shared-ui/` or `/src/common/`
 
-If found, scan available components so you can recommend specific replacements. If not found, skip design system checks and note that no DS was detected.
+If found via either path, scan available components so you can recommend specific replacements. If not found, skip design system checks and note that no DS was detected.
 
 ### 4. Analyze against principles
 

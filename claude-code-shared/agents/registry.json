@@ -6,28 +6,53 @@
       "file": "agents/fact-checker.md",
       "model": "sonnet",
       "description": "Fact verification specialist. Extracts verifiable claims from any input, checks each against live web sources, and returns a report with citable source links.",
-      "consumers": ["fact-check"]
+      "consumers": [
+        "fact-check"
+      ]
     },
     {
       "name": "code-currency-checker",
       "file": "agents/code-currency-checker.md",
       "model": "sonnet",
       "description": "Checks whether libraries, frameworks, and patterns in a document or codebase are current vs. outdated. Spawned by host skills at the end of their runs.",
-      "consumers": ["to-prd-html", "to-tasks", "run-tasks"]
+      "consumers": [
+        "to-prd-html",
+        "to-tasks",
+        "run-tasks"
+      ]
     },
     {
       "name": "architecture-auditor",
       "file": "agents/architecture-auditor.md",
       "model": "sonnet",
       "description": "Read-only agent that audits a target SKILL.md for architecture anti-patterns and agent extraction opportunities. Detects 7 signals (A1-A7). Returns a JSON array of structured finding records.",
-      "consumers": ["improve-skill", "register-skill"]
+      "consumers": [
+        "improve-skill",
+        "register-skill"
+      ]
     },
     {
       "name": "browser-checker",
       "file": "agents/browser-checker.md",
       "model": "sonnet",
       "description": "Stateless single-run agent. Navigates to a URL, evaluates observable assertions via inline Playwright, and returns a JSON result per browser-check-result.md. Spawned by run-tasks and debug after TDD passes. The caller owns the retry loop and server lifecycle.",
-      "consumers": ["run-tasks", "debug"]
+      "consumers": [
+        "run-tasks",
+        "debug"
+      ]
+    },
+    {
+      "name": "context-loader",
+      "file": "agents/context-loader.md",
+      "model": "haiku",
+      "description": "Discovers and distills project context (CONTEXT.md, ADRs, and typed brand/design sources) into a structured JSON payload. Returns JSON only \u2014 vocabulary inlined, everything else as paths for the caller to deep-read.",
+      "consumers": [
+        "to-prd-html",
+        "to-tasks",
+        "to-e2e-tasks",
+        "improve-component",
+        "improve-codebase-architecture"
+      ]
     }
   ]
 }

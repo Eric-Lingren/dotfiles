@@ -1,6 +1,6 @@
 ---
 name: register-skill
-description: Register a new skill or agent into the shared infrastructure so tier-advisor, the weekly usage report, and sync-skill-tiers never miss it. Invoke as /register-skill <name>. Covers both the skill registration path (tiered via skill-tiers.json) and the agent registration path (self-declared, not tiered). This file is the canonical reference for the full registration chain.
+description: Register a new skill or agent into the shared infrastructure so tier-advisor, the weekly usage report, and sync-model-tiers never miss it. Invoke as /register-skill <name>. Covers both the skill registration path (tiered via model-tiers.json skills map) and the agent registration path (tiered via model-tiers.json agents map). This file is the canonical reference for the full registration chain.
 model: sonnet
 effort: medium
 ---
@@ -15,22 +15,29 @@ Two separate paths depending on whether you are registering a **skill** or an **
 
 ### Skill path
 
-Skills are tracked by two hooks, both of which read `claude-code-shared/resources/skill-tiers.json`:
+Skills are tracked by two hooks, both of which read `claude-code-shared/resources/model-tiers.json`:
 
-1. **tier-advisor.sh** (UserPromptSubmit hook) — looks up the skill name in `skill-tiers.json`. If missing: no model/effort nudge fires when the user invokes the skill.
+1. **tier-advisor.sh** (UserPromptSubmit hook) — looks up the skill name in `model-tiers.json`. If missing: no model/effort nudge fires when the user invokes the skill.
 2. **cc-usage-benchmark.py** (usage analytics) — builds `expected_model` from `cfg["skills"]`. If missing: the skill is silently absent from the weekly tier-adherence report.
-3. **sync-skill-tiers.py** — stamps `model:` and `effort:` into each skill's `SKILL.md` frontmatter from the tier map. Runs via `--apply` flag and also via the pre-commit hook automatically on commit.
+3. **sync-model-tiers.py** — stamps `model:` and `effort:` into each skill's `SKILL.md` frontmatter from the tier map. Runs via `--apply` flag and also via the pre-commit hook automatically on commit.
 
 A skill is not fully registered until all three are satisfied.
 
 ### Agent path
 
-Agents live in `claude-code-shared/agents/`. They are **NOT** tracked by skill-tiers.json, tier-advisor, or the usage benchmark. They self-declare their model in frontmatter.
+Agents live in `claude-code-shared/agents/`. They are tiered via the `agents` map in
+`model-tiers.json`. The sync script (`sync-model-tiers.py`) stamps the tier's `model:`
+into the agent's frontmatter and updates the matching `registry.json` entry — so the
+agent never drifts from its assigned tier.
 
-An agent is registered when:
+An agent is fully registered when:
 - The file exists in `claude-code-shared/agents/<name>.md`
-- Frontmatter has: `name`, `description`, `tools`, `model`
-- No entry in `skill-tiers.json` is needed or appropriate
+- Frontmatter has: `name`, `description`, `tools`
+- The agent is assigned a tier in `model-tiers.json`'s `agents` map
+- The sync has been run (or will run via the pre-commit hook)
+- A `registry.json` entry exists with the correct `model` field
+
+**Agents consume model only.** Effort is a session concept and is never stamped into agent frontmatter.
 
 ---
 
@@ -51,7 +58,7 @@ If both exist (unusual), ask the user which path they want to register.
 
 ### 2a. Skill path — choose a tier
 
-Read `claude-code-shared/resources/skill-tiers.json` — it is the source of truth for all tier definitions. The `tiers` map contains each tier's model, effort, and meaning. Present those to the user directly from the file rather than from a hardcoded table here.
+Read `claude-code-shared/resources/model-tiers.json` — it is the source of truth for all tier definitions. The `tiers` map contains each tier's model, effort, and meaning. Present those to the user directly from the file rather than from a hardcoded table here.
 
 Read the skill's `description:` field from its `SKILL.md` frontmatter. Recommend a tier based on what it does:
 - T1: lookup, navigation, status display
@@ -65,11 +72,11 @@ Ask the user to confirm the tier or choose a different one.
 
 Ask: "Does this skill do heavy read-only searching or web fetching itself (not via a spawned agent)?"
 
-If yes: add it to the `delegate` array in `skill-tiers.json`. This causes `sync-skill-tiers.py` to inject the managed Haiku-delegation block into the skill's frontmatter.
+If yes: add it to the `delegate` array in `model-tiers.json`. This causes `sync-model-tiers.py` to inject the managed Haiku-delegation block into the skill's frontmatter.
 
 If no (the skill delegates to an agent, or does no heavy lookups): do NOT add to `delegate`.
 
-### 2c. Skill path — edit skill-tiers.json
+### 2c. Skill path — edit model-tiers.json
 
 Add the skill name to the `skills` map at the confirmed tier:
 
@@ -93,10 +100,10 @@ If adding to `delegate`, also add to that array:
 
 ```bash
 # Preview first
-python3 claude-code-shared/scripts/sync-skill-tiers.py --check
+python3 claude-code-shared/scripts/sync-model-tiers.py --check
 
 # Apply — stamps model: and effort: into the skill's SKILL.md frontmatter
-python3 claude-code-shared/scripts/sync-skill-tiers.py --apply
+python3 claude-code-shared/scripts/sync-model-tiers.py --apply
 ```
 
 ### 2e. Skill path — verify
@@ -110,15 +117,40 @@ echo '{"prompt": "/<skill-name>"}' | bash claude-code-shared/hooks/tier-advisor.
 # 2. Frontmatter was stamped
 head -6 claude-code-shared/skills/<skill-name>/SKILL.md
 
-# 3. skill-tiers.json is consistent
-python3 claude-code-shared/scripts/sync-skill-tiers.py --check
+# 3. model-tiers.json is consistent
+python3 claude-code-shared/scripts/sync-model-tiers.py --check
 ```
 
-Confirm `tier-advisor.sh` emits the advisory block with the correct tier. If it prints nothing for the skill name, the name in `skill-tiers.json` does not match the slash-command name — fix the mismatch.
+Confirm `tier-advisor.sh` emits the advisory block with the correct tier. If it prints nothing for the skill name, the name in `model-tiers.json` does not match the slash-command name — fix the mismatch.
 
-To confirm the weekly usage report will count it: the benchmark uses `SKILL_BODY_RE = re.compile(r"skills/([a-z0-9-]+)/SKILL\.md", re.I)` to extract skill names from transcript paths. The skill name in `skill-tiers.json` must match the directory name under `skills/` exactly.
+To confirm the weekly usage report will count it: the benchmark uses `SKILL_BODY_RE = re.compile(r"skills/([a-z0-9-]+)/SKILL\.md", re.I)` to extract skill names from transcript paths. The skill name in `model-tiers.json` must match the directory name under `skills/` exactly.
 
-### 3. Agent path — verify frontmatter
+### 3. Agent path — assign a tier in model-tiers.json
+
+Read `claude-code-shared/resources/model-tiers.json` and add the agent to the `agents` map:
+
+```json
+"agents": {
+  ...
+  "<agent-name>": "T1"
+}
+```
+
+Choose the tier by the same criteria as skills. Agents are typically T1 (lookup-only,
+no reasoning), T3 (context-aware, moderate capability), or T3-T4 for complex tasks.
+**Remember: only the `model` from the tier is used — effort is ignored for agents.**
+
+After editing the JSON, run the sync:
+
+```bash
+# Preview
+python3 claude-code-shared/scripts/sync-model-tiers.py --check
+
+# Apply — stamps model: into the agent's frontmatter and updates registry.json
+python3 claude-code-shared/scripts/sync-model-tiers.py --apply
+```
+
+### 3b. Agent path — verify frontmatter
 
 Read the agent file and confirm it has all required fields:
 
@@ -130,13 +162,12 @@ Required frontmatter:
 - `name:` — must match the filename (without `.md`)
 - `description:` — used by Claude to decide when to spawn this agent
 - `tools:` — comma-separated list of tools the agent may use
-- `model:` — explicit model name (haiku / sonnet / opus)
+- `model:` — stamped by the sync from the tier; do not hand-edit
 
-If any field is missing, edit the agent file to add it.
+If `name`, `description`, or `tools` are missing, edit the agent file to add them.
+Do not hand-edit `model:` — the sync owns that field.
 
-Confirm explicitly: **no entry in `skill-tiers.json` is needed for agents.** Agents are not tracked by tier-advisor or the usage benchmark. This is by design.
-
-### 3b. Agent path — update registry.json
+### 3c. Agent path — update registry.json
 
 After verifying frontmatter, upsert the agent into `claude-code-shared/agents/registry.json`:
 
@@ -163,10 +194,10 @@ Print a short summary:
 ```
 Registered: <name> (<skill|agent>)
   Type:    <skill | agent>
-  Tier:    <T1-T4 | n/a (agent)>
+  Tier:    <T1-T4>
   Model:   <model>
-  Effort:  <effort | n/a (agent)>
+  Effort:  <effort | n/a (agents use model only)>
   Delegate: <yes | no | n/a (agent)>
   Hooks:   tier-advisor ✓  usage-benchmark ✓  sync ✓   (skill)
-           tier-advisor n/a  usage-benchmark n/a  (agent — self-declared)
+           usage-benchmark ✓  sync ✓  tier-advisor n/a  (agent)
 ```

@@ -30,7 +30,7 @@ if echo "$PROMPT" | grep -q "<command-name>"; then
 elif echo "$PROMPT" | grep -qE '(^|[[:space:]])/[a-z][a-z0-9-]+([[:space:]]|$)'; then
   SKILL_NAME=$(echo "$PROMPT" | grep -oE '(^|[[:space:]])/[a-z][a-z0-9-]+' | tail -1 | sed 's/^[[:space:]]*//' | sed 's/^\///')
 fi
-TIERS_FILE="$HOME/.dotfiles/claude-code-shared/resources/skill-tiers.json"
+TIERS_FILE="$HOME/.dotfiles/claude-code-shared/resources/model-tiers.json"
 if [ -n "$SKILL_NAME" ] && [ -f "$TIERS_FILE" ]; then
   TIER=$(jq -r --arg s "$SKILL_NAME" '.skills[$s] // ""' "$TIERS_FILE" 2>/dev/null)
   if [ -n "$TIER" ]; then

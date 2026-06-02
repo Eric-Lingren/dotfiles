@@ -1,11 +1,11 @@
 ---
 name: improve-codebase-architecture
-description: Find deepening opportunities in a codebase, informed by the domain language in CONTEXT.md and the decisions in docs/adr/. Use when the user wants to improve architecture, find refactoring opportunities, consolidate tightly-coupled modules, or make a codebase more testable and AI-navigable.
+description: Find deepening opportunities in a codebase, informed by domain vocabulary and ADR decisions loaded via the context-loader agent. Use when the user wants to improve architecture, find refactoring opportunities, consolidate tightly-coupled modules, or make a codebase more testable and AI-navigable.
 model: opus
 effort: xhigh
 ---
 
-<!-- tier-delegate: managed by sync-skill-tiers.py -->
+<!-- tier-delegate: managed by sync-model-tiers.py -->
 ## Delegate menial lookups to Haiku (cost control)
 
 During this skill, push pure read-only lookups DOWN to a cheap subagent instead
@@ -48,7 +48,7 @@ This skill is _informed_ by the project's domain model. The domain language give
 
 ### 1. Explore
 
-Read the project's domain glossary and any ADRs in the area you're touching first.
+**Load project context first**: Spawn the `context-loader` agent (`subagent_type: context-loader`, repo root). Use `vocabulary` terms throughout your analysis. From `adrs[]`, deep-read full text of any ADRs relevant to the area you are exploring via their `path` — decisions recorded there are not up for re-litigation. Do not glob `docs/adr/` directly.
 
 Then use the Agent tool with `subagent_type=Explore` to walk the codebase. Don't follow rigid heuristics — explore organically and note where you experience friction:
 
@@ -69,7 +69,7 @@ Present a numbered list of deepening opportunities. For each candidate:
 - **Solution** — plain English description of what would change
 - **Benefits** — explained in terms of locality and leverage, and also in how tests would improve
 
-**Use CONTEXT.md vocabulary for the domain, and [LANGUAGE.md](resources/LANGUAGE.md) vocabulary for the architecture.** If `CONTEXT.md` defines "Order," talk about "the Order intake module" — not "the FooBarHandler," and not "the Order service."
+**Use the `vocabulary` terms from the context-loader payload for the domain, and [LANGUAGE.md](resources/LANGUAGE.md) vocabulary for the architecture.** If the payload defines "Order," talk about "the Order intake module" — not "the FooBarHandler," and not "the Order service."
 
 **ADR conflicts**: if a candidate contradicts an existing ADR, only surface it when the friction is real enough to warrant revisiting the ADR. Mark it clearly (e.g. _"contradicts ADR-0007 — but worth reopening because…"_). Don't list every theoretical refactor an ADR forbids.
 

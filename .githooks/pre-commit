@@ -1,9 +1,10 @@
 #!/bin/bash
-# Pre-commit: keep skill frontmatter in sync with the central tier map.
+# Pre-commit: keep skill and agent frontmatter in sync with the central tier map.
 #
-# Runs sync-skill-tiers.py --apply so skill model/effort + delegation blocks can
-# never drift from resources/skill-tiers.json. Any file the sync rewrites is
-# re-staged into THIS commit, so the config and skills always land together.
+# Runs sync-model-tiers.py --apply so skill model/effort + delegation blocks and
+# agent model fields can never drift from resources/model-tiers.json. Any file
+# the sync rewrites is re-staged into THIS commit, so the config and
+# skills/agents always land together.
 #
 # Auto-fix, not block: you never have to remember to run the sync by hand.
 # Only the files the sync actually changed get re-staged (not unrelated edits).
@@ -14,12 +15,12 @@
 set -euo pipefail
 
 REPO="$(git rev-parse --show-toplevel)"
-SYNC="$REPO/claude-code-shared/scripts/sync-skill-tiers.py"
+SYNC="$REPO/claude-code-shared/scripts/sync-model-tiers.py"
 
 [ -f "$SYNC" ] || exit 0   # tiering system absent, nothing to do
 
 OUT="$(python3 "$SYNC" --apply --print-changed)" || {
-  echo "pre-commit: skill-tier sync FAILED. Fix the error above or commit with --no-verify." >&2
+  echo "pre-commit: model-tier sync FAILED. Fix the error above or commit with --no-verify." >&2
   echo "$OUT" >&2
   exit 1
 }
@@ -30,7 +31,7 @@ if [ -n "$CHANGED" ]; then
   echo "$CHANGED" | while IFS= read -r f; do
     [ -n "$f" ] && git add -- "$f"
   done
-  echo "pre-commit: re-synced + staged skill tiers:" >&2
+  echo "pre-commit: re-synced + staged model tiers:" >&2
   echo "$CHANGED" | sed 's/^/  /' >&2
 fi
 
