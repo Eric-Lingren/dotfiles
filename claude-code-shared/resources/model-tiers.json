@@ -1,5 +1,5 @@
 {
-  "_doc": "Single source of truth for per-skill model+effort tiering. Edit this, then run scripts/sync-skill-tiers.py --apply (or just commit; the pre-commit hook applies it). Full docs: resources/skill-tiers.md",
+  "_doc": "Single source of truth for per-skill and per-agent model+effort tiering. Edit this, then run scripts/sync-model-tiers.py --apply (or just commit; the pre-commit hook applies it). Full docs: resources/model-tiers.md",
   "tiers": {
     "T1": { "model": "haiku",  "effort": "low",    "_meaning": "Lookup. No reasoning. File search, status, how-to." },
     "T2": { "model": "sonnet", "effort": "medium", "_meaning": "Mechanical. Narrow, well-defined scope." },
@@ -30,6 +30,12 @@
     "fact-check": "T2",
     "register-skill": "T2",
     "handoff": "T2"
+  },
+  "agents": {
+    "fact-checker": "T3",
+    "architecture-auditor": "T3",
+    "code-currency-checker": "T3",
+    "browser-checker": "T3"
   },
   "delegate": [
     "run-tasks",
