@@ -87,7 +87,7 @@
         "Verification gate (not a unit test): grep confirms the broad inline glob is gone and the pointer-driven deep-read is present in both"
       ],
       "blocked_by": ["T-0013"],
-      "status": "in_progress",
+      "status": "done",
       "branch": "feat/context-loader-agent",
       "pr": null,
       "browser_verify": null
