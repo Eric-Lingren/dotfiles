@@ -53,6 +53,13 @@ Rules:
 - **Omit `browser_verify` entirely** (do not set to `null`) for: pure backend tasks, config tasks, refactor tasks, infra tasks, and any task with no user-visible route change.
 - E2e-authoring tasks (from `to-e2e-tasks`) must **never** carry `browser_verify` — TDD runs the Playwright spec directly as its gate.
 
+**Dynamic route segments:** If the route has dynamic segments (e.g. `/firms/:firmSlug/dashboard`, `/companies/:id/settings`), write the segment as a `:param` placeholder. Do NOT invent a concrete slug or ID — a made-up value navigates to a 404 and fails a healthy build.
+
+- Mark every dynamic segment with a leading colon: `/firms/:firmSlug/dashboard`, `/c/:codexSlug`, `/reports/:reportId`.
+- The placeholder NAME is cosmetic. The browser-checker resolves segments by position, not by name, so `:firmSlug`, `:slug`, and `:id` are equivalent. Use whatever name reads clearly.
+- Write static segments concretely (`/firms`, `/dashboard`). Only the variable parts get a colon.
+- Do not resolve placeholders to real values, do not ask the user for a slug, do not read or write any fixture file. The browser-checker resolves placeholders at check time by crawling the running app for a real instance. See `~/.dotfiles/claude-code-shared/agents/browser-checker.md`.
+
 ### 3b. Infer follow-ups from the PRD
 
 Scan the PRD for manual actions outside the task graph: env var provisioning, DNS config, external service setup, database migrations, manual testing, deployment steps, credential rotation, etc.

@@ -16,7 +16,7 @@
       "WebFetch(*)"
     ]
   },
-  "model": "sonnet",
+  "model": "opus",
   "hooks": {
     "PreToolUse": [
       {
@@ -105,7 +105,8 @@
   },
   "enabledPlugins": {
     "caveman@caveman": true,
-    "chrome-devtools-mcp@claude-plugins-official": true
+    "chrome-devtools-mcp@claude-plugins-official": true,
+    "frontend-review@smx-skills": true
   },
   "extraKnownMarketplaces": {
     "caveman": {
@@ -118,6 +119,12 @@
       "source": {
         "source": "github",
         "repo": "ChromeDevTools/chrome-devtools-mcp"
+      }
+    },
+    "smx-skills": {
+      "source": {
+        "source": "github",
+        "repo": "Quaestor-Technologies/smx-skills-marketplace"
       }
     }
   },

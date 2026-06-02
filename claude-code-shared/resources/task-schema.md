@@ -71,7 +71,7 @@ Shape:
 }
 ```
 
-- `url_path`: relative path appended to `base_url` (from `app-launch-detection.md`). Must start with `/`.
+- `url_path`: relative path appended to `base_url` (from `app-launch-detection.md`). Must start with `/`. Dynamic route segments are written as `:param` placeholders (e.g. `/firms/:firmSlug/dashboard`). The placeholder name is cosmetic — the browser-checker resolves segments by position at check time by crawling the running app for a real instance, so never invent a concrete slug. See `~/.dotfiles/claude-code-shared/agents/browser-checker.md`.
 - `assertions`: array of strings describing **observable behaviors** — visible elements, navigation targets, redirect destinations. Not implementation details.
 - Set to `null` or omit entirely for non-UI tasks (pure backend, config, refactor).
 - E2e-authoring tasks (from `to-e2e-tasks`) must **not** carry `browser_verify` — TDD runs the Playwright spec directly as its gate.
