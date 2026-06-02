@@ -9,7 +9,7 @@ This skill takes the current conversation context and codebase understanding and
 
 ## Process
 
-1. **Explore the repo** to understand the current state of the codebase, if you haven't already. Use the project's domain vocabulary (from `CONTEXT.md` and ADRs in `docs/adr/` if they exist) throughout the PRD. If neither `CONTEXT.md` nor `docs/adr/` exist, explicitly note that no project-specific vocabulary sources were found and proceed with the best domain terms available from the conversation context.
+1. **Load project context.** Spawn the `context-loader` agent (`subagent_type: context-loader`, repo root as working directory). It returns a JSON payload with `vocabulary` (domain terms, inlined) and `adrs` (one-line decisions + paths). Use `vocabulary` terms throughout the PRD and reference ADR decisions from `adrs`. If the payload's `missing` list is non-empty (neither `CONTEXT.md` nor `docs/adr/` were found), explicitly note "no project-specific vocabulary sources were found" and proceed with the best domain terms available from the conversation context.
 
 2. **Ask: work or personal? (MANDATORY).** You MUST ask before proceeding. Do not skip this step. Do not assume or infer the answer. Always prompt the user:
 

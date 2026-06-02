@@ -23,9 +23,9 @@ If `docs/prd/` doesn't exist or is empty on the current branch:
 - If the user picks a branch, run `git switch {branch-name}` and re-list `docs/prd/`.
 - If no work branches exist either, tell the user to run `/to-prd` first.
 
-### 2. Explore the codebase (optional)
+### 2. Load project context
 
-If you haven't already explored the codebase in this session, do a light exploration to understand the current state. Task titles and descriptions should use the project's domain vocabulary.
+Spawn the `context-loader` agent (`subagent_type: context-loader`, repo root as working directory). It returns `vocabulary` (domain terms, inlined) and `adrs` (one-line decisions + paths). Use `vocabulary` terms in task titles and descriptions. If the payload's `missing` list is non-empty, proceed with terms from the conversation context.
 
 ### 3. Draft vertical slices
 

@@ -45,13 +45,15 @@ Record these for use in task descriptions so generated tests follow existing pat
 
 ### 2. Read context
 
-Gather two sources of information:
+Gather three sources of information:
 
-**a. The PRD.** Look for an existing task JSON in `docs/tasks/` for the current branch. If found, read its `prd` field and load that PRD file. If multiple task files exist, ask the user which one corresponds to the current work.
+**a. Project vocabulary and ADRs.** Spawn the `context-loader` agent (`subagent_type: context-loader`, repo root as working directory). It returns `vocabulary` (domain terms, inlined) and `adrs` (one-line decisions + paths). Use `vocabulary` terms in workflow names and test scenario descriptions. If the payload's `missing` list is non-empty, proceed without domain vocabulary.
+
+**b. The PRD.** Look for an existing task JSON in `docs/tasks/` for the current branch. If found, read its `prd` field and load that PRD file. If multiple task files exist, ask the user which one corresponds to the current work.
 
 If no task JSON references a PRD, ask the user to provide the PRD path or skip PRD context.
 
-**b. The diff.** Get all changes on this branch:
+**c. The diff.** Get all changes on this branch:
 
 ```
 git diff $(git merge-base HEAD origin/main)..HEAD
@@ -93,7 +95,7 @@ Examples:
 
 Show the user what you found. For each workflow:
 
-- **Workflow name**: descriptive, using domain terms from CONTEXT.md if it exists
+- **Workflow name**: descriptive, using `vocabulary` terms from the context-loader payload
 - **Signals found**: which diff changes map to this workflow
 - **Proposed test scenarios**: happy path + key edge cases
 
@@ -126,7 +128,7 @@ Iterate until the user approves.
 
 Once workflows are approved, stress-test the test plan. Apply the same rigor as `/grill-with-docs` but scoped to the test plan:
 
-**Challenge against the glossary.** If `CONTEXT.md` exists, verify test names and descriptions use canonical domain terms. "Your test says 'checkout' but CONTEXT.md calls it 'order submission'. Which is right?"
+**Challenge against the glossary.** If the context-loader payload returned `vocabulary` terms, verify test names and descriptions use those canonical domain terms. "Your test says 'checkout' but the project vocabulary calls it 'order submission'. Which is right?"
 
 **Sharpen fuzzy scenarios.** "You have 'test error handling' but which error? Network timeout? Validation failure? Auth expiry? Be specific."
 
