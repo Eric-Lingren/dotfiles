@@ -28,7 +28,8 @@
     "debug": "T4",
     "improve-codebase-architecture": "T4",
     "fact-check": "T2",
-    "register-skill": "T2"
+    "register-skill": "T2",
+    "handoff": "T2"
   },
   "delegate": [
     "run-tasks",
