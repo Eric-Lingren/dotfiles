@@ -36,7 +36,7 @@
         "Verification gate (not a unit test): cc-usage-analytics and weekly-usage-report run without error and reference agent tiers"
       ],
       "blocked_by": ["T-0011"],
-      "status": "in_progress",
+      "status": "done",
       "branch": "feat/context-loader-agent",
       "pr": null,
       "browser_verify": null
@@ -53,7 +53,7 @@
         "Deployed copy exists at ~/.cch/agents/context-loader.md and the deploy preserved browser-checker.md and any newer registry entries (no drift clobber)"
       ],
       "blocked_by": ["T-0011"],
-      "status": "not_started",
+      "status": "in_progress",
       "branch": "feat/context-loader-agent",
       "pr": null,
       "browser_verify": null

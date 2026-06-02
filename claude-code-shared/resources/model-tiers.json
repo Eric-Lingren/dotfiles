@@ -35,7 +35,8 @@
     "fact-checker": "T3",
     "architecture-auditor": "T3",
     "code-currency-checker": "T3",
-    "browser-checker": "T3"
+    "browser-checker": "T3",
+    "context-loader": "T1"
   },
   "delegate": [
     "run-tasks",
