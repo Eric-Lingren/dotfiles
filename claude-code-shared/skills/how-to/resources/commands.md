@@ -93,11 +93,6 @@ brew upgrade postgresql@16
 ruff check --fix . && ruff format .
 ```
 
-**Lint with black**
-```bash
-black app
-```
-
 **Run Mailhog**
 ```bash
 brew update && brew install mailhog && mailhog
@@ -262,6 +257,16 @@ dev db-snapshot create <name> --test
 dev db-snapshot restore <name> --test
 ```
 
+**List DB snapshots**
+```bash
+dev db-snapshot ls
+```
+
+**Drop a DB snapshot**
+```bash
+dev db-snapshot drop <snapshot-name>
+```
+
 **Generate CI testing DB snapshot**
 ```bash
 dev generate-ci-testing-db
@@ -275,6 +280,11 @@ psql postgres -c "DROP SCHEMA public CASCADE;CREATE SCHEMA public;"
 ---
 
 ## AWS / Infra
+
+**Install AWS CLI v2**
+```bash
+dev aws-cli-install
+```
 
 **Configure AWS SSO profiles**
 ```bash
@@ -408,6 +418,16 @@ kill -9 <pid>
 
 ## Dev Tooling
 
+**Start local dev environment** (nginx, Django, Next.js)
+```bash
+dev start
+```
+
+**Initial setup** (binaries, services, project dependencies)
+```bash
+dev setup
+```
+
 **Install pip / npm dependencies**
 ```bash
 dev install
@@ -443,4 +463,28 @@ dev docs --live   # auto-refresh on changes
 **Activate conda venv manually**
 ```bash
 conda activate /Users/ericlingren/mambaforge/envs/sm
+```
+
+---
+
+## AI Doc Parsing (AIDP)
+
+**Boot LocalStack + deploy CDK stack**
+```bash
+dev aidp up
+```
+
+**Stop LocalStack** (preserve state)
+```bash
+dev aidp down
+```
+
+**Tear down + wipe state + re-bootstrap**
+```bash
+dev aidp reset
+```
+
+**Tail LocalStack logs**
+```bash
+dev aidp logs
 ```
