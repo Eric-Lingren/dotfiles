@@ -165,10 +165,11 @@ if [[ -n "$session_pct" && "$session_pct" != "null" && -n "$cw_pct" && "$cw_pct"
         cw_k=$((cw_tokens / 1000))
     else
         cw_k=$(( max_context * cw_pct / 100 / 1000 ))
+        cw_tokens=$(( cw_k * 1000 ))
     fi
-    if [[ $cw_pct -ge 80 ]]; then
+    if [[ $cw_tokens -ge 150000 ]]; then
         ctxwin="  |  ${C_WARN}${cw_k}k/${max_display} (${cw_pct}%)"
-    elif [[ $cw_pct -ge 60 ]]; then
+    elif [[ $cw_tokens -ge 100000 ]]; then
         ctxwin="  |  ${C_NUDGE}${cw_k}k/${max_display} (${cw_pct}%)"
     else
         ctxwin="  |  ${C_GRAY}${cw_k}k/${max_display} (${cw_pct}%)"
