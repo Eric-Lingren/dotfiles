@@ -11,6 +11,7 @@
       "Bash(~/.dotfiles/claude-code-shared/scripts/*)",
       "Bash(grep *)",
       "Read(~/.dotfiles/**)",
+      "Read(~/.claude-code-shared/**)",
       "WebSearch(*)",
       "WebFetch(*)"
     ]
