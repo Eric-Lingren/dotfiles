@@ -1,0 +1,45 @@
+{
+  "prd": "docs/seeds/20260602-2101-cleanup-scaffolding-skill.json",
+  "generated_at": "2026-06-02T21:07:00Z",
+  "branching": {
+    "strategy": "single",
+    "branch": "main"
+  },
+  "tasks": [
+    {
+      "id": "T-0009",
+      "title": "Create /clean-scaffolding skill",
+      "type": "AFK",
+      "description": "Build ~/.dotfiles/claude-code-shared/skills/clean-scaffolding/SKILL.md. The skill enumerates files in docs/seeds/, docs/prd/, docs/tasks/, and docs/handoffs/ (*.md only). It shows a file-count preview, then prompts [y/N] before deletion. A --force / -y flag skips the prompt. Deletion runs plain rm with explicit enumerated paths, no -f flag, no bare rm *. The skill never touches docs/adr/ or docs/prototypes/, never runs git, and leaves empty dirs in place after deletion. No tests per standing infra convention for claude-code-shared skills.",
+      "acceptance_criteria": [
+        "SKILL.md exists at ~/.dotfiles/claude-code-shared/skills/clean-scaffolding/SKILL.md",
+        "Skill enumerates docs/seeds/, docs/prd/, docs/tasks/, and docs/handoffs/*.md only",
+        "Preview shows file count before any deletion",
+        "[y/N] prompt required unless --force or -y is passed",
+        "Deletion uses plain rm with explicit paths, no -f flag, no bare rm *",
+        "docs/adr/ and docs/prototypes/ are never touched",
+        "Skill never invokes git",
+        "Empty scaffolding dirs remain in place after deletion"
+      ],
+      "blocked_by": [],
+      "status": "done",
+      "branch": "main",
+      "pr": "gh pr create --title \"feat: add /clean-scaffolding skill\" --body \"Adds the clean-scaffolding skill to claude-code-shared. Enumerates docs/seeds, docs/prd, docs/tasks, and docs/handoffs/*.md, shows a file-count preview, prompts for confirmation, and deletes with plain rm (no -f, no bare rm *). Never touches docs/adr or docs/prototypes. Passes the block-destructive-fs.sh guard.\""
+    },
+    {
+      "id": "T-0010",
+      "title": "Register /clean-scaffolding via /register-skill",
+      "type": "HITL",
+      "description": "Run /register-skill pointing at the new clean-scaffolding skill to wire it into the harness.",
+      "acceptance_criteria": [
+        "/clean-scaffolding skill is registered and invocable in the harness",
+        "Skill appears in available skills list"
+      ],
+      "blocked_by": ["T-0009"],
+      "status": "done",
+      "branch": "main",
+      "pr": null
+    }
+  ],
+  "follow_ups": []
+}
