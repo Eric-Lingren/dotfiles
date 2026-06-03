@@ -107,21 +107,35 @@ A task is not done until tests exist that verify the behavior described in the a
 {full contents of the PRD file}
 ```
 
-4. If TDD completes successfully, run a validation gate before marking done:
+4. If TDD completes successfully, run a runner-based validation gate before marking done:
 
-   **a. TypeScript check**
-   - Look for `tsconfig.json` in the project root (or `tsconfig.app.json` / `tsconfig.build.json` as fallbacks).
-   - If found, run `npx tsc --noEmit`. Capture output.
+   **a-d. Runner-based validation gate**
 
-   **b. Lint check**
-   - Inspect `package.json` scripts for a `lint` key. If present, run `npm run lint`. Otherwise try `npx eslint . --ext .ts,.tsx` as fallback. Capture output.
+   1. **Detect tooling.** Run:
+      ```bash
+      python3 ~/.dotfiles/claude-code-shared/scripts/tooling-detection/detect_tooling.py <project_root>
+      ```
+      Capture the JSON manifest (one entry per workspace with resolved lint/format/typecheck/test commands).
 
-   **c. Auto-fix pass**
-   - If either check reports errors, run the auto-fix variant (`npx eslint . --fix` and/or `npm run lint -- --fix` if the script accepts it) then re-run both checks.
+   2. **Map touched workspaces.** Run `git diff --name-only HEAD~1` (or `git diff --name-only` for uncommitted changes). For each changed file path, find the workspace entry whose `workspace` field is a prefix of that path. Collect the unique set of touched workspaces.
 
-   **d. Gate decision**
-   - If errors remain after auto-fix: print a **Validation errors** block listing every file:line error, update task status to `blocked` in the JSON, and halt the run (same blocker logic as a TDD failure in step 6 below).
-   - If checks pass (or no config found): continue to browser check (if applicable) or mark done.
+   3. **Spawn runners in parallel.** For each touched workspace, send a single message containing one `Agent` call for `lint-runner` and one for `test-runner`:
+      - `lint-runner` prompt: `command: <manifest.lint>, workspace: <absolute_workspace_path>, check_type: lint`
+      - `test-runner` prompt: `test_command: <manifest.test>, typecheck_command: <manifest.typecheck>, workspace: <absolute_workspace_path>, check_type: test`
+      - If the manifest has no lint command for a workspace, still spawn `lint-runner` with `command: null` (it will return `skipped`).
+      - Spawn runners for ALL touched workspaces in a SINGLE parallel message (not one message per workspace).
+
+   4. **Auto-fix pass.** Before gating, check each lint-runner verdict:
+      - If `counts.fixable > 0`, run the fix variant of the lint command for that workspace:
+        - eslint: append `--fix` to the command
+        - biome: replace `check` with `check --write`
+        - ruff: replace `check` with `check --fix`
+      - After auto-fix, re-spawn `lint-runner` for that workspace only (one retry).
+
+   5. **Gate decision.** Evaluate all collected verdicts:
+      - Any verdict with `status: "fail"`: print a **Validation errors** block listing all `violations` and `failures` with `file:line` format, update task status to `blocked` in the JSON, and halt the run (same blocker logic as a TDD failure in step 6 below).
+      - Any verdict with `status: "skipped"`: record for the end-of-run summary. Do NOT treat `skipped` as a pass. Continue to browser check (if all remaining verdicts are pass or skipped).
+      - All verdicts `status: "pass"` (or only skipped): continue to browser check (if applicable) or mark done.
 
    **e. Browser verify (when task has `browser_verify`)**
 

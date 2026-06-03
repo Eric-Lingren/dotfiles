@@ -34,9 +34,11 @@
   "agents": {
     "fact-checker": "T3",
     "architecture-auditor": "T3",
-    "code-currency-checker": "T3",
     "browser-checker": "T3",
-    "context-loader": "T1"
+    "context-loader": "T1",
+    "lint-runner": "T1",
+    "test-runner": "T1",
+    "e2e-runner": "T1"
   },
   "delegate": [
     "run-tasks",

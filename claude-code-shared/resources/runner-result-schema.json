@@ -1,0 +1,104 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "runner-result-schema",
+  "title": "Runner Verdict",
+  "description": "Verdict returned by lint-runner, test-runner, and e2e-runner agents.",
+  "type": "object",
+  "required": ["status", "check_type", "workspace", "command", "summary", "counts", "violations", "skipped_reason"],
+  "additionalProperties": false,
+  "properties": {
+    "status": {
+      "type": "string",
+      "enum": ["pass", "fail", "skipped", "error"],
+      "description": "Outcome of the check."
+    },
+    "check_type": {
+      "type": "string",
+      "enum": ["lint", "format", "typecheck", "test", "e2e"],
+      "description": "Category of check run."
+    },
+    "workspace": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Relative workspace path, e.g. '.', 'client', 'app'."
+    },
+    "command": {
+      "oneOf": [
+        { "type": "string", "minLength": 1 },
+        { "type": "null" }
+      ],
+      "description": "Command that was run. null only when status is 'skipped'."
+    },
+    "summary": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Human-readable one-line result summary."
+    },
+    "counts": {
+      "type": "object",
+      "description": "Check-type-specific counts. All values are non-negative integers.",
+      "additionalProperties": {
+        "type": "integer",
+        "minimum": 0
+      }
+    },
+    "violations": {
+      "type": "array",
+      "description": "Lint/format/typecheck findings. Empty for test/e2e runners.",
+      "items": {
+        "type": "object",
+        "required": ["file", "line", "col", "rule", "severity", "message"],
+        "additionalProperties": false,
+        "properties": {
+          "file": {
+            "type": "string",
+            "description": "Relative path from workspace root."
+          },
+          "line": {
+            "oneOf": [{ "type": "integer", "minimum": 1 }, { "type": "null" }]
+          },
+          "col": {
+            "oneOf": [{ "type": "integer", "minimum": 1 }, { "type": "null" }]
+          },
+          "rule": {
+            "oneOf": [{ "type": "string" }, { "type": "null" }]
+          },
+          "severity": {
+            "type": "string",
+            "enum": ["error", "warning"]
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "failures": {
+      "type": "array",
+      "description": "Test/e2e failures. Present only in test-runner and e2e-runner verdicts.",
+      "items": {
+        "type": "object",
+        "required": ["test_name", "file", "line", "assertion_message", "top_user_frame"],
+        "additionalProperties": false,
+        "properties": {
+          "test_name": { "type": "string" },
+          "file": { "type": "string" },
+          "line": {
+            "oneOf": [{ "type": "integer", "minimum": 1 }, { "type": "null" }]
+          },
+          "assertion_message": { "type": "string" },
+          "top_user_frame": {
+            "oneOf": [{ "type": "string" }, { "type": "null" }]
+          }
+        }
+      }
+    },
+    "skipped_reason": {
+      "oneOf": [
+        { "type": "string", "minLength": 1 },
+        { "type": "null" }
+      ],
+      "description": "Non-null only when status is 'skipped'."
+    }
+  }
+}

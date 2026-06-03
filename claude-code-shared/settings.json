@@ -16,7 +16,7 @@
       "WebFetch(*)"
     ]
   },
-  "model": "opus",
+  "model": "sonnet",
   "hooks": {
     "PreToolUse": [
       {

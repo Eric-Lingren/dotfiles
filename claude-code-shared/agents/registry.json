@@ -11,17 +11,6 @@
       ]
     },
     {
-      "name": "code-currency-checker",
-      "file": "agents/code-currency-checker.md",
-      "model": "sonnet",
-      "description": "Checks whether libraries, frameworks, and patterns in a document or codebase are current vs. outdated. Spawned by host skills at the end of their runs.",
-      "consumers": [
-        "to-prd-html",
-        "to-tasks",
-        "run-tasks"
-      ]
-    },
-    {
       "name": "architecture-auditor",
       "file": "agents/architecture-auditor.md",
       "model": "sonnet",
@@ -53,6 +42,31 @@
         "improve-component",
         "improve-codebase-architecture"
       ]
+    },
+    {
+      "name": "lint-runner",
+      "file": "agents/lint-runner.md",
+      "model": "haiku",
+      "description": "Read-only linting agent. Runs a resolved lint/format command in a workspace, parses tool JSON output, and returns a contract-shaped verdict per runner-result-contract.md. Spawned by run-tasks for each touched workspace.",
+      "consumers": [
+        "run-tasks"
+      ]
+    },
+    {
+      "name": "test-runner",
+      "file": "agents/test-runner.md",
+      "model": "haiku",
+      "description": "Read-only test agent. Runs a workspace's unit/integration test suite and project-wide typecheck using resolved commands from the tooling manifest. Returns a contract-shaped verdict with counts and compressed failures.",
+      "consumers": [
+        "run-tasks"
+      ]
+    },
+    {
+      "name": "e2e-runner",
+      "file": "agents/e2e-runner.md",
+      "model": "haiku",
+      "description": "Read-only e2e test agent. Runs a committed Playwright test suite using the resolved command from the tooling manifest. Relies on playwright.config webServer block for app lifecycle. Not wired to any consumer skill.",
+      "consumers": []
     }
   ]
 }
