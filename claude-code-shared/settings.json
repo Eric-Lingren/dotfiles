@@ -16,7 +16,7 @@
       "WebFetch(*)"
     ]
   },
-  "model": "haiku",
+  "model": "opus",
   "hooks": {
     "PreToolUse": [
       {
