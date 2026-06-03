@@ -9,7 +9,14 @@
   "permissions": {
     "allow": [
       "Bash(~/.dotfiles/claude-code-shared/scripts/*)",
+      "Bash(~/.dotfiles/claude-code-shared/skills/*)",
+      "Bash(/Users/eric/.dotfiles/claude-code-shared/skills/*)",
       "Bash(grep *)",
+      "Bash(yarn test *)",
+      "Bash(yarn test:functions *)",
+      "Bash(yarn type-check)",
+      "Bash(yarn tsc *)",
+      "Bash(yarn biome *)",
       "Read(~/.dotfiles/**)",
       "Read(~/.claude-code-shared/**)",
       "WebSearch(*)",
@@ -49,6 +56,10 @@
           {
             "type": "command",
             "command": "bash \"$HOME/.claude-code-shared/hooks/block-package-publish.sh\""
+          },
+          {
+            "type": "command",
+            "command": "bash \"$HOME/.claude-code-shared/hooks/block-data-exfil.sh\""
           }
         ]
       },

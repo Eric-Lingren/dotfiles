@@ -64,7 +64,8 @@
       "Bash(xargs -I{} dirname {})",
       "Bash(xargs -I{} basename {})",
       "Bash(xargs -n1 basename)",
-      "Bash(awk 'NF {printf \"%*s%s\\\\n\", 2*length\\($0\\)-2*length\\(gsub\\(/\\\\//,\"/\"\\)\\), \"\", $0}')"
+      "Bash(awk 'NF {printf \"%*s%s\\\\n\", 2*length\\($0\\)-2*length\\(gsub\\(/\\\\//,\"/\"\\)\\), \"\", $0}')",
+      "Bash([ -f \"$pj\" ])"
     ]
   },
   "prefersReducedMotion": false
