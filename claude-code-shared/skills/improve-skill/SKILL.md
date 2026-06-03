@@ -51,6 +51,12 @@ Read the target SKILL.md and extract every concrete behavioral rule, constraint,
 
 Each rubric tier must be specific and anchored to observable behavior. No vague language like "mostly" or "partially."
 
+Each assertion may include two optional scoring fields:
+- `weight` (number, default `1.0`): multiplier applied to the assertion's score when computing the weighted average. Use `2.0` for critical behaviors, `0.5` for low-priority style checks.
+- `hard_gate` (boolean, default `false`): if `true`, a score of 25 or below on this assertion forces the entire scenario score to zero, regardless of other cells. Use for must-never-fail behaviors (e.g. schema validation, no-fabrication).
+
+Built-in assertions always use weight `1.0` and `hard_gate: false`.
+
 **Always include the 3 built-in consistency assertions.** Read them from `resources/builtin-assertions.md` in this skill's directory. The exact names are `number_consistency`, `no_contradictions`, `plan_cohesion`. Never rename or substitute them. Copy the EXACT rubric descriptions from `resources/builtin-assertions.md` verbatim. Never adapt rubric text to the target skill domain context.
 
 Also generate 5 synthetic scenarios. Each scenario should:
@@ -98,9 +104,11 @@ Session model receives only this compact JSON. Raw scenario execution outputs do
 Build a report with:
 
 1. **Header:** `Iteration N/3 - Score: X/100 - prev: Y/100`
-   - Score = simple average of all snapped cell scores across all (scenario, assertion) pairs. No weighting.
-   - Compute the iteration average as sum(all snapped cell scores) / total_cells. State this single number in the header and nowhere else. Do not introduce alternative calculation methods.
-   - When showing cell sums, list each addend explicitly, sum them, then divide. Do not estimate for matrices with more than 10 cells.
+   - Score = weighted average of all snapped cell scores across all (scenario, assertion) pairs.
+   - For each cell: `cell_contribution = score * assertion.weight` (default weight 1.0 if absent).
+   - Apply hard gates first: if any assertion with `hard_gate: true` scores 25 or below in a scenario, all cells in that scenario are set to 0 before computing the average.
+   - Weighted average = sum(cell_contribution) / sum(weights across all cells). State this single number in the header and nowhere else.
+   - When showing cell sums, list each addend (with its weight multiplier) explicitly before summing. Do not estimate for matrices with more than 10 cells.
 
 2. **Matrix table:** A scenario x assertion grid showing individual cell tier scores.
 

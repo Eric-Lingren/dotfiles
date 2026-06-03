@@ -1,0 +1,721 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PRD: Grill-to-PRD-to-Tasks Workflow Chain</title>
+  <style>
+    :root {
+      --bg: #1A1A1A;
+      --bg-surface: #2A1A14;
+      --bg-hover: #4E342E;
+      --text: #F0E6D2;
+      --text-muted: #B2BEB5;
+      --text-heading: #F5F5DC;
+      --border: #5D4037;
+      --accent: #CC7722;
+      --accent-dim: #CD7F32;
+      --risk-high: #E74C3C;
+      --risk-med: #F39C12;
+      --risk-low: #2E6F40;
+      --pill-bg: #4E342E;
+      --tab-active: #CC7722;
+      --tab-inactive: #5D4037;
+      --check-done: #2E6F40;
+      --progress-bg: #4E342E;
+      --progress-fill: #CC7722;
+      --font-body: 'Nunito', system-ui, sans-serif;
+      --font-heading: 'Cormorant Garamond', 'Georgia', serif;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: var(--font-body);
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.7;
+      padding: 2rem 1rem;
+      max-width: 75ch;
+      margin: 0 auto;
+    }
+
+    h1 {
+      font-size: 1.8rem;
+      color: var(--text-heading);
+      margin-bottom: 0.25rem;
+      letter-spacing: -0.02em;
+      font-family: var(--font-heading);
+    }
+
+    h2 {
+      font-size: 1.3rem;
+      color: var(--text-heading);
+      margin-bottom: 0.75rem;
+      font-family: var(--font-heading);
+    }
+
+    h3 {
+      font-size: 1.1rem;
+      color: var(--text-heading);
+      margin-bottom: 0.5rem;
+      font-family: var(--font-heading);
+    }
+
+    .subtitle {
+      color: var(--text-muted);
+      font-size: 0.9rem;
+      margin-bottom: 2rem;
+    }
+
+    .progress-bar {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: var(--bg);
+      padding: 0.75rem 0;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 1.5rem;
+    }
+
+    .progress-track {
+      background: var(--progress-bg);
+      border-radius: 4px;
+      height: 8px;
+      overflow: hidden;
+      margin-bottom: 0.4rem;
+    }
+
+    .progress-fill {
+      background: var(--progress-fill);
+      height: 100%;
+      width: 0%;
+      transition: width 0.3s ease;
+      border-radius: 4px;
+    }
+
+    .progress-label {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      font-family: var(--font-heading);
+    }
+
+    .toc {
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 1rem 1.25rem;
+      margin-bottom: 2rem;
+    }
+
+    .toc-title {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 0.5rem;
+      font-family: var(--font-heading);
+    }
+
+    .toc a {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      color: var(--accent);
+      text-decoration: none;
+      font-size: 0.9rem;
+      padding: 0.25rem 0;
+      font-family: var(--font-heading);
+    }
+
+    .toc a:hover { color: var(--text-heading); }
+
+    .toc .check-indicator {
+      width: 16px;
+      height: 16px;
+      border: 2px solid var(--border);
+      border-radius: 3px;
+      display: inline-block;
+      flex-shrink: 0;
+    }
+
+    .toc .check-indicator.checked {
+      background: var(--check-done);
+      border-color: var(--check-done);
+    }
+
+    details {
+      margin-bottom: 1.5rem;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      overflow: hidden;
+    }
+
+    summary {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.75rem 1rem;
+      background: var(--bg-surface);
+      cursor: pointer;
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: var(--text-heading);
+      font-family: var(--font-heading);
+      list-style: none;
+    }
+
+    summary::-webkit-details-marker { display: none; }
+
+    summary::before {
+      content: '\25B6';
+      font-size: 0.7rem;
+      transition: transform 0.2s;
+      color: var(--text-muted);
+    }
+
+    details[open] > summary::before { transform: rotate(90deg); }
+
+    .section-content { padding: 1rem 1.25rem; }
+
+    .review-check {
+      margin-left: auto;
+      appearance: none;
+      width: 20px;
+      height: 20px;
+      border: 2px solid var(--border);
+      border-radius: 4px;
+      cursor: pointer;
+      position: relative;
+      flex-shrink: 0;
+    }
+
+    .review-check:checked {
+      background: var(--check-done);
+      border-color: var(--check-done);
+    }
+
+    .review-check:checked::after {
+      content: '\2713';
+      position: absolute;
+      top: -1px;
+      left: 3px;
+      color: white;
+      font-size: 14px;
+    }
+
+    .tabs { margin-bottom: 1.5rem; }
+
+    .tab-bar {
+      display: flex;
+      gap: 0;
+      border-bottom: 2px solid var(--border);
+      margin-bottom: 0;
+    }
+
+    .tab-btn {
+      padding: 0.6rem 1.25rem;
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      font-size: 0.9rem;
+      font-family: var(--font-heading);
+      font-weight: 500;
+      border-bottom: 2px solid transparent;
+      margin-bottom: -2px;
+      transition: color 0.2s, border-color 0.2s;
+    }
+
+    .tab-btn:hover { color: var(--text); }
+
+    .tab-btn.active {
+      color: var(--tab-active);
+      border-bottom-color: var(--tab-active);
+    }
+
+    .tab-panel { display: none; padding: 1.25rem 0; }
+    .tab-panel.active { display: block; }
+
+    .tag {
+      display: inline-block;
+      font-size: 0.75rem;
+      padding: 0.15rem 0.5rem;
+      border-radius: 3px;
+      font-family: var(--font-heading);
+      font-weight: 600;
+      letter-spacing: 0.03em;
+    }
+
+    .tag-high { background: var(--risk-high); color: white; }
+    .tag-med { background: var(--risk-med); color: #1a1a1a; }
+    .tag-low { background: var(--risk-low); color: white; }
+    .tag-module { background: var(--pill-bg); color: var(--accent); border: 1px solid var(--accent-dim); }
+
+    .story {
+      margin-bottom: 1rem;
+      padding: 0.75rem 1rem;
+      background: var(--bg-surface);
+      border-radius: 4px;
+      border-left: 3px solid var(--accent);
+    }
+
+    .story-number {
+      font-family: var(--font-heading);
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      margin-bottom: 0.25rem;
+    }
+
+    .decision {
+      margin-bottom: 0.75rem;
+      padding: 0.75rem 1rem;
+      background: var(--bg-surface);
+      border-radius: 4px;
+      display: flex;
+      gap: 0.75rem;
+      align-items: flex-start;
+    }
+
+    .decision-text { flex: 1; }
+
+    ul, ol { padding-left: 1.5rem; margin-bottom: 1rem; }
+    li { margin-bottom: 0.4rem; }
+    p { margin-bottom: 1rem; }
+
+    .comparison {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      margin-bottom: 1.25rem;
+    }
+
+    .comparison-col {
+      background: var(--bg-surface);
+      border-radius: 6px;
+      padding: 1rem;
+      border: 1px solid var(--border);
+    }
+
+    .comparison-col h3 {
+      margin-bottom: 0.75rem;
+      padding-bottom: 0.5rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .diagram {
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 1.5rem;
+      margin-bottom: 1rem;
+      text-align: center;
+      overflow-x: auto;
+    }
+
+    .diagram svg { max-width: 100%; height: auto; }
+
+    .scope-item {
+      padding: 0.5rem 0;
+      border-bottom: 1px solid var(--border);
+      color: var(--text-muted);
+    }
+
+    .scope-item:last-child { border-bottom: none; }
+
+    code {
+      font-family: monospace;
+      font-size: 0.88em;
+      background: var(--bg-surface);
+      padding: 0.1rem 0.3rem;
+      border-radius: 3px;
+      border: 1px solid var(--border);
+    }
+
+    @media (max-width: 600px) {
+      body { padding: 1rem 0.75rem; }
+      .comparison { grid-template-columns: 1fr; }
+      .tab-btn { padding: 0.5rem 0.75rem; font-size: 0.8rem; }
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Grill-to-PRD-to-Tasks Workflow Chain</h1>
+  <div class="subtitle">grill-prd-tasks-chain &middot; 2026-06-02</div>
+
+  <div class="progress-bar">
+    <div class="progress-track">
+      <div class="progress-fill" id="progressFill"></div>
+    </div>
+    <div class="progress-label" id="progressLabel">0 / 0 sections reviewed</div>
+  </div>
+
+  <nav class="toc">
+    <div class="toc-title">Contents</div>
+    <a href="#problem-statement"><span class="check-indicator" data-toc-for="problem-statement"></span> Problem Statement</a>
+    <a href="#solution"><span class="check-indicator" data-toc-for="solution"></span> Solution</a>
+    <a href="#architecture"><span class="check-indicator" data-toc-for="architecture"></span> Architecture</a>
+    <a href="#core-content"><span class="check-indicator" data-toc-for="core-content"></span> Specification</a>
+    <a href="#alternatives"><span class="check-indicator" data-toc-for="alternatives"></span> Alternatives Considered</a>
+    <a href="#out-of-scope"><span class="check-indicator" data-toc-for="out-of-scope"></span> Out of Scope</a>
+    <a href="#further-notes"><span class="check-indicator" data-toc-for="further-notes"></span> Further Notes</a>
+  </nav>
+
+  <details open id="problem-statement">
+    <summary>
+      Problem Statement
+      <input type="checkbox" class="review-check" data-section="problem-statement" onclick="updateProgress()">
+    </summary>
+    <div class="section-content">
+      <p>The grill skills (<span class="tag tag-module">grill-me</span>, <span class="tag tag-module">grill-with-docs</span>) offer "Create a task file" as a direct session-end option, bypassing the PRD step that structures decisions for downstream consumption. This creates three problems.</p>
+      <p>First, tasks generated from raw conversation context lack the structured user stories and implementation decisions that make them executable. <span class="tag tag-module">to-tasks</span> was designed to consume a PRD, not a conversation.</p>
+      <p>Second, <span class="tag tag-module">to-prd-html</span> requires all sections to have content. Architecture decisions, infrastructure changes, and deployment planning don't produce user stories in the feature-delivery sense. Running to-prd-html after these sessions renders PRDs with empty blocks that mislead reviewers and downstream tools.</p>
+      <p>Third, the browser_verify and dynamic route guidance in <span class="tag tag-module">to-tasks</span> SKILL.md is ~245 words, carrying redundant prose that bloats the skill without adding rule clarity.</p>
+    </div>
+  </details>
+
+  <details open id="solution">
+    <summary>
+      Solution
+      <input type="checkbox" class="review-check" data-section="solution" onclick="updateProgress()">
+    </summary>
+    <div class="section-content">
+      <p>Enforce a single workflow chain: every grill session that produces actionable output routes through a PRD before reaching tasks. Update the grill skills' session-end protocols to offer "Create a PRD" instead of "Create a task file." Fix to-prd-html to render only populated sections. Tighten the browser_verify block in to-tasks SKILL.md in place.</p>
+      <p><strong>Evidence:</strong> The <code>/improve-skill to-tasks</code> eval scored 92.8/100 behavioral. The no-PRD scenario and a live grilling session both surfaced the direct grill-to-tasks gap as a real workflow problem.</p>
+      <p><strong>Success metrics:</strong></p>
+      <ul>
+        <li>Grill session-end no longer presents "Create a task file" in either grill skill</li>
+        <li>to-prd-html renders zero empty section blocks when given non-feature input</li>
+        <li>to-tasks <code>/improve-skill</code> behavioral score holds at 92 or above after SKILL.md tightening</li>
+        <li>browser_verify block in to-tasks SKILL.md reduced from ~245 words to 170 or fewer</li>
+      </ul>
+    </div>
+  </details>
+
+  <details open id="architecture">
+    <summary>
+      Architecture
+      <input type="checkbox" class="review-check" data-section="architecture" onclick="updateProgress()">
+    </summary>
+    <div class="section-content">
+      <p>The four-skill chain after this change. Each arrow is a session boundary: a durable file artifact is written before the boundary, enabling safe session kills and restarts at any step.</p>
+      <div class="diagram">
+        <svg viewBox="0 0 660 130" width="660" height="130" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+              <polygon points="0 0, 10 3.5, 0 7" fill="#CC7722"/>
+            </marker>
+          </defs>
+          <rect x="8" y="30" width="130" height="60" rx="6" fill="#2A1A14" stroke="#5D4037" stroke-width="1.5"/>
+          <text x="73" y="56" text-anchor="middle" fill="#F5F5DC" font-size="11" font-family="Georgia, serif">grill-me</text>
+          <text x="73" y="74" text-anchor="middle" fill="#B2BEB5" font-size="10" font-family="Georgia, serif">grill-with-docs</text>
+          <line x1="138" y1="60" x2="173" y2="60" stroke="#CC7722" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+          <text x="155" y="51" text-anchor="middle" fill="#B2BEB5" font-size="9" font-family="Georgia, serif">Create PRD</text>
+          <rect x="173" y="30" width="140" height="60" rx="6" fill="#2A1A14" stroke="#5D4037" stroke-width="1.5"/>
+          <text x="243" y="54" text-anchor="middle" fill="#F5F5DC" font-size="11" font-family="Georgia, serif">to-prd-html</text>
+          <text x="243" y="72" text-anchor="middle" fill="#B2BEB5" font-size="10" font-family="Georgia, serif">docs/prd/*.html</text>
+          <line x1="313" y1="60" x2="348" y2="60" stroke="#CC7722" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+          <rect x="348" y="30" width="140" height="60" rx="6" fill="#2A1A14" stroke="#5D4037" stroke-width="1.5"/>
+          <text x="418" y="54" text-anchor="middle" fill="#F5F5DC" font-size="11" font-family="Georgia, serif">to-tasks</text>
+          <text x="418" y="72" text-anchor="middle" fill="#B2BEB5" font-size="10" font-family="Georgia, serif">docs/tasks/*.json</text>
+          <line x1="488" y1="60" x2="523" y2="60" stroke="#CC7722" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+          <rect x="523" y="30" width="130" height="60" rx="6" fill="#2A1A14" stroke="#5D4037" stroke-width="1.5"/>
+          <text x="588" y="54" text-anchor="middle" fill="#F5F5DC" font-size="11" font-family="Georgia, serif">run-tasks</text>
+          <text x="588" y="72" text-anchor="middle" fill="#B2BEB5" font-size="10" font-family="Georgia, serif">execution</text>
+          <line x1="155" y1="105" x2="155" y2="95" stroke="#5D4037" stroke-width="1" stroke-dasharray="3,2"/>
+          <line x1="330" y1="105" x2="330" y2="95" stroke="#5D4037" stroke-width="1" stroke-dasharray="3,2"/>
+          <line x1="505" y1="105" x2="505" y2="95" stroke="#5D4037" stroke-width="1" stroke-dasharray="3,2"/>
+          <text x="155" y="118" text-anchor="middle" fill="#5D4037" font-size="9" font-family="Georgia, serif">session boundary</text>
+          <text x="330" y="118" text-anchor="middle" fill="#5D4037" font-size="9" font-family="Georgia, serif">session boundary</text>
+          <text x="505" y="118" text-anchor="middle" fill="#5D4037" font-size="9" font-family="Georgia, serif">session boundary</text>
+        </svg>
+      </div>
+    </div>
+  </details>
+
+  <details open id="core-content">
+    <summary>
+      Specification
+      <input type="checkbox" class="review-check" data-section="core-content" onclick="updateProgress()">
+    </summary>
+    <div class="section-content">
+      <div class="tabs">
+        <div class="tab-bar">
+          <button class="tab-btn active" onclick="switchTab(event, 'tab-stories')">User Stories</button>
+          <button class="tab-btn" onclick="switchTab(event, 'tab-implementation')">Implementation</button>
+          <button class="tab-btn" onclick="switchTab(event, 'tab-testing')">Testing</button>
+        </div>
+
+        <div class="tab-panel active" id="tab-stories">
+          <div class="story">
+            <div class="story-number">Story #1</div>
+            As a <strong>developer</strong>, I want <strong>grill-me to direct me to create a PRD at session end instead of a task file</strong>, so that <strong>every deliberation session produces a reviewable artifact before execution begins</strong>.
+          </div>
+          <div class="story">
+            <div class="story-number">Story #2</div>
+            As a <strong>developer</strong>, I want <strong>grill-with-docs to follow the same session-end protocol as grill-me</strong>, so that <strong>both grilling variants behave consistently and route through the same workflow chain</strong>.
+          </div>
+          <div class="story">
+            <div class="story-number">Story #3</div>
+            As a <strong>developer</strong>, I want <strong>to-prd-html to omit empty sections when given non-feature input</strong>, so that <strong>architecture, infra, and deployment PRDs are clean and don't render broken empty blocks</strong>.
+          </div>
+          <div class="story">
+            <div class="story-number">Story #4</div>
+            As a <strong>developer</strong>, I want <strong>to-prd-html's embedded JSON schema to treat section fields as optional</strong>, so that <strong>downstream skills like to-tasks can consume non-feature PRDs without parsing errors</strong>.
+          </div>
+          <div class="story">
+            <div class="story-number">Story #5</div>
+            As a <strong>developer</strong>, I want <strong>the browser_verify guidance in to-tasks SKILL.md to be concise</strong>, so that <strong>the model gets clear rules without verbose redundancy bloating the skill</strong>.
+          </div>
+          <div class="story">
+            <div class="story-number">Story #6</div>
+            As a <strong>developer</strong>, I want <strong>each workflow chain step to write a durable file artifact before the session boundary</strong>, so that <strong>I can kill and restart a session at any step boundary without losing progress</strong>.
+          </div>
+        </div>
+
+        <div class="tab-panel" id="tab-implementation">
+          <div class="decision">
+            <span class="tag tag-low">LOW</span>
+            <div class="decision-text"><span class="tag tag-module">grill-me</span> SKILL.md: in the AskUserQuestion session-end options, replace "Create a task file" with "Create a PRD." Keep "Nothing yet." unchanged.</div>
+          </div>
+          <div class="decision">
+            <span class="tag tag-low">LOW</span>
+            <div class="decision-text"><span class="tag tag-module">grill-with-docs</span> SKILL.md: apply the same session-end protocol change. Replace "Create a task file" with "Create a PRD."</div>
+          </div>
+          <div class="decision">
+            <span class="tag tag-med">MED</span>
+            <div class="decision-text"><span class="tag tag-module">to-prd-html</span> template.html: add conditional rendering for each major content section. Sections with no content (empty arrays, null fields) are omitted from the rendered HTML entirely. Applies to: User Stories, Implementation Decisions, Testing Decisions, Out of Scope. Fully-populated PRDs must be unaffected.</div>
+          </div>
+          <div class="decision">
+            <span class="tag tag-low">LOW</span>
+            <div class="decision-text"><span class="tag tag-module">to-prd-html</span> prd-data-schema.json: mark <code>user_stories</code>, <code>implementation_decisions</code>, <code>testing_decisions</code>, and <code>out_of_scope</code> as optional fields. These may be empty arrays in non-feature PRDs.</div>
+          </div>
+          <div class="decision">
+            <span class="tag tag-med">MED</span>
+            <div class="decision-text"><span class="tag tag-module">to-tasks</span> SKILL.md: rewrite the browser_verify and dynamic route section (lines 44–61) to be tighter. Target 170 words or fewer from ~245. Remove redundant phrasing and duplicated examples. All rules must be preserved. Run <code>/improve-skill to-tasks</code> after to verify behavioral score holds.</div>
+          </div>
+          <div class="decision">
+            <span class="tag tag-low">LOW</span>
+            <div class="decision-text"><span class="tag tag-module">to-tasks</span> schema example block (lines 129–168): no changes. This 40-line illustrative JSON is load-bearing for model output quality (scored 100% on task_json_schema in the eval). Structural score of 71/100 is accepted.</div>
+          </div>
+        </div>
+
+        <div class="tab-panel" id="tab-testing">
+          <p>Run <code>/improve-skill to-tasks</code> after the browser_verify SKILL.md tightening. Confirm behavioral score is 92 or above. If any assertion drops, revert and re-tighten more conservatively.</p>
+          <p>Test <span class="tag tag-module">to-prd-html</span> with an architecture-only input: no user stories, no implementation decisions. Confirm the rendered HTML contains zero empty section blocks and the prd-data JSON omits those fields cleanly.</p>
+          <p>Test <span class="tag tag-module">to-prd-html</span> with a fully-populated feature PRD. Confirm all sections render correctly and the change has no effect on existing behavior.</p>
+          <p>Test <span class="tag tag-module">grill-me</span> session end: confirm AskUserQuestion options contain "Create a PRD" and do not contain "Create a task file."</p>
+          <p>Test <span class="tag tag-module">grill-with-docs</span> session end: same checks as grill-me.</p>
+          <p>Run the full chain end-to-end: grill-me session → to-prd-html → to-tasks. Confirm the tasks JSON is valid and the <code>prd</code> field points to the correct PRD file.</p>
+        </div>
+      </div>
+    </div>
+  </details>
+
+  <details open id="alternatives">
+    <summary>
+      Alternatives Considered
+      <input type="checkbox" class="review-check" data-section="alternatives" onclick="updateProgress()">
+    </summary>
+    <div class="section-content">
+      <div class="comparison">
+        <div class="comparison-col">
+          <h3>to-objectives skill (dropped)</h3>
+          <p>A lightweight intermediary skill that extracts structured decisions from any conversation into the extract-prd-json shape. Would produce <code>docs/objectives/*.json</code> consumed by to-tasks.</p>
+          <ul>
+            <li>Faster, lower token cost than a full PRD</li>
+            <li>No document artifact to review or share</li>
+            <li>Divergent codepath in to-tasks (two input types)</li>
+            <li>New skill to build and maintain</li>
+            <li>Single workflow chain broken into two variants</li>
+          </ul>
+        </div>
+        <div class="comparison-col">
+          <h3>Always use PRD (chosen)</h3>
+          <p>Single artifact type. Fix to-prd-html optional sections so it handles any conversation type. One workflow, one chain.</p>
+          <ul>
+            <li>One artifact type, no divergent workflow</li>
+            <li>Reviewable and shareable document</li>
+            <li>to-tasks needs zero changes</li>
+            <li>Slightly more token cost</li>
+            <li>Requires fixing to-prd-html optional sections</li>
+          </ul>
+        </div>
+      </div>
+      <div class="comparison">
+        <div class="comparison-col">
+          <h3>Extract browser_verify block</h3>
+          <p>Move ~245 word block to <code>resources/browser-verify-rules.md</code>. Model reads a reference file to get the rules.</p>
+          <ul>
+            <li>Passes structural token metric</li>
+            <li>Model may skip the reference read</li>
+            <li>Risk of browser_verify rule misses in practice</li>
+            <li>Currently scoring 100% behavioral — extract risk not justified</li>
+          </ul>
+        </div>
+        <div class="comparison-col">
+          <h3>Tighten in place (chosen)</h3>
+          <p>Cut redundant prose within SKILL.md. Keep all rules inline. Target 170 words or fewer.</p>
+          <ul>
+            <li>Rules stay inline, no reference hop</li>
+            <li>Modest token reduction</li>
+            <li>Structural metric still flags it (over 200 words even tightened)</li>
+            <li>Behavioral score preserved</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </details>
+
+  <details open id="out-of-scope">
+    <summary>
+      Out of Scope
+      <input type="checkbox" class="review-check" data-section="out-of-scope" onclick="updateProgress()">
+    </summary>
+    <div class="section-content">
+      <div class="scope-item">to-objectives skill — dropped in favor of always-PRD approach</div>
+      <div class="scope-item">Changes to to-tasks source discovery — PRD remains sole input, no objectives fallback path needed</div>
+      <div class="scope-item">Changes to to-tasks schema example block — load-bearing content, left as-is intentionally</div>
+      <div class="scope-item">Changes to run-tasks — no workflow changes downstream of to-tasks</div>
+      <div class="scope-item">Handoff skill changes — handoff is for mid-work continuity, not this execution chain</div>
+      <div class="scope-item">Multi-branch branching field fix — the "multi-branch" strategy was a hallucination artifact from the eval; only single and per-task strategies exist and are already documented correctly</div>
+    </div>
+  </details>
+
+  <details open id="further-notes">
+    <summary>
+      Further Notes
+      <input type="checkbox" class="review-check" data-section="further-notes" onclick="updateProgress()">
+    </summary>
+    <div class="section-content">
+      <p><strong>Session isolation model.</strong> Each step in the chain writes a durable file artifact before the session boundary. Safe kill points: after grill session ends and to-prd-html writes the HTML file; after to-tasks writes the JSON file; after any completed run-tasks task. If a session fills mid-step, use <code>/handoff</code> to continue in a new window.</p>
+      <p><strong>Handoff vs. chain.</strong> <code>/handoff</code> is for mid-work continuity when the session fills before a step completes. The chain skills are for moving forward through completed steps. They don't overlap — handoff preserves the reasoning thread, the chain skills consume completed artifacts.</p>
+      <p><strong>Structural score tradeoff.</strong> to-tasks structural score stays at 71/100 (5 of 7 items passing). The two failing items are intentionally left as-is because the inline content is load-bearing for behavioral quality. Structural metrics are advisory.</p>
+      <p><strong>Risks.</strong></p>
+      <ul>
+        <li>Tightening browser_verify prose risks subtle rule loss. Run <code>/improve-skill to-tasks</code> immediately after to catch any regression before merging.</li>
+        <li>Removing "Create a task file" from grill skills changes muscle memory. Users who relied on grill to tasks directly must now route through a PRD step.</li>
+        <li>to-prd-html optional sections require careful template logic. Fully-populated PRDs must continue rendering correctly.</li>
+      </ul>
+    </div>
+  </details>
+
+  <script type="application/json" id="prd-data">
+  {
+    "title": "Grill-to-PRD-to-Tasks Workflow Chain",
+    "slug": "grill-prd-tasks-chain",
+    "created": "2026-06-02T19:22:00Z",
+    "problem_statement": "The grill skills offer 'Create a task file' as a direct session-end option, bypassing the PRD step that structures decisions for downstream consumption. to-prd-html requires all sections to have content, making it unusable for non-feature conversations. The browser_verify block in to-tasks SKILL.md carries ~245 words of redundant prose.",
+    "solution": "Enforce a single workflow chain routing all grill sessions through a PRD before tasks. Update grill skill session-end protocols to offer 'Create a PRD' instead of 'Create a task file.' Fix to-prd-html to render only populated sections. Tighten the browser_verify block in to-tasks SKILL.md in place.",
+    "evidence": "The /improve-skill to-tasks eval scored 92.8/100 behavioral. The no-PRD scenario and a live grilling session both surfaced the direct grill-to-tasks gap as a real workflow problem.",
+    "success_metrics": [
+      "Grill session-end no longer presents 'Create a task file' in either grill skill",
+      "to-prd-html renders zero empty section blocks when given non-feature input",
+      "to-tasks /improve-skill behavioral score holds at 92 or above after SKILL.md tightening",
+      "browser_verify block in to-tasks SKILL.md reduced from ~245 words to 170 or fewer"
+    ],
+    "user_stories": [
+      {
+        "actor": "developer",
+        "feature": "grill-me directing to create a PRD at session end instead of a task file",
+        "benefit": "every deliberation session produces a reviewable artifact before execution begins"
+      },
+      {
+        "actor": "developer",
+        "feature": "grill-with-docs following the same session-end protocol as grill-me",
+        "benefit": "both grilling variants behave consistently and route through the same workflow chain"
+      },
+      {
+        "actor": "developer",
+        "feature": "to-prd-html omitting empty sections when given non-feature input",
+        "benefit": "architecture, infra, and deployment PRDs are clean and don't render broken empty blocks"
+      },
+      {
+        "actor": "developer",
+        "feature": "to-prd-html embedded JSON schema treating section fields as optional",
+        "benefit": "downstream skills like to-tasks can consume non-feature PRDs without parsing errors"
+      },
+      {
+        "actor": "developer",
+        "feature": "concise browser_verify guidance in to-tasks SKILL.md",
+        "benefit": "the model gets clear rules without verbose redundancy bloating the skill"
+      },
+      {
+        "actor": "developer",
+        "feature": "each workflow chain step writing a durable file artifact before the session boundary",
+        "benefit": "I can kill and restart a session at any step boundary without losing progress"
+      }
+    ],
+    "implementation_decisions": [
+      "grill-me SKILL.md: replace 'Create a task file' session-end option with 'Create a PRD.' Keep 'Nothing yet.'",
+      "grill-with-docs SKILL.md: apply the same session-end protocol change as grill-me.",
+      "to-prd-html template.html: add conditional rendering for each major content section. Sections with no content are omitted from rendered HTML entirely. Fully-populated PRDs must be unaffected.",
+      "to-prd-html prd-data-schema.json: mark user_stories, implementation_decisions, testing_decisions, and out_of_scope as optional fields.",
+      "to-tasks SKILL.md: rewrite browser_verify and dynamic route section (lines 44-61) to 170 words or fewer. Remove redundant phrasing. Keep all rules intact. Run /improve-skill to-tasks after.",
+      "to-tasks schema example block (lines 129-168): no changes. Load-bearing for model output quality."
+    ],
+    "testing_decisions": [
+      "Run /improve-skill to-tasks after browser_verify tightening. Confirm behavioral score holds at 92 or above.",
+      "Test to-prd-html with architecture-only input. Confirm zero empty section blocks in rendered HTML.",
+      "Test to-prd-html with fully-populated feature PRD. Confirm existing behavior is unchanged.",
+      "Test grill-me session end: confirm 'Create a task file' absent, 'Create a PRD' present.",
+      "Test grill-with-docs session end: same checks as grill-me.",
+      "Run full chain end-to-end: grill-me to to-prd-html to to-tasks. Confirm tasks JSON valid and prd field correct."
+    ],
+    "out_of_scope": [
+      "to-objectives skill — dropped in favor of always-PRD",
+      "Changes to to-tasks source discovery — PRD remains sole input",
+      "Changes to to-tasks schema example block — load-bearing, left as-is",
+      "Changes to run-tasks",
+      "Handoff skill changes",
+      "Multi-branch branching field fix — hallucination artifact from eval"
+    ],
+    "risks_and_tradeoffs": [
+      "Tightening browser_verify prose risks subtle rule loss. Run /improve-skill to-tasks immediately after to catch regression.",
+      "Removing 'Create a task file' from grill skills changes existing muscle memory.",
+      "to-prd-html optional sections require careful template logic. Fully-populated PRDs must continue rendering correctly."
+    ],
+    "further_notes": [
+      "Session isolation: each step writes a durable file artifact, enabling safe kills and restarts at any step boundary.",
+      "Handoff is for mid-work continuity mid-step. Chain skills move forward through completed steps. They don't overlap.",
+      "to-tasks structural score stays at 71/100 intentionally. Failing items are load-bearing for behavioral quality."
+    ]
+  }
+  </script>
+
+  <script>
+    function switchTab(e, tabId) {
+      const tabs = e.target.closest('.tabs');
+      tabs.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      tabs.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+      e.target.classList.add('active');
+      tabs.querySelector('#' + tabId).classList.add('active');
+    }
+
+    function updateProgress() {
+      const checks = document.querySelectorAll('.review-check');
+      const checked = document.querySelectorAll('.review-check:checked');
+      const total = checks.length;
+      const done = checked.length;
+      const pct = total > 0 ? (done / total) * 100 : 0;
+
+      document.getElementById('progressFill').style.width = pct + '%';
+      document.getElementById('progressLabel').textContent = done + ' / ' + total + ' sections reviewed';
+
+      document.querySelectorAll('[data-toc-for]').forEach(indicator => {
+        const sectionId = indicator.getAttribute('data-toc-for');
+        const sectionCheck = document.querySelector('.review-check[data-section="' + sectionId + '"]');
+        if (sectionCheck && sectionCheck.checked) {
+          indicator.classList.add('checked');
+        } else {
+          indicator.classList.remove('checked');
+        }
+      });
+    }
+
+    updateProgress();
+  </script>
+
+</body>
+</html>

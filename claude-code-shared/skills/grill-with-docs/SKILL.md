@@ -102,9 +102,7 @@ Then ask the user ONE question using `AskUserQuestion`:
 > "What would you like to do with this?"
 
 Options:
-- **Run prototype** - explore ideas, hypotheses, and UI/logic options before committing to a PRD (runs `/prototype`)
-- **Create a PRD** - write a PRD doc to `docs/prd/` to share with your team (runs `/to-prd-html`)
-- **Create a task file** - write a tasks JSON for `/run-tasks` to start building
+- **Create a seed** - capture decisions and context as a JSON IR (runs `/to-seed`). From there you can render a PRD, generate tasks, or prototype.
 - **Nothing yet** - session was just for thinking it through
 
 **CRITICAL RULES:**

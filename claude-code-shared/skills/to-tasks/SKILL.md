@@ -13,15 +13,21 @@ Break a PRD into independently-grabbable tasks using vertical slices (tracer bul
 
 ### 1. Locate the PRD
 
-Always ask the user to provide the PRD file path. List the available files in `docs/prd/` (both `.md` and `.html`) so they can choose, but require an explicit selection. Never auto-pick.
+If a path argument was passed (e.g. `/to-tasks docs/seeds/20260602-1234-my-feature.json`), use it directly — skip discovery.
 
-**HTML PRDs:** If the selected file is `.html`, run `~/.dotfiles/claude-code-shared/skills/to-tasks/scripts/extract-prd-json.sh <path>` to extract the embedded JSON. Use that output as the primary source for user stories, implementation decisions, and testing decisions. Do NOT use inline python or other ad-hoc extraction. The script handles both `.md` and `.html` files.
+Otherwise, list all available source files and ask the user to choose. Never auto-pick:
+- `docs/prd/*.html` and `docs/prd/*.md` — HTML and markdown PRDs
+- `docs/seeds/*.json` — seed files from `/to-seed`
 
-If `docs/prd/` doesn't exist or is empty on the current branch:
+Show all files found across both directories as a numbered list.
+
+Run `~/.dotfiles/claude-code-shared/skills/to-tasks/scripts/extract-prd-json.sh <path>` on the selected file to extract and validate the JSON. Use that output as the primary source. Do NOT use inline python or other ad-hoc extraction. The script handles `.html`, `.md`, and `.json` files.
+
+If neither `docs/prd/` nor `docs/seeds/` exists or both are empty on the current branch:
 - Run `git branch --list "spike/*" "feat/*" "fix/*"` to check for work branches.
 - If work branches exist, tell the user: "No PRDs found on this branch. These work branches exist:" and list them. Ask if they want to switch to one.
-- If the user picks a branch, run `git switch {branch-name}` and re-list `docs/prd/`.
-- If no work branches exist either, tell the user to run `/to-prd` first.
+- If the user picks a branch, run `git switch {branch-name}` and re-list both directories.
+- If no work branches exist either, tell the user to run `/to-seed` or `/to-prd-html` first.
 
 ### 2. Load project context
 
@@ -43,22 +49,19 @@ Slices may be **HITL** (requires human interaction — architectural decision, d
 
 #### browser_verify field
 
-For **user-facing feature and fix tasks** (tasks that change UI routes, visible elements, or user flows), populate the `browser_verify` field using PRD intent. This is the least-arbitrary moment to set it: to-tasks already has full PRD context.
+For user-facing feature and fix tasks (route or UI changes), populate `browser_verify` using PRD intent. Schema: `~/.dotfiles/claude-code-shared/resources/task-schema.md`.
 
-Shape and semantics are defined in `~/.dotfiles/claude-code-shared/resources/task-schema.md`. Do not inline the schema here — reference that file.
+- `url_path`: the route the feature lives on (e.g. `/dashboard`, `/settings/billing`).
+- `assertions`: **concrete observable behaviors** — visible text, navigation targets, redirects. Not vague prose ("works correctly" is invalid; "Text 'Welcome back' is visible in the heading" is valid).
+- **Omit `browser_verify` entirely** (never set to `null`) for backend, config, refactor, infra, or any task with no user-visible route change.
+- E2e-authoring tasks from `to-e2e-tasks` must **never** carry `browser_verify`.
 
-Rules:
-- Set `url_path` to the route the feature lives on (e.g. `/dashboard`, `/settings/billing`).
-- Set `assertions` to **concrete observable behaviors**: visible text, navigation targets, redirect destinations. Not implementation details or vague prose ("works correctly" is not an assertion; "Text 'Welcome back' is visible in the heading" is).
-- **Omit `browser_verify` entirely** (do not set to `null`) for: pure backend tasks, config tasks, refactor tasks, infra tasks, and any task with no user-visible route change.
-- E2e-authoring tasks (from `to-e2e-tasks`) must **never** carry `browser_verify` — TDD runs the Playwright spec directly as its gate.
+**Dynamic routes:** Write variable segments as `:param` placeholders. Never invent a concrete slug — a made-up value navigates to a 404.
 
-**Dynamic route segments:** If the route has dynamic segments (e.g. `/firms/:firmSlug/dashboard`, `/companies/:id/settings`), write the segment as a `:param` placeholder. Do NOT invent a concrete slug or ID — a made-up value navigates to a 404 and fails a healthy build.
-
-- Mark every dynamic segment with a leading colon: `/firms/:firmSlug/dashboard`, `/c/:codexSlug`, `/reports/:reportId`.
-- The placeholder NAME is cosmetic. The browser-checker resolves segments by position, not by name, so `:firmSlug`, `:slug`, and `:id` are equivalent. Use whatever name reads clearly.
-- Write static segments concretely (`/firms`, `/dashboard`). Only the variable parts get a colon.
-- Do not resolve placeholders to real values, do not ask the user for a slug, do not read or write any fixture file. The browser-checker resolves placeholders at check time by crawling the running app for a real instance. See `~/.dotfiles/claude-code-shared/agents/browser-checker.md`.
+- Mark dynamic parts with a leading colon: `/firms/:firmSlug/dashboard`, `/reports/:reportId`.
+- Placeholder names are cosmetic; the browser-checker resolves by position. Use whatever reads clearly.
+- Write static segments concretely. Only variable parts get a colon.
+- Never resolve placeholders yourself. See `~/.dotfiles/claude-code-shared/agents/browser-checker.md`.
 
 ### 3b. Infer follow-ups from the PRD
 

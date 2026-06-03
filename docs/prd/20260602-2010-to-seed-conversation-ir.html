@@ -1,0 +1,812 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PRD: to-seed — Conversation-Outcome JSON IR</title>
+  <style>
+    /* Personal theme — Spawned Sapien earth tones (dark, warm, ochre-anchored) */
+    :root {
+      --bg: #1A1A1A;
+      --bg-surface: #2A1A14;
+      --bg-hover: #4E342E;
+      --text: #F0E6D2;
+      --text-muted: #B2BEB5;
+      --text-heading: #F5F5DC;
+      --border: #5D4037;
+      --accent: #CC7722;
+      --accent-dim: #CD7F32;
+      --risk-high: #E74C3C;
+      --risk-med: #F39C12;
+      --risk-low: #2E6F40;
+      --pill-bg: #4E342E;
+      --tab-active: #CC7722;
+      --tab-inactive: #5D4037;
+      --check-done: #2E6F40;
+      --progress-bg: #4E342E;
+      --progress-fill: #CC7722;
+      --font-body: 'Nunito', system-ui, sans-serif;
+      --font-heading: 'Cormorant Garamond', 'Georgia', serif;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: var(--font-body);
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.7;
+      padding: 2rem 1rem;
+      max-width: 75ch;
+      margin: 0 auto;
+    }
+
+    h1 {
+      font-size: 1.8rem;
+      color: var(--text-heading);
+      margin-bottom: 0.25rem;
+      letter-spacing: -0.02em;
+      font-family: var(--font-heading);
+    }
+
+    h2 {
+      font-size: 1.3rem;
+      color: var(--text-heading);
+      margin-bottom: 0.75rem;
+      font-family: var(--font-heading);
+    }
+
+    h3 {
+      font-size: 1.1rem;
+      color: var(--text-heading);
+      margin-bottom: 0.5rem;
+      font-family: var(--font-heading);
+    }
+
+    .subtitle {
+      color: var(--text-muted);
+      font-size: 0.9rem;
+      margin-bottom: 2rem;
+    }
+
+    .progress-bar {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: var(--bg);
+      padding: 0.75rem 0;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 1.5rem;
+    }
+
+    .progress-track {
+      background: var(--progress-bg);
+      border-radius: 4px;
+      height: 8px;
+      overflow: hidden;
+      margin-bottom: 0.4rem;
+    }
+
+    .progress-fill {
+      background: var(--progress-fill);
+      height: 100%;
+      width: 0%;
+      transition: width 0.3s ease;
+      border-radius: 4px;
+    }
+
+    .progress-label {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      font-family: var(--font-heading);
+    }
+
+    .toc {
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 1rem 1.25rem;
+      margin-bottom: 2rem;
+    }
+
+    .toc-title {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 0.5rem;
+      font-family: var(--font-heading);
+    }
+
+    .toc a {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      color: var(--accent);
+      text-decoration: none;
+      font-size: 0.9rem;
+      padding: 0.25rem 0;
+      font-family: var(--font-heading);
+    }
+
+    .toc a:hover { color: var(--text-heading); }
+
+    .toc .check-indicator {
+      width: 16px;
+      height: 16px;
+      border: 2px solid var(--border);
+      border-radius: 3px;
+      display: inline-block;
+      flex-shrink: 0;
+    }
+
+    .toc .check-indicator.checked {
+      background: var(--check-done);
+      border-color: var(--check-done);
+    }
+
+    details {
+      margin-bottom: 1.5rem;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      overflow: hidden;
+    }
+
+    summary {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.75rem 1rem;
+      background: var(--bg-surface);
+      cursor: pointer;
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: var(--text-heading);
+      font-family: var(--font-heading);
+      list-style: none;
+    }
+
+    summary::-webkit-details-marker { display: none; }
+
+    summary::before {
+      content: '\25B6';
+      font-size: 0.7rem;
+      transition: transform 0.2s;
+      color: var(--text-muted);
+    }
+
+    details[open] > summary::before { transform: rotate(90deg); }
+
+    .section-content { padding: 1rem 1.25rem; }
+
+    .review-check {
+      margin-left: auto;
+      appearance: none;
+      width: 20px;
+      height: 20px;
+      border: 2px solid var(--border);
+      border-radius: 4px;
+      cursor: pointer;
+      position: relative;
+      flex-shrink: 0;
+    }
+
+    .review-check:checked {
+      background: var(--check-done);
+      border-color: var(--check-done);
+    }
+
+    .review-check:checked::after {
+      content: '\2713';
+      position: absolute;
+      top: -1px;
+      left: 3px;
+      color: white;
+      font-size: 14px;
+    }
+
+    .tabs { margin-bottom: 1.5rem; }
+
+    .tab-bar {
+      display: flex;
+      gap: 0;
+      border-bottom: 2px solid var(--border);
+      margin-bottom: 0;
+    }
+
+    .tab-btn {
+      padding: 0.6rem 1.25rem;
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      font-size: 0.9rem;
+      font-family: var(--font-heading);
+      font-weight: 500;
+      border-bottom: 2px solid transparent;
+      margin-bottom: -2px;
+      transition: color 0.2s, border-color 0.2s;
+    }
+
+    .tab-btn:hover { color: var(--text); }
+
+    .tab-btn.active {
+      color: var(--tab-active);
+      border-bottom-color: var(--tab-active);
+    }
+
+    .tab-panel { display: none; padding: 1.25rem 0; }
+    .tab-panel.active { display: block; }
+
+    .tag {
+      display: inline-block;
+      font-size: 0.75rem;
+      padding: 0.15rem 0.5rem;
+      border-radius: 3px;
+      font-family: var(--font-heading);
+      font-weight: 600;
+      letter-spacing: 0.03em;
+    }
+
+    .tag-high { background: var(--risk-high); color: white; }
+    .tag-med { background: var(--risk-med); color: #1a1a1a; }
+    .tag-low { background: var(--risk-low); color: white; }
+    .tag-module { background: var(--pill-bg); color: var(--accent); border: 1px solid var(--accent-dim); }
+
+    .story {
+      margin-bottom: 1rem;
+      padding: 0.75rem 1rem;
+      background: var(--bg-surface);
+      border-radius: 4px;
+      border-left: 3px solid var(--accent);
+    }
+
+    .story-number {
+      font-family: var(--font-heading);
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      margin-bottom: 0.25rem;
+    }
+
+    .decision {
+      margin-bottom: 0.75rem;
+      padding: 0.75rem 1rem;
+      background: var(--bg-surface);
+      border-radius: 4px;
+      display: flex;
+      gap: 0.75rem;
+      align-items: flex-start;
+    }
+
+    .decision-text { flex: 1; }
+
+    ul, ol { padding-left: 1.5rem; margin-bottom: 1rem; }
+    li { margin-bottom: 0.4rem; }
+    p { margin-bottom: 1rem; }
+
+    .comparison {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      margin-bottom: 1.25rem;
+    }
+
+    .comparison-col {
+      background: var(--bg-surface);
+      border-radius: 6px;
+      padding: 1rem;
+      border: 1px solid var(--border);
+    }
+
+    .comparison-col h3 {
+      margin-bottom: 0.75rem;
+      padding-bottom: 0.5rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .diagram {
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 1.5rem;
+      margin-bottom: 1rem;
+      text-align: center;
+      overflow-x: auto;
+    }
+
+    .diagram svg { max-width: 100%; height: auto; }
+
+    .scope-item {
+      padding: 0.5rem 0;
+      border-bottom: 1px solid var(--border);
+      color: var(--text-muted);
+    }
+
+    .scope-item:last-child { border-bottom: none; }
+
+    code {
+      font-family: monospace;
+      font-size: 0.88em;
+      background: var(--bg-surface);
+      padding: 0.1rem 0.3rem;
+      border-radius: 3px;
+      border: 1px solid var(--border);
+    }
+
+    @media (max-width: 600px) {
+      body { padding: 1rem 0.75rem; }
+      .comparison { grid-template-columns: 1fr; }
+      .tab-btn { padding: 0.5rem 0.75rem; font-size: 0.8rem; }
+    }
+  </style>
+</head>
+<body>
+
+  <h1>to-seed &mdash; Conversation-Outcome JSON IR</h1>
+  <div class="subtitle">to-seed-conversation-ir &middot; 2026-06-02 &middot; supersedes grill-prd-tasks-chain</div>
+
+  <div class="progress-bar">
+    <div class="progress-track">
+      <div class="progress-fill" id="progressFill"></div>
+    </div>
+    <div class="progress-label" id="progressLabel">0 / 0 sections reviewed</div>
+  </div>
+
+  <nav class="toc">
+    <div class="toc-title">Contents</div>
+    <a href="#problem-statement"><span class="check-indicator" data-toc-for="problem-statement"></span> Problem Statement</a>
+    <a href="#solution"><span class="check-indicator" data-toc-for="solution"></span> Solution</a>
+    <a href="#architecture"><span class="check-indicator" data-toc-for="architecture"></span> Architecture</a>
+    <a href="#core-content"><span class="check-indicator" data-toc-for="core-content"></span> Specification</a>
+    <a href="#alternatives"><span class="check-indicator" data-toc-for="alternatives"></span> Alternatives Considered</a>
+    <a href="#out-of-scope"><span class="check-indicator" data-toc-for="out-of-scope"></span> Out of Scope</a>
+    <a href="#further-notes"><span class="check-indicator" data-toc-for="further-notes"></span> Further Notes</a>
+  </nav>
+
+  <details open id="problem-statement">
+    <summary>
+      Problem Statement
+      <input type="checkbox" class="review-check" data-section="problem-statement" onclick="updateProgress()">
+    </summary>
+    <div class="section-content">
+      <p>Every conversation, <span class="tag tag-module">grill-me</span> session, and <span class="tag tag-module">grill-with-docs</span> session needs a durable outcome. This happens dozens of times a day. Today the only forward path from a grill is <span class="tag tag-module">to-prd-html</span>, which synthesizes a full interactive HTML PRD. The most recent such run cost roughly six minutes and about 25,000 tokens for a single document.</p>
+      <p>The HTML is genuinely useful for human review and sharing. It is not, however, required by the skills that consume the work. <span class="tag tag-module">to-tasks</span> already discards the HTML and reads only the embedded <code>prd-data</code> JSON via <code>extract-prd-json.sh</code>. The beautified document is a human view layer, not a machine dependency.</p>
+      <p>Two structural problems follow. First, synthesis (turning a messy conversation into structured decisions) happens inside <span class="tag tag-module">to-prd-html</span> and is never reused; any later consumer re-derives it. Second, the workflow forces a heavy PRD on every run even when no shareable document is needed, and even for non-feature conversations (architecture, bug investigation, exploration) that produce no user stories.</p>
+      <p>The existing <span class="tag tag-module">handoff</span> skill is the only lightweight alternative, but it writes free-form markdown prose with no fixed schema. It is ephemeral and non-deterministic, unsuited to feeding downstream skills.</p>
+    </div>
+  </details>
+
+  <details open id="solution">
+    <summary>
+      Solution
+      <input type="checkbox" class="review-check" data-section="solution" onclick="updateProgress()">
+    </summary>
+    <div class="section-content">
+      <p>Introduce <span class="tag tag-module">to-seed</span>: a deterministic skill that distills any conversation or grill session into a single standardized JSON artifact, the intermediate representation (IR). Synthesis happens exactly once, in <span class="tag tag-module">to-seed</span>. Every other skill consumes the JSON.</p>
+      <p><span class="tag tag-module">to-prd-html</span> is refactored into a pure renderer (JSON in, HTML out). <span class="tag tag-module">to-tasks</span> consumes the JSON through the same normalizer it already uses. The seed uses the existing <code>prd-data</code> shape extended with a deterministic core (<code>summary</code>, <code>decisions</code>, <code>open_threads</code>, <code>next_action</code>) and a <code>schema_version</code>, with all feature-specific limbs optional. One standardized format means one ingestion path and no divergent codepaths.</p>
+      <p>The seed is cheap, raw, and machine-first. The HTML PRD becomes an optional view, rendered from a seed only when a human needs to review or share.</p>
+      <p><strong>Evidence:</strong> The motivating <span class="tag tag-module">to-prd-html</span> run produced one PRD in about six minutes at roughly 25,000 tokens. <span class="tag tag-module">to-tasks</span> already ignores that HTML and extracts only the embedded <code>prd-data</code> JSON, proving the document is a view layer rather than a machine dependency.</p>
+      <p><strong>Success metrics:</strong></p>
+      <ul>
+        <li>A <span class="tag tag-module">to-seed</span> run costs materially less than a <span class="tag tag-module">to-prd-html</span> run on the same conversation, since the HTML emit, the <code>context-loader</code> hop, and three interactive prompts are removed.</li>
+        <li><span class="tag tag-module">to-tasks</span> ingests a <span class="tag tag-module">to-seed</span> <code>.json</code> with zero changes to its ingestion call; <code>extract-prd-json.sh</code> normalizes <code>.html</code>, <code>.md</code>, and <code>.json</code> to the same <code>prd-data</code> JSON.</li>
+        <li><span class="tag tag-module">to-prd-html</span>, as a pure renderer, produces zero empty section blocks when given a partial seed.</li>
+        <li><span class="tag tag-module">to-seed</span> scores fidelity-dominant on <code>/improve-skill</code>: no fabricated fields, correct decided-vs-open separation, no dropped decisions, across feature, architecture, bug, and exploratory scenarios.</li>
+        <li>A malformed seed fails at <code>extract-prd-json.sh</code> validation, not inside <span class="tag tag-module">to-tasks</span>.</li>
+      </ul>
+    </div>
+  </details>
+
+  <details open id="architecture">
+    <summary>
+      Architecture
+      <input type="checkbox" class="review-check" data-section="architecture" onclick="updateProgress()">
+    </summary>
+    <div class="section-content">
+      <p>The JSON seed is the intermediate representation. One synthesizer produces it. Every consumer reads it through one normalizer. The HTML PRD is one of several optional consumers, not a required stop.</p>
+      <div class="diagram">
+        <svg viewBox="0 0 680 280" width="680" height="280" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+              <polygon points="0 0, 10 3.5, 0 7" fill="#CC7722"/>
+            </marker>
+          </defs>
+
+          <!-- source -->
+          <rect x="6" y="108" width="132" height="64" rx="6" fill="#2A1A14" stroke="#5D4037" stroke-width="1.5"/>
+          <text x="72" y="132" text-anchor="middle" fill="#F5F5DC" font-size="11" font-family="Georgia, serif">conversation /</text>
+          <text x="72" y="148" text-anchor="middle" fill="#F5F5DC" font-size="11" font-family="Georgia, serif">grill-me /</text>
+          <text x="72" y="164" text-anchor="middle" fill="#B2BEB5" font-size="10" font-family="Georgia, serif">grill-with-docs</text>
+
+          <line x1="138" y1="140" x2="171" y2="140" stroke="#CC7722" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+
+          <!-- to-seed -->
+          <rect x="171" y="108" width="118" height="64" rx="6" fill="#2A1A14" stroke="#CC7722" stroke-width="2"/>
+          <text x="230" y="134" text-anchor="middle" fill="#F5F5DC" font-size="12" font-family="Georgia, serif">to-seed</text>
+          <text x="230" y="150" text-anchor="middle" fill="#B2BEB5" font-size="9" font-family="Georgia, serif">synthesize</text>
+          <text x="230" y="163" text-anchor="middle" fill="#B2BEB5" font-size="9" font-family="Georgia, serif">sonnet/xhigh</text>
+
+          <line x1="289" y1="140" x2="322" y2="140" stroke="#CC7722" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+
+          <!-- seed -->
+          <rect x="322" y="108" width="128" height="64" rx="6" fill="#4E342E" stroke="#CC7722" stroke-width="1.5"/>
+          <text x="386" y="132" text-anchor="middle" fill="#F5F5DC" font-size="11" font-family="Georgia, serif">JSON seed (IR)</text>
+          <text x="386" y="149" text-anchor="middle" fill="#B2BEB5" font-size="9" font-family="Georgia, serif">docs/seeds/*.json</text>
+          <text x="386" y="162" text-anchor="middle" fill="#B2BEB5" font-size="9" font-family="Georgia, serif">core + optional limbs</text>
+
+          <!-- fan-out arrows -->
+          <line x1="450" y1="125" x2="508" y2="52" stroke="#CC7722" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+          <line x1="450" y1="140" x2="508" y2="140" stroke="#CC7722" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+          <line x1="450" y1="155" x2="508" y2="228" stroke="#CC7722" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+
+          <!-- consumers -->
+          <rect x="508" y="22" width="166" height="56" rx="6" fill="#2A1A14" stroke="#5D4037" stroke-width="1.5"/>
+          <text x="591" y="44" text-anchor="middle" fill="#F5F5DC" font-size="11" font-family="Georgia, serif">to-prd-html (render)</text>
+          <text x="591" y="61" text-anchor="middle" fill="#B2BEB5" font-size="9" font-family="Georgia, serif">docs/prd/*.html &middot; optional</text>
+
+          <rect x="508" y="112" width="166" height="56" rx="6" fill="#2A1A14" stroke="#5D4037" stroke-width="1.5"/>
+          <text x="591" y="134" text-anchor="middle" fill="#F5F5DC" font-size="11" font-family="Georgia, serif">to-tasks (slice)</text>
+          <text x="591" y="151" text-anchor="middle" fill="#B2BEB5" font-size="9" font-family="Georgia, serif">docs/tasks/*.json</text>
+
+          <rect x="508" y="202" width="166" height="56" rx="6" fill="#2A1A14" stroke="#5D4037" stroke-width="1.5"/>
+          <text x="591" y="224" text-anchor="middle" fill="#F5F5DC" font-size="11" font-family="Georgia, serif">prototype</text>
+          <text x="591" y="241" text-anchor="middle" fill="#B2BEB5" font-size="9" font-family="Georgia, serif">(+ future consumers)</text>
+
+          <!-- normalizer note -->
+          <text x="478" y="106" text-anchor="middle" fill="#CD7F32" font-size="8" font-family="Georgia, serif">extract-prd-json.sh</text>
+          <text x="478" y="116" text-anchor="middle" fill="#CD7F32" font-size="8" font-family="Georgia, serif">normalizer + validate</text>
+        </svg>
+      </div>
+      <p>Boundary contract: <code>extract-prd-json.sh</code> normalizes <code>.html</code>, <code>.md</code>, and <code>.json</code> inputs into the one <code>prd-data</code> JSON shape and validates it against <code>prd-data-schema.json</code>. Consumers ignore unknown fields, so the schema can grow additively under <code>schema_version</code>.</p>
+    </div>
+  </details>
+
+  <details open id="core-content">
+    <summary>
+      Specification
+      <input type="checkbox" class="review-check" data-section="core-content" onclick="updateProgress()">
+    </summary>
+    <div class="section-content">
+      <div class="tabs">
+        <div class="tab-bar">
+          <button class="tab-btn active" onclick="switchTab(event, 'tab-stories')">User Stories</button>
+          <button class="tab-btn" onclick="switchTab(event, 'tab-implementation')">Implementation</button>
+          <button class="tab-btn" onclick="switchTab(event, 'tab-testing')">Testing</button>
+        </div>
+
+        <div class="tab-panel active" id="tab-stories">
+          <div class="story">
+            <div class="story-number">Story #1</div>
+            As a <strong>developer</strong>, I want <strong>a deterministic <code>/to-seed</code> skill that distills any conversation or grill into a standardized JSON</strong>, so that <strong>every session produces a durable, machine-readable outcome without a heavy PRD</strong>.
+          </div>
+          <div class="story">
+            <div class="story-number">Story #2</div>
+            As a <strong>developer</strong>, I want <strong>the seed written in the <code>prd-data</code> shape extended with a core spine (<code>summary</code>, <code>decisions</code>, <code>open_threads</code>, <code>next_action</code>)</strong>, so that <strong>the artifact is both a resume checkpoint and a valid input to downstream skills</strong>.
+          </div>
+          <div class="story">
+            <div class="story-number">Story #3</div>
+            As a <strong>developer</strong>, I want <strong>to-tasks to consume a seed through the same <code>extract-prd-json.sh</code> normalizer it already uses</strong>, so that <strong>there is one ingestion path and no divergent codepath</strong>.
+          </div>
+          <div class="story">
+            <div class="story-number">Story #4</div>
+            As a <strong>developer</strong>, I want <strong>to-prd-html refactored into a pure renderer that reads a seed and omits empty sections</strong>, so that <strong>synthesis happens once and partial, non-feature seeds render cleanly with no empty blocks</strong>.
+          </div>
+          <div class="story">
+            <div class="story-number">Story #5</div>
+            As a <strong>developer</strong>, I want <strong>grill session-end to offer "Create a seed / Nothing yet" with the PRD/tasks/prototype fan-out living in to-seed</strong>, so that <strong>the menu never offers paths that cannot execute and routing lives next to the artifact that feeds it</strong>.
+          </div>
+          <div class="story">
+            <div class="story-number">Story #6</div>
+            As a <strong>developer</strong>, I want <strong>to-seed to run with zero content-forking prompts and a single branch sanity-check that leads with the current branch</strong>, so that <strong>the artifact content is reproducible while I still confirm where the file lands when I have been context-switching</strong>.
+          </div>
+          <div class="story">
+            <div class="story-number">Story #7</div>
+            As a <strong>developer</strong>, I want <strong>a malformed seed to fail at normalizer validation</strong>, so that <strong>a bad seed is caught at ingestion rather than deep inside to-tasks</strong>.
+          </div>
+          <div class="story">
+            <div class="story-number">Story #8</div>
+            As a <strong>developer</strong>, I want <strong>to-seed registered in <code>model-tiers.json</code> at the sonnet/xhigh tier</strong>, so that <strong>the tier advisory, weekly usage report, and sync all see it</strong>.
+          </div>
+          <div class="story">
+            <div class="story-number">Story #9 (carried from prior PRD)</div>
+            As a <strong>developer</strong>, I want <strong>the <code>browser_verify</code> guidance in to-tasks SKILL.md tightened to 170 words or fewer</strong>, so that <strong>the model gets clear rules without verbose redundancy bloating the skill</strong>.
+          </div>
+        </div>
+
+        <div class="tab-panel" id="tab-implementation">
+          <div class="decision">
+            <span class="tag tag-med">MED</span>
+            <div class="decision-text">New skill <span class="tag tag-module">to-seed</span> (<code>model: sonnet</code>, <code>effort: xhigh</code>). Distills the in-context conversation into JSON. No <code>context-loader</code> agent. Writes <code>docs/seeds/&lt;ts&gt;-&lt;slug&gt;.json</code> via <code>doc-filename.sh &lt;slug&gt; json</code>. Start at xhigh to protect fidelity; scale down later from eval data.</div>
+          </div>
+          <div class="decision">
+            <span class="tag tag-low">LOW</span>
+            <div class="decision-text">Coexist with <span class="tag tag-module">handoff</span>. <span class="tag tag-module">handoff</span> = mid-work continuity (free-form markdown). <span class="tag tag-module">to-seed</span> = deliberation outcome (structured JSON). Distinct jobs, distinct names. <span class="tag tag-module">handoff</span> is unchanged.</div>
+          </div>
+          <div class="decision">
+            <span class="tag tag-high">HIGH</span>
+            <div class="decision-text">Standardized schema = the existing <code>prd-data</code> shape plus a deterministic core (<code>schema_version</code>, <code>source</code>, <code>title</code>, <code>slug</code>, <code>created</code>, <code>summary</code>, <code>decisions[]</code>, <code>open_threads[]</code>, <code>next_action</code>). All feature limbs (<code>user_stories</code>, <code>implementation_decisions</code>, <code>testing_decisions</code>, <code>success_metrics</code>, <code>out_of_scope</code>, <code>risks_and_tradeoffs</code>, <code>evidence</code>, <code>further_notes</code>) are optional. Consumers ignore unknown fields. Update <code>prd-data-schema.json</code> accordingly.</div>
+          </div>
+          <div class="decision">
+            <span class="tag tag-high">HIGH</span>
+            <div class="decision-text">Refactor <span class="tag tag-module">to-prd-html</span> into a pure renderer: input is a seed <code>.json</code> path; read JSON, fill template, write HTML. Drop the synthesize-from-conversation path entirely. Omit any section whose source field is empty or absent so partial seeds render zero empty blocks. (Supersedes the prior PRD's "optional sections" item, which is now mandatory.)</div>
+          </div>
+          <div class="decision">
+            <span class="tag tag-med">MED</span>
+            <div class="decision-text"><code>extract-prd-json.sh</code> becomes the single normalizer: accepts <code>.html</code> (strip embedded JSON), <code>.md</code> (parse), and <code>.json</code> (passthrough), always emitting <code>prd-data</code> JSON. Validate the output against <code>prd-data-schema.json</code> and fail loud on malformed input.</div>
+          </div>
+          <div class="decision">
+            <span class="tag tag-low">LOW</span>
+            <div class="decision-text"><span class="tag tag-module">to-tasks</span> discovery (step 1) lists <code>docs/seeds/*.json</code> alongside <code>docs/prd/*</code>. The ingestion call is unchanged (still <code>extract-prd-json.sh</code>). When to-seed's fan-out invokes <code>/to-tasks &lt;seed-path&gt;</code>, the path is already supplied and discovery is a fallback.</div>
+          </div>
+          <div class="decision">
+            <span class="tag tag-med">MED</span>
+            <div class="decision-text"><span class="tag tag-module">grill-me</span> and <span class="tag tag-module">grill-with-docs</span> session-end menus collapse to <strong>"Create a seed / Nothing yet."</strong> Remove "Create a PRD" and "Create a task file" as direct options; both now require a seed first. The PRD/tasks/prototype fan-out lives in <span class="tag tag-module">to-seed</span> after the seed is written.</div>
+          </div>
+          <div class="decision">
+            <span class="tag tag-low">LOW</span>
+            <div class="decision-text"><span class="tag tag-module">to-seed</span> interaction model: zero content-forking prompts; no theme prompt; no dir-confirm prompt; no <code>context-loader</code>. Exactly one branch sanity-check that leads with the current branch (confirm / switch existing / create new), reusing to-prd-html's <code>git switch</code> logic. The post-write fan-out menu is the only other interaction.</div>
+          </div>
+          <div class="decision">
+            <span class="tag tag-low">LOW</span>
+            <div class="decision-text"><code>/to-seed</code> is a standalone command usable in any conversation, not only grill sessions.</div>
+          </div>
+          <div class="decision">
+            <span class="tag tag-low">LOW</span>
+            <div class="decision-text">Register <span class="tag tag-module">to-seed</span> via <code>/register-skill</code> into the <code>model-tiers.json</code> skills map at the tier mapping to sonnet/xhigh. Re-register when the eval lets the model scale down.</div>
+          </div>
+          <div class="decision">
+            <span class="tag tag-low">LOW</span>
+            <div class="decision-text"><strong>Carried from prior PRD.</strong> Tighten the <code>browser_verify</code> block in <span class="tag tag-module">to-tasks</span> SKILL.md to 170 words or fewer (from ~245), preserving every rule. Run <code>/improve-skill to-tasks</code> after; behavioral score must hold at 92 or above.</div>
+          </div>
+          <div class="decision">
+            <span class="tag tag-low">LOW</span>
+            <div class="decision-text"><strong>Carried from prior PRD (no-change).</strong> The <span class="tag tag-module">to-tasks</span> schema example block (~lines 129&ndash;168) is left as-is. It is load-bearing for output quality and intentionally not touched.</div>
+          </div>
+        </div>
+
+        <div class="tab-panel" id="tab-testing">
+          <p>Run <code>/improve-skill to-seed</code> with a <strong>fidelity-dominant rubric</strong>. Scored axes: no fabrication, decided-vs-open separation, no dropped decisions, full grounding. <strong>Schema validity is a hard pass/fail gate</strong>: an invalid seed scores zero regardless of content. Prose style carries low weight.</p>
+          <p>Eval scenario fixtures span conversation types: feature deliberation, architecture decision, bug investigation, vague/exploratory, and multi-topic. The non-feature scenarios specifically test that to-seed does <strong>not</strong> fabricate user stories or success metrics to fill the optional limbs.</p>
+          <p>Test <code>extract-prd-json.sh</code>: <code>.json</code> passthrough emits the validated input unchanged; <code>.html</code> and <code>.md</code> still emit correct <code>prd-data</code> JSON (no regression); a malformed seed fails validation loudly.</p>
+          <p>Test the <span class="tag tag-module">to-prd-html</span> renderer: a full seed renders every section; a partial seed (core only, no limbs) renders zero empty blocks; the embedded <code>prd-data</code> JSON round-trips.</p>
+          <p>Run the chain end-to-end from a seed: <span class="tag tag-module">to-seed</span> &rarr; <span class="tag tag-module">to-tasks</span> (discovery lists <code>docs/seeds/</code>, ingestion via the normalizer, valid tasks JSON whose <code>prd</code> field points at the seed).</p>
+          <p>Test grill session-end in both <span class="tag tag-module">grill-me</span> and <span class="tag tag-module">grill-with-docs</span>: the menu shows "Create a seed / Nothing yet" and does not offer "Create a PRD" or "Create a task file" directly.</p>
+          <p><strong>Carried from prior PRD.</strong> After tightening <code>browser_verify</code>, run <code>/improve-skill to-tasks</code> and confirm the behavioral score holds at 92 or above. Revert if any assertion drops.</p>
+          <p>Per the standing rule, <code>claude-code-shared</code> infra carries no unit tests. The evals plus the normalizer's schema validation are the verification path.</p>
+        </div>
+      </div>
+    </div>
+  </details>
+
+  <details open id="alternatives">
+    <summary>
+      Alternatives Considered
+      <input type="checkbox" class="review-check" data-section="alternatives" onclick="updateProgress()">
+    </summary>
+    <div class="section-content">
+      <div class="comparison">
+        <div class="comparison-col">
+          <h3>Always PRD (prior PRD's choice, now reversed)</h3>
+          <p>Route every grill through a full HTML PRD before tasks. One artifact type.</p>
+          <ul>
+            <li>One artifact, reviewable and shareable</li>
+            <li>to-tasks needed zero changes</li>
+            <li>Forces ~25k-token HTML synthesis on every run</li>
+            <li>Breaks on non-feature conversations (no user stories)</li>
+          </ul>
+        </div>
+        <div class="comparison-col">
+          <h3>Seed IR + optional PRD (chosen)</h3>
+          <p>Synthesize once into cheap JSON. HTML becomes an optional render.</p>
+          <ul>
+            <li>Cheap, deterministic, machine-first</li>
+            <li>One ingestion format keeps to-tasks single-path</li>
+            <li>Handles any conversation type via optional limbs</li>
+            <li>Requires the to-prd-html renderer refactor + normalizer</li>
+          </ul>
+        </div>
+      </div>
+      <div class="comparison">
+        <div class="comparison-col">
+          <h3>to-prd-html dual-mode</h3>
+          <p>Keep synthesize-from-conversation as a fallback alongside the renderer.</p>
+          <ul>
+            <li>No behavior removed</li>
+            <li>Duplicates synthesis logic</li>
+            <li>Risks drift between "PRD from conversation" and "PRD from seed"</li>
+          </ul>
+        </div>
+        <div class="comparison-col">
+          <h3>to-prd-html pure renderer (chosen)</h3>
+          <p>One synthesis source (to-seed); to-prd-html only renders JSON.</p>
+          <ul>
+            <li>Single synthesis truth, no drift</li>
+            <li>Cheap and deterministic render</li>
+            <li>Loses standalone "PRD straight from a chat" (acceptable: seed first, then render)</li>
+          </ul>
+        </div>
+      </div>
+      <div class="comparison">
+        <div class="comparison-col">
+          <h3>Name by format: to-json</h3>
+          <p>Name the skill after the file format it emits.</p>
+          <ul>
+            <li>Instantly signals raw machine data</li>
+            <li>Names the format, not the purpose</li>
+            <li>Lies if the format ever changes; collides with other JSONs</li>
+            <li>No intent in the session-end menu</li>
+          </ul>
+        </div>
+        <div class="comparison-col">
+          <h3>Name by role: to-seed (chosen)</h3>
+          <p>Name the skill after its role: the compact upstream source.</p>
+          <ul>
+            <li>Captures "one source, many downstream things"</li>
+            <li>Survives a format change</li>
+            <li>Fits the <code>to-X</code> family; clear menu intent</li>
+            <li>Format stated in the description instead</li>
+          </ul>
+        </div>
+      </div>
+      <div class="comparison">
+        <div class="comparison-col">
+          <h3>Extract browser_verify to a file</h3>
+          <p>Move the ~245-word block to a resources reference (prior PRD alt).</p>
+          <ul>
+            <li>Passes the structural token metric</li>
+            <li>Model may skip the reference read</li>
+            <li>Behavioral risk not justified at 100% behavioral</li>
+          </ul>
+        </div>
+        <div class="comparison-col">
+          <h3>Tighten in place (chosen)</h3>
+          <p>Cut redundant prose within SKILL.md, keep all rules inline.</p>
+          <ul>
+            <li>Rules stay inline, no reference hop</li>
+            <li>Modest token reduction</li>
+            <li>Behavioral score preserved</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </details>
+
+  <details open id="out-of-scope">
+    <summary>
+      Out of Scope
+      <input type="checkbox" class="review-check" data-section="out-of-scope" onclick="updateProgress()">
+    </summary>
+    <div class="section-content">
+      <div class="scope-item">Replacing the <span class="tag tag-module">handoff</span> skill. It stays for mid-work continuity.</div>
+      <div class="scope-item"><span class="tag tag-module">debug</span> and <span class="tag tag-module">fact-check</span> as seed consumers. Future, deprioritized. Extensibility is supported by the additive-optional-fields contract, but no consumer-specific sections are built now.</div>
+      <div class="scope-item">Deep <span class="tag tag-module">prototype</span> / <span class="tag tag-module">to-e2e-tasks</span> seed-input handling beyond the fan-out invocation. Light wiring only.</div>
+      <div class="scope-item">Multi-branch branching field fix. Hallucination artifact from the prior eval; only single and per-task strategies exist and are documented correctly.</div>
+      <div class="scope-item"><span class="tag tag-module">to-tasks</span> schema example block changes. Load-bearing, left as-is.</div>
+      <div class="scope-item">Auto-committing any artifact. <span class="tag tag-module">to-seed</span> never commits.</div>
+    </div>
+  </details>
+
+  <details open id="further-notes">
+    <summary>
+      Further Notes
+      <input type="checkbox" class="review-check" data-section="further-notes" onclick="updateProgress()">
+    </summary>
+    <div class="section-content">
+      <p><strong>Determinism model.</strong> Artifact content is zero-prompt reproducible: the same conversation yields the same JSON. Output location gets exactly one human checkpoint, the branch sanity-check that leads with the current branch. These are two different axes and must not be conflated.</p>
+      <p><strong>Model strategy.</strong> Start at sonnet/xhigh to protect distillation fidelity on the highest-value primitive, then scale down toward medium once the eval proves headroom. Re-register the tier when the model drops.</p>
+      <p><strong>Schema evolution.</strong> <code>schema_version</code> governs forward compatibility. Consumers ignore unknown fields, so additive changes do not break old seeds.</p>
+      <p><strong>Supersession.</strong> This PRD supersedes <code>docs/prd/20260602-1922-grill-prd-tasks-chain.html</code>. The old "always PRD" decision is reversed. Still-valid items from that PRD are folded in here: the to-prd-html optional-section rendering, the prd-data-schema optional fields, the to-tasks <code>browser_verify</code> tightening, the schema-block non-change, and the multi-branch out-of-scope note. The old file can be ignored.</p>
+      <p><strong>Sequencing risk.</strong> Land <span class="tag tag-module">to-seed</span>, the schema update, and the normalizer before the grill menus change. Otherwise there is a window where grill session-end offers "Create a seed" but no skill exists to produce it.</p>
+    </div>
+  </details>
+
+  <script type="application/json" id="prd-data">
+  {
+    "title": "to-seed — Conversation-Outcome JSON IR",
+    "slug": "to-seed-conversation-ir",
+    "created": "2026-06-02T20:10:00Z",
+    "supersedes": "docs/prd/20260602-1922-grill-prd-tasks-chain.html",
+    "problem_statement": "Every conversation, grill-me, and grill-with-docs session needs a durable outcome, dozens of times a day. The only forward path today is to-prd-html, which synthesizes a full HTML PRD (~6 min, ~25k tokens). But to-tasks already discards the HTML and reads only the embedded prd-data JSON via extract-prd-json.sh, so the document is a human view layer, not a machine dependency. Synthesis happens inside to-prd-html and is never reused, and a heavy PRD is forced on every run even for non-feature conversations that produce no user stories. The handoff skill is the only lightweight alternative but writes free-form markdown with no fixed schema, so it is ephemeral and non-deterministic.",
+    "solution": "Introduce to-seed: a deterministic skill that distills any conversation or grill into one standardized JSON IR. Synthesis happens once, in to-seed; every other skill consumes the JSON. Refactor to-prd-html into a pure renderer (JSON in, HTML out). to-tasks consumes the JSON through the same extract-prd-json.sh normalizer. The seed uses the prd-data shape plus a deterministic core (summary, decisions, open_threads, next_action) and schema_version, with all feature limbs optional. One standardized format means one ingestion path and no divergent codepaths. The HTML PRD becomes an optional view rendered from a seed only when a human needs to review or share.",
+    "evidence": "The motivating to-prd-html run produced one PRD in about six minutes at roughly 25,000 tokens, and to-tasks already ignores that HTML to extract only the embedded prd-data JSON.",
+    "success_metrics": [
+      "A to-seed run costs materially less than a to-prd-html run on the same conversation (HTML emit, context-loader hop, and three interactive prompts removed).",
+      "to-tasks ingests a to-seed .json with zero changes to its ingestion call; extract-prd-json.sh normalizes .html, .md, and .json to the same prd-data JSON.",
+      "to-prd-html as a pure renderer produces zero empty section blocks given a partial seed.",
+      "to-seed scores fidelity-dominant on /improve-skill (no fabrication, correct decided-vs-open separation, no dropped decisions) across feature, architecture, bug, and exploratory scenarios.",
+      "A malformed seed fails at extract-prd-json.sh validation, not inside to-tasks."
+    ],
+    "user_stories": [
+      { "actor": "developer", "feature": "a deterministic /to-seed skill that distills any conversation or grill into a standardized JSON", "benefit": "every session produces a durable, machine-readable outcome without a heavy PRD" },
+      { "actor": "developer", "feature": "the seed written in the prd-data shape extended with a core spine (summary, decisions, open_threads, next_action)", "benefit": "the artifact is both a resume checkpoint and a valid input to downstream skills" },
+      { "actor": "developer", "feature": "to-tasks to consume a seed through the same extract-prd-json.sh normalizer it already uses", "benefit": "there is one ingestion path and no divergent codepath" },
+      { "actor": "developer", "feature": "to-prd-html refactored into a pure renderer that reads a seed and omits empty sections", "benefit": "synthesis happens once and partial non-feature seeds render cleanly with no empty blocks" },
+      { "actor": "developer", "feature": "grill session-end to offer 'Create a seed / Nothing yet' with the PRD/tasks/prototype fan-out living in to-seed", "benefit": "the menu never offers paths that cannot execute and routing lives next to the artifact that feeds it" },
+      { "actor": "developer", "feature": "to-seed to run with zero content-forking prompts and a single branch sanity-check that leads with the current branch", "benefit": "artifact content is reproducible while I still confirm where the file lands after context-switching" },
+      { "actor": "developer", "feature": "a malformed seed to fail at normalizer validation", "benefit": "a bad seed is caught at ingestion rather than deep inside to-tasks" },
+      { "actor": "developer", "feature": "to-seed registered in model-tiers.json at the sonnet/xhigh tier", "benefit": "the tier advisory, weekly usage report, and sync all see it" },
+      { "actor": "developer", "feature": "the browser_verify guidance in to-tasks SKILL.md tightened to 170 words or fewer (carried from prior PRD)", "benefit": "the model gets clear rules without verbose redundancy bloating the skill" }
+    ],
+    "implementation_decisions": [
+      "New skill to-seed (model: sonnet, effort: xhigh). Distills the in-context conversation into JSON. No context-loader agent. Writes docs/seeds/<ts>-<slug>.json via doc-filename.sh <slug> json. Start at xhigh to protect fidelity; scale down later from eval data.",
+      "Coexist with handoff. handoff = mid-work continuity (free-form markdown); to-seed = deliberation outcome (structured JSON). Distinct jobs, distinct names. handoff unchanged.",
+      "Standardized schema = existing prd-data shape plus deterministic core (schema_version, source, title, slug, created, summary, decisions[], open_threads[], next_action). All feature limbs (user_stories, implementation_decisions, testing_decisions, success_metrics, out_of_scope, risks_and_tradeoffs, evidence, further_notes) optional. Consumers ignore unknown fields. Update prd-data-schema.json.",
+      "Refactor to-prd-html into a pure renderer: input is a seed .json path; read JSON, fill template, write HTML. Drop the synthesize-from-conversation path entirely. Omit any section whose source field is empty/absent so partial seeds render zero empty blocks. Supersedes the prior PRD's optional-sections item, now mandatory.",
+      "extract-prd-json.sh becomes the single normalizer: accepts .html (strip embedded JSON), .md (parse), and .json (passthrough), always emitting prd-data JSON. Validate against prd-data-schema.json and fail loud on malformed input.",
+      "to-tasks discovery (step 1) lists docs/seeds/*.json alongside docs/prd/*. Ingestion call unchanged (extract-prd-json.sh). When to-seed's fan-out invokes /to-tasks <seed-path>, the path is supplied and discovery is a fallback.",
+      "grill-me and grill-with-docs session-end menus collapse to 'Create a seed / Nothing yet.' Remove 'Create a PRD' and 'Create a task file' as direct options; both now require a seed. The PRD/tasks/prototype fan-out lives in to-seed after the seed is written.",
+      "to-seed interaction model: zero content-forking prompts, no theme prompt, no dir-confirm prompt, no context-loader. Exactly one branch sanity-check that leads with the current branch (confirm / switch existing / create new), reusing to-prd-html's git switch logic. Post-write fan-out menu is the only other interaction.",
+      "/to-seed is a standalone command usable in any conversation, not only grill sessions.",
+      "Register to-seed via /register-skill into the model-tiers.json skills map at the tier mapping to sonnet/xhigh; re-register when the eval lets the model scale down.",
+      "Carried from prior PRD: tighten the browser_verify block in to-tasks SKILL.md to 170 words or fewer (from ~245), preserving every rule. Run /improve-skill to-tasks after; behavioral score must hold at 92+.",
+      "Carried from prior PRD (no-change): to-tasks schema example block (~lines 129-168) left as-is. Load-bearing for output quality."
+    ],
+    "testing_decisions": [
+      "Run /improve-skill to-seed with a fidelity-dominant rubric: scored axes are no-fabrication, decided-vs-open separation, no dropped decisions, full grounding. Schema validity is a hard pass/fail gate (invalid seed scores zero). Prose style low weight.",
+      "Eval scenario fixtures span conversation types: feature, architecture decision, bug investigation, vague/exploratory, multi-topic. Non-feature scenarios specifically test that to-seed does not fabricate user stories or success metrics to fill optional limbs.",
+      "extract-prd-json.sh: .json passthrough emits validated input unchanged; .html and .md still emit correct prd-data JSON (no regression); a malformed seed fails validation loudly.",
+      "to-prd-html renderer: a full seed renders all sections; a partial seed (core only) renders zero empty blocks; embedded prd-data JSON round-trips.",
+      "End-to-end from a seed: to-seed -> to-tasks (discovery lists docs/seeds/, ingestion via normalizer, valid tasks JSON whose prd field points at the seed).",
+      "grill-me and grill-with-docs session-end shows 'Create a seed / Nothing yet' and does not offer 'Create a PRD' or 'Create a task file' directly.",
+      "Carried from prior PRD: after browser_verify tightening, run /improve-skill to-tasks; confirm behavioral score holds at 92+. Revert if any assertion drops.",
+      "Per standing rule, claude-code-shared infra carries no unit tests; evals plus normalizer schema validation are the verification path."
+    ],
+    "out_of_scope": [
+      "Replacing the handoff skill — it stays for mid-work continuity.",
+      "debug and fact-check as seed consumers — future, deprioritized; extensibility supported by additive-optional-fields but no consumer-specific sections built now.",
+      "Deep prototype / to-e2e-tasks seed-input handling beyond the fan-out invocation — light wiring only.",
+      "Multi-branch branching field fix — hallucination artifact from the prior eval.",
+      "to-tasks schema example block changes — load-bearing, left as-is.",
+      "Auto-committing any artifact — to-seed never commits."
+    ],
+    "risks_and_tradeoffs": [
+      "Sequencing: land to-seed, the schema update, and the normalizer before the grill menus change, or grill session-end offers 'Create a seed' with no skill to produce it.",
+      "to-seed at sonnet/xhigh is the highest-fidelity-risk skill. A fabricated or conflated seed silently poisons downstream PRDs and tasks. The fidelity-dominant eval must gate it before reliance.",
+      "Collapsing the grill menu changes muscle memory: users who picked 'Create a PRD' or 'Create a task file' now pick 'Create a seed' then fan out.",
+      "Tightening browser_verify prose risks subtle rule loss; run /improve-skill to-tasks immediately after.",
+      "Normalizer validation must accept fully-populated legacy PRDs and partial seeds alike; too-strict validation could reject valid old PRDs."
+    ],
+    "further_notes": [
+      "Determinism: artifact content is zero-prompt reproducible; output location gets one human checkpoint (the branch sanity-check). Two different axes.",
+      "Model strategy: start sonnet/xhigh to protect fidelity, scale down toward medium once the eval proves headroom; re-register the tier when the model drops.",
+      "Schema evolution: schema_version governs forward compatibility; consumers ignore unknown fields, so additive changes do not break old seeds.",
+      "Supersession: this PRD supersedes grill-prd-tasks-chain. The old 'always PRD' decision is reversed; still-valid items folded in here. The old file can be ignored."
+    ]
+  }
+  </script>
+
+  <script>
+    function switchTab(e, tabId) {
+      const tabs = e.target.closest('.tabs');
+      tabs.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      tabs.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+      e.target.classList.add('active');
+      tabs.querySelector('#' + tabId).classList.add('active');
+    }
+
+    function updateProgress() {
+      const checks = document.querySelectorAll('.review-check');
+      const checked = document.querySelectorAll('.review-check:checked');
+      const total = checks.length;
+      const done = checked.length;
+      const pct = total > 0 ? (done / total) * 100 : 0;
+
+      document.getElementById('progressFill').style.width = pct + '%';
+      document.getElementById('progressLabel').textContent = done + ' / ' + total + ' sections reviewed';
+
+      document.querySelectorAll('[data-toc-for]').forEach(indicator => {
+        const sectionId = indicator.getAttribute('data-toc-for');
+        const sectionCheck = document.querySelector('.review-check[data-section="' + sectionId + '"]');
+        if (sectionCheck && sectionCheck.checked) {
+          indicator.classList.add('checked');
+        } else {
+          indicator.classList.remove('checked');
+        }
+      });
+    }
+
+    updateProgress();
+  </script>
+
+</body>
+</html>
