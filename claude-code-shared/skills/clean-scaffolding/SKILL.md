@@ -19,7 +19,7 @@ Delete files in these dirs (relative to cwd):
 | `docs/tasks/` | all files |
 | `docs/handoffs/` | `.md` files only — skip any non-`.md` files |
 
-Never touch `docs/adr/` or `docs/prototypes/`. Never run git. Never edit `.gitignore`. Leave empty dirs in place after deletion.
+Never touch `docs/adr/` or `docs/prototypes/`. Never run git. Never edit `.gitignore`. After deleting files, remove any dirs that are now empty, including `docs/` itself if empty.
 
 ## Process
 
@@ -42,17 +42,28 @@ Collect all paths into a list. If the list is empty, report `Nothing to clean.` 
 
 ### 3. Show preview
 
-Print a preview like:
+Print every file that will be deleted, grouped by directory:
 
 ```
 About to delete:
-  docs/seeds/    — N files
-  docs/prd/      — N files
-  docs/tasks/    — N files
-  docs/handoffs/ — N .md files
+
+  docs/seeds/
+    seed-foo.json
+    seed-bar.json
+
+  docs/prd/
+    prd-foo.html
+
+  docs/tasks/
+    tasks-foo.json
+
+  docs/handoffs/
+    handoff-foo.md
 
 Total: N files
 ```
+
+List every path. No dir-level summaries instead of filenames. If a dir has no files, omit it.
 
 ### 4. Confirm
 
@@ -74,6 +85,16 @@ rm docs/seeds/file1.json docs/seeds/file2.json ...
 rm docs/prd/file1.html docs/prd/file2.md ...
 ```
 
-### 6. Report
+### 6. Remove empty dirs
 
-Print a short summary: files deleted per dir and total.
+After deletion, remove empty dirs with:
+
+```bash
+rmdir docs/seeds docs/prd docs/tasks docs/handoffs docs 2>/dev/null
+```
+
+`rmdir` only removes dirs that are truly empty, so `docs/adr/`, `docs/prototypes/`, and any other non-empty dirs survive automatically.
+
+### 7. Report
+
+Print a short summary: files deleted per dir, dirs removed, and total.

@@ -60,7 +60,11 @@
       "Bash(/Users/eric/.dotfiles/claude-code-shared/skills/to-tasks/scripts/extract-prd-json.sh /tmp/bad.json)",
       "Bash(/Users/eric/.dotfiles/claude-code-shared/skills/to-tasks/scripts/extract-prd-json.sh /tmp/missing-fields.json)",
       "Bash(/Users/eric/.dotfiles/claude-code-shared/skills/to-tasks/scripts/extract-prd-json.sh /tmp/file.txt)",
-      "Bash(awk '/^#### browser_verify field$/,/^### 3b\\\\./' /Users/eric/.dotfiles/claude-code-shared/skills/to-tasks/SKILL.md)"
+      "Bash(awk '/^#### browser_verify field$/,/^### 3b\\\\./' /Users/eric/.dotfiles/claude-code-shared/skills/to-tasks/SKILL.md)",
+      "Bash(xargs -I{} dirname {})",
+      "Bash(xargs -I{} basename {})",
+      "Bash(xargs -n1 basename)",
+      "Bash(awk 'NF {printf \"%*s%s\\\\n\", 2*length\\($0\\)-2*length\\(gsub\\(/\\\\//,\"/\"\\)\\), \"\", $0}')"
     ]
   },
   "prefersReducedMotion": false
