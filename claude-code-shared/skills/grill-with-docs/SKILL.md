@@ -11,7 +11,7 @@ Interview me relentlessly about every aspect of this plan until we reach a share
 
 Ask the questions one at a time, waiting for feedback on each question before continuing.
 
-If a question can be answered by exploring the codebase, explore the codebase instead.
+Before formulating your question, if the answer could be in the codebase, spawn a read-only Haiku subagent for file exploration rather than reading files inline. If a question can be answered by reading code or project files, delegate that lookup to a Haiku subagent instead of asking the user.
 
 </what-to-do>
 

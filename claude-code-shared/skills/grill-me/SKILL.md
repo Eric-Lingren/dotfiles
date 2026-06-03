@@ -12,7 +12,7 @@ For each question:
 2. Provide your recommended answer for the question you ask. State what you think the answer should be and why.
 3. When asking your first question, briefly signal the other major branches of the decision tree you plan to explore later, so the user knows you see the full picture.
 
-Before formulating your question, explore the codebase first. If a question can be answered by reading code or project files, explore the codebase instead of asking the user.
+Before formulating your question, if the answer could be in the codebase, spawn a read-only Haiku subagent for file exploration rather than reading files inline. If a question can be answered by reading code or project files, delegate that lookup to a Haiku subagent instead of asking the user.
 
 ## Session end protocol
 
