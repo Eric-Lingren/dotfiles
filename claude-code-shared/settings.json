@@ -19,6 +19,10 @@
       "Bash(yarn biome *)",
       "Read(~/.dotfiles/**)",
       "Read(~/.claude-code-shared/**)",
+      "Read(~/.cch/skills/**)",
+      "Read(~/.cco/skills/**)",
+      "Read(/Users/eric/.cch/skills/**)",
+      "Read(/Users/eric/.cco/skills/**)",
       "WebSearch(*)",
       "WebFetch(*)"
     ]
