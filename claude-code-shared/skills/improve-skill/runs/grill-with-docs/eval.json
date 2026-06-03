@@ -1,0 +1,220 @@
+{
+  "assertions": [
+    {
+      "name": "one_question_at_a_time",
+      "description": "Asks exactly one question per turn, waits for user response before asking the next.",
+      "weight": 2.0,
+      "hard_gate": false,
+      "rubric": {
+        "0": "Asks 3 or more questions in a single turn, or fires a rapid-sequence list of questions without waiting for any answer",
+        "25": "Asks 2 questions in a single turn, making the user decide which to answer first",
+        "50": "Asks one question but immediately hedges or appends a follow-up in the same message that forces a second answer",
+        "75": "Asks one question per turn consistently with at most one minor slip that does not derail the flow",
+        "100": "Every turn contains exactly one focused question. Waits for the user's answer before moving on. No bundled follow-ups."
+      }
+    },
+    {
+      "name": "recommend_with_each_question",
+      "description": "Each question is accompanied by the skill's recommended answer, not just an open-ended prompt.",
+      "weight": 1.5,
+      "hard_gate": false,
+      "rubric": {
+        "0": "No recommendations given at all — purely asks questions and waits",
+        "25": "Occasionally provides a recommendation but skips it most of the time",
+        "50": "Provides recommendations roughly half the time; inconsistent — some questions get a recommendation, others don't",
+        "75": "Provides a recommendation with most questions; one or two questions are left open-ended without a clear reason",
+        "100": "Every question includes a concrete recommended answer. The recommendation is stated before or alongside the question, not buried after."
+      }
+    },
+    {
+      "name": "codebase_exploration_over_asking",
+      "description": "When a question can be answered by exploring the codebase, explores instead of asking the user.",
+      "weight": 1.5,
+      "hard_gate": false,
+      "rubric": {
+        "0": "Never explores codebase; asks user questions that could be resolved by reading the code",
+        "25": "Explores only when explicitly prompted by the user; misses obvious opportunities to self-answer",
+        "50": "Explores occasionally but inconsistently; sometimes asks questions that a grep or file read would resolve",
+        "75": "Explores the codebase proactively in most cases; at most one missed opportunity where asking replaces reading",
+        "100": "Always explores the codebase when the answer is findable there. Only asks the user when the answer requires human judgment or intent."
+      }
+    },
+    {
+      "name": "glossary_conflict_detection",
+      "description": "Immediately calls out when user uses a term that conflicts with existing CONTEXT.md definitions.",
+      "weight": 2.0,
+      "hard_gate": false,
+      "rubric": {
+        "0": "Ignores glossary conflicts entirely; lets contradictory terminology pass without comment",
+        "25": "Notices a conflict but addresses it much later in the session rather than immediately",
+        "50": "Calls out the conflict but frames it vaguely without quoting the existing definition or naming the tension precisely",
+        "75": "Calls out the conflict immediately in most cases; quotes the glossary definition; one miss or minor delay",
+        "100": "Every terminology conflict is surfaced immediately. Quotes the existing CONTEXT.md definition. Names exactly what differs. Asks the user to resolve it before continuing."
+      }
+    },
+    {
+      "name": "sharpen_fuzzy_language",
+      "description": "Proposes a precise canonical term when the user uses vague or overloaded language.",
+      "weight": 1.5,
+      "hard_gate": false,
+      "rubric": {
+        "0": "Adopts the user's vague language uncritically; never proposes sharper terms",
+        "25": "Occasionally notes that a term is fuzzy but does not propose a replacement",
+        "50": "Proposes sharper terms sometimes; misses obvious overloaded terms that should be disambiguated",
+        "75": "Consistently proposes precise alternatives for vague terms; at most one missed opportunity",
+        "100": "Every overloaded or vague term is caught and a precise canonical alternative is proposed. The proposal names the ambiguity and offers a resolution."
+      }
+    },
+    {
+      "name": "concrete_scenario_stress_test",
+      "description": "Invents specific edge-case scenarios to probe domain relationship boundaries when those relationships are being discussed.",
+      "weight": 1.0,
+      "hard_gate": false,
+      "rubric": {
+        "0": "Discusses domain relationships only abstractly; never invents a concrete scenario to stress-test boundaries",
+        "25": "Uses a scenario only when the user explicitly requests an example; does not proactively stress-test",
+        "50": "Invents scenarios occasionally but they are generic rather than targeted at the specific edge case in question",
+        "75": "Invents targeted scenarios for most domain relationship discussions; at most one missed opportunity",
+        "100": "Proactively invents specific, targeted edge-case scenarios whenever domain relationships are discussed. Each scenario forces precision about concept boundaries."
+      }
+    },
+    {
+      "name": "cross_reference_with_code",
+      "description": "When user states how something works, checks the code and surfaces any contradiction.",
+      "weight": 2.0,
+      "hard_gate": false,
+      "rubric": {
+        "0": "Never checks the code against user claims; accepts all statements at face value",
+        "25": "Checks code only when the user explicitly requests it; misses unsolicited contradictions",
+        "50": "Checks code sometimes but inconsistently; surfaces only obvious contradictions while missing subtler ones",
+        "75": "Proactively checks code for most user claims; surfaces contradictions clearly; at most one missed check",
+        "100": "Every factual claim about how the system works is verified against the codebase. Any contradiction is surfaced immediately with the specific file/line evidence."
+      }
+    },
+    {
+      "name": "context_md_inline_update",
+      "description": "Updates CONTEXT.md immediately when a term is resolved, without batching updates for later.",
+      "weight": 1.5,
+      "hard_gate": false,
+      "rubric": {
+        "0": "Never updates CONTEXT.md, or batches all updates to the end of the session",
+        "25": "Updates CONTEXT.md but only after several terms have accumulated, not inline",
+        "50": "Updates inline sometimes; batches other updates; inconsistent timing",
+        "75": "Updates CONTEXT.md immediately in most cases; at most one batched update that should have been inline",
+        "100": "Every resolved term triggers an immediate CONTEXT.md update. No batching. Creates CONTEXT.md if it does not exist."
+      }
+    },
+    {
+      "name": "adr_sparingly",
+      "description": "Only offers to create an ADR when all three criteria are met: hard-to-reverse, surprising without context, and real trade-off.",
+      "weight": 1.5,
+      "hard_gate": false,
+      "rubric": {
+        "0": "Offers ADRs for routine decisions that are easy to reverse, unsurprising, or involve no real trade-off",
+        "25": "Offers ADRs inconsistently — sometimes for trivial decisions, sometimes misses genuinely ADR-worthy ones",
+        "50": "ADR offers are reasonable but skill fails to check all three criteria — e.g. offers ADR for a decision that meets two criteria but not the third",
+        "75": "ADR offers are generally well-targeted; at most one borderline offer or one missed opportunity",
+        "100": "Offers ADR only when all three criteria are demonstrably met. Skips ADR when any criterion is missing. When offering, names which criteria are satisfied."
+      }
+    },
+    {
+      "name": "session_end_protocol",
+      "description": "Signals completion with exact phrase, then asks exactly one AskUserQuestion with the specified options.",
+      "weight": 2.0,
+      "hard_gate": true,
+      "rubric": {
+        "0": "Does not signal completion at all, or ends without any structured question, or implements code/creates files without authorization",
+        "25": "Signals completion but skips the AskUserQuestion, or asks a free-text question instead of structured options",
+        "50": "Signals completion and asks a question but omits required options or adds unauthorized options",
+        "75": "Signals completion with correct phrase and asks AskUserQuestion with correct options; minor phrasing deviation only",
+        "100": "Signals end with exact phrase 'Grill session complete. All branches resolved.' Then asks exactly one AskUserQuestion with options: Create a seed, Nothing yet. No other actions taken."
+      }
+    },
+    {
+      "name": "no_implementation_without_auth",
+      "description": "Does not implement code or create files (other than CONTEXT.md and ADR updates) without explicit post-session user authorization.",
+      "weight": 2.0,
+      "hard_gate": true,
+      "rubric": {
+        "0": "Creates code files, modifies source, or takes implementation actions during or after the session without authorization",
+        "25": "Proposes implementation steps as if ready to execute them, blurring the line between planning and doing",
+        "50": "Stays within bounds during session but ambiguously frames next steps in a way that implies imminent action without waiting for authorization",
+        "75": "Correctly withholds implementation throughout; minor phrasing suggests eagerness but no actual unauthorized action",
+        "100": "Zero unauthorized implementation. CONTEXT.md and ADR files are the only files touched during session. Post-session, waits fully for explicit authorization before any action."
+      }
+    },
+    {
+      "name": "relentless_branch_coverage",
+      "description": "Walks every branch of the design tree and resolves dependencies between decisions one by one before moving on.",
+      "weight": 2.0,
+      "hard_gate": false,
+      "rubric": {
+        "0": "Skips entire decision branches or moves on before resolving open questions; leaves major dependencies unaddressed",
+        "25": "Covers main path only; skips edge cases or sub-branches when they become apparent",
+        "50": "Covers most branches but leaves one significant unresolved dependency or skips a visible sub-branch",
+        "75": "Thorough coverage; resolves dependencies in order; at most one minor branch left slightly under-explored",
+        "100": "Every branch of the design tree is walked. Dependencies are resolved in the correct order before downstream decisions are made. No open question is abandoned."
+      }
+    },
+    {
+      "name": "number_consistency",
+      "description": "All counts, quantities, list lengths, and numeric references are internally consistent. If the output says '5 items' then exactly 5 items appear. Step numbers are sequential with no gaps or duplicates.",
+      "rubric": {
+        "0": "Multiple numeric contradictions: stated counts don't match actual counts, step numbers skip or repeat, quantities referenced earlier differ from later usage",
+        "25": "One clear numeric mismatch: a stated count disagrees with actual items, or a step number is wrong",
+        "50": "Numbers are technically correct but ambiguous: vague quantities like 'several' alongside exact counts, or implicit counts that require reader inference to verify",
+        "75": "All numbers consistent with at most one trivially unclear reference that does not mislead",
+        "100": "Every count, step number, list length, and numeric reference is exact and verifiable against the output content"
+      }
+    },
+    {
+      "name": "no_contradictions",
+      "description": "No statement in the output contradicts another statement in the same output. Instructions do not conflict. Constraints stated in one section are not violated in another.",
+      "rubric": {
+        "0": "Direct contradictions: output says X in one place and not-X in another, or gives conflicting instructions for the same action",
+        "25": "One clear contradiction or two statements that are difficult to reconcile without assuming one is wrong",
+        "50": "No direct contradictions but some tension between sections that could confuse a reader about intended behavior",
+        "75": "Fully consistent with at most one minor ambiguity that does not create a real conflict",
+        "100": "Zero contradictions. Every statement is compatible with every other statement. Constraints are honored throughout"
+      }
+    },
+    {
+      "name": "plan_cohesion",
+      "description": "The output presents a cohesive path from start to finish. Steps build on each other logically. The roadmap, plan, or sequence has no orphaned steps, circular dependencies, or gaps where the reader must guess how to get from A to B.",
+      "rubric": {
+        "0": "Disjointed output: steps reference things not yet introduced, sections appear unrelated, or the overall flow has no clear direction",
+        "25": "General direction exists but significant gaps: a step depends on something never mentioned, or sections are loosely connected with missing transitions",
+        "50": "Flow is followable but has one structural gap or an orphaned section that does not connect to the rest",
+        "75": "Cohesive flow with clear progression. At most one minor ordering issue that does not block understanding",
+        "100": "Fully cohesive: each section builds on prior context, dependencies are introduced before use, and the output reads as a unified whole"
+      }
+    }
+  ],
+  "scenarios": [
+    {
+      "name": "simple_feature_plan_no_context",
+      "prompt": "I want to add a notification system to our app. Users should get emails when their report is ready, and we might want to add in-app notifications later. There's no existing notification infrastructure.",
+      "context": "Small SaaS app, no CONTEXT.md exists yet, no docs/adr/ directory. Codebase has a reports/ module and a users/ module with basic CRUD."
+    },
+    {
+      "name": "glossary_conflict_session",
+      "prompt": "I want to redesign how we handle accounts. Each account should be able to have multiple workspaces, and users can belong to multiple accounts.",
+      "context": "CONTEXT.md exists and defines: 'Account: the billing entity owned by an Organization. An Organization has exactly one Account.' The user's plan uses 'account' to mean what the glossary calls 'Organization'."
+    },
+    {
+      "name": "vague_terminology_session",
+      "prompt": "We need to let accounts share data with each other. An account can grant access to another account, and the receiving account can read but not write. We also need account-level audit logs.",
+      "context": "No CONTEXT.md. The codebase has both a Tenant model (billing/multi-tenancy) and a UserProfile model (individual user identity). The user's 'account' could refer to either."
+    },
+    {
+      "name": "code_contradiction_session",
+      "prompt": "Our order system supports partial cancellations — a user can cancel individual line items without cancelling the whole order. I want to add a refund flow that triggers when any item is cancelled.",
+      "context": "CONTEXT.md defines 'Cancellation: voids the entire Order. Partial line-item removal is called Removal, not Cancellation.' The codebase Order model has a cancel() method that sets status='cancelled' on the whole order, with no partial-cancel logic."
+    },
+    {
+      "name": "adr_worthy_decision",
+      "prompt": "I'm planning to move our job queue from a Postgres-backed queue to Redis Streams. The main reason is throughput — we're hitting lock contention at high volume. I think we should just do it.",
+      "context": "Existing CONTEXT.md documents the job queue as 'JobQueue: durable task execution backed by Postgres for transactional consistency with writes.' The codebase uses pg-boss. No ADR exists for the original Postgres decision."
+    }
+  ]
+}

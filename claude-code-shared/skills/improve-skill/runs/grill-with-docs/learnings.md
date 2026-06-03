@@ -1,0 +1,2 @@
+## 2026-06-02 - Iteration 1
+- **cross_reference_with_code** [50]: Skill explored obvious modules but did not proactively grep for adjacent infrastructure (mailers, job queues, existing notification-like code) before asking user about delivery mechanism. Fix: before asking any implementation-shape question, scan the codebase for related infrastructure that would answer part of the question from code rather than from the user.
