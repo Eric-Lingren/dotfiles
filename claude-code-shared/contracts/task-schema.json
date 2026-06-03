@@ -1,0 +1,178 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "task-schema",
+  "title": "Task File",
+  "description": "Canonical shape for task JSON files produced by to-tasks, to-e2e-tasks, debug, improve-component, and code-review.",
+  "type": "object",
+  "required": ["schema_version", "prd", "generated_at", "branching", "tasks", "follow_ups"],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "const": "1",
+      "description": "Schema version. Must be '1'."
+    },
+    "prd": {
+      "oneOf": [
+        { "type": "string", "minLength": 1 },
+        { "type": "null" }
+      ],
+      "description": "PRD path this file was generated from, or null for debug-originated files."
+    },
+    "generated_at": {
+      "type": "string",
+      "minLength": 1,
+      "description": "ISO 8601 timestamp of file creation."
+    },
+    "branching": {
+      "type": "object",
+      "required": ["strategy"],
+      "additionalProperties": false,
+      "properties": {
+        "strategy": {
+          "type": "string",
+          "enum": ["single", "per-task"],
+          "description": "Branching strategy for this task file."
+        },
+        "branch": {
+          "type": "string",
+          "description": "Branch name when strategy is 'single'."
+        }
+      }
+    },
+    "tasks": {
+      "type": "array",
+      "description": "Array of task objects.",
+      "items": {
+        "type": "object",
+        "required": ["id", "title", "type", "description", "acceptance_criteria", "blocked_by", "status", "branch", "pr"],
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^T-[0-9]{4}$",
+            "description": "Globally sequential task ID, zero-padded to 4 digits."
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Short descriptive title."
+          },
+          "type": {
+            "type": "string",
+            "enum": ["AFK", "HITL"],
+            "description": "Task execution mode."
+          },
+          "description": {
+            "type": "string",
+            "minLength": 1,
+            "description": "End-to-end behavior description."
+          },
+          "acceptance_criteria": {
+            "type": "array",
+            "minItems": 1,
+            "items": { "type": "string" },
+            "description": "Checklist of observable outcomes required for done."
+          },
+          "blocked_by": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "pattern": "^T-[0-9]{4}$"
+            },
+            "description": "IDs of tasks that must be done before this task can start."
+          },
+          "status": {
+            "type": "string",
+            "enum": ["not_started", "in_progress", "done", "merged", "blocked"],
+            "description": "Current task status."
+          },
+          "branch": {
+            "oneOf": [
+              { "type": "string", "minLength": 1 },
+              { "type": "null" }
+            ],
+            "description": "Branch name for per-task strategy, or null/shared branch name for single strategy."
+          },
+          "pr": {
+            "oneOf": [
+              { "type": "string", "minLength": 1 },
+              { "type": "null" }
+            ],
+            "description": "PR URL or number once merged, null otherwise."
+          },
+          "browser_verify": {
+            "oneOf": [
+              {
+                "type": "object",
+                "required": ["url_path", "assertions"],
+                "additionalProperties": false,
+                "properties": {
+                  "url_path": {
+                    "type": "string",
+                    "pattern": "^/",
+                    "description": "Relative path appended to base_url. Must start with /."
+                  },
+                  "assertions": {
+                    "type": "array",
+                    "minItems": 1,
+                    "items": { "type": "string" },
+                    "description": "Observable behavior assertions."
+                  }
+                }
+              },
+              { "type": "null" }
+            ],
+            "description": "Optional browser verification config. Omit or set null for non-UI tasks."
+          },
+          "linear_url": {
+            "oneOf": [
+              { "type": "string", "minLength": 1 },
+              { "type": "null" }
+            ],
+            "description": "Optional Linear issue URL, written back by tasks-to-linear after syncing."
+          }
+        }
+      }
+    },
+    "follow_ups": {
+      "type": "array",
+      "description": "Manual follow-up actions discovered or planned during this task file's execution.",
+      "items": {
+        "type": "object",
+        "required": ["id", "title", "steps", "trigger_task", "source"],
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^FU-[0-9]{3}$",
+            "description": "Sequential follow-up ID within this file, zero-padded to 3 digits."
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Short description of the manual action."
+          },
+          "steps": {
+            "type": "array",
+            "minItems": 1,
+            "items": { "type": "string" },
+            "description": "Ordered steps with exact commands, SQL, config keys, or dashboard click paths."
+          },
+          "trigger_task": {
+            "oneOf": [
+              { "type": "string", "pattern": "^T-[0-9]{4}$" },
+              { "type": "null" }
+            ],
+            "description": "Task ID that triggered this follow-up, or null if general."
+          },
+          "source": {
+            "type": "string",
+            "enum": ["planned", "discovered"],
+            "description": "'planned' from PRD or debug session; 'discovered' during run-tasks."
+          }
+        }
+      }
+    }
+  }
+}

@@ -102,4 +102,4 @@ All count values are integers >= 0.
 
 ## Schema
 
-The machine-checkable JSON schema is at `resources/runner-result-schema.json`.
+The canonical schema and contract have moved to `contracts/`. See `contracts/runner-result-contract.md` and `contracts/runner-result-schema.json`.

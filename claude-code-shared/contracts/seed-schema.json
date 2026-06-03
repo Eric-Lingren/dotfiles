@@ -1,7 +1,8 @@
 {
-  "$schema": "http://json-schema.org/draft-07/schema#",
-  "title": "prd-data",
-  "description": "DEPRECATED: Canonical schema has moved to contracts/seed-schema.json. This file is kept for backward compatibility.",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "seed-schema",
+  "title": "Seed File",
+  "description": "Canonical shape for seed JSON files written by to-seed and consumed by to-tasks and to-prd-html.",
   "type": "object",
   "required": [
     "schema_version",
@@ -14,10 +15,12 @@
     "open_threads",
     "next_action"
   ],
+  "additionalProperties": false,
   "properties": {
     "schema_version": {
       "type": "string",
-      "description": "Schema version string, e.g. '2'."
+      "const": "2",
+      "description": "Schema version. Must be '2'."
     },
     "source": {
       "type": "string",
@@ -74,6 +77,7 @@
       "items": {
         "type": "object",
         "required": ["actor", "feature", "benefit"],
+        "additionalProperties": false,
         "properties": {
           "actor": { "type": "string" },
           "feature": { "type": "string" },
@@ -101,6 +105,5 @@
       "type": "array",
       "items": { "type": "string" }
     }
-  },
-  "additionalProperties": true
+  }
 }

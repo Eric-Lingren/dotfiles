@@ -23,6 +23,19 @@ the current model. Delegate only the menial searching.
 
 Analyze specific files or components for modularity, reusability, and hygiene. Propose focused refactors that make components easier to test, reuse, and maintain.
 
+## Contract
+
+**Format:** task file — see `contracts/task-contract.md` (schema_version: `"1"`)
+**Role:** producer
+
+**Step-0 — validate output before returning:**
+```bash
+bash ~/.dotfiles/claude-code-shared/scripts/validate-schema.sh \
+  ~/.dotfiles/claude-code-shared/contracts/task-schema.json \
+  <output-path>
+```
+On non-zero exit: STOP. Report stderr to the user. Do not write the file.
+
 This skill operates on individual files or small clusters of related files.
 
 ## Principles
@@ -274,7 +287,7 @@ See `~/.dotfiles/claude-code-shared/resources/branching-strategy.md` for branch 
 
 Write one task per approved finding (or group tightly coupled findings into one task with compound acceptance criteria). Each task must be self-contained. Embed the specific file path, line numbers, principle violated, and exact fix approach in the description.
 
-Follow the canonical schema in `~/.dotfiles/claude-code-shared/resources/task-schema.md`. Do not define the JSON structure inline.
+Follow the canonical schema in `contracts/task-contract.md`. Do not define the JSON structure inline.
 
 Key field values for improve-component tasks:
 - `prd`: `null` (no PRD for component improvement runs)
