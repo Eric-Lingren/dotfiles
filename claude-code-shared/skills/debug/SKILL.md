@@ -23,6 +23,19 @@ the current model. Delegate only the menial searching.
 
 A discipline for hard bugs. Skip phases only when explicitly justified.
 
+## Contract
+
+**Format (conditional output):** task file — see `contracts/task-contract.md` (schema_version: `"1"`)
+**Role:** conditional producer (produces a task file only for non-inline fixes; inline single-file fixes are applied directly)
+
+**Step-0 fires only when a tasks file is actually written:**
+```bash
+bash ~/.dotfiles/claude-code-shared/scripts/validate-schema.sh \
+  ~/.dotfiles/claude-code-shared/contracts/task-schema.json \
+  <output-path>
+```
+On non-zero exit: STOP. Report stderr to the user. Do not write the file.
+
 When exploring the codebase, use the project's domain glossary to get a clear mental model of the relevant modules, and check ADRs in the area you're touching.
 
 ## Complexity gate
@@ -183,7 +196,7 @@ See `~/.dotfiles/claude-code-shared/resources/branching-strategy.md` for branch 
 
 ### Step 2: Write the tasks file
 
-See `~/.dotfiles/claude-code-shared/resources/task-schema.md` for the canonical schema and field rules.
+See `contracts/task-contract.md` for the canonical schema and field rules.
 
 **Multi-bug splitting rule.** If multiple root causes are confirmed:
 - Independent bugs (different files, different call paths): write one task per bug.
@@ -213,70 +226,15 @@ If a seam exists but Phase 1 could not build a feedback loop, set the first acce
 
 **Generate the filename:** Run `~/.dotfiles/claude-code-shared/scripts/task-filename.sh debug-<slug>`
 
-Write to `docs/tasks/<filename>` using this structure.
+Write to `docs/tasks/<filename>`. See `contracts/task-contract.md` for the full schema.
 
-For single strategy:
-```json
-"branching": { "strategy": "single", "branch": "<branch from Step 1>" }
-```
-
-For per-task strategy:
-```json
-"branching": { "strategy": "per-task" }
-```
-(Each task's `branch` field holds its own auto-derived branch name.)
-
-Full structure:
-
-```json
-{
-  "prd": null,
-  "generated_at": "<ISO 8601 timestamp>",
-  "branching": { "strategy": "single", "branch": "<fix branch from Step 1>" },
-  "tasks": [
-    {
-      "id": "<from next-task-id.sh>",
-      "title": "<short descriptive title>",
-      "type": "AFK",
-      "description": "Root cause: ... Failing test: <path>. Fix approach: ...",
-      "acceptance_criteria": [
-        "Failing test exists at <path> that reproduces the bug before any fix is applied",
-        "<behavioral criterion after fix>"
-      ],
-      "blocked_by": [],
-      "status": "not_started",
-      "branch": "<fix branch from Step 1>",
-      "pr": null,
-      "browser_verify": {
-        "url_path": "<route where the bug manifested>",
-        "assertions": [
-          "<observable behavior that was broken>",
-          "<observable behavior after fix — what the user sees when fixed>"
-        ]
-      }
-    }
-  ],
-  "follow_ups": [
-    {
-      "id": "FU-001",
-      "title": "Debug cleanup and post-mortem",
-      "steps": [
-        "Run full test suite and record baseline: <N> passing, <M> failing",
-        "Run: grep -r '[DEBUG-' . to find all tagged instrumentation",
-        "Remove all [DEBUG-...] tagged instrumentation",
-        "Re-run test suite and confirm no new failures vs baseline",
-        "Delete any throwaway harness files created during diagnosis",
-        "Run: find docs/browser-checks -mindepth 1 -maxdepth 1 -type d | sort — list all browser-check run dirs",
-        "Delete any stale docs/browser-checks run dirs from this debug session: rm -rf docs/browser-checks/<run_dir>",
-        "State the winning hypothesis in the PR description",
-        "If no correct test seam existed, open /improve-codebase-architecture with the specific coupling details"
-      ],
-      "trigger_task": "<first task ID>",
-      "source": "planned"
-    }
-  ]
-}
-```
+Key fields:
+- `schema_version`: `"1"` (required)
+- `prd`: `null` for debug-originated files
+- `branching`: single strategy uses `{ "strategy": "single", "branch": "<fix-branch>" }`; per-task uses `{ "strategy": "per-task" }` (each task's `branch` field holds its branch name)
+- `description` pattern: `"Root cause: <confirmed cause>. Failing scenario: <minimised repro>. Test seam: <file:line>. Failing test: <path>. Fix approach: <what to change and why>."`
+- First acceptance criterion: `"Failing test exists at <path> that reproduces the bug before any fix is applied"`
+- Include a `FU-001` follow-up for debug cleanup (remove `[DEBUG-...]` instrumentation, delete throwaway harnesses, state winning hypothesis in PR description)
 
 **browser_verify note:** Populate `browser_verify` on each fix task for any bug that manifested as a user-visible UI issue. The URL and assertions come directly from the Phase 1 headless browser feedback loop. Omit `browser_verify` for pure backend or non-UI bugs.
 

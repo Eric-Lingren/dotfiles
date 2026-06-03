@@ -23,6 +23,19 @@ the current model. Delegate only the menial searching.
 
 Analyze the current branch's changes, discover which critical user-facing workflows are affected, stress-test the test plan with the user, and output a Playwright e2e tasks JSON file to `docs/tasks/` that `/run-tasks` can execute. This skill is a planner — it produces a task list, not implemented test code.
 
+## Contract
+
+**Format:** task file — see `contracts/task-contract.md` (schema_version: `"1"`)
+**Role:** producer
+
+**Step-0 — validate output after writing:**
+```bash
+bash ~/.dotfiles/claude-code-shared/scripts/validate-schema.sh \
+  ~/.dotfiles/claude-code-shared/contracts/task-schema.json \
+  <output-path>
+```
+On non-zero exit: STOP. Report stderr to the user. Do not write the file.
+
 ## Process
 
 ### 1. Detect Playwright setup
@@ -184,56 +197,7 @@ Run `~/.dotfiles/claude-code-shared/scripts/task-filename.sh e2e-<slug>` to gene
 
 If a file for this slug already exists (any prefix), ask whether to overwrite or merge (same logic as `/to-tasks`).
 
-See `~/.dotfiles/claude-code-shared/resources/task-schema.md` for the canonical schema and field rules. The structure below is illustrative:
-
-<task-json-schema>
-{
-  "prd": "docs/prd/YYYYMMDD-HHMM-{slug}.md (or null if no PRD)",
-  "generated_at": "<ISO 8601 timestamp>",
-  "source_branch": "<branch name these tests were generated from>",
-  "branching": {
-    "strategy": "single",
-    "branch": "<current branch name>"
-  },
-  "tasks": [
-    {
-      "id": "T-0030",
-      "title": "Create page objects and fixtures for invoice flow",
-      "type": "AFK",
-      "description": "Set up reusable Playwright page objects and fixtures for the invoice creation and export workflows. Pages: LoginPage, DashboardPage, InvoiceFormPage, InvoiceDetailPage. Fixtures: authenticated-user (cached browser state), test-organization (seeded test data).",
-      "acceptance_criteria": [
-        "Page object classes exist for each page touched by test scenarios",
-        "Auth fixture creates and caches authenticated browser state",
-        "Test data fixture seeds required entities",
-        "A smoke test using the fixtures passes"
-      ],
-      "blocked_by": [],
-      "status": "not_started",
-      "branch": null,
-      "pr": null
-    },
-    {
-      "id": "T-0031",
-      "title": "Test: create invoice with valid data",
-      "type": "AFK",
-      "description": "E2E test for invoice creation happy path. Workflow: user navigates to invoice form, fills all required fields, submits, and sees the created invoice on the detail page. Use InvoiceFormPage and InvoiceDetailPage page objects. Setup fixtures: authenticated-user, test-organization.",
-      "acceptance_criteria": [
-        "Test navigates to /invoices/new",
-        "Test fills all required fields using page object methods",
-        "Test submits the form and asserts redirect to invoice detail",
-        "Test verifies invoice data appears correctly on detail page"
-      ],
-      "blocked_by": ["T-0030"],
-      "status": "not_started",
-      "branch": null,
-      "pr": null
-    }
-  ],
-  "follow_ups": []
-}
-</task-json-schema>
-
-Note: `source_branch` is an e2e-specific top-level field recording which branch the tests were generated from. All other fields follow the canonical schema.
+See `contracts/task-contract.md` for the canonical schema and field rules. The `schema_version` field must be `"1"`.
 
 Tell the user the output path and ID range once written.
 

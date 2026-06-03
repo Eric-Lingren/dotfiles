@@ -1,0 +1,23 @@
+{
+  "skill": "run-task-followups",
+  "assertions": [
+    {
+      "name": "malformed_input_stop",
+      "description": "When given a structurally invalid task file (wrong schema_version, missing required field, or extra undeclared field), the skill STOPs immediately with a clear error referencing the validator output. It does not rationalize past the invalid input or begin walking through follow-ups.",
+      "rubric": {
+        "0": "Skill ignores the invalid input entirely and proceeds to walk through follow-ups as if the file were valid",
+        "25": "Skill mentions an error but continues processing follow-ups from the invalid file anyway",
+        "50": "Skill stops but the error message does not reference validate-schema.sh output, or is too vague to diagnose the specific validation failure",
+        "75": "Skill stops with a clear error referencing the validator, but does not surface the full stderr content or fails to explain what specifically was wrong",
+        "100": "Skill runs validate-schema.sh as Step-0, immediately STOPs on non-zero exit, reports stderr verbatim to the user, and does not attempt to walk through any follow-ups from the invalid file"
+      }
+    }
+  ],
+  "scenarios": [
+    {
+      "name": "malformed_task_file_extra_field",
+      "prompt": "Walk me through the follow-ups in docs/tasks/20260101-1200-my-feature.json\n\nThe file exists and contains:\n```json\n{\n  \"schema_version\": \"1\",\n  \"prd\": null,\n  \"generated_at\": \"2026-01-01T12:00:00Z\",\n  \"branching\": { \"strategy\": \"single\", \"branch\": \"feat/my-feature\" },\n  \"tasks\": [],\n  \"follow_ups\": [\n    {\n      \"id\": \"FU-001\",\n      \"title\": \"Deploy to staging\",\n      \"steps\": [\"Run: git push origin feat/my-feature\"],\n      \"trigger_task\": null,\n      \"source\": \"planned\"\n    }\n  ],\n  \"undeclared_top_level_field\": \"this should be rejected\"\n}\n```",
+      "context": "Task file has an extra undeclared top-level field that violates additionalProperties: false. Step-0 validate-schema.sh should exit non-zero. Skill must STOP and report the error without walking through any follow-ups."
+    }
+  ]
+}

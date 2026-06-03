@@ -107,6 +107,11 @@ setup_claude_plugins() {
   $DRY_RUN || bash "$DOTFILES/claude-code-shared/scripts/install-plugins.sh"
 }
 
+setup_python_deps() {
+  info "Installing Python dependencies for claude-code-shared scripts..."
+  $DRY_RUN || pip install --quiet jsonschema
+}
+
 setup_local_overrides() {
   info "Setting up local override files..."
 
@@ -146,6 +151,7 @@ main() {
   link_dotfiles
   setup_claude_accounts
   setup_claude_plugins
+  setup_python_deps
   setup_local_overrides
   run_macos_defaults
 

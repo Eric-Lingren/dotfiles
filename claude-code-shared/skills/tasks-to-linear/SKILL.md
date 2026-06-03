@@ -9,6 +9,21 @@ effort: medium
 
 Convert a `docs/tasks/` JSON file into Linear tickets. Creates one issue per task, links blocked-by relationships using real Linear issue IDs, and writes the created issue URLs back into the JSON file.
 
+## Contract
+
+**Format:** task file — see `contracts/task-contract.md` (schema_version: `"1"`)
+**Role:** consumer (reads tasks, writes back `linear_url` per task)
+
+**Step-0 — validate input before processing:**
+```bash
+bash ~/.dotfiles/claude-code-shared/scripts/validate-schema.sh \
+  ~/.dotfiles/claude-code-shared/contracts/task-schema.json \
+  <input-path>
+```
+On non-zero exit: STOP. Report stderr to the user. Do not process the file.
+
+After writing `linear_url` back to each task, the file remains valid per task-schema.json (`linear_url` is a declared optional field).
+
 ## Process
 
 ### 1. Locate the task file

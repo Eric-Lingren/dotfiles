@@ -3,6 +3,17 @@
   "version": "1",
   "assertions": [
     {
+      "name": "malformed_seed_input_stop",
+      "description": "When given a structurally invalid seed file (wrong schema_version, missing required field, or extra undeclared field), the skill STOPs immediately with a clear error referencing the validator output. It does not rationalize past the invalid input or begin rendering the HTML PRD.",
+      "rubric": {
+        "0": "Skill ignores the invalid seed entirely and proceeds to render the HTML PRD as if the seed were valid",
+        "25": "Skill mentions an error but continues rendering the HTML PRD from the invalid seed anyway",
+        "50": "Skill stops but the error message does not reference validate-schema.sh output, or is too vague to diagnose the specific validation failure",
+        "75": "Skill stops with a clear error referencing the validator, but does not surface the full stderr content or fails to explain what specifically was wrong",
+        "100": "Skill runs validate-schema.sh as Step-0 on the seed input, immediately STOPs on non-zero exit, reports stderr verbatim to the user, and does not render or write any HTML output"
+      }
+    },
+    {
       "name": "mandatory_questions_asked",
       "description": "Skill asks all 3 mandatory questions in order (work/personal, branch target, output dir confirmation) before writing anything to disk.",
       "rubric": {
@@ -160,6 +171,11 @@
       "name": "feature_with_explicit_risks",
       "prompt": "Create a PRD for the data export feature. Key risks: GDPR compliance requirements for data portability, large file timeouts for exports over 100MB, and race conditions when two concurrent exports are triggered for the same account.",
       "context": "Explicit risks provided by user. risks_and_tradeoffs must be populated from these, clearly distinct from out_of_scope. Work profile."
+    },
+    {
+      "name": "malformed_seed_wrong_version",
+      "prompt": "Render a PRD from this seed: docs/seeds/20260101-1200-my-feature.json\n\nThe file exists and contains:\n```json\n{\n  \"schema_version\": \"99\",\n  \"source\": \"to-seed\",\n  \"title\": \"My Feature\",\n  \"slug\": \"my-feature\",\n  \"created\": \"2026-01-01T12:00:00Z\",\n  \"summary\": \"A feature that does things.\",\n  \"decisions\": [\"Use REST API\"],\n  \"open_threads\": [],\n  \"next_action\": \"Run /to-prd-html\"\n}\n```",
+      "context": "Seed file has schema_version '99' instead of required '2'. Step-0 validate-schema.sh should exit non-zero (const violation). Skill must STOP and report the error without rendering any HTML PRD."
     }
   ]
 }

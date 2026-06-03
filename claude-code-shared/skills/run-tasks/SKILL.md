@@ -23,6 +23,19 @@ the current model. Delegate only the menial searching.
 
 Execute tasks from a `docs/tasks/` JSON file sequentially, using `/tdd` for each AFK task. Updates task status in the JSON as work progresses.
 
+## Contract
+
+**Format:** task file — see `contracts/task-contract.md` (schema_version: `"1"`)
+**Role:** consumer
+
+**Step-0 — validate input before processing:**
+```bash
+bash ~/.dotfiles/claude-code-shared/scripts/validate-schema.sh \
+  ~/.dotfiles/claude-code-shared/contracts/task-schema.json \
+  <input-path>
+```
+On non-zero exit: STOP. Report stderr to the user. Do not process the file.
+
 ## Process
 
 ### 1. Ask for task file and target

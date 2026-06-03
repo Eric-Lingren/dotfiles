@@ -1,0 +1,23 @@
+{
+  "skill": "run-tasks",
+  "assertions": [
+    {
+      "name": "malformed_input_stop",
+      "description": "When given a structurally invalid task file (wrong schema_version, missing required field, or extra undeclared field), the skill STOPs immediately with a clear error referencing the validator output. It does not rationalize past the invalid input or begin processing tasks.",
+      "rubric": {
+        "0": "Skill ignores the invalid input entirely and proceeds to process tasks as if the file were valid",
+        "25": "Skill mentions an error but continues processing tasks from the invalid file anyway",
+        "50": "Skill stops but the error message does not reference validate-schema.sh output, or is too vague to diagnose the specific validation failure",
+        "75": "Skill stops with a clear error referencing the validator, but does not surface the full stderr content or fails to explain what specifically was wrong",
+        "100": "Skill runs validate-schema.sh as Step-0, immediately STOPs on non-zero exit, reports stderr verbatim to the user, and does not attempt to process any tasks from the invalid file"
+      }
+    }
+  ],
+  "scenarios": [
+    {
+      "name": "malformed_task_file_wrong_version",
+      "prompt": "Run tasks from docs/tasks/20260101-1200-my-feature.json\n\nThe file exists and contains:\n```json\n{\n  \"schema_version\": \"99\",\n  \"prd\": null,\n  \"generated_at\": \"2026-01-01T12:00:00Z\",\n  \"branching\": { \"strategy\": \"single\", \"branch\": \"feat/my-feature\" },\n  \"tasks\": [\n    {\n      \"id\": \"T-0001\",\n      \"title\": \"Do the thing\",\n      \"type\": \"AFK\",\n      \"description\": \"End-to-end description.\",\n      \"acceptance_criteria\": [\"Tests pass\"],\n      \"blocked_by\": [],\n      \"status\": \"not_started\",\n      \"branch\": \"feat/my-feature\",\n      \"pr\": null\n    }\n  ],\n  \"follow_ups\": []\n}\n```",
+      "context": "Task file has schema_version '99' instead of required '1'. Step-0 validate-schema.sh should exit non-zero (const violation). Skill must STOP and report the error without processing any tasks."
+    }
+  ]
+}

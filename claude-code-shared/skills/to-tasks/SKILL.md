@@ -9,6 +9,29 @@ effort: xhigh
 
 Break a PRD into independently-grabbable tasks using vertical slices (tracer bullets) and write the result as a JSON file to `docs/tasks/`.
 
+## Contract
+
+**Consumes:** seed file OR HTML PRD — see `contracts/seed-contract.md` (schema_version: `"2"`)
+**Produces:** task file — see `contracts/task-contract.md` (schema_version: `"1"`)
+
+When input is a seed file (`.json`), apply Step-0a directly. When input is an HTML PRD (`.html` or `.md`), run `scripts/extract-prd-json.sh <path>` first to extract the embedded seed JSON, then apply Step-0a on the extracted JSON.
+
+**Step-0a — validate seed input before processing:**
+```bash
+bash ~/.dotfiles/claude-code-shared/scripts/validate-schema.sh \
+  ~/.dotfiles/claude-code-shared/contracts/seed-schema.json \
+  <seed-path-or-extracted-json>
+```
+On non-zero exit: STOP. Report stderr to the user. Do not process the seed.
+
+**Step-0b — validate task output after writing:**
+```bash
+bash ~/.dotfiles/claude-code-shared/scripts/validate-schema.sh \
+  ~/.dotfiles/claude-code-shared/contracts/task-schema.json \
+  <output-path>
+```
+On non-zero exit: STOP. Report stderr to the user. Do not write the file.
+
 ## Process
 
 ### 1. Locate the PRD
@@ -139,48 +162,7 @@ If a file for this slug already exists (any prefix), ask the user whether to:
 - **Overwrite** — replace the file entirely with the new breakdown (re-scan all other files to find the next task ID, excluding this file; keep the existing filename prefix)
 - **Merge** — keep existing task statuses/PRs and add/update task definitions (new tasks continue from the current global max; keep the existing filename prefix)
 
-See `~/.dotfiles/claude-code-shared/resources/task-schema.md` for the canonical schema and all field rules. The structure below is illustrative:
-
-<task-json-schema>
-{
-  "prd": "docs/prd/YYYYMMDD-HHMM-{slug}.md (or .html)",
-  "generated_at": "<ISO 8601 timestamp>",
-  "branching": {
-    "strategy": "single",
-    "branch": "feat/my-feature"
-  },
-  "tasks": [
-    {
-      "id": "T-0023",
-      "title": "Short descriptive title",
-      "type": "AFK",
-      "description": "End-to-end behavior description, not layer-by-layer implementation. For refactor tasks: state that characterization tests must be written for existing behavior before restructuring begins.",
-      "acceptance_criteria": [
-        "Criterion 1 (always include test-related criteria)",
-        "Criterion 2"
-      ],
-      "blocked_by": [],
-      "status": "not_started",
-      "branch": "feat/t-0023-short-title",
-      "pr": null
-    }
-  ],
-  "follow_ups": [
-    {
-      "id": "FU-001",
-      "title": "Add STRIPE_KEY to Cloudflare",
-      "steps": [
-        "Go to Cloudflare dashboard > Workers & Pages > your-app > Settings > Variables",
-        "Click 'Add variable'",
-        "Name: STRIPE_KEY, Value: from Stripe dashboard > API keys",
-        "Click 'Encrypt' then 'Save'"
-      ],
-      "trigger_task": "T-0024",
-      "source": "planned"
-    }
-  ]
-}
-</task-json-schema>
+See `contracts/task-contract.md` for the canonical schema and all field rules. The `schema_version` field must be `"1"`. Run `~/.dotfiles/claude-code-shared/scripts/task-filename.sh <slug>` to generate the filename.
 
 Tell the user the output path and the ID range used (e.g. `T-0023 to T-0031`) once written.
 
