@@ -135,6 +135,7 @@ Run through this for every changed file:
 
 - [ ] Single quotes, no semicolons, trailing commas, 2-space indent
 - [ ] camelCase variables/functions, PascalCase components/types, kebab-case files, SCREAMING_SNAKE_CASE constants
+- [ ] No single-letter variable names — including loop counters and `map`/`filter`/`forEach`/`reduce` callback params. Require descriptive names (`i` → `index`, `e` → `event`, `x` → `row`, `acc` is allowed). Flag every occurrence in the changed lines, not just the first.
 - [ ] No magic numbers — named constants instead
 
 ## Step 7: Design system checklist (frontend only)

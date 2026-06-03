@@ -65,7 +65,18 @@
       "Bash(xargs -I{} basename {})",
       "Bash(xargs -n1 basename)",
       "Bash(awk 'NF {printf \"%*s%s\\\\n\", 2*length\\($0\\)-2*length\\(gsub\\(/\\\\//,\"/\"\\)\\), \"\", $0}')",
-      "Bash([ -f \"$pj\" ])"
+      "Bash([ -f \"$pj\" ])",
+      "Bash(check-jsonschema *)",
+      "Bash(jq *)",
+      "Bash(xargs -I{} echo {})",
+      "Bash(xargs -I{} grep -l \"docs/seeds\\\\|seed.*json\\\\|seed-schema\" {})",
+      "Bash(/Users/eric/.dotfiles/claude-code-shared/scripts/tests/test-contracts-structure.sh)",
+      "Bash(/Users/eric/.dotfiles/claude-code-shared/scripts/tests/test-validate-schema.sh)",
+      "Bash(/Users/eric/.dotfiles/claude-code-shared/scripts/validate-schema.sh /Users/eric/.dotfiles/claude-code-shared/contracts/task-schema.json /Users/eric/.dotfiles/docs/tasks/20260603-0113-skill-architecture-contracts.json)",
+      "Bash(open *)",
+      "Bash(ls -la reviewers/)",
+      "Bash(wc -l reviewers/*.md)",
+      "Bash(env)"
     ]
   },
   "prefersReducedMotion": false

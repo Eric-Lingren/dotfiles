@@ -36,8 +36,46 @@ if [ -n "$SKILL_NAME" ] && [ -f "$TIERS_FILE" ]; then
   if [ -n "$TIER" ]; then
     MODEL=$(jq -r --arg t "$TIER" '.tiers[$t].model // "sonnet"' "$TIERS_FILE" 2>/dev/null)
     EFFORT=$(jq -r --arg t "$TIER" '.tiers[$t].effort // "xhigh"' "$TIERS_FILE" 2>/dev/null)
-    printf '┌─────────────────────────────────────────────────────────────────────┐\n│  ⚡  TIER ADVISORY  │  /%s is %s\n│     → /model %s  then  /effort %s\n└─────────────────────────────────────────────────────────────────────┘\n' "$SKILL_NAME" "$TIER" "$MODEL" "$EFFORT"
-    printf 'ASSISTANT DIRECTIVE: Output ONLY the lines below, then STOP completely. Do NOT begin the skill. Do NOT explore code. Do NOT take any action related to the request. Wait for the user to reply before doing anything else.\n`────────────────────────────────────────────────────────────────────────`\n**⚡ /%s is %s. Run `/model %s` then `/effort %s` before we start.**\n\nContinue anyway with current model, or switch first?\n`────────────────────────────────────────────────────────────────────────`\n' "$SKILL_NAME" "$TIER" "$MODEL" "$EFFORT"
+
+    # ---- Guard: don't nudge when already on the target model AND effort. ----
+    # Effort: $CLAUDE_EFFORT is exported by the harness (tracks /effort).
+    # Model: not in the env, so read the most recent assistant turn's model from
+    # the transcript and normalise it (claude-opus-4-8 -> opus, etc.).
+    CUR_EFFORT="${CLAUDE_EFFORT:-}"
+    TRANSCRIPT=$(echo "$INPUT" | jq -r '.transcript_path // ""' 2>/dev/null)
+    CUR_MODEL=""
+    if [ -n "$TRANSCRIPT" ] && [ -f "$TRANSCRIPT" ]; then
+      RAW_MODEL=$(grep '"type":"assistant"' "$TRANSCRIPT" 2>/dev/null | tail -1 | jq -r '.message.model // ""' 2>/dev/null)
+      case "$RAW_MODEL" in
+        *opus*)   CUR_MODEL="opus" ;;
+        *sonnet*) CUR_MODEL="sonnet" ;;
+        *haiku*)  CUR_MODEL="haiku" ;;
+      esac
+    fi
+    # Suppress only on a confident full match. Empty CUR_MODEL (couldn't read) -> still nudge.
+    if [ -n "$CUR_MODEL" ] && [ "$CUR_MODEL" = "$MODEL" ] && [ "$CUR_EFFORT" = "$EFFORT" ]; then
+      exit 0
+    fi
+
+    # Reaching here means at least one dimension differs (full match exited above).
+    # List ONLY the dimension(s) that are off, so we never tell the user to switch
+    # to something they're already on. STEPS_PLAIN feeds the box, STEPS_MD the
+    # markdown directive (commands wrapped in backticks).
+    STEPS_PLAIN=""; STEPS_MD=""
+    if [ "$CUR_MODEL" != "$MODEL" ]; then
+      STEPS_PLAIN="/model $MODEL"; STEPS_MD="\`/model $MODEL\`"
+    fi
+    if [ "$CUR_EFFORT" != "$EFFORT" ]; then
+      if [ -n "$STEPS_PLAIN" ]; then
+        STEPS_PLAIN="$STEPS_PLAIN then /effort $EFFORT"
+        STEPS_MD="$STEPS_MD then \`/effort $EFFORT\`"
+      else
+        STEPS_PLAIN="/effort $EFFORT"; STEPS_MD="\`/effort $EFFORT\`"
+      fi
+    fi
+
+    printf '┌─────────────────────────────────────────────────────────────────────┐\n│  ⚡  TIER ADVISORY  │  /%s is %s\n│     → %s\n└─────────────────────────────────────────────────────────────────────┘\n' "$SKILL_NAME" "$TIER" "$STEPS_PLAIN"
+    printf 'ASSISTANT DIRECTIVE: Output ONLY the lines below, then STOP completely. Do NOT begin the skill. Do NOT explore code. Do NOT take any action related to the request. Wait for the user to reply before doing anything else.\n`────────────────────────────────────────────────────────────────────────`\n**⚡ /%s is %s. Run %s before we start.**\n\nContinue anyway with current setup, or switch first?\n`────────────────────────────────────────────────────────────────────────`\n' "$SKILL_NAME" "$TIER" "$STEPS_MD"
     exit 0
   fi
 fi

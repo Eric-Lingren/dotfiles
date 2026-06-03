@@ -25,7 +25,8 @@
       "Read(/Users/eric/.cco/skills/**)",
       "WebSearch(*)",
       "WebFetch(*)"
-    ]
+    ],
+    "defaultMode": "auto"
   },
   "model": "opus",
   "hooks": {
