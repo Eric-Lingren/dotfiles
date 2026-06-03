@@ -63,6 +63,18 @@ For user-facing feature and fix tasks (route or UI changes), populate `browser_v
 - Write static segments concretely. Only variable parts get a colon.
 - Never resolve placeholders yourself. See `~/.dotfiles/claude-code-shared/agents/browser-checker.md`.
 
+#### Auth-gated routes
+
+Before finalizing tasks for any auth-gated route, check for a storageState file using the discovery order in `~/.dotfiles/claude-code-shared/resources/app-launch-detection.md` (step 3: storageState path).
+
+- **storageState found**: include `browser_verify` normally. browser-checker loads the existing auth state.
+- **storageState NOT found**: do NOT omit `browser_verify`. Instead:
+  1. Insert a prerequisite task titled "Generate Playwright auth state" (type: AFK) as the first task in the graph. Its description must specify: run headless login flow, save output to `playwright/.auth/user.json` via `page.context().storageState({ path })`.
+  2. All auth-gated `browser_verify` tasks must list this setup task in their `blocked_by`.
+  3. Flag this to the user during step 4 quiz: "No storageState found. A setup task was added to generate auth state before browser verification can run."
+
+Never skip `browser_verify` on an auth-gated route without first checking for storageState. "Route is auth-gated" is not a valid reason to omit verification.
+
 ### 3b. Infer follow-ups from the PRD
 
 Scan the PRD for manual actions outside the task graph: env var provisioning, DNS config, external service setup, database migrations, manual testing, deployment steps, credential rotation, etc.

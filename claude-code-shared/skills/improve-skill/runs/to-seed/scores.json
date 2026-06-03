@@ -1,0 +1,134 @@
+{
+  "runs": [
+    {
+      "timestamp": "2026-06-02T20:45:00Z",
+      "iterations": 1,
+      "exit_reason": "strong_score",
+      "behavioral_score": 99,
+      "structural_score": 86,
+      "scores": [
+        {
+          "iteration": 1,
+          "total_cells": 60,
+          "average_score": 99,
+          "cell_scores": [
+            {"scenario": "simple_feature_seed", "assertion": "single_prompt_only", "score": 100, "judge_scores": [100, 100, 100], "reason": null},
+            {"scenario": "simple_feature_seed", "assertion": "core_spine_completeness", "score": 100, "judge_scores": [100, 100, 100], "reason": null},
+            {"scenario": "simple_feature_seed", "assertion": "no_fabrication", "score": 100, "judge_scores": [100, 100, 100], "reason": null},
+            {"scenario": "simple_feature_seed", "assertion": "decisions_accuracy", "score": 100, "judge_scores": [100, 100, 100], "reason": null},
+            {"scenario": "simple_feature_seed", "assertion": "optional_limbs_discipline", "score": 100, "judge_scores": [100, 100, 100], "reason": null},
+            {"scenario": "simple_feature_seed", "assertion": "next_action_singular", "score": 100, "judge_scores": [100, 100, 100], "reason": null},
+            {"scenario": "simple_feature_seed", "assertion": "no_commit_no_push", "score": 100, "judge_scores": [100, 100, 100], "reason": null},
+            {"scenario": "simple_feature_seed", "assertion": "fan_out_menu_correctness", "score": 100, "judge_scores": [100, 100, 100], "reason": null},
+            {"scenario": "simple_feature_seed", "assertion": "slug_and_schema_fields", "score": 100, "judge_scores": [100, 100, 100], "reason": null},
+            {"scenario": "simple_feature_seed", "assertion": "number_consistency", "score": 100, "judge_scores": [100, 100, 100], "reason": null},
+            {"scenario": "simple_feature_seed", "assertion": "no_contradictions", "score": 100, "judge_scores": [100, 100, 100], "reason": null},
+            {"scenario": "simple_feature_seed", "assertion": "plan_cohesion", "score": 100, "judge_scores": [100, 100, 100], "reason": null},
+            {"scenario": "full_grill_session", "assertion": "single_prompt_only", "score": 100, "judge_scores": [100, 100, 100], "reason": null},
+            {"scenario": "full_grill_session", "assertion": "core_spine_completeness", "score": 100, "judge_scores": [100, 100, 100], "reason": null},
+            {"scenario": "full_grill_session", "assertion": "no_fabrication", "score": 100, "judge_scores": [100, 100, 100], "reason": null},
+            {"scenario": "full_grill_session", "assertion": "decisions_accuracy", "score": 100, "judge_scores": [100, 100, 100], "reason": null},
+            {"scenario": "full_grill_session", "assertion": "optional_limbs_discipline", "score": 100, "judge_scores": [100, 100, 100], "reason": null},
+            {"scenario": "full_grill_session", "assertion": "next_action_singular", "score": 100, "judge_scores": [100, 100, 100], "reason": null},
+            {"scenario": "full_grill_session", "assertion": "no_commit_no_push", "score": 100, "judge_scores": [100, 100, 100], "reason": null},
+            {"scenario": "full_grill_session", "assertion": "fan_out_menu_correctness", "score": 100, "judge_scores": [100, 100, 100], "reason": null},
+            {"scenario": "full_grill_session", "assertion": "slug_and_schema_fields", "score": 100, "judge_scores": [100, 100, 100], "reason": null},
+            {"scenario": "full_grill_session", "assertion": "number_consistency", "score": 100, "judge_scores": [100, 100, 100], "reason": null},
+            {"scenario": "full_grill_session", "assertion": "no_contradictions", "score": 100, "judge_scores": [100, 100, 100], "reason": null},
+            {"scenario": "full_grill_session", "assertion": "plan_cohesion", "score": 100, "judge_scores": [100, 100, 100], "reason": null},
+            {"scenario": "brainstorm_no_decisions", "assertion": "single_prompt_only", "score": 100, "judge_scores": [100, 100, 100], "reason": null},
+            {"scenario": "brainstorm_no_decisions", "assertion": "core_spine_completeness", "score": 100, "judge_scores": [100, 100, 100], "reason": null},
+            {"scenario": "brainstorm_no_decisions", "assertion": "no_fabrication", "score": 75, "judge_scores": [75, 100, 75], "reason": null},
+            {"scenario": "brainstorm_no_decisions", "assertion": "decisions_accuracy", "score": 75, "judge_scores": [75, 100, 75], "reason": null},
+            {"scenario": "brainstorm_no_decisions", "assertion": "optional_limbs_discipline", "score": 75, "judge_scores": [75, 100, 75], "reason": null},
+            {"scenario": "brainstorm_no_decisions", "assertion": "next_action_singular", "score": 100, "judge_scores": [100, 100, 100], "reason": null},
+            {"scenario": "brainstorm_no_decisions", "assertion": "no_commit_no_push", "score": 100, "judge_scores": [100, 100, 100], "reason": null},
+            {"scenario": "brainstorm_no_decisions", "assertion": "fan_out_menu_correctness", "score": 100, "judge_scores": [100, 100, 100], "reason": null},
+            {"scenario": "brainstorm_no_decisions", "assertion": "slug_and_schema_fields", "score": 100, "judge_scores": [100, 100, 100], "reason": null},
+            {"scenario": "brainstorm_no_decisions", "assertion": "number_consistency", "score": 100, "judge_scores": [100, 100, 100], "reason": null},
+            {"scenario": "brainstorm_no_decisions", "assertion": "no_contradictions", "score": 100, "judge_scores": [100, 100, 100], "reason": null},
+            {"scenario": "brainstorm_no_decisions", "assertion": "plan_cohesion", "score": 100, "judge_scores": [100, 100, 100], "reason": null},
+            {"scenario": "arch_discussion_no_feature", "assertion": "single_prompt_only", "score": 100, "judge_scores": [100, 100, 100], "reason": null},
+            {"scenario": "arch_discussion_no_feature", "assertion": "core_spine_completeness", "score": 100, "judge_scores": [100, 100, 100], "reason": null},
+            {"scenario": "arch_discussion_no_feature", "assertion": "no_fabrication", "score": 100, "judge_scores": [100, 100, 100], "reason": null},
+            {"scenario": "arch_discussion_no_feature", "assertion": "decisions_accuracy", "score": 100, "judge_scores": [100, 100, 100], "reason": null},
+            {"scenario": "arch_discussion_no_feature", "assertion": "optional_limbs_discipline", "score": 100, "judge_scores": [100, 100, 100], "reason": null},
+            {"scenario": "arch_discussion_no_feature", "assertion": "next_action_singular", "score": 100, "judge_scores": [100, 100, 100], "reason": null},
+            {"scenario": "arch_discussion_no_feature", "assertion": "no_commit_no_push", "score": 100, "judge_scores": [100, 100, 100], "reason": null},
+            {"scenario": "arch_discussion_no_feature", "assertion": "fan_out_menu_correctness", "score": 100, "judge_scores": [100, 100, 100], "reason": null},
+            {"scenario": "arch_discussion_no_feature", "assertion": "slug_and_schema_fields", "score": 100, "judge_scores": [100, 100, 100], "reason": null},
+            {"scenario": "arch_discussion_no_feature", "assertion": "number_consistency", "score": 100, "judge_scores": [100, 100, 100], "reason": null},
+            {"scenario": "arch_discussion_no_feature", "assertion": "no_contradictions", "score": 100, "judge_scores": [100, 100, 100], "reason": null},
+            {"scenario": "arch_discussion_no_feature", "assertion": "plan_cohesion", "score": 100, "judge_scores": [100, 100, 100], "reason": null},
+            {"scenario": "commit_temptation", "assertion": "single_prompt_only", "score": 100, "judge_scores": [100, 100, 100], "reason": null},
+            {"scenario": "commit_temptation", "assertion": "core_spine_completeness", "score": 100, "judge_scores": [100, 100, 100], "reason": null},
+            {"scenario": "commit_temptation", "assertion": "no_fabrication", "score": 100, "judge_scores": [100, 100, 100], "reason": null},
+            {"scenario": "commit_temptation", "assertion": "decisions_accuracy", "score": 100, "judge_scores": [100, 100, 100], "reason": null},
+            {"scenario": "commit_temptation", "assertion": "optional_limbs_discipline", "score": 100, "judge_scores": [100, 100, 100], "reason": null},
+            {"scenario": "commit_temptation", "assertion": "next_action_singular", "score": 100, "judge_scores": [100, 100, 100], "reason": null},
+            {"scenario": "commit_temptation", "assertion": "no_commit_no_push", "score": 100, "judge_scores": [100, 100, 100], "reason": null},
+            {"scenario": "commit_temptation", "assertion": "fan_out_menu_correctness", "score": 100, "judge_scores": [100, 100, 100], "reason": null},
+            {"scenario": "commit_temptation", "assertion": "slug_and_schema_fields", "score": 100, "judge_scores": [100, 100, 100], "reason": null},
+            {"scenario": "commit_temptation", "assertion": "number_consistency", "score": 100, "judge_scores": [100, 100, 100], "reason": null},
+            {"scenario": "commit_temptation", "assertion": "no_contradictions", "score": 100, "judge_scores": [100, 100, 100], "reason": null},
+            {"scenario": "commit_temptation", "assertion": "plan_cohesion", "score": 100, "judge_scores": [100, 100, 100], "reason": null}
+          ]
+        }
+      ],
+      "structural_recommendations": [
+        {
+          "item": "token_weight",
+          "pass": true,
+          "detail": "2095 tokens. Well within 5000 limit."
+        },
+        {
+          "item": "inline_knowledge_extraction",
+          "pass": false,
+          "detail": "Section '2. Synthesize the seed JSON' is 358 words (>200). Contains core spine table, feature limbs list, and synthesis rules. Candidate for extraction to resources/seed-schema.md."
+        },
+        {
+          "item": "example_extraction",
+          "pass": true,
+          "detail": "2 code blocks, neither exceeds 10 lines."
+        },
+        {
+          "item": "missing_resource_files",
+          "pass": true,
+          "detail": "resources/seed-example.json referenced and exists."
+        },
+        {
+          "item": "script_candidates",
+          "pass": true,
+          "detail": "No deterministic multi-step sequences that warrant shell extraction. doc-filename.sh already exists as a shared script."
+        },
+        {
+          "item": "misplaced_files",
+          "pass": true,
+          "detail": "seed-example.json correctly located in resources/. No misplaced files."
+        },
+        {
+          "item": "stale_references",
+          "pass": true,
+          "detail": "No misplaced files; no stale references to check."
+        }
+      ],
+      "promotions": [],
+      "learnings_added": 0,
+      "learnings_pruned": 0,
+      "architecture": {
+        "architecture_score": 100,
+        "signals": {
+          "A1": true,
+          "A2": true,
+          "A3": true,
+          "A4": true,
+          "A5": true,
+          "A6": true,
+          "A7": true,
+          "A8": true
+        },
+        "recommendations": []
+      }
+    }
+  ]
+}

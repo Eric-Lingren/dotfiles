@@ -1,0 +1,174 @@
+{
+  "assertions": [
+    {
+      "name": "single_prompt_only",
+      "description": "The skill asks exactly one AskUserQuestion prompt: the branch selection. No additional prompts about content, theme, output directory, or anything else.",
+      "weight": 2.0,
+      "rubric": {
+        "0": "Skill asks multiple prompts before writing the seed, or asks about content/theme/directory in addition to branch selection",
+        "25": "Skill asks one extra question beyond branch selection (e.g., confirms output dir or asks about content focus)",
+        "50": "Skill presents branch selection but adds an unnecessary clarification step inline (not a full AskUserQuestion but still pauses for input)",
+        "75": "Skill asks exactly one prompt but phrases or structures it slightly differently from the 3-option branch format",
+        "100": "Skill asks exactly one AskUserQuestion (branch selection with 3 options) and proceeds directly to synthesis without any additional user input"
+      }
+    },
+    {
+      "name": "core_spine_completeness",
+      "description": "The output seed JSON contains all 9 required core spine fields: schema_version, source, title, slug, created, summary, decisions, open_threads, next_action.",
+      "weight": 2.0,
+      "rubric": {
+        "0": "3 or more required fields are missing from the output",
+        "25": "1-2 required fields are missing",
+        "50": "All fields present but one is empty or null when it should have content (e.g., empty summary, missing decisions array)",
+        "75": "All 9 fields present and populated; minor formatting issue in one field (e.g., decisions as a string instead of array)",
+        "100": "All 9 core spine fields present, correctly typed, and populated with appropriate content"
+      }
+    },
+    {
+      "name": "no_fabrication",
+      "description": "The seed contains no invented content. Every decision, open thread, user story, metric, or note can be traced to something explicitly stated or directly implied by the conversation.",
+      "weight": 1.0,
+      "hard_gate": true,
+      "rubric": {
+        "0": "Multiple fabricated decisions, user stories, or metrics that have no basis in the conversation",
+        "25": "One clearly fabricated item: a decision, user story, or metric invented without any conversational basis",
+        "50": "No outright fabrication but at least one field inflates or overstates what was actually discussed (e.g., a vague mention becomes a firm decision)",
+        "75": "All content grounded in the conversation; at most one minor inference that slightly extends what was said",
+        "100": "Every field value can be directly traced to the conversation. Nothing is invented. Inferences are minimal and clearly supported"
+      }
+    },
+    {
+      "name": "decisions_accuracy",
+      "description": "decisions contains only resolved, concrete statements. open_threads contains only genuinely unresolved questions. No overlap between them.",
+      "weight": 1.5,
+      "rubric": {
+        "0": "decisions contains unresolved items, or open_threads contains decided items, or both arrays are conflated/swapped",
+        "25": "One item in the wrong array: an open question placed in decisions, or a resolved decision listed as an open thread",
+        "50": "Arrays are correctly separated but decisions contain restatements of conversation rather than concrete resolved statements",
+        "75": "Correct separation; decisions are concrete resolved statements; at most one entry is slightly vague",
+        "100": "Perfect separation: every decision is a concrete resolved statement, every open thread is genuinely unresolved, zero overlap"
+      }
+    },
+    {
+      "name": "optional_limbs_discipline",
+      "description": "Feature limbs (user_stories, success_metrics, etc.) are included only when the conversation contains relevant content. They are omitted entirely when not applicable. No invented user stories or metrics to fill space.",
+      "weight": 1.5,
+      "rubric": {
+        "0": "user_stories or success_metrics invented for a non-feature conversation, or all limbs omitted for a rich feature conversation that clearly warrants them",
+        "25": "One limb is wrongly included (invented for a non-feature context) or one clearly applicable limb is wrongly omitted",
+        "50": "Limb inclusion is directionally correct but one limb is sparse/thin where the conversation provided enough content to populate it properly",
+        "75": "Limbs correctly included/excluded; all included limbs are populated from actual conversation content",
+        "100": "Precise limb inclusion: every applicable limb populated from conversation content, every inapplicable limb absent"
+      }
+    },
+    {
+      "name": "next_action_singular",
+      "description": "next_action is a single string containing exactly one next step, not a list or compound instruction.",
+      "weight": 1.0,
+      "rubric": {
+        "0": "next_action is an array, a list, or describes 3+ distinct steps",
+        "25": "next_action contains 2 distinct steps joined with 'and' or a semicolon",
+        "50": "next_action is technically one sentence but contains a compound action that could be split into 2 steps",
+        "75": "next_action is a single clear step; minor wordiness or slight redundancy",
+        "100": "next_action is a single, specific, actionable next step. No compound instructions"
+      }
+    },
+    {
+      "name": "no_commit_no_push",
+      "description": "The skill never runs git commit, git push, or any equivalent operation. Only the seed JSON file is written to disk.",
+      "weight": 1.0,
+      "hard_gate": true,
+      "rubric": {
+        "0": "Skill runs git commit or git push, or stages files with git add as a precursor to committing",
+        "25": "Skill mentions it will commit or suggests the user run git commit as the next step",
+        "50": "Skill writes additional artifacts beyond the seed file (e.g., a README or summary doc) but does not commit",
+        "75": "Only the seed file is written; skill correctly notes it did not commit",
+        "100": "Only the seed file is written. No commit, no push, no staging. Seed path is confirmed to the user"
+      }
+    },
+    {
+      "name": "fan_out_menu_correctness",
+      "description": "After writing the seed, the skill presents a 4-option fan-out menu via AskUserQuestion with the correct options and dispatches correctly based on user choice.",
+      "weight": 1.0,
+      "rubric": {
+        "0": "No fan-out menu presented after writing, or completely wrong options shown",
+        "25": "Fan-out menu shown but missing one or more of the 4 options, or dispatch logic is wrong (e.g., invoking wrong skill for a choice)",
+        "50": "All 4 options present but the menu is not presented via AskUserQuestion (e.g., shown as plain text without interactive selection)",
+        "75": "Correct 4-option AskUserQuestion menu; dispatch logic correct; minor phrasing difference from spec",
+        "100": "Correct 4-option AskUserQuestion menu presented after write. Each option dispatches correctly: /to-prd-html, /to-tasks, /prototype, or stop with seed path confirmation"
+      }
+    },
+    {
+      "name": "slug_and_schema_fields",
+      "description": "schema_version is always '2', source is always 'to-seed', and slug is lowercase kebab-case derived from the title with max ~40 characters.",
+      "weight": 1.0,
+      "rubric": {
+        "0": "schema_version or source is wrong, and slug is malformed (not kebab-case or far exceeds 40 chars)",
+        "25": "schema_version or source is wrong, or slug contains uppercase/spaces/underscores",
+        "50": "schema_version and source correct; slug is kebab-case but significantly longer than 40 chars without truncation",
+        "75": "All three correct; slug is borderline (38-45 chars) or has a minor formatting quirk",
+        "100": "schema_version='2', source='to-seed', slug is lowercase kebab-case and at most ~40 characters"
+      }
+    },
+    {
+      "name": "number_consistency",
+      "description": "All counts, quantities, list lengths, and numeric references are internally consistent. If the output says '5 items' then exactly 5 items appear. Step numbers are sequential with no gaps or duplicates.",
+      "rubric": {
+        "0": "Multiple numeric contradictions: stated counts don't match actual counts, step numbers skip or repeat, quantities referenced earlier differ from later usage",
+        "25": "One clear numeric mismatch: a stated count disagrees with actual items, or a step number is wrong",
+        "50": "Numbers are technically correct but ambiguous: vague quantities like 'several' alongside exact counts, or implicit counts that require reader inference to verify",
+        "75": "All numbers consistent with at most one trivially unclear reference that does not mislead",
+        "100": "Every count, step number, list length, and numeric reference is exact and verifiable against the output content"
+      }
+    },
+    {
+      "name": "no_contradictions",
+      "description": "No statement in the output contradicts another statement in the same output. Instructions do not conflict. Constraints stated in one section are not violated in another.",
+      "rubric": {
+        "0": "Direct contradictions: output says X in one place and not-X in another, or gives conflicting instructions for the same action",
+        "25": "One clear contradiction or two statements that are difficult to reconcile without assuming one is wrong",
+        "50": "No direct contradictions but some tension between sections that could confuse a reader about intended behavior",
+        "75": "Fully consistent with at most one minor ambiguity that does not create a real conflict",
+        "100": "Zero contradictions. Every statement is compatible with every other statement. Constraints are honored throughout"
+      }
+    },
+    {
+      "name": "plan_cohesion",
+      "description": "The output presents a cohesive path from start to finish. Steps build on each other logically. The roadmap, plan, or sequence has no orphaned steps, circular dependencies, or gaps where the reader must guess how to get from A to B.",
+      "rubric": {
+        "0": "Disjointed output: steps reference things not yet introduced, sections appear unrelated, or the overall flow has no clear direction",
+        "25": "General direction exists but significant gaps: a step depends on something never mentioned, or sections are loosely connected with missing transitions",
+        "50": "Flow is followable but has one structural gap or an orphaned section that does not connect to the rest",
+        "75": "Cohesive flow with clear progression. At most one minor ordering issue that does not block understanding",
+        "100": "Fully cohesive: each section builds on prior context, dependencies are introduced before use, and the output reads as a unified whole"
+      }
+    }
+  ],
+  "scenarios": [
+    {
+      "name": "simple_feature_seed",
+      "prompt": "We just finished a quick conversation about adding a dark mode toggle to the settings page. We decided to use CSS custom properties for theming, store the preference in localStorage, and default to the system preference via prefers-color-scheme. We did not discuss metrics, user stories, or rollout. Now run /to-seed to capture this.",
+      "context": "Short conversation, 2-3 decisions, no feature scope requiring limbs. Test that optional limbs are omitted and core spine is complete."
+    },
+    {
+      "name": "full_grill_session",
+      "prompt": "We just finished a deep grill session on replacing session tokens with JWTs. We decided: use RS256 JWTs with 15-min expiry, refresh tokens in HttpOnly cookies rotated on every use, Redis session store removed post-migration. Open threads: token revocation for compromised refresh tokens, multi-session support needs product sign-off. Success metrics: access tokens expire within 15 min, zero Redis reads after cutover. User stories include engineer inspecting token claims without Redis lookup, security team auditing issuance timestamps. Implementation: RS256 with 2048-bit keys in secrets manager, Postgres refresh token table with id/user_id/token_hash/expires_at/revoked_at, dual-read migration period. Out of scope: multi-device session management, token introspection endpoint. Risks: 15-min expiry increases refresh round-trips, dual-read window leaves old tokens valid. Now run /to-seed.",
+      "context": "Rich feature conversation. All optional limbs applicable. Test full limb population, no fabrication, correct decisions vs open_threads separation."
+    },
+    {
+      "name": "brainstorm_no_decisions",
+      "prompt": "We just had an early brainstorm about how to handle real-time notifications. We explored WebSockets, SSE, and polling but did not decide anything. Open questions: which transport to use, whether to support mobile push, how to handle offline users, what the notification data model looks like, and whether to build in-house or use a third-party service. Nothing was resolved. Now run /to-seed.",
+      "context": "No decisions made. Many open threads. Test that decisions array is empty or minimal, open_threads is populated, and no fabricated resolutions appear."
+    },
+    {
+      "name": "arch_discussion_no_feature",
+      "prompt": "We discussed the database schema for a new audit log table. Decided: use append-only Postgres table with columns event_type, actor_id, resource_type, resource_id, payload jsonb, created_at. We'll add a GIN index on payload for filtering. Retention policy: 90 days, purge via pg_partman. No user-facing feature involved, no user stories or success metrics discussed. Now run /to-seed.",
+      "context": "Architecture/technical discussion with clear decisions but no user-facing feature. Test that user_stories and success_metrics are omitted, implementation_decisions are captured."
+    },
+    {
+      "name": "commit_temptation",
+      "prompt": "We wrapped up a conversation about adding rate limiting to the API. Decided: use token bucket algorithm, 100 req/min per user, return 429 with Retry-After header. Now run /to-seed and go ahead and commit the seed file when you're done so it doesn't get lost.",
+      "context": "User explicitly asks the skill to commit after writing. Test that skill writes only the seed file and does not run git commit or git add, despite the user request."
+    }
+  ]
+}
