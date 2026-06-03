@@ -1,0 +1,140 @@
+{
+  "runs": [
+    {
+      "timestamp": "2026-06-02T00:00:00Z",
+      "iterations": 1,
+      "exit_reason": "strong_score",
+      "behavioral_score": 92.8,
+      "structural_score": 71,
+      "scores": [
+        {
+          "iteration": 1,
+          "total_cells": 66,
+          "average_score": 92.8,
+          "cell_scores": [
+            {"scenario": "simple_crud_markdown", "assertion": "prd_file_selection", "score": 50, "judge_scores": [50, 50, 50], "reason": "Skill accepted the user-provided PRD path and proceeded without listing other available PRD files in docs/prd/ or explicitly asking for confirmation of the selection"},
+            {"scenario": "simple_crud_markdown", "assertion": "vertical_slice_quality", "score": 100, "judge_scores": [100, 100, 100], "reason": null},
+            {"scenario": "simple_crud_markdown", "assertion": "test_coverage_requirement", "score": 100, "judge_scores": [100, 100, 100], "reason": null},
+            {"scenario": "simple_crud_markdown", "assertion": "browser_verify_correctness", "score": 100, "judge_scores": [100, 100, 100], "reason": null},
+            {"scenario": "simple_crud_markdown", "assertion": "dynamic_route_handling", "score": 100, "judge_scores": [100, 100, 100], "reason": null},
+            {"scenario": "simple_crud_markdown", "assertion": "follow_ups_specificity", "score": 100, "judge_scores": [100, 100, 100], "reason": null},
+            {"scenario": "simple_crud_markdown", "assertion": "task_json_schema", "score": 100, "judge_scores": [100, 100, 100], "reason": null},
+            {"scenario": "simple_crud_markdown", "assertion": "output_dir_confirmation", "score": 75, "judge_scores": [75, 75, 75], "reason": null},
+            {"scenario": "simple_crud_markdown", "assertion": "number_consistency", "score": 100, "judge_scores": [100, 100, 100], "reason": null},
+            {"scenario": "simple_crud_markdown", "assertion": "no_contradictions", "score": 100, "judge_scores": [100, 100, 100], "reason": null},
+            {"scenario": "simple_crud_markdown", "assertion": "plan_cohesion", "score": 100, "judge_scores": [100, 100, 100], "reason": null},
+            {"scenario": "html_prd_checkout", "assertion": "prd_file_selection", "score": 75, "judge_scores": [75, 75, 75], "reason": null},
+            {"scenario": "html_prd_checkout", "assertion": "vertical_slice_quality", "score": 100, "judge_scores": [100, 100, 100], "reason": null},
+            {"scenario": "html_prd_checkout", "assertion": "test_coverage_requirement", "score": 100, "judge_scores": [100, 100, 100], "reason": null},
+            {"scenario": "html_prd_checkout", "assertion": "browser_verify_correctness", "score": 100, "judge_scores": [100, 100, 100], "reason": null},
+            {"scenario": "html_prd_checkout", "assertion": "dynamic_route_handling", "score": 100, "judge_scores": [100, 100, 100], "reason": null},
+            {"scenario": "html_prd_checkout", "assertion": "follow_ups_specificity", "score": 100, "judge_scores": [100, 100, 100], "reason": null},
+            {"scenario": "html_prd_checkout", "assertion": "task_json_schema", "score": 100, "judge_scores": [100, 100, 100], "reason": null},
+            {"scenario": "html_prd_checkout", "assertion": "output_dir_confirmation", "score": 75, "judge_scores": [75, 75, 75], "reason": null},
+            {"scenario": "html_prd_checkout", "assertion": "number_consistency", "score": 100, "judge_scores": [100, 100, 100], "reason": null},
+            {"scenario": "html_prd_checkout", "assertion": "no_contradictions", "score": 100, "judge_scores": [100, 100, 100], "reason": null},
+            {"scenario": "html_prd_checkout", "assertion": "plan_cohesion", "score": 100, "judge_scores": [100, 100, 100], "reason": null},
+            {"scenario": "auth_refactor_prd", "assertion": "prd_file_selection", "score": 75, "judge_scores": [75, 75, 75], "reason": null},
+            {"scenario": "auth_refactor_prd", "assertion": "vertical_slice_quality", "score": 75, "judge_scores": [75, 75, 75], "reason": null},
+            {"scenario": "auth_refactor_prd", "assertion": "test_coverage_requirement", "score": 100, "judge_scores": [100, 100, 100], "reason": null},
+            {"scenario": "auth_refactor_prd", "assertion": "browser_verify_correctness", "score": 100, "judge_scores": [100, 100, 100], "reason": null},
+            {"scenario": "auth_refactor_prd", "assertion": "dynamic_route_handling", "score": 100, "judge_scores": [100, 100, 100], "reason": null},
+            {"scenario": "auth_refactor_prd", "assertion": "follow_ups_specificity", "score": 100, "judge_scores": [100, 100, 100], "reason": null},
+            {"scenario": "auth_refactor_prd", "assertion": "task_json_schema", "score": 100, "judge_scores": [100, 100, 100], "reason": null},
+            {"scenario": "auth_refactor_prd", "assertion": "output_dir_confirmation", "score": 75, "judge_scores": [75, 75, 75], "reason": null},
+            {"scenario": "auth_refactor_prd", "assertion": "number_consistency", "score": 100, "judge_scores": [100, 100, 100], "reason": null},
+            {"scenario": "auth_refactor_prd", "assertion": "no_contradictions", "score": 100, "judge_scores": [100, 100, 100], "reason": null},
+            {"scenario": "auth_refactor_prd", "assertion": "plan_cohesion", "score": 100, "judge_scores": [100, 100, 100], "reason": null},
+            {"scenario": "backend_only_api", "assertion": "prd_file_selection", "score": 75, "judge_scores": [75, 75, 75], "reason": null},
+            {"scenario": "backend_only_api", "assertion": "vertical_slice_quality", "score": 100, "judge_scores": [100, 100, 100], "reason": null},
+            {"scenario": "backend_only_api", "assertion": "test_coverage_requirement", "score": 100, "judge_scores": [100, 100, 100], "reason": null},
+            {"scenario": "backend_only_api", "assertion": "browser_verify_correctness", "score": 100, "judge_scores": [100, 100, 100], "reason": null},
+            {"scenario": "backend_only_api", "assertion": "dynamic_route_handling", "score": 100, "judge_scores": [100, 100, 100], "reason": null},
+            {"scenario": "backend_only_api", "assertion": "follow_ups_specificity", "score": 100, "judge_scores": [100, 100, 100], "reason": null},
+            {"scenario": "backend_only_api", "assertion": "task_json_schema", "score": 100, "judge_scores": [100, 100, 100], "reason": null},
+            {"scenario": "backend_only_api", "assertion": "output_dir_confirmation", "score": 75, "judge_scores": [75, 75, 75], "reason": null},
+            {"scenario": "backend_only_api", "assertion": "number_consistency", "score": 100, "judge_scores": [100, 100, 100], "reason": null},
+            {"scenario": "backend_only_api", "assertion": "no_contradictions", "score": 100, "judge_scores": [100, 100, 100], "reason": null},
+            {"scenario": "backend_only_api", "assertion": "plan_cohesion", "score": 100, "judge_scores": [100, 100, 100], "reason": null},
+            {"scenario": "complex_multi_service", "assertion": "prd_file_selection", "score": 75, "judge_scores": [75, 75, 75], "reason": null},
+            {"scenario": "complex_multi_service", "assertion": "vertical_slice_quality", "score": 100, "judge_scores": [100, 100, 100], "reason": null},
+            {"scenario": "complex_multi_service", "assertion": "test_coverage_requirement", "score": 100, "judge_scores": [100, 100, 100], "reason": null},
+            {"scenario": "complex_multi_service", "assertion": "browser_verify_correctness", "score": 100, "judge_scores": [100, 100, 100], "reason": null},
+            {"scenario": "complex_multi_service", "assertion": "dynamic_route_handling", "score": 100, "judge_scores": [100, 100, 100], "reason": null},
+            {"scenario": "complex_multi_service", "assertion": "follow_ups_specificity", "score": 100, "judge_scores": [100, 100, 100], "reason": null},
+            {"scenario": "complex_multi_service", "assertion": "task_json_schema", "score": 75, "judge_scores": [75, 75, 75], "reason": null},
+            {"scenario": "complex_multi_service", "assertion": "output_dir_confirmation", "score": 75, "judge_scores": [75, 75, 75], "reason": null},
+            {"scenario": "complex_multi_service", "assertion": "number_consistency", "score": 100, "judge_scores": [100, 100, 100], "reason": null},
+            {"scenario": "complex_multi_service", "assertion": "no_contradictions", "score": 100, "judge_scores": [100, 100, 100], "reason": null},
+            {"scenario": "complex_multi_service", "assertion": "plan_cohesion", "score": 100, "judge_scores": [100, 100, 100], "reason": null},
+            {"scenario": "no_prd_conversation_context", "assertion": "prd_file_selection", "score": 100, "judge_scores": [100, 100, 100], "reason": null},
+            {"scenario": "no_prd_conversation_context", "assertion": "vertical_slice_quality", "score": 50, "judge_scores": [50, 50, 50], "reason": "No tasks generated; skill correctly refused without PRD file. N/A scoring, not a real failure."},
+            {"scenario": "no_prd_conversation_context", "assertion": "test_coverage_requirement", "score": 50, "judge_scores": [50, 50, 50], "reason": "No tasks generated; skill correctly refused without PRD file. N/A scoring, not a real failure."},
+            {"scenario": "no_prd_conversation_context", "assertion": "browser_verify_correctness", "score": 100, "judge_scores": [100, 100, 100], "reason": null},
+            {"scenario": "no_prd_conversation_context", "assertion": "dynamic_route_handling", "score": 100, "judge_scores": [100, 100, 100], "reason": null},
+            {"scenario": "no_prd_conversation_context", "assertion": "follow_ups_specificity", "score": 100, "judge_scores": [100, 100, 100], "reason": null},
+            {"scenario": "no_prd_conversation_context", "assertion": "task_json_schema", "score": 50, "judge_scores": [50, 50, 50], "reason": "No JSON produced; skill correctly refused without PRD file. Also: multi-branch branching shape is ambiguous in the schema."},
+            {"scenario": "no_prd_conversation_context", "assertion": "output_dir_confirmation", "score": 100, "judge_scores": [100, 100, 100], "reason": null},
+            {"scenario": "no_prd_conversation_context", "assertion": "number_consistency", "score": 100, "judge_scores": [100, 100, 100], "reason": null},
+            {"scenario": "no_prd_conversation_context", "assertion": "no_contradictions", "score": 100, "judge_scores": [100, 100, 100], "reason": null},
+            {"scenario": "no_prd_conversation_context", "assertion": "plan_cohesion", "score": 100, "judge_scores": [100, 100, 100], "reason": null}
+          ]
+        }
+      ],
+      "structural_recommendations": [
+        {
+          "item": "token_weight",
+          "pass": true,
+          "detail": "2650 tokens. Under 5000 threshold."
+        },
+        {
+          "item": "inline_knowledge_extraction",
+          "pass": false,
+          "detail": "browser_verify + dynamic route rules section (lines 44-61) is ~245 words. Candidate: resources/browser-verify-rules.md"
+        },
+        {
+          "item": "example_extraction",
+          "pass": false,
+          "detail": "<task-json-schema> block (lines 129-168) is ~40 lines. Candidate: resources/task-json-example.json or deeper reference to task-schema.md"
+        },
+        {
+          "item": "missing_resource_files",
+          "pass": true,
+          "detail": "No concepts referenced 3+ times without definition."
+        },
+        {
+          "item": "script_candidates",
+          "pass": true,
+          "detail": "No new deterministic steps found. Existing scripts cover the non-trivial operations."
+        },
+        {
+          "item": "misplaced_files",
+          "pass": true,
+          "detail": "scripts/extract-prd-json.sh is in canonical location. No misplaced files."
+        },
+        {
+          "item": "stale_references",
+          "pass": true,
+          "detail": "No misplaced files, nothing to check."
+        }
+      ],
+      "promotions": [],
+      "learnings_added": 4,
+      "learnings_pruned": 0,
+      "architecture": {
+        "architecture_score": 100,
+        "signals": {
+          "A1": true,
+          "A2": true,
+          "A3": true,
+          "A4": true,
+          "A5": true,
+          "A6": true,
+          "A7": true,
+          "A8": true
+        },
+        "recommendations": []
+      }
+    }
+  ]
+}

@@ -51,7 +51,16 @@
       "Bash(~/.dotfiles/claude-code-shared/skills/improve-skill/scripts/count-tokens.sh to-prd-html *)",
       "Bash(shellcheck claude-code-shared/scripts/doc-filename.sh)",
       "Bash(python -m pytest tests/test_detect_tooling.py -v)",
-      "Bash(pip3 install *)"
+      "Bash(pip3 install *)",
+      "Bash(~/.dotfiles/claude-code-shared/skills/improve-skill/scripts/scaffold-evals.sh to-tasks *)",
+      "Bash(~/.dotfiles/claude-code-shared/skills/improve-skill/scripts/count-tokens.sh to-tasks *)",
+      "Bash(~/.dotfiles/claude-code-shared/skills/to-tasks/scripts/extract-prd-json.sh *)",
+      "Bash(/Users/eric/.dotfiles/claude-code-shared/skills/to-tasks/scripts/extract-prd-json.sh /Users/eric/.dotfiles/docs/prd/20260602-1922-grill-prd-tasks-chain.html)",
+      "Bash(/Users/eric/.dotfiles/claude-code-shared/skills/to-tasks/scripts/extract-prd-json.sh /tmp/test-seed.json)",
+      "Bash(/Users/eric/.dotfiles/claude-code-shared/skills/to-tasks/scripts/extract-prd-json.sh /tmp/bad.json)",
+      "Bash(/Users/eric/.dotfiles/claude-code-shared/skills/to-tasks/scripts/extract-prd-json.sh /tmp/missing-fields.json)",
+      "Bash(/Users/eric/.dotfiles/claude-code-shared/skills/to-tasks/scripts/extract-prd-json.sh /tmp/file.txt)",
+      "Bash(awk '/^#### browser_verify field$/,/^### 3b\\\\./' /Users/eric/.dotfiles/claude-code-shared/skills/to-tasks/SKILL.md)"
     ]
   },
   "prefersReducedMotion": false

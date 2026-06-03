@@ -1,0 +1,63 @@
+{
+  "_comment": "Worked example. Replace all values. Omit optional fields when conversation has no relevant content.",
+  "schema_version": "2",
+  "source": "to-seed",
+  "title": "Replace session tokens with short-lived JWTs",
+  "slug": "replace-session-tokens-jwt",
+  "created": "2026-06-02T20:00:00Z",
+  "summary": "Current auth stores opaque session tokens in Redis. Legal requires short-lived, auditable tokens. Decision: migrate to signed JWTs with 15-min expiry and a refresh-token rotation scheme. Redis session store is removed after migration.",
+  "decisions": [
+    "Use signed JWTs (RS256) with 15-minute access token expiry",
+    "Refresh tokens stored in HttpOnly cookies, rotated on every use",
+    "Redis session store is deprecated and removed after migration, not alongside it",
+    "No silent refresh in the client — expired token triggers a full re-auth UX"
+  ],
+  "open_threads": [
+    "Token revocation strategy for compromised refresh tokens is unresolved",
+    "Whether to support multiple active sessions per user needs product sign-off"
+  ],
+  "next_action": "Run /to-tasks to generate the migration task breakdown",
+
+  "problem_statement": "Opaque session tokens in Redis do not carry claims, cannot be audited externally, and have no expiry short of explicit revocation. Legal has flagged this for compliance.",
+  "solution": "Replace session tokens with RS256-signed JWTs. Access tokens expire in 15 minutes. Refresh tokens rotate on use and are stored in HttpOnly cookies. Redis session store is removed post-migration.",
+  "evidence": "Legal audit (2026-05-15) flagged session token storage as non-compliant with the new data residency policy. Three internal incidents involved stale tokens remaining valid after account deletion.",
+  "success_metrics": [
+    "Access tokens expire within 15 minutes of issuance",
+    "Zero Redis session store reads in production after migration cutover",
+    "Refresh token rotation rate matches login rate (1:1) within 5% tolerance"
+  ],
+  "user_stories": [
+    {
+      "actor": "engineer",
+      "feature": "inspect token claims without a Redis lookup",
+      "benefit": "so that auth state is self-contained and debuggable at the edge"
+    },
+    {
+      "actor": "security team",
+      "feature": "audit token issuance timestamps in the JWT payload",
+      "benefit": "so that compliance reports can be generated without querying Redis"
+    }
+  ],
+  "implementation_decisions": [
+    "JWT signing uses RS256 with a 2048-bit key pair; private key stored in secrets manager",
+    "Refresh token table added to Postgres: columns id, user_id, token_hash, expires_at, revoked_at",
+    "Auth middleware validates JWT signature and expiry before any handler runs",
+    "Migration: dual-read period where both old session tokens and new JWTs are accepted"
+  ],
+  "testing_decisions": [
+    "Unit tests cover token signing, expiry validation, and refresh rotation logic",
+    "Integration tests hit the real Postgres refresh token table, not a mock",
+    "Regression test: stale session token rejected after cutover date"
+  ],
+  "out_of_scope": [
+    "Multi-device session management",
+    "Token introspection endpoint for third-party consumers"
+  ],
+  "risks_and_tradeoffs": [
+    "15-minute expiry shortens the window for revocation but increases refresh round-trips",
+    "Dual-read migration period leaves old session tokens valid; any Redis breach during this window is still a risk"
+  ],
+  "further_notes": [
+    "RS256 key rotation cadence not yet decided — revisit before go-live"
+  ]
+}

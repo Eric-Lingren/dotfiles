@@ -1,0 +1,158 @@
+{
+  "skill": "to-tasks",
+  "assertions": [
+    {
+      "name": "prd_file_selection",
+      "description": "Skill lists available PRD files and requires explicit user selection. Never auto-picks a PRD. Handles missing docs/prd/ gracefully by checking branches or directing user to /to-prd.",
+      "rubric": {
+        "0": "Skill auto-picks a PRD without asking, or proceeds to generate tasks without any PRD source identified",
+        "25": "Skill asks for input but skips listing available files, or lists them but auto-selects without waiting for user confirmation",
+        "50": "Skill lists files and asks for selection but also proceeds simultaneously without waiting, or conflates listing with confirmation",
+        "75": "Skill correctly lists and asks for explicit selection but omits the branch-check fallback when docs/prd/ is missing",
+        "100": "Skill lists available PRDs, requires explicit selection, and correctly handles the missing-directory case by checking branches or directing to /to-prd"
+      }
+    },
+    {
+      "name": "vertical_slice_quality",
+      "description": "Tasks are thin vertical slices cutting end-to-end through all integration layers (schema, API, UI, tests). No horizontal layer slices like 'implement all database models' or 'add all API routes'.",
+      "rubric": {
+        "0": "Tasks are entirely horizontal: separate tasks for DB layer, API layer, and UI layer for the same feature, with no end-to-end slice in sight",
+        "25": "Most tasks are horizontal layer tasks; at most one or two deliver a demoable end-to-end path",
+        "50": "Mix of vertical and horizontal: some tasks cut through all layers but others are clearly single-layer (e.g. 'add migrations' as a standalone task)",
+        "75": "Tasks are mostly vertical slices with at most one minor horizontal task that could have been merged into a slice",
+        "100": "Every task is a thin vertical slice delivering a narrow but complete end-to-end path. Each slice is independently demoable or verifiable"
+      }
+    },
+    {
+      "name": "test_coverage_requirement",
+      "description": "Every task includes test-related acceptance criteria. Refactor tasks explicitly state that characterization tests for existing behavior must be written before any restructuring begins.",
+      "rubric": {
+        "0": "Multiple tasks have no test criteria. Refactor tasks mention no characterization tests at all",
+        "25": "Most tasks omit test criteria, or one refactor task mentions testing but not the characterization-first requirement",
+        "50": "Test criteria present in most tasks but missing in at least one non-trivial task. Refactor tasks mention tests but do not explicitly require them before restructuring",
+        "75": "All tasks include test criteria. Refactor tasks mention characterization tests but the ordering requirement (before restructuring) is ambiguous",
+        "100": "Every task has explicit test acceptance criteria. Every refactor task states that characterization tests for existing behavior are written before any restructuring begins"
+      }
+    },
+    {
+      "name": "browser_verify_correctness",
+      "description": "UI-changing tasks populate browser_verify with concrete observable assertions (visible text, navigation targets). Backend, refactor, infra, and config tasks omit browser_verify entirely (not null, fully absent).",
+      "rubric": {
+        "0": "browser_verify set to null on multiple tasks, or UI tasks have no browser_verify, or backend tasks have browser_verify populated with vague or implementation-detail assertions",
+        "25": "browser_verify present on some UI tasks but assertions are vague ('works correctly', 'page loads') or backend tasks incorrectly include it",
+        "50": "UI tasks have browser_verify with mostly concrete assertions but at least one vague assertion, or one backend/refactor task incorrectly carries browser_verify",
+        "75": "browser_verify correctly set on UI tasks with concrete assertions and correctly absent on non-UI tasks, with at most one minor vagueness in an assertion",
+        "100": "Every UI task has browser_verify with fully concrete observable assertions. Every backend/refactor/infra/config task has browser_verify fully absent (not null, not empty)"
+      }
+    },
+    {
+      "name": "dynamic_route_handling",
+      "description": "Dynamic route segments in browser_verify url_path use :param placeholder syntax. Skill never invents concrete slugs or IDs as route values.",
+      "rubric": {
+        "0": "Dynamic segments contain invented concrete values (e.g. /firms/acme-corp/dashboard or /orders/123) that would fail against a real app",
+        "25": "At least one dynamic segment uses a concrete invented value; others may be correct",
+        "50": "Dynamic segments use placeholders but the syntax is inconsistent or incorrect (e.g. {firmSlug} or [id] instead of :param)",
+        "75": "All dynamic segments use correct :param syntax with at most one cosmetic naming inconsistency that does not affect resolution",
+        "100": "All dynamic route segments use correct :param placeholder syntax. No invented slug or ID values anywhere in url_path fields"
+      }
+    },
+    {
+      "name": "follow_ups_specificity",
+      "description": "Follow-up steps are actionable with exact commands, SQL, config key names, or click paths. No vague steps like 'update the config' or 'add the environment variable'.",
+      "rubric": {
+        "0": "Follow-up steps are entirely vague: 'configure the service', 'add credentials', with no specifics on where or how",
+        "25": "Most steps are vague; at most one step provides an exact command or click path",
+        "50": "Steps are partially specific: some have exact commands but others say 'update X' without specifying where or what value",
+        "75": "Nearly all steps are specific with exact commands or click paths; at most one step is slightly underspecified",
+        "100": "Every follow-up step includes the exact command, SQL statement, config key name, or dashboard click path. No vague 'update' or 'add' instructions"
+      }
+    },
+    {
+      "name": "task_json_schema",
+      "description": "Output JSON contains all required top-level fields: prd, generated_at, branching (with strategy and branch), tasks array (each with id, title, type, description, acceptance_criteria, blocked_by, status, branch, pr), and follow_ups array with correct shape.",
+      "rubric": {
+        "0": "Output is not valid JSON, or missing multiple required top-level fields, or tasks are missing most required fields",
+        "25": "Valid JSON with top-level structure present but multiple task fields missing (e.g. no acceptance_criteria, no blocked_by, no branch)",
+        "50": "Schema mostly correct but one required field missing across multiple tasks (e.g. pr field absent, or branching missing strategy)",
+        "75": "Schema correct with at most one minor field omission in a single task that does not affect usability",
+        "100": "Output JSON is fully schema-compliant: all top-level fields present, every task has every required field, follow_ups have correct id/title/steps/trigger_task/source shape"
+      }
+    },
+    {
+      "name": "output_dir_confirmation",
+      "description": "Before writing the JSON file, skill shows the absolute output path and asks user to confirm or provide an alternative. Never writes without this confirmation step.",
+      "rubric": {
+        "0": "Skill writes the file without any path confirmation, or asks after writing",
+        "25": "Skill mentions the output path but frames it as informational (not a confirmation gate) and proceeds to write without waiting",
+        "50": "Skill asks for confirmation but shows a relative path instead of the absolute path",
+        "75": "Skill shows absolute path and asks for confirmation but the phrasing is ambiguous about whether the user can redirect it",
+        "100": "Skill shows the absolute resolved path and explicitly asks the user to confirm or provide an alternative path before writing anything"
+      }
+    },
+    {
+      "name": "number_consistency",
+      "description": "All counts, quantities, list lengths, and numeric references are internally consistent. If the output says '5 items' then exactly 5 items appear. Step numbers are sequential with no gaps or duplicates.",
+      "rubric": {
+        "0": "Multiple numeric contradictions: stated counts don't match actual counts, step numbers skip or repeat, quantities referenced earlier differ from later usage",
+        "25": "One clear numeric mismatch: a stated count disagrees with actual items, or a step number is wrong",
+        "50": "Numbers are technically correct but ambiguous: vague quantities like 'several' alongside exact counts, or implicit counts that require reader inference to verify",
+        "75": "All numbers consistent with at most one trivially unclear reference that does not mislead",
+        "100": "Every count, step number, list length, and numeric reference is exact and verifiable against the output content"
+      }
+    },
+    {
+      "name": "no_contradictions",
+      "description": "No statement in the output contradicts another statement in the same output. Instructions do not conflict. Constraints stated in one section are not violated in another.",
+      "rubric": {
+        "0": "Direct contradictions: output says X in one place and not-X in another, or gives conflicting instructions for the same action",
+        "25": "One clear contradiction or two statements that are difficult to reconcile without assuming one is wrong",
+        "50": "No direct contradictions but some tension between sections that could confuse a reader about intended behavior",
+        "75": "Fully consistent with at most one minor ambiguity that does not create a real conflict",
+        "100": "Zero contradictions. Every statement is compatible with every other statement. Constraints are honored throughout"
+      }
+    },
+    {
+      "name": "plan_cohesion",
+      "description": "The output presents a cohesive path from start to finish. Steps build on each other logically. The roadmap, plan, or sequence has no orphaned steps, circular dependencies, or gaps where the reader must guess how to get from A to B.",
+      "rubric": {
+        "0": "Disjointed output: steps reference things not yet introduced, sections appear unrelated, or the overall flow has no clear direction",
+        "25": "General direction exists but significant gaps: a step depends on something never mentioned, or sections are loosely connected with missing transitions",
+        "50": "Flow is followable but has one structural gap or an orphaned section that does not connect to the rest",
+        "75": "Cohesive flow with clear progression. At most one minor ordering issue that does not block understanding",
+        "100": "Fully cohesive: each section builds on prior context, dependencies are introduced before use, and the output reads as a unified whole"
+      }
+    }
+  ],
+  "scenarios": [
+    {
+      "name": "simple_crud_markdown",
+      "prompt": "I want to break down this PRD into tasks.\n\nThe PRD file is at docs/prd/20260510-0900-user-management.md and contains:\n\n# User Management PRD\n\n## Problem\nAdmins need to manage platform users: view a list, create new users, edit existing ones, and deactivate accounts.\n\n## User Stories\n- As an admin, I can view a paginated list of all users at /users\n- As an admin, I can create a new user via a form at /users/new\n- As an admin, I can edit a user's name and role at /users/:userId/edit\n- As an admin, I can deactivate a user, which hides them from the default list\n\n## Implementation Notes\n- Users table: id, name, email, role (enum: admin|member), active (bool), created_at\n- REST API: GET /api/users, POST /api/users, PATCH /api/users/:id, DELETE /api/users/:id\n- List page uses server-side pagination (page + per_page query params)\n- Deactivation is soft-delete (sets active=false)\n\nPlease break this into tasks. Use T-0001 as the starting ID. Single branch strategy: feat/user-management. Save to docs/tasks/.",
+      "context": "Simple markdown PRD, basic CRUD feature, mix of UI routes (one with dynamic segment) and API endpoints, no external services"
+    },
+    {
+      "name": "html_prd_checkout",
+      "prompt": "Break this PRD into tasks.\n\nThe PRD is at docs/prd/20260515-1430-checkout-flow.html (HTML format).\n\nAssume the extract-prd-json.sh script returns the following JSON when run:\n{\n  \"title\": \"Checkout Flow\",\n  \"user_stories\": [\n    \"As a customer, I can view my cart at /cart\",\n    \"As a customer, I can enter shipping info at /checkout\",\n    \"As a customer, I can see my order confirmation at /checkout/:orderId/confirm\"\n  ],\n  \"implementation\": {\n    \"new_tables\": [\"orders (id, user_id, status, total, created_at)\", \"order_items (id, order_id, product_id, qty, price)\"],\n    \"api\": [\"POST /api/orders\", \"GET /api/orders/:id\"],\n    \"stripe_integration\": true,\n    \"env_vars_needed\": [\"STRIPE_SECRET_KEY\", \"STRIPE_WEBHOOK_SECRET\"]\n  }\n}\n\nUse T-0010 as starting ID. Single branch: feat/checkout. Save to docs/tasks/.",
+      "context": "HTML PRD requiring script-based extraction, Stripe integration requiring env var follow-ups, dynamic :orderId route segment"
+    },
+    {
+      "name": "auth_refactor_prd",
+      "prompt": "Break this refactor PRD into tasks.\n\nPRD at docs/prd/20260520-0800-auth-refactor.md:\n\n# Auth Middleware Refactor\n\n## Background\nThe current auth middleware in src/middleware/auth.js handles token validation, session management, and role checking in one 400-line function. This is hard to test and modify.\n\n## Goals\n- Extract token validation into src/auth/token-validator.js\n- Extract session management into src/auth/session-manager.js  \n- Extract role checking into src/auth/role-checker.js\n- The existing auth.js becomes a thin orchestrator that calls these modules\n- No behavior change — all existing flows must work identically after refactor\n\n## Notes\n- auth.js currently has zero unit tests\n- Integration tests in tests/integration/auth.test.js cover the happy path only\n- All three modules must be independently unit-testable after extraction\n\nUse T-0020 as starting ID. Single branch: feat/auth-refactor. Save to docs/tasks/.",
+      "context": "Pure refactor PRD with no UI routes, zero existing test coverage on the target code, characterization-tests-first requirement applies"
+    },
+    {
+      "name": "backend_only_api",
+      "prompt": "Convert this PRD to tasks.\n\nPRD at docs/prd/20260522-1100-webhooks.md:\n\n# Webhook Delivery System\n\n## Problem\nExternal partners need to receive real-time events when orders are created, updated, or cancelled. We need an outbound webhook system.\n\n## Scope\n- Webhook subscriptions table: id, partner_id, url, secret, events (jsonb array), active\n- POST /api/webhooks/subscriptions — create subscription\n- DELETE /api/webhooks/subscriptions/:id — remove subscription  \n- Background job: on order event, fan out to all matching active subscriptions\n- HMAC-SHA256 signature on each delivery using per-subscription secret\n- Retry logic: 3 attempts with exponential backoff\n- No UI — this is API-only consumed by partners programmatically\n\n## External Dependencies\n- Need WEBHOOK_SIGNING_KEY env var for global fallback signing\n- Job queue: use existing Redis/BullMQ setup\n\nUse T-0030 as starting ID. Single branch: feat/webhooks. Save to docs/tasks/.",
+      "context": "Pure backend API with no UI routes whatsoever, env var follow-up required, browser_verify must be absent from all tasks"
+    },
+    {
+      "name": "complex_multi_service",
+      "prompt": "Break this PRD into tasks.\n\nPRD at docs/prd/20260525-0900-notifications.md:\n\n# Notification Center\n\n## User Stories\n- As a user, I can view my notifications at /notifications\n- As a user, I can click a notification to go to /notifications/:notificationId which marks it read and shows detail\n- As a user, I can see an unread count badge in the nav on every page\n- As an admin, I can send bulk notifications to user segments at /admin/notifications/send\n\n## Implementation\n- notifications table: id, user_id, title, body, read_at, action_url, created_at\n- GET /api/notifications (paginated, unread filter)\n- POST /api/notifications/:id/read\n- POST /api/admin/notifications/bulk (admin only)\n- Real-time unread count via SSE endpoint: GET /api/notifications/stream\n- Email fallback via SendGrid when user has email_notifications=true\n- Admin bulk send triggers background job\n\n## Follow-ups needed\n- SendGrid API key must be added to production env\n- Admin role must be provisioned in the auth system for the notifications:send permission\n\nUse T-0040 as starting ID. Multi-branch strategy. Save to docs/tasks/.",
+      "context": "Complex PRD with UI routes (including dynamic segment), pure-API routes, admin UI, SSE, email service, env var follow-ups, permission provisioning follow-up"
+    },
+    {
+      "name": "no_prd_conversation_context",
+      "prompt": "I just finished a long grilling session about a reporting dashboard feature. There's no PRD file, no docs/prd/ directory, and no work branches. Here's the context we agreed on:\n\n- Users need a /reports page listing saved reports\n- Clicking a report goes to /reports/:reportSlug which renders it with charts\n- Reports are defined in a reports table: id, slug, title, query (jsonb), owner_id\n- GET /api/reports and GET /api/reports/:slug endpoints\n- Charts rendered client-side with recharts\n- No external services needed\n\nCan you break this into tasks?",
+      "context": "No docs/prd/ directory, no existing PRD file, user provides context inline from a conversation; tests how skill handles missing PRD source"
+    }
+  ]
+}
