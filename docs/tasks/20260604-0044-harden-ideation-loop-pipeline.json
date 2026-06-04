@@ -109,6 +109,7 @@
       "id": "T-0006",
       "title": "Add shared dimension-list resource",
       "type": "AFK",
+      "status": "in_progress",
       "description": "Create a new shared resource file at claude-code-shared/resources/soft-dimension-list.md. Content is the starter set of soft dimensions sketched in the grill (data model, state transitions, failure modes, boundaries/contracts, dependencies/ordering, human touch points, scope/out-of-scope, reversibility/migration), clearly marked as DRAFT and data-gated pending instrumentation. The file must include a prominent note that its contents must not be tuned without measurement data. Update both grill-me/SKILL.md and grill-with-docs/SKILL.md to reference this resource file as non-binding anti-rabbit-hole guidance (soft, not prescriptive). The decision to have the list and share it across both skills is locked; the contents are explicitly provisional.",
       "acceptance_criteria": [
         "resources/soft-dimension-list.md exists with the starter dimension set",
@@ -118,8 +119,8 @@
         "Neither skill inlines the dimension list content (reference only, no duplication)"
       ],
       "blocked_by": [],
-      "status": "not_started",
-      "branch": null,
+      "status": "done",
+      "branch": "feat/harden-ideation-loop-pipeline",
       "pr": null
     },
     {
