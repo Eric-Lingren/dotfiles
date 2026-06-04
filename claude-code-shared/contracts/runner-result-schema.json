@@ -1,10 +1,10 @@
 {
-  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$schema": "http://json-schema.org/draft-07/schema#",
   "$id": "runner-result-schema",
-  "title": "Runner Verdict",
-  "description": "Verdict returned by lint-runner, test-runner, and e2e-runner agents.",
+  "title": "Runner Result",
+  "description": "JSON verdict returned by lint-runner and test-runner agents. Ephemeral — not a lineage document and not part of the shared provenance concept.",
   "type": "object",
-  "required": ["schema_version", "status", "check_type", "workspace", "command", "summary", "counts", "violations", "skipped_reason"],
+  "required": ["schema_version", "status", "check_type", "workspace", "command", "summary", "counts", "violations", "failures", "skipped_reason"],
   "additionalProperties": false,
   "properties": {
     "schema_version": {
@@ -14,96 +14,156 @@
     },
     "status": {
       "type": "string",
-      "enum": ["pass", "fail", "skipped", "error"],
-      "description": "Outcome of the check."
+      "enum": ["pass", "fail", "warn", "timeout", "deps-missing"],
+      "description": "Execution verdict. pass/warn: run-tasks proceeds. fail/timeout/deps-missing: run-tasks blocks. See runner-result-contract.md for full semantics."
     },
     "check_type": {
       "type": "string",
-      "enum": ["lint", "format", "typecheck", "test", "e2e"],
-      "description": "Category of check run."
+      "enum": ["lint", "test"],
+      "description": "Whether this is a lint/format check or a test/typecheck run."
     },
     "workspace": {
       "type": "string",
-      "minLength": 1,
-      "description": "Relative workspace path, e.g. '.', 'client', 'app'."
+      "description": "Relative workspace path (e.g. 'client', '.', 'packages/api')."
     },
     "command": {
-      "oneOf": [
-        { "type": "string", "minLength": 1 },
-        { "type": "null" }
-      ],
-      "description": "Command that was run. null only when status is 'skipped'."
+      "type": ["string", "null"],
+      "description": "The resolved command that was run (or attempted). Null if no command was configured."
     },
     "summary": {
       "type": "string",
-      "minLength": 1,
-      "description": "Human-readable one-line result summary."
+      "description": "Human-readable summary (e.g. '2 failed, 10 passed, 1 skipped; 3 typecheck errors')."
     },
     "counts": {
       "type": "object",
-      "description": "Check-type-specific counts. All values are non-negative integers.",
-      "additionalProperties": {
-        "type": "integer",
-        "minimum": 0
+      "required": ["passed", "failed", "skipped"],
+      "additionalProperties": false,
+      "properties": {
+        "passed": {"type": "integer", "minimum": 0},
+        "failed": {"type": "integer", "minimum": 0},
+        "skipped": {"type": "integer", "minimum": 0},
+        "fixable": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Number of lint violations that can be auto-fixed. Present on lint-runner output only."
+        }
       }
     },
     "violations": {
       "type": "array",
-      "description": "Lint/format/typecheck findings. Empty for test/e2e runners.",
+      "description": "Typecheck or lint violations. Empty when status is pass or warn.",
       "items": {
         "type": "object",
         "required": ["file", "line", "col", "rule", "severity", "message"],
         "additionalProperties": false,
         "properties": {
-          "file": {
-            "type": "string",
-            "description": "Relative path from workspace root."
-          },
-          "line": {
-            "oneOf": [{ "type": "integer", "minimum": 1 }, { "type": "null" }]
-          },
-          "col": {
-            "oneOf": [{ "type": "integer", "minimum": 1 }, { "type": "null" }]
-          },
-          "rule": {
-            "oneOf": [{ "type": "string" }, { "type": "null" }]
-          },
-          "severity": {
-            "type": "string",
-            "enum": ["error", "warning"]
-          },
-          "message": {
-            "type": "string"
-          }
+          "file": {"type": "string"},
+          "line": {"type": ["integer", "null"]},
+          "col": {"type": ["integer", "null"]},
+          "rule": {"type": ["string", "null"]},
+          "severity": {"type": "string", "enum": ["error", "warning", "info"]},
+          "message": {"type": "string"}
         }
       }
     },
     "failures": {
       "type": "array",
-      "description": "Test/e2e failures. Present only in test-runner and e2e-runner verdicts.",
+      "description": "Failed test cases. Empty for lint-runner output.",
       "items": {
         "type": "object",
         "required": ["test_name", "file", "line", "assertion_message", "top_user_frame"],
         "additionalProperties": false,
         "properties": {
-          "test_name": { "type": "string" },
-          "file": { "type": "string" },
-          "line": {
-            "oneOf": [{ "type": "integer", "minimum": 1 }, { "type": "null" }]
-          },
-          "assertion_message": { "type": "string" },
-          "top_user_frame": {
-            "oneOf": [{ "type": "string" }, { "type": "null" }]
-          }
+          "test_name": {"type": "string"},
+          "file": {"type": ["string", "null"]},
+          "line": {"type": ["integer", "null"]},
+          "assertion_message": {"type": ["string", "null"]},
+          "top_user_frame": {"type": ["string", "null"]}
         }
       }
     },
     "skipped_reason": {
-      "oneOf": [
-        { "type": "string", "minLength": 1 },
-        { "type": "null" }
-      ],
-      "description": "Non-null only when status is 'skipped'."
+      "type": ["string", "null"],
+      "description": "Non-null for warn, timeout, and deps-missing. Null for pass and fail."
     }
-  }
+  },
+  "examples": [
+    {
+      "schema_version": "1",
+      "status": "pass",
+      "check_type": "test",
+      "workspace": "client",
+      "command": "vitest run --reporter=json",
+      "summary": "10 passed, 1 skipped; typecheck clean",
+      "counts": {"passed": 10, "failed": 0, "skipped": 1},
+      "violations": [],
+      "failures": [],
+      "skipped_reason": null
+    },
+    {
+      "schema_version": "1",
+      "status": "fail",
+      "check_type": "test",
+      "workspace": "client",
+      "command": "vitest run --reporter=json",
+      "summary": "2 failed, 10 passed, 1 skipped; 3 typecheck errors",
+      "counts": {"passed": 10, "failed": 2, "skipped": 1},
+      "violations": [
+        {
+          "file": "src/index.ts",
+          "line": 10,
+          "col": 5,
+          "rule": "TS2345",
+          "severity": "error",
+          "message": "Argument of type 'string' is not assignable to parameter of type 'number'."
+        }
+      ],
+      "failures": [
+        {
+          "test_name": "Login > renders login form",
+          "file": "src/__tests__/Login.test.tsx",
+          "line": 42,
+          "assertion_message": "Expected element to be visible",
+          "top_user_frame": "Login.test.tsx:42:5"
+        }
+      ],
+      "skipped_reason": null
+    },
+    {
+      "schema_version": "1",
+      "status": "warn",
+      "check_type": "test",
+      "workspace": ".",
+      "command": null,
+      "summary": "No test runner configured for this workspace.",
+      "counts": {"passed": 0, "failed": 0, "skipped": 0},
+      "violations": [],
+      "failures": [],
+      "skipped_reason": "No test command resolved for workspace '.'"
+    },
+    {
+      "schema_version": "1",
+      "status": "timeout",
+      "check_type": "test",
+      "workspace": "client",
+      "command": "vitest run --reporter=json",
+      "summary": "Run killed after 180s wall-clock timeout.",
+      "counts": {"passed": 0, "failed": 0, "skipped": 0},
+      "violations": [],
+      "failures": [],
+      "skipped_reason": "Killed after 180s timeout"
+    },
+    {
+      "schema_version": "1",
+      "status": "deps-missing",
+      "check_type": "test",
+      "workspace": "client",
+      "command": "vitest run --reporter=json",
+      "summary": "Dependencies missing: node_modules not found.",
+      "counts": {"passed": 0, "failed": 0, "skipped": 0},
+      "violations": [],
+      "failures": [],
+      "skipped_reason": "node_modules missing in workspace 'client'"
+    }
+  ]
 }

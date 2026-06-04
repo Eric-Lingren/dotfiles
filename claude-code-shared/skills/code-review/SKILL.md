@@ -150,6 +150,7 @@ Run through this for every changed file:
 
 - [ ] Single quotes, no semicolons, trailing commas, 2-space indent
 - [ ] camelCase variables/functions, PascalCase components/types, kebab-case files, SCREAMING_SNAKE_CASE constants
+- [ ] No single-letter variable names — including loop counters and `map`/`filter`/`forEach`/`reduce` callback params. Require descriptive names (`i` → `index`, `e` → `event`, `x` → `row`, `acc` is allowed). Flag every occurrence in the changed lines, not just the first.
 - [ ] No magic numbers — named constants instead
 
 ## Step 7: Design system checklist (frontend only)
@@ -200,6 +201,10 @@ Run this checklist against **every changed file**, not just files that appear se
 - [ ] New third-party dependencies are from maintained, reputable sources
 - [ ] No packages with known CVEs introduced (check via `npm audit` / `yarn audit`)
 - [ ] Dependency version ranges are not dangerously wide (e.g. `*` or `>=0.0.0`)
+
+## Provenance
+
+code-review does not write task files. If a future variant writes a task JSON, stamp it with `"producer": "code-review"` and `"source": {"kind": "session", "ref": null}` per `contracts/task-schema.json`.
 
 ## Output format
 

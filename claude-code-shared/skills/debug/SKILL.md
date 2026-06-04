@@ -196,7 +196,11 @@ See `~/.dotfiles/claude-code-shared/resources/branching-strategy.md` for branch 
 
 ### Step 2: Write the tasks file
 
-See `contracts/task-contract.md` for the canonical schema and field rules.
+Read the canonical schema now:
+```bash
+cat ~/.dotfiles/claude-code-shared/contracts/task-schema.json
+```
+Use that schema exactly. Do not guess field names or structure.
 
 **Multi-bug splitting rule.** If multiple root causes are confirmed:
 - Independent bugs (different files, different call paths): write one task per bug.
@@ -226,15 +230,15 @@ If a seam exists but Phase 1 could not build a feedback loop, set the first acce
 
 **Generate the filename:** Run `~/.dotfiles/claude-code-shared/scripts/task-filename.sh debug-<slug>`
 
-Write to `docs/tasks/<filename>`. See `contracts/task-contract.md` for the full schema.
+Write to `docs/tasks/<filename>`.
 
-Key fields:
-- `schema_version`: `"1"` (required)
-- `prd`: `null` for debug-originated files
-- `branching`: single strategy uses `{ "strategy": "single", "branch": "<fix-branch>" }`; per-task uses `{ "strategy": "per-task" }` (each task's `branch` field holds its branch name)
-- `description` pattern: `"Root cause: <confirmed cause>. Failing scenario: <minimised repro>. Test seam: <file:line>. Failing test: <path>. Fix approach: <what to change and why>."`
-- First acceptance criterion: `"Failing test exists at <path> that reproduces the bug before any fix is applied"`
-- Include a `FU-001` follow-up for debug cleanup (remove `[DEBUG-...]` instrumentation, delete throwaway harnesses, state winning hypothesis in PR description)
+See `~/.dotfiles/claude-code-shared/resources/branching-strategy.md` for JSON recording format.
+
+HITL tasks from debug (rare — e.g. "enable the feature flag to expose the buggy code path") must be hands-only: a keyboard action the AI cannot perform. Never emit a decision-review HITL task.
+
+Set `"producer": "debug"` on the root object. Set `"source": {"kind": "session", "ref": null}`. Follow all field rules from the schema above.
+
+The `follow_ups` array must include one entry for debug cleanup. Use the "Debug cleanup and post-mortem" runbook from `~/.dotfiles/claude-code-shared/resources/hitl-steps-runbooks.md`. Set `id` to `"FU-001"`, `trigger_task` to the first task ID, and `source` to `"planned"`.
 
 **browser_verify note:** Populate `browser_verify` on each fix task for any bug that manifested as a user-visible UI issue. The URL and assertions come directly from the Phase 1 headless browser feedback loop. Omit `browser_verify` for pure backend or non-UI bugs.
 

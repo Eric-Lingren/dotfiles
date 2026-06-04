@@ -80,9 +80,11 @@ Look up each ID in `blocked_by`. If any blocking task has a status other than `d
 
 #### b. Handle HITL tasks
 
+HITL means **hands-only**: a keyboard action the AI cannot perform AFK (e.g. enable a feature flag, add a credential to a secrets manager, configure DNS, seed production data). Decision and design-review tasks are NOT valid HITL tasks — they should never appear in the queue. If they do, treat them as a bug in the task file.
+
 If `type` is `"HITL"`:
 - Determine if any other `not_started` task in the queue depends on this task.
-  - **If yes (it is a blocker):** update status to `in_progress` in the JSON, print the task's title, description, and acceptance criteria, tell the user this requires human action, and halt the run.
+  - **If yes (it is a blocker):** update status to `in_progress` in the JSON, print the task's title, description, and acceptance criteria, tell the user this task requires a hands-on human action before the pipeline can continue, and halt the run.
   - **If no (standalone):** skip it, continue to the next task, add to the end-of-run summary.
 
 #### c. Execute AFK tasks
@@ -132,23 +134,31 @@ A task is not done until tests exist that verify the behavior described in the a
 
    2. **Map touched workspaces.** Run `git diff --name-only HEAD~1` (or `git diff --name-only` for uncommitted changes). For each changed file path, find the workspace entry whose `workspace` field is a prefix of that path. Collect the unique set of touched workspaces.
 
-   3. **Spawn runners in parallel.** For each touched workspace, send a single message containing one `Agent` call for `lint-runner` and one for `test-runner`:
-      - `lint-runner` prompt: `command: <manifest.lint>, workspace: <absolute_workspace_path>, check_type: lint`
-      - `test-runner` prompt: `test_command: <manifest.test>, typecheck_command: <manifest.typecheck>, workspace: <absolute_workspace_path>, check_type: test`
-      - If the manifest has no lint command for a workspace, still spawn `lint-runner` with `command: null` (it will return `skipped`).
-      - Spawn runners for ALL touched workspaces in a SINGLE parallel message (not one message per workspace).
+   3. **Spawn runners.** Lint-runners run in parallel; test-runners run serially (one vitest/jest/pytest process at a time to avoid CPU contention):
 
-   4. **Auto-fix pass.** Before gating, check each lint-runner verdict:
+      **Lint pass (parallel):** In a single message, spawn one `lint-runner` Agent call per touched workspace:
+      - `lint-runner` prompt: `command: <manifest.lint>, workspace: <absolute_workspace_path>, check_type: lint`
+      - If the manifest has no lint command for a workspace, still spawn `lint-runner` with `command: null` (it will return warn).
+
+      **Test pass (serial):** For each touched workspace ONE AT A TIME (do not start the next until the current completes):
+      - Collect the touched files for this workspace: the subset of changed files whose paths are under this workspace's root.
+      - `test-runner` prompt: `test_command: <manifest.test>, test_affected_command: <manifest.test_affected>, touched_files: <space-separated touched file paths for this workspace>, typecheck_command: <manifest.typecheck>, workspace: <absolute_workspace_path>, check_type: test`
+      - `manifest.test_affected` is the `test_affected` field from the tooling manifest — a command template with a `{files}` placeholder and `--maxWorkers=75%` baked in. May be `null` (e.g. pytest).
+
+   4. **Auto-fix pass.** After the lint pass, check each lint-runner verdict:
       - If `counts.fixable > 0`, run the fix variant of the lint command for that workspace:
         - eslint: append `--fix` to the command
         - biome: replace `check` with `check --write`
         - ruff: replace `check` with `check --fix`
       - After auto-fix, re-spawn `lint-runner` for that workspace only (one retry).
 
-   5. **Gate decision.** Evaluate all collected verdicts:
-      - Any verdict with `status: "fail"`: print a **Validation errors** block listing all `violations` and `failures` with `file:line` format, update task status to `blocked` in the JSON, and halt the run (same blocker logic as a TDD failure in step 6 below).
-      - Any verdict with `status: "skipped"`: record for the end-of-run summary. Do NOT treat `skipped` as a pass. Continue to browser check (if all remaining verdicts are pass or skipped).
-      - All verdicts `status: "pass"` (or only skipped): continue to browser check (if applicable) or mark done.
+   5. **Gate decision.** Evaluate all collected verdicts against the status enum from `contracts/runner-result-contract.md`:
+      - `status: "pass"`: OK.
+      - `status: "warn"`: record a coverage-deferred note in the end-of-run summary ("0 affected tests or no test command — coverage deferred to CI"). Do NOT block. Proceed.
+      - `status: "fail"`: print a **Validation errors** block listing all `violations` and `failures` with `file:line` format, update task status to `blocked` in the JSON, and halt the run (same blocker logic as a TDD failure in step 6 below).
+      - `status: "timeout"`: treat as a gate failure — block (same as `fail`). Note the timeout in the summary.
+      - `status: "deps-missing"`: treat as a gate failure — block. Note which deps are missing.
+      - When all verdicts are `pass` or `warn`: continue to browser check (if applicable) or mark done.
 
    **e. Browser verify (when task has `browser_verify`)**
 

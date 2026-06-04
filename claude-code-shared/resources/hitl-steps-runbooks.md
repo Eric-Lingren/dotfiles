@@ -20,6 +20,25 @@ If a step says "update X" or "add Y", it must include the exact command, exact S
 
 ---
 
+## Debug cleanup and post-mortem
+
+Steps:
+1. Run full test suite and record baseline: `<N> passing, <M> failing`
+2. Run: `grep -r '\[DEBUG-' .` to find all tagged instrumentation
+3. Remove all `[DEBUG-...]` tagged instrumentation
+4. Re-run test suite and confirm no new failures vs baseline
+5. Delete any throwaway harness files created during diagnosis
+6. Run: `find docs/browser-checks -mindepth 1 -maxdepth 1 -type d | sort` to list all browser-check run dirs from this session
+7. Delete stale browser-check run dirs: `rm -rf docs/browser-checks/<run_dir>`
+8. State the winning hypothesis in the PR description
+9. If no correct test seam existed, open `/improve-codebase-architecture` with the specific coupling details
+
+Enrichment:
+- Find tagged logs: `grep -rn '\[DEBUG-' .` and list each file and prefix found.
+- Find throwaway harness files: check for any `*.scratch.*`, `test-harness.*`, or similar files created during the session.
+
+---
+
 ## Apply Supabase database migrations
 
 Steps:

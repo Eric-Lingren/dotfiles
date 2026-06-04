@@ -34,7 +34,7 @@ On non-zero exit: STOP. Report stderr to the user. Do not write the file.
 
 ## Process
 
-### 1. Locate the PRD
+### 1. Locate the source artifact
 
 If a path argument was passed (e.g. `/to-tasks docs/seeds/20260602-1234-my-feature.json`), use it directly — skip discovery.
 
@@ -48,9 +48,26 @@ Run `~/.dotfiles/claude-code-shared/skills/to-tasks/scripts/extract-prd-json.sh 
 
 If neither `docs/prd/` nor `docs/seeds/` exists or both are empty on the current branch:
 - Run `git branch --list "spike/*" "feat/*" "fix/*"` to check for work branches.
-- If work branches exist, tell the user: "No PRDs found on this branch. These work branches exist:" and list them. Ask if they want to switch to one.
+- If work branches exist, tell the user: "No source artifacts found on this branch. These work branches exist:" and list them. Ask if they want to switch to one.
 - If the user picks a branch, run `git switch {branch-name}` and re-list both directories.
 - If no work branches exist either, tell the user to run `/to-seed` or `/to-prd-html` first.
+
+**Hard refusal for draft seeds:** If the source is a seed JSON, read its `status` field. If `status` is `"draft"` (open_threads non-empty), stop immediately:
+
+```
+ERROR: This seed is in draft status — open_threads is non-empty.
+Open threads: [<list them>]
+
+to-tasks hard-refuses a draft seed. All judgment threads must be resolved before
+task generation. Run /to-seed <handoff-path> to merge resolutions, or run /grill-me
+to resolve the threads in a new session.
+```
+
+Do not generate any tasks. Do not ask clarifying questions. Stop.
+
+Record the source type and path for provenance stamping:
+- Seed JSON file → `source = {"kind": "seed", "ref": "<file-path>"}`
+- HTML/MD PRD file → `source = {"kind": "prd", "ref": "<file-path>"}`
 
 ### 2. Load project context
 
@@ -60,7 +77,9 @@ Spawn the `context-loader` agent (`subagent_type: context-loader`, repo root as 
 
 Break the PRD into **tracer bullet** tasks. Each task is a thin vertical slice that cuts through ALL integration layers end-to-end, NOT a horizontal slice of one layer.
 
-Slices may be **HITL** (requires human interaction — architectural decision, design review) or **AFK** (can be implemented and merged without human interaction). Prefer AFK over HITL where possible.
+Slices may be **HITL** (requires a keyboard action the AI cannot perform AFK — e.g. enable a feature flag, add a credential to a secrets manager, configure DNS, seed production data, click a third-party dashboard button) or **AFK** (can be implemented and merged without human interaction). Prefer AFK over HITL where possible.
+
+**HITL means hands-only.** Decisions that change what gets built are resolved in the grill and become `decisions[]` in the seed — they never become tasks. A task that says "decide the architecture" or "design review" is NOT a valid HITL task.
 
 <vertical-slice-rules>
 - Each slice delivers a narrow but COMPLETE path through every layer (schema, API, UI, tests)
@@ -68,11 +87,12 @@ Slices may be **HITL** (requires human interaction — architectural decision, d
 - Prefer many thin slices over few thick ones
 - Every slice MUST include tests, whether it is new code, a refactor, or a move
 - For refactoring slices: the description must state that characterization tests for existing behavior are written BEFORE any restructuring begins. If the code being refactored has no test coverage, the first step is capturing current behavior in tests. Then refactor while keeping tests green.
+- **out_of_scope guard:** If the PRD has an `out_of_scope[]` field, read it. Never generate a task slice for any item listed there — skip it silently. The rationale in each out_of_scope entry is negative context: use it to avoid accidentally implementing a rejected thing under a different name.
 </vertical-slice-rules>
 
 #### browser_verify field
 
-For user-facing feature and fix tasks (route or UI changes), populate `browser_verify` using PRD intent. Schema: `~/.dotfiles/claude-code-shared/resources/task-schema.md`.
+For user-facing feature and fix tasks (route or UI changes), populate `browser_verify` using PRD intent. Schema: `~/.dotfiles/claude-code-shared/contracts/task-schema.json`.
 
 - `url_path`: the route the feature lives on (e.g. `/dashboard`, `/settings/billing`).
 - `assertions`: **concrete observable behaviors** — visible text, navigation targets, redirects. Not vague prose ("works correctly" is invalid; "Text 'Welcome back' is visible in the heading" is valid).
@@ -94,13 +114,13 @@ Before finalizing tasks for any auth-gated route, check for a storageState file 
 - **storageState NOT found**: do NOT omit `browser_verify`. Instead:
   1. Insert a prerequisite task titled "Generate Playwright auth state" (type: AFK) as the first task in the graph. Its description must specify: run headless login flow, save output to `playwright/.auth/user.json` via `page.context().storageState({ path })`.
   2. All auth-gated `browser_verify` tasks must list this setup task in their `blocked_by`.
-  3. Flag this to the user during step 4 quiz: "No storageState found. A setup task was added to generate auth state before browser verification can run."
+  3. Note this during task output: "No storageState found. A setup task was added to generate auth state before browser verification can run."
 
 Never skip `browser_verify` on an auth-gated route without first checking for storageState. "Route is auth-gated" is not a valid reason to omit verification.
 
-### 3b. Infer follow-ups from the PRD
+### 3b. Infer follow-ups from the source artifact
 
-Scan the PRD for manual actions outside the task graph: env var provisioning, DNS config, external service setup, database migrations, manual testing, deployment steps, credential rotation, etc.
+Scan the source artifact for manual actions outside the task graph: env var provisioning, DNS config, external service setup, database migrations, manual testing, deployment steps, credential rotation, etc.
 
 Draft a `follow_ups` list. Each item has:
 - **title**: what needs doing
@@ -110,63 +130,39 @@ Draft a `follow_ups` list. Each item has:
 
 Check `~/.dotfiles/claude-code-shared/resources/hitl-steps-runbooks.md` for existing runbooks that match. Use runbook steps when available. Run the runbook's `Enrichment:` instructions to gather project-specific values from the codebase. Fill placeholders with concrete values.
 
-### 4. Quiz the user
-
-Present the proposed breakdown as a numbered list. For each slice show:
-
-- **Title**: short descriptive name
-- **Type**: HITL / AFK
-- **Blocked by**: which other slices must complete first (by number)
-- **User stories covered**: which user stories from the PRD this addresses
-
-Then present inferred follow-ups as a separate list. For each follow-up show:
-- **Title**: what manual action is needed
-- **Trigger task**: which task creates the need (or "general")
-- **Steps**: the step-by-step instructions
-
-Ask:
-- Does the granularity feel right? (too coarse / too fine)
-- Are the dependency relationships correct?
-- Should any slices be merged or split further?
-- Are the correct slices marked as HITL vs AFK?
-- Are the follow-ups correct? Any missing? Any unnecessary?
-
-Iterate until the user approves the breakdown.
-
-### 5. Determine the next task ID
+### 4. Determine the next task ID
 
 Run `~/.dotfiles/claude-code-shared/scripts/next-task-id.sh docs/tasks/` to get the next available ID. The script scans all JSON files in the directory and returns the next globally unique ID.
 
-### 6. Ask about branching strategy
+### 5. Ask about branching strategy
 
 Follow `~/.dotfiles/claude-code-shared/resources/branching-strategy.md` for how to present the choice, derive branch names, and record the result in the `branching` field of the JSON.
 
-### 7. Confirm output directory (MANDATORY)
+### 6. Write the JSON file
 
-Resolve the absolute path of `docs/tasks/` relative to the current working directory. Ask the user before writing:
+Derive the slug from the source artifact filename by stripping the leading timestamp prefix and extension (e.g. `20260511-1423-user-auth-flow.json` → slug `user-auth-flow`). The timestamp prefix format is `YYYYMMDD-HHMM-`.
 
-```
-Tasks file will be saved to: /absolute/path/to/docs/tasks/
-Is that correct? If not, provide the path you'd like instead.
-```
-
-Use whatever path the user confirms (create it if it doesn't exist). Do not skip this step.
-
-### 8. Write the JSON file
-
-Derive the slug from the PRD filename by stripping the leading timestamp prefix and extension (e.g. `20260511-1423-user-auth-flow.md` → slug `user-auth-flow`). The timestamp prefix format is `YYYYMMDD-HHMM-`.
-
-Run `~/.dotfiles/claude-code-shared/scripts/task-filename.sh <slug>` to generate the filename. Write to `{confirmed-dir}/<filename>`.
+Run `~/.dotfiles/claude-code-shared/scripts/task-filename.sh <slug>` to generate the filename. Write to `docs/tasks/<filename>` (create the directory if it doesn't exist).
 
 If a file for this slug already exists (any prefix), ask the user whether to:
 - **Overwrite** — replace the file entirely with the new breakdown (re-scan all other files to find the next task ID, excluding this file; keep the existing filename prefix)
 - **Merge** — keep existing task statuses/PRs and add/update task definitions (new tasks continue from the current global max; keep the existing filename prefix)
 
-See `contracts/task-contract.md` for the canonical schema and all field rules. The `schema_version` field must be `"1"`. Run `~/.dotfiles/claude-code-shared/scripts/task-filename.sh <slug>` to generate the filename.
+Read the canonical schema now:
+```bash
+cat ~/.dotfiles/claude-code-shared/contracts/task-schema.json
+```
+Use that schema exactly. Do not guess field names or structure.
 
-Tell the user the output path and the ID range used (e.g. `T-0023 to T-0031`) once written.
+Set `"producer": "to-tasks"`.
 
-Output the handoff block:
+After writing, output a single line:
+
+```
+docs created here: docs/tasks/<filename>
+```
+
+Then output the handoff block:
 
 ```
 Next steps:

@@ -1,58 +1,41 @@
 #!/usr/bin/env bash
-# Validates <input-path> against <schema-path> using python3 + jsonschema.
-# Exit 0: valid. Non-zero: invalid (error to stderr).
+# validate-schema.sh — validate JSON schema files and their embedded examples.
+#
+# Usage:
+#   validate-schema.sh [--self-test] [schema-file ...]
+#
+# Validates the examples[] of each schema file against itself, with
+# cross-file $ref resolution across all contracts/*.json files.
+#
+# Options:
+#   --self-test    Run the built-in cross-file $ref mechanism self-test
+#   (no args)      Validate all contracts/*.json
+
 set -euo pipefail
 
-if [ "$#" -ne 2 ]; then
-  echo "Usage: validate-schema.sh <schema-path> <input-path>" >&2
-  exit 1
+# Guard against the old 2-arg API: validate-schema.sh <schema-path> <instance-path>
+# The new API validates schema files against their embedded examples — passing an
+# instance file as the second arg silently passes (no examples[]) instead of checking it.
+if [[ $# -eq 2 && -f "$1" ]]; then
+    echo "ERROR: validate-schema.sh API changed." >&2
+    echo "  Old form: validate-schema.sh <schema-path> <instance-path>" >&2
+    echo "  New form: validate-schema.sh [--self-test] [schema-file...]" >&2
+    echo "  To validate schema files and their embedded examples, pass just the schema file(s)." >&2
+    exit 1
 fi
 
-SCHEMA_PATH="$1"
-INPUT_PATH="$2"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+CONTRACTS_DIR="$(cd "${SCRIPT_DIR}/../contracts" && pwd)"
+PY_SCRIPT="${SCRIPT_DIR}/validate-schema.py"
+
+if [[ ! -f "${PY_SCRIPT}" ]]; then
+    echo "ERROR: ${PY_SCRIPT} not found" >&2
+    exit 1
+fi
 
 if ! python3 -c "import jsonschema" 2>/dev/null; then
-  echo "Error: jsonschema not installed. Run: pip install jsonschema" >&2
-  exit 1
+    echo "ERROR: jsonschema not installed. Run: pip install 'jsonschema[format]'" >&2
+    exit 1
 fi
 
-if [ ! -f "$SCHEMA_PATH" ]; then
-  echo "Error: schema file not found: $SCHEMA_PATH" >&2
-  exit 1
-fi
-
-if [ ! -f "$INPUT_PATH" ]; then
-  echo "Error: input file not found: $INPUT_PATH" >&2
-  exit 1
-fi
-
-python3 - "$SCHEMA_PATH" "$INPUT_PATH" <<'PYEOF'
-import sys, json, jsonschema
-
-schema_path, input_path = sys.argv[1], sys.argv[2]
-
-try:
-    schema = json.load(open(schema_path))
-except json.JSONDecodeError as e:
-    print(f"Error: schema file is not valid JSON: {e}", file=sys.stderr)
-    sys.exit(1)
-
-try:
-    instance = json.load(open(input_path))
-except json.JSONDecodeError as e:
-    print(f"Error: input file is not valid JSON: {e}", file=sys.stderr)
-    sys.exit(1)
-
-try:
-    validator_cls = jsonschema.validators.validator_for(schema)
-    validator = validator_cls(schema)
-    errors = sorted(validator.iter_errors(instance), key=lambda e: list(e.path))
-    if errors:
-        for err in errors:
-            path = " -> ".join(str(p) for p in err.absolute_path) or "(root)"
-            print(f"Validation error at {path}: {err.message}", file=sys.stderr)
-        sys.exit(1)
-except jsonschema.exceptions.SchemaError as e:
-    print(f"Error: schema itself is invalid: {e.message}", file=sys.stderr)
-    sys.exit(1)
-PYEOF
+exec python3 "${PY_SCRIPT}" "${CONTRACTS_DIR}" "$@"

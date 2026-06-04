@@ -73,7 +73,10 @@
       "Bash(/Users/eric/.dotfiles/claude-code-shared/scripts/tests/test-contracts-structure.sh)",
       "Bash(/Users/eric/.dotfiles/claude-code-shared/scripts/tests/test-validate-schema.sh)",
       "Bash(/Users/eric/.dotfiles/claude-code-shared/scripts/validate-schema.sh /Users/eric/.dotfiles/claude-code-shared/contracts/task-schema.json /Users/eric/.dotfiles/docs/tasks/20260603-0113-skill-architecture-contracts.json)",
-      "Bash(open *)"
+      "Bash(open *)",
+      "Bash(ls -la reviewers/)",
+      "Bash(wc -l reviewers/*.md)",
+      "Bash(env)"
     ]
   },
   "prefersReducedMotion": false
