@@ -183,7 +183,7 @@ See `~/.dotfiles/claude-code-shared/resources/branching-strategy.md` for branch 
 
 ### Step 2: Write the tasks file
 
-See `~/.dotfiles/claude-code-shared/resources/task-schema.md` for the canonical schema and field rules.
+See `~/.dotfiles/claude-code-shared/contracts/task-schema.json` for the canonical schema and field rules.
 
 **Multi-bug splitting rule.** If multiple root causes are confirmed:
 - Independent bugs (different files, different call paths): write one task per bug.
@@ -226,11 +226,15 @@ For per-task strategy:
 ```
 (Each task's `branch` field holds its own auto-derived branch name.)
 
+HITL tasks from debug (rare — e.g. "enable the feature flag to expose the buggy code path") must be hands-only: a keyboard action the AI cannot perform. Never emit a decision-review HITL task.
+
 Full structure:
 
 ```json
 {
-  "prd": null,
+  "schema_version": "2",
+  "producer": "debug",
+  "source": {"kind": "session", "ref": null},
   "generated_at": "<ISO 8601 timestamp>",
   "branching": { "strategy": "single", "branch": "<fix branch from Step 1>" },
   "tasks": [

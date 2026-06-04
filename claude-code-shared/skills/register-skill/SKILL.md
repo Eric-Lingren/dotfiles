@@ -76,7 +76,34 @@ If yes: add it to the `delegate` array in `model-tiers.json`. This causes `sync-
 
 If no (the skill delegates to an agent, or does no heavy lookups): do NOT add to `delegate`.
 
-### 2c. Skill path — edit model-tiers.json
+### 2c. Skill path — producer enum upkeep (lineage producers only)
+
+**Ask:** "Does this skill write a task file, seed, PRD, or any other artifact that participates in the provenance lineage chain?"
+
+If yes (it is a lineage producer): edit `claude-code-shared/contracts/provenance-schema.json` and add the skill name to `$defs.producer.enum`. This is the closed enum of every skill that can appear as `producer` in a lineage document:
+
+```json
+"$defs": {
+  "producer": {
+    "enum": [
+      ...,
+      "<new-skill-name>"
+    ]
+  }
+}
+```
+
+The skill name added here must exactly match the skill's directory name under `skills/` and the name it will write into the `producer` field of its output documents.
+
+Run `validate-schema.sh contracts/provenance-schema.json` afterward to confirm the schema is still valid:
+```bash
+bash ~/.dotfiles/claude-code-shared/scripts/validate-schema.sh \
+  ~/.dotfiles/claude-code-shared/contracts/provenance-schema.json
+```
+
+If no (it is not a lineage producer — a pure reader, reviewer, or advisor): skip this step.
+
+### 2d. Skill path — edit model-tiers.json
 
 Add the skill name to the `skills` map at the confirmed tier:
 
@@ -96,7 +123,7 @@ If adding to `delegate`, also add to that array:
 ]
 ```
 
-### 2d. Skill path — run sync
+### 2e. Skill path — run sync
 
 ```bash
 # Preview first
@@ -106,7 +133,7 @@ python3 claude-code-shared/scripts/sync-model-tiers.py --check
 python3 claude-code-shared/scripts/sync-model-tiers.py --apply
 ```
 
-### 2e. Skill path — verify
+### 2f. Skill path — verify
 
 Run these checks:
 

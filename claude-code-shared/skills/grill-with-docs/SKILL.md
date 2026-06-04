@@ -93,9 +93,28 @@ If any of the three is missing, skip the ADR. Use the format in [ADR-FORMAT.md](
 
 ## Session end
 
-When all major branches are resolved and terminology is stable, signal the end explicitly:
+When all major branches are resolved and terminology is stable, run the reconciliation pass BEFORE signalling end.
 
-> "Grill session complete. All branches resolved."
+### ADR reconciliation pass
+
+While the conversation is still live and the final decision set is known, reconcile inline ADRs against the full set of decisions reached:
+
+**Step 1: Collect ADRs written this session.** Read `docs/adr/` for any ADR created or updated during this conversation. Build a list: `{id, title, decision_recorded}`.
+
+**Step 2: Diff against the final decision set.** For each decision reached in this session, check whether an ADR for it was:
+- Written inline during the session → OK, compare the ADR's decision against the final form.
+- Written inline but later contradicted by a revision → **stale: must supersede.**
+- Architecturally significant (hard to reverse + surprising without context + genuine trade-off) but never offered → **missing: must capture now.**
+
+Apply the same three-criteria filter before writing any new ADR. Do not capture every decision — only those that are hard to reverse, would surprise a future reader without context, and were the result of a real trade-off. Do not extract decisions from seeds or handoffs; only from the live conversation.
+
+**Step 3: Supersede stale ADRs.** For each ADR whose decision was overridden by a later revision: create a new ADR that documents the current decision and add a `Supersedes: ADR-XXXX` line. Update the old ADR with a `Superseded by: ADR-YYYY` note. Use the format in [ADR-FORMAT.md](./resources/ADR-FORMAT.md).
+
+**Step 4: Write missing ADRs.** For each architecture-grade decision that was reached during the session but never offered as an ADR: offer it now and write it if the user confirms. Use the format in [ADR-FORMAT.md](./resources/ADR-FORMAT.md).
+
+After the reconciliation pass, signal the end explicitly:
+
+> "Grill session complete. All branches resolved. ADR reconciliation done: [N superseded, M new]."
 
 Then ask the user ONE question using `AskUserQuestion`:
 

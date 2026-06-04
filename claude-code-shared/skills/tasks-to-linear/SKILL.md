@@ -17,19 +17,22 @@ List all JSON files in `docs/tasks/`. If the user provided a filename or slug as
 
 If `docs/tasks/` doesn't exist or is empty, tell the user to run `/to-tasks` first.
 
-### 2. Parse the task file and read the PRD
+### 2. Parse the task file and load context
 
 Read the selected JSON file. Extract:
-- `prd` path — derive the **prd-slug** by stripping the leading `NNNN-` prefix and `.md` suffix from the filename (e.g. `docs/prd/0001-shadcn-component-architecture.md` → `shadcn-component-architecture`)
-- `tasks` array — the issues to create
+- **slug** — derive from the task filename itself by stripping the leading timestamp prefix (`YYYYMMDD-HHMM-`) and `.json` extension. This slug is the title prefix for every Linear ticket in this batch. Example: `20260602-1234-jwt-auth-migration.json` → `jwt-auth-migration`.
+- `source` field — the upstream artifact, if any.
+- `tasks` array — the issues to create.
 
-Then read the PRD file at the `prd` path. Extract and hold in memory:
+**Load upstream context (when available):** If `source.ref` is non-null (source.kind is `"seed"` or `"prd"`), read the artifact at `source.ref` and extract:
 - **Problem Statement** — why this work exists
 - **Solution** — the high-level approach
 - **Implementation Decisions** — all phases, rules, and technical decisions
 - **Out of Scope** — what is explicitly not being built
 
-This PRD content will be embedded in every ticket description so that agents working the ticket have full context without needing to access the PRD separately.
+Embed this context in every ticket description so that agents working the ticket have full context without needing to access the source file separately.
+
+**When `source.ref` is null** (source.kind is `"session"`, or source is null): skip the upstream context load. The ticket descriptions will be built from each task's own `description` and `acceptance_criteria` fields, which must already be self-contained.
 
 ### 3. Ask for the Linear team
 
@@ -59,8 +62,8 @@ Sort tasks so that issues with no `blocked_by` are created first. Build a mappin
 
 For each task, create a Linear issue with:
 
-**Title:** `{prd-slug}: {task title}`
-Example: `shadcn-component-architecture: Directory consolidation`
+**Title:** `{slug}: {task title}` (where `slug` is derived from the task filename as described in step 2)
+Example: `jwt-auth-migration: Bootstrap JWT signing infrastructure`
 
 **Description** (Markdown):
 

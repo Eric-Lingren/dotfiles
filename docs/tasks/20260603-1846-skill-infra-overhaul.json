@@ -1,0 +1,250 @@
+{
+  "prd": "docs/seeds/20260603-1840-skill-infra-overhaul.json",
+  "generated_at": "2026-06-03T18:46:00Z",
+  "branching": {
+    "strategy": "single",
+    "branch": "feat/contract-update"
+  },
+  "tasks": [
+    {
+      "id": "T-0010",
+      "type": "AFK",
+      "title": "[contracts] provenance-schema.json + validate-schema.sh cross-file $ref (tracer)",
+      "description": "Create contracts/provenance-schema.json ($id 'provenance-schema') exposing $defs.producer (closed enum: every lineage-producing skill including to-prd-html, plus 'manual') and $defs.source (oneOf: {kind enum [seed,prd,session], ref string|null} or null) with a JSON Schema if/then enforcing the kind/ref correlation (kind='session' requires ref=null; kind in ['seed','prd'] requires a non-null string ref). Upgrade validate-schema.sh to build a referencing.Registry over all contracts/*.json keyed by bare $id so cross-file $ref resolves for every calling skill, add an examples[*] self-validation meta-check, and add an explicit schema_version-mismatch message that points the user to regenerate via /to-seed. Prove the mechanism end-to-end by wiring one $ref consumer and validating it. This is the foundational tracer that de-risks cross-file $ref before anything depends on it.",
+      "acceptance_criteria": [
+        "contracts/provenance-schema.json exists with $defs.producer and $defs.source and the kind/ref if/then",
+        "validate-schema.sh resolves a bare-$id cross-file $ref without error",
+        "A deliberately mismatched stamp (kind:'seed' with ref:null) fails validation; a correct one passes",
+        "validate-schema.sh detects the installed Python jsonschema version and uses referencing.Registry on >=4.18, the deprecated RefResolver below it",
+        "An invalid schema_version produces the new explicit mismatch message, not a cryptic property error"
+      ],
+      "blocked_by": [],
+      "status": "done",
+      "branch": "feat/contract-update",
+      "pr": null
+    },
+    {
+      "id": "T-0011",
+      "type": "AFK",
+      "title": "[contracts/pipeline-gate] seed-schema.json v3 with provenance + deferred + status",
+      "description": "Bump seed-schema.json to v3. Rename the existing 'source' (producer string) field to 'producer' via $ref to provenance-schema, add the new 'source' object via $ref, remove base_seed, and embed one coherent seed example in the top-level 'examples' keyword (keep additionalProperties:false). Fold in the pipeline-gate changes to the same file: add deferred[] whose items are {text, rationale, context, source_seed}; restructure out_of_scope items from plain strings to {text, rationale}; add a derived status enum (ready|draft); and tighten the open_threads field description to genuine unresolved judgment only (decided-but-conditional implementation details belong in task acceptance criteria, not open_threads). This task owns every seed-schema.json edit from both workstreams so they cannot collide.",
+      "acceptance_criteria": [
+        "seed-schema.json schema_version const is 3 and producer/source come from provenance-schema via $ref",
+        "base_seed is removed; deferred[], structured out_of_scope, and status are added",
+        "open_threads description states judgment-only",
+        "The embedded example self-validates under validate-schema.sh",
+        "validate-schema.sh passes on the new seed-schema.json"
+      ],
+      "blocked_by": ["T-0010"],
+      "status": "done",
+      "branch": "feat/contract-update",
+      "pr": null
+    },
+    {
+      "id": "T-0012",
+      "type": "AFK",
+      "title": "[contracts] task-schema.json v2 with provenance, prd removed",
+      "description": "Bump task-schema.json to v2. Remove 'prd' from properties and required. Add required 'producer' and 'source' via $ref to provenance-schema. Embed exactly one coherent task-file example in the top-level 'examples' keyword: a to-tasks-from-seed file with a HITL+AFK mix, real blocked_by chains, one browser_verify, and one follow_up whose trigger_task references a real task id. Task file structure does not vary by producer, so only one example is needed.",
+      "acceptance_criteria": [
+        "task-schema.json schema_version const is 2; prd is gone from properties and required",
+        "producer and source are required and come from provenance-schema via $ref",
+        "The embedded task-file example self-validates under validate-schema.sh",
+        "validate-schema.sh passes on the new task-schema.json"
+      ],
+      "blocked_by": ["T-0010"],
+      "status": "done",
+      "branch": "feat/contract-update",
+      "pr": null
+    },
+    {
+      "id": "T-0013",
+      "type": "AFK",
+      "title": "[contracts/pipeline-gate] to-seed: provenance stamp, lineage, three-bucket gate",
+      "description": "Update to-seed/SKILL.md. Contracts side: repoint synthesis at contracts/seed-schema.json and its embedded example; stamp the written seed with producer:'to-seed' and the source object; change the Mode-2 handoff-merge to express lineage via source={kind:'seed', ref:<parent seed path>} instead of base_seed; delete skills/to-seed/resources/seed-example.json. Pipeline-gate side: route every open_thread into exactly one of decisions|deferred|out_of_scope; derive and write status (ready iff open_threads empty, else draft); replace the current non-blocking fan-out offer with a HARD loop that refuses to finish a draft seed and sends the user back through handoff -> grill until ready; stop mis-filing decided-but-conditional implementation details as open_threads. This task owns every to-seed/SKILL.md edit.",
+      "acceptance_criteria": [
+        "to-seed writes producer and source and references contracts/seed-schema.json, not the deleted local example",
+        "A Mode-2 merge sets source={kind:'seed', ref:<parent>} and no longer writes base_seed",
+        "A dry-run with an unresolved decision thread produces a draft seed and the hard loop refuses to finish",
+        "A dry-run with no open judgment produces a ready seed",
+        "seed-example.json is deleted and no instruction references it"
+      ],
+      "blocked_by": ["T-0011"],
+      "status": "done",
+      "branch": "feat/contract-update",
+      "pr": null
+    },
+    {
+      "id": "T-0014",
+      "type": "AFK",
+      "title": "[contracts/pipeline-gate] to-tasks: provenance stamp, HITL redef, friction removal",
+      "description": "Update to-tasks/SKILL.md. Contracts side: stamp generated task files with producer:'to-tasks' and source; repoint line 75 at contracts/task-schema.json; delete the stray resources/task-schema.md. Pipeline-gate side: redefine HITL at line 40 to hands-only (a keyboard action the AI cannot do AFK) and remove 'architectural decision / design review'; add a hard refusal of any draft seed (open_threads non-empty or status draft); delete the scope/granularity quiz (current lines 90-111); delete the save-location confirmation gate (current lines 121-130); read out_of_scope as a negative guard so no slice is generated for an explicitly rejected item; emit a single final output line 'docs created here: <path>'. This task owns every to-tasks/SKILL.md edit.",
+      "acceptance_criteria": [
+        "to-tasks stamps producer and source and references contracts/task-schema.json; resources/task-schema.md is deleted",
+        "Line 40 defines HITL as hands-only with no decision/design wording",
+        "A draft seed is hard-refused before any task is drafted",
+        "The scope quiz and save-location gate are gone; the run ends with 'docs created here: <path>'",
+        "An out_of_scope item produces no task slice"
+      ],
+      "blocked_by": ["T-0012"],
+      "status": "done",
+      "branch": "feat/contract-update",
+      "pr": null
+    },
+    {
+      "id": "T-0015",
+      "type": "AFK",
+      "title": "[contracts/pipeline-gate] Stamp + hands-only HITL on task-producing skills",
+      "description": "Stamp producer and source on every remaining task-producing skill that writes a task file: debug, code-review, improve-component, to-e2e-tasks, prototype. For the skills that classify tasks (to-e2e-tasks, debug, improve-component), update their HITL wording to the hands-only definition so they cannot emit decision-tasks. Also repoint the to-e2e-tasks consumer logic from the old task 'prd' field to 'source.ref': when ref is non-null (kind seed|prd) load that artifact for context; when kind is 'session' (ref null) fall through to the existing prompt-or-skip path. This task owns all to-e2e-tasks/SKILL.md edits to avoid collision.",
+      "acceptance_criteria": [
+        "Each of debug, code-review, improve-component, to-e2e-tasks, prototype stamps producer and source on its output",
+        "to-e2e-tasks, debug, improve-component define HITL as hands-only",
+        "to-e2e-tasks reads source.ref (kind seed|prd loads the artifact; kind session falls through)",
+        "A dry-run task file from each producer validates against task-schema v2"
+      ],
+      "blocked_by": ["T-0010", "T-0012"],
+      "status": "done",
+      "branch": "feat/contract-update",
+      "pr": null
+    },
+    {
+      "id": "T-0016",
+      "type": "AFK",
+      "title": "[contracts] to-prd-html becomes a lineage producer",
+      "description": "Make to-prd-html a producer. Add it to the provenance-schema producer enum (handled in T-0010) and update to-prd-html/SKILL.md so every generated HTML PRD stamps producer:'to-prd-html' and source:{kind:'seed', ref:<seed path>}. This keeps the chain walkable: when to-tasks runs off an HTML PRD it sets source:{kind:'prd', ref:<html path>}, so the HTML must carry its own seed source or the prd->seed link breaks at that node.",
+      "acceptance_criteria": [
+        "Generated HTML PRDs carry producer:'to-prd-html' and source:{kind:'seed', ref:<seed path>}",
+        "The producer enum includes to-prd-html",
+        "A reverse-trace from a task through an HTML PRD reaches the originating seed"
+      ],
+      "blocked_by": ["T-0010", "T-0011"],
+      "status": "done",
+      "branch": "feat/contract-update",
+      "pr": null
+    },
+    {
+      "id": "T-0017",
+      "type": "AFK",
+      "title": "[contracts] tasks-to-linear: derive prefix from filename slug",
+      "description": "Update tasks-to-linear to derive the Linear title prefix from the task file's own filename slug instead of the removed prd field. The task file always has a slug; source.ref can be null. The prefix identifies the task batch, not an upstream document.",
+      "acceptance_criteria": [
+        "tasks-to-linear no longer reads the prd field",
+        "The Linear title prefix is derived from the task filename slug",
+        "A dry-run against a task file with source.ref=null still produces a sensible prefix"
+      ],
+      "blocked_by": ["T-0012"],
+      "status": "done",
+      "branch": "feat/contract-update",
+      "pr": null
+    },
+    {
+      "id": "T-0018",
+      "type": "AFK",
+      "title": "[contracts] register-skill: codify producer enum upkeep",
+      "description": "Add a codified step to register-skill/SKILL.md: any new lineage-producing skill must append its name to the producer enum in contracts/provenance-schema.json as part of registration. This absorbs the maintenance cost of the closed enum.",
+      "acceptance_criteria": [
+        "register-skill/SKILL.md has an explicit step to append a new producer to the provenance-schema enum",
+        "The step names the exact file and field to edit"
+      ],
+      "blocked_by": ["T-0010"],
+      "status": "done",
+      "branch": "feat/contract-update",
+      "pr": null
+    },
+    {
+      "id": "T-0019",
+      "type": "AFK",
+      "title": "[run-tasks-safety] runner-result status enum",
+      "description": "Add an explicit status enum {pass|fail|warn|timeout|deps-missing} to contracts/runner-result-contract.md and runner-result-schema.json, alongside the existing {passed,failed,skipped} counts. runner-result stays out of the shared provenance concept (it is an ephemeral verdict, not a lineage document).",
+      "acceptance_criteria": [
+        "runner-result-schema.json defines a required status enum {pass|fail|warn|timeout|deps-missing}",
+        "runner-result-contract.md documents each status value and when it applies",
+        "validate-schema.sh passes on runner-result-schema.json"
+      ],
+      "blocked_by": [],
+      "status": "done",
+      "branch": "feat/contract-update",
+      "pr": null
+    },
+    {
+      "id": "T-0020",
+      "type": "AFK",
+      "title": "[run-tasks-safety] detect_tooling affected-test templates + worker cap",
+      "description": "Add per-framework test_affected template resolution to detect_tooling.py: vitest uses 'related' (direct test files plus related source dependents), jest uses '--findRelatedTests', pytest has no native affected selection so emit a null template. Bake --maxWorkers=75% into each real template and include a {files} placeholder that run-tasks substitutes. The test-runner stays a dumb executor that runs the resolved command verbatim.",
+      "acceptance_criteria": [
+        "detect_tooling.py returns a vitest template using related with --maxWorkers=75% and a {files} placeholder",
+        "It returns a jest template using --findRelatedTests with the cap",
+        "It returns a null test_affected template for pytest",
+        "The cap is present in every non-null template"
+      ],
+      "blocked_by": [],
+      "status": "done",
+      "branch": "feat/contract-update",
+      "pr": null
+    },
+    {
+      "id": "T-0021",
+      "type": "AFK",
+      "title": "[run-tasks-safety] test-runner hardening: scope, timeout, hygiene, status",
+      "description": "Update agents/test-runner.md to accept a touched-files input and substitute it into the {files} placeholder, run the resolved command in the foreground and block on it (no background process, no ps-grep busy-wait), use the resolved local binary rather than npx, and fail fast when deps are missing instead of auto-installing. Wrap the run in a portable 180s wall-clock timeout (gtimeout or a portable fallback, since macOS has no native timeout) that kills the whole process group on expiry so vitest workers are reaped, and treat a timeout as a gate failure. Emit the explicit status enum from T-0019.",
+      "acceptance_criteria": [
+        "test-runner substitutes touched files into {files} and runs the command verbatim",
+        "It runs foreground/blocking, uses the local binary not npx, and fails fast on missing deps",
+        "A run exceeding 180s is killed at the process-group level and reported as timeout",
+        "The runner emits one of {pass|fail|warn|timeout|deps-missing}"
+      ],
+      "blocked_by": ["T-0019", "T-0020"],
+      "status": "done",
+      "branch": "feat/contract-update",
+      "pr": null
+    },
+    {
+      "id": "T-0022",
+      "type": "AFK",
+      "title": "[run-tasks-safety/pipeline-gate] run-tasks: scoped gate, serialization, status branch",
+      "description": "Update run-tasks/SKILL.md. Run-tasks-safety side: pass the per-workspace touched-file list to the test-runner; run affected tests only with CI as the full-suite backstop; serialize test-runners across workspaces (one vitest process at a time) while keeping lint-runners parallel; branch the gate on the status enum (pass and warn proceed, warn prints a coverage-deferred message; fail, timeout, and deps-missing block); when 0 affected tests are selected the gate WARN-passes. Pipeline-gate side: update the HITL handling so HITL is hands-only by construction (the existing pause logic stays, but a decision-HITL task can no longer occur). This task owns every run-tasks/SKILL.md edit.",
+      "acceptance_criteria": [
+        "run-tasks passes touched files to the test-runner and runs affected-only locally",
+        "Test-runners are serialized across workspaces; lint-runners remain parallel",
+        "The gate branches on status: pass/warn proceed, fail/timeout/deps-missing block; 0-affected warn-passes",
+        "HITL handling reflects hands-only semantics with no decision-pause path"
+      ],
+      "blocked_by": ["T-0021"],
+      "status": "done",
+      "branch": "feat/contract-update",
+      "pr": null
+    },
+    {
+      "id": "T-0023",
+      "type": "AFK",
+      "title": "[pipeline-gate] grill-with-docs session-end ADR reconciliation",
+      "description": "Add a session-end reconciliation pass to grill-with-docs/SKILL.md. While the conversation is still live and the final decision set is known, diff that set against the ADRs written inline during the session, supersede any ADR rendered stale by a later revision, and capture any architecturally significant decision that was reached late and never offered. Keep the existing sparse three-criteria filter (hard to reverse + surprising without context + a real trade-off); do not add seed-to-ADR extraction.",
+      "acceptance_criteria": [
+        "grill-with-docs has a documented session-end reconciliation step",
+        "It supersedes ADRs contradicted by a later decision and adds missing architecture-grade ADRs",
+        "The three-criteria filter is unchanged and no seed-to-ADR extraction is introduced",
+        "A dry-run where a decision flips mid-session results in a superseded ADR"
+      ],
+      "blocked_by": [],
+      "status": "done",
+      "branch": "feat/contract-update",
+      "pr": null
+    },
+    {
+      "id": "T-0024",
+      "type": "AFK",
+      "title": "[pipeline-gate] clean-scaffolding: lineage-aware atomic deletion + ADR backstop",
+      "description": "Make clean-scaffolding lineage-aware. It must delete a provenance chain atomically and only when the entire subtree is consumed (never a partial delete that would dangle a source ref), and it must refuse to delete a chain whose architecture decisions are not yet captured in an ADR. Use the source field on seeds/PRDs/task files to walk the chain and the docs/adr/ contents for the backstop check.",
+      "acceptance_criteria": [
+        "clean-scaffolding walks the source-based lineage chain to group artifacts",
+        "A partial chain (a downstream artifact still references a seed) is not deleted",
+        "A chain whose architecture decisions are not in docs/adr/ is refused with a clear message",
+        "A fully-consumed, ADR-captured chain is deleted in one atomic sweep"
+      ],
+      "blocked_by": ["T-0011", "T-0012"],
+      "status": "done",
+      "branch": "feat/contract-update",
+      "pr": null
+    }
+  ],
+  "follow_ups": []
+}

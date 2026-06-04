@@ -67,7 +67,18 @@ Use the template from `~/.dotfiles/claude-code-shared/skills/to-prd-html/resourc
 - Conditionally render (only if field exists and is non-empty): problem_statement, solution, evidence, success_metrics, user_stories, implementation_decisions, testing_decisions, out_of_scope, risks_and_tradeoffs, further_notes.
 
 **Embedded JSON:**
-Every HTML PRD MUST contain a `<script type="application/json" id="prd-data">` block at the bottom of `<body>`. This block must contain the full seed JSON verbatim (copied from the seed file without modification). This ensures the output round-trips through `extract-prd-json.sh` unchanged.
+Every HTML PRD MUST contain two metadata script blocks at the bottom of `<body>`:
+
+1. `<script type="application/json" id="prd-data">` — the full seed JSON verbatim (copied from the seed file without modification). This ensures the output round-trips through `extract-prd-json.sh` unchanged.
+
+2. `<script type="application/json" id="prd-provenance">` — provenance for this PRD document itself:
+   ```json
+   {
+     "producer": "to-prd-html",
+     "source": {"kind": "seed", "ref": "<absolute-or-relative-path-to-seed-file>"}
+   }
+   ```
+   Use the seed file path as passed to this skill (the same path from step 1). This enables reverse-tracing: a task file stamped with `source: {kind: "prd", ref: <html-path>}` can follow the prd-provenance block to reach the originating seed.
 
 **Never auto-commit.**
 

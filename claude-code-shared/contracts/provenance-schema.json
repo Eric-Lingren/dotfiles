@@ -1,0 +1,70 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "provenance-schema",
+  "title": "Provenance",
+  "description": "Reusable provenance vocabulary for lineage-bearing documents. Consumer schemas reference individual $defs via cross-file $ref, e.g. {\"$ref\": \"provenance-schema#/$defs/producer\"}.",
+  "$defs": {
+    "producer": {
+      "title": "Producer",
+      "description": "The skill that generated this document. Use 'manual' for hand-authored files. New lineage-producing skills must be added here via register-skill.",
+      "type": "string",
+      "enum": [
+        "to-seed",
+        "to-tasks",
+        "to-prd-html",
+        "debug",
+        "code-review",
+        "improve-component",
+        "to-e2e-tasks",
+        "prototype",
+        "manual"
+      ]
+    },
+    "source": {
+      "title": "Source",
+      "description": "What this document was derived from. Null means this document is the root of its lineage chain. When kind is 'seed' or 'prd', ref must be a non-null path string. When kind is 'session', ref must be null (the document was generated directly from a conversation).",
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "type": "string",
+              "enum": ["seed", "prd", "session"],
+              "description": "Category of upstream document. 'seed': a to-seed JSON file. 'prd': an HTML/MD PRD rendered from a seed. 'session': generated directly from a conversation with no persistent upstream document."
+            },
+            "ref": {
+              "description": "Path or URL to the upstream document. Null when kind is 'session'; non-null string when kind is 'seed' or 'prd'.",
+              "oneOf": [
+                {"type": "string", "minLength": 1},
+                {"type": "null"}
+              ]
+            }
+          },
+          "required": ["kind", "ref"],
+          "additionalProperties": false,
+          "allOf": [
+            {
+              "if": {
+                "properties": {"kind": {"const": "session"}},
+                "required": ["kind"]
+              },
+              "then": {
+                "properties": {"ref": {"type": "null"}}
+              }
+            },
+            {
+              "if": {
+                "properties": {"kind": {"enum": ["seed", "prd"]}},
+                "required": ["kind"]
+              },
+              "then": {
+                "properties": {"ref": {"type": "string", "minLength": 1}}
+              }
+            }
+          ]
+        },
+        {"type": "null"}
+      ]
+    }
+  }
+}

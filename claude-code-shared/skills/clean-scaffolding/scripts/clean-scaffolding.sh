@@ -81,6 +81,28 @@ EOF
   printf "Deleted %d files.\n" "$total"
 }
 
+do_delete_files() {
+  # Delete a specific list of files passed as remaining arguments.
+  # Used by the lineage-aware path after the skill validates chain completeness
+  # and ADR coverage. The caller must pass at least one file path.
+  total=0
+  for f in "$@"; do
+    if [ -f "$f" ]; then
+      if rm "$f" 2>/dev/null; then
+        echo "removed $f"
+        total=$((total + 1))
+      else
+        echo "skipped (could not remove) $f" >&2
+      fi
+    else
+      echo "skipped (not found) $f" >&2
+    fi
+  done
+  # Remove any now-empty scaffolding dirs
+  rmdir docs/seeds docs/prd docs/tasks docs/handoffs docs 2>/dev/null || true
+  printf "Deleted %d files.\n" "$total"
+}
+
 case "${1:-}" in
   preview)
     if preview; then exit 0; else exit 2; fi
@@ -88,8 +110,16 @@ case "${1:-}" in
   delete)
     do_delete
     ;;
+  delete-files)
+    shift  # drop "delete-files" from args
+    if [ $# -eq 0 ]; then
+      echo "Usage: clean-scaffolding.sh delete-files <file...>" >&2
+      exit 1
+    fi
+    do_delete_files "$@"
+    ;;
   *)
-    echo "Usage: clean-scaffolding.sh preview|delete" >&2
+    echo "Usage: clean-scaffolding.sh preview|delete|delete-files <file...>" >&2
     exit 1
     ;;
 esac

@@ -206,6 +206,52 @@ def resolve_test(ws: Path, pkg: dict, lang: str) -> str | None:
     return None
 
 
+def resolve_test_affected(ws: Path, pkg: dict, lang: str) -> str | None:
+    """Return a test command template for running only affected tests.
+
+    The {files} placeholder is substituted by the caller with a space-separated
+    list of touched source files. --maxWorkers=75% is baked into every non-null
+    template to cap CPU usage on local runs.
+
+    Returns None when the framework has no native affected-test selection
+    (e.g. pytest), signalling the caller to fall back to a capped full suite.
+    """
+    scripts = pkg.get("scripts", {})
+
+    has_vitest = (
+        _has_dep(pkg, "vitest")
+        or _has_file(ws, "vitest.config.ts", "vitest.config.js", "vitest.config.mjs")
+    )
+    has_jest = (
+        _has_dep(pkg, "jest")
+        or _has_file(ws, "jest.config.js", "jest.config.ts", "jest.config.mjs")
+    )
+
+    if "test" in scripts:
+        cmd = scripts["test"]
+        if "vitest" in cmd:
+            return "vitest related {files} --reporter=json --maxWorkers=75%"
+        if "jest" in cmd:
+            return "jest --findRelatedTests {files} --json --maxWorkers=75%"
+    elif has_vitest:
+        return "vitest related {files} --reporter=json --maxWorkers=75%"
+    elif has_jest:
+        return "jest --findRelatedTests {files} --json --maxWorkers=75%"
+
+    if lang in ("py", "js+py"):
+        pp = _read_pyproject_text(ws)
+        if (
+            "[tool.pytest" in pp
+            or _has_file(ws, "pytest.ini", "conftest.py", "setup.cfg")
+            or _has_dep(pkg, "pytest")
+        ):
+            # pytest has no native affected-test selection; caller falls back to
+            # a capped full suite.
+            return None
+
+    return None
+
+
 def resolve_e2e(ws: Path, pkg: dict, lang: str) -> str | None:
     scripts = pkg.get("scripts", {})
 
@@ -239,6 +285,7 @@ def analyze_workspace(ws: Path, root: Path) -> dict:
         "format": resolve_format(ws, pkg, lang),
         "typecheck": resolve_typecheck(ws, pkg, lang),
         "test": resolve_test(ws, pkg, lang),
+        "test_affected": resolve_test_affected(ws, pkg, lang),
         "e2e": resolve_e2e(ws, pkg, lang),
     }
 

@@ -75,7 +75,7 @@ if [ -n "$SKILL_NAME" ] && [ -f "$TIERS_FILE" ]; then
     fi
 
     printf '┌─────────────────────────────────────────────────────────────────────┐\n│  ⚡  TIER ADVISORY  │  /%s is %s\n│     → %s\n└─────────────────────────────────────────────────────────────────────┘\n' "$SKILL_NAME" "$TIER" "$STEPS_PLAIN"
-    printf 'ASSISTANT DIRECTIVE: Output ONLY the lines below, then STOP completely. Do NOT begin the skill. Do NOT explore code. Do NOT take any action related to the request. Wait for the user to reply before doing anything else.\n`────────────────────────────────────────────────────────────────────────`\n**⚡ /%s is %s. Run %s before we start.**\n\nContinue anyway with current setup, or switch first?\n`────────────────────────────────────────────────────────────────────────`\n' "$SKILL_NAME" "$TIER" "$STEPS_MD"
+    printf '[tier-advisor] /%s is %s. Run %s for best results. Advisory only — proceeding.\n' "$SKILL_NAME" "$TIER" "$STEPS_PLAIN"
     exit 0
   fi
 fi

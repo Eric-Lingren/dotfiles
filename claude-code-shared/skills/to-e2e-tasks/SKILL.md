@@ -49,9 +49,12 @@ Gather three sources of information:
 
 **a. Project vocabulary and ADRs.** Spawn the `context-loader` agent (`subagent_type: context-loader`, repo root as working directory). It returns `vocabulary` (domain terms, inlined) and `adrs` (one-line decisions + paths). Use `vocabulary` terms in workflow names and test scenario descriptions. If the payload's `missing` list is non-empty, proceed without domain vocabulary.
 
-**b. The PRD.** Look for an existing task JSON in `docs/tasks/` for the current branch. If found, read its `prd` field and load that PRD file. If multiple task files exist, ask the user which one corresponds to the current work.
+**b. The source artifact.** Look for an existing task JSON in `docs/tasks/` for the current branch. If found, read its `source` field:
+- When `source.kind` is `"seed"` or `"prd"` and `source.ref` is non-null: load the artifact at `source.ref` for context (seed or PRD respectively).
+- When `source.kind` is `"session"` (ref null): fall through to the prompt-or-skip path below.
+- When multiple task files exist: ask the user which one corresponds to the current work.
 
-If no task JSON references a PRD, ask the user to provide the PRD path or skip PRD context.
+If no task JSON exists, or the source cannot be resolved, ask the user to provide the seed/PRD path directly or skip context.
 
 **c. The diff.** Get all changes on this branch:
 
@@ -184,11 +187,15 @@ Run `~/.dotfiles/claude-code-shared/scripts/task-filename.sh e2e-<slug>` to gene
 
 If a file for this slug already exists (any prefix), ask whether to overwrite or merge (same logic as `/to-tasks`).
 
-See `~/.dotfiles/claude-code-shared/resources/task-schema.md` for the canonical schema and field rules. The structure below is illustrative:
+See `~/.dotfiles/claude-code-shared/contracts/task-schema.json` for the canonical schema and field rules. The structure below is illustrative:
+
+HITL tasks (rare — e.g. "provision Playwright auth credentials") must be hands-only: a keyboard action the AI cannot perform. Never emit a decision-review HITL task.
 
 <task-json-schema>
 {
-  "prd": "docs/prd/YYYYMMDD-HHMM-{slug}.md (or null if no PRD)",
+  "schema_version": "2",
+  "producer": "to-e2e-tasks",
+  "source": {"kind": "seed", "ref": "docs/seeds/YYYYMMDD-HHMM-{slug}.json"},
   "generated_at": "<ISO 8601 timestamp>",
   "source_branch": "<branch name these tests were generated from>",
   "branching": {

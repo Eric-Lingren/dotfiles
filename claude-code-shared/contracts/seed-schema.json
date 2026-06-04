@@ -1,0 +1,223 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "seed-schema",
+  "title": "Seed",
+  "description": "Structured JSON intermediate representation (IR) distilled from a grill or conversation session. Version 3: provenance fields (producer/source) replace the old 'source' string and remove base_seed. Adds pipeline-gate fields: deferred[], structured out_of_scope, and derived status.",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "producer",
+    "source",
+    "title",
+    "slug",
+    "created",
+    "summary",
+    "decisions",
+    "open_threads",
+    "next_action",
+    "status"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "const": "3",
+      "description": "Always '3'. Hard cutover from v2 — old files fail validation by design."
+    },
+    "producer": {
+      "$ref": "provenance-schema#/$defs/producer",
+      "description": "The skill that generated this seed. Typically 'to-seed'."
+    },
+    "source": {
+      "$ref": "provenance-schema#/$defs/source",
+      "description": "What this seed was derived from. Null for seeds generated directly from a conversation. {kind:'seed', ref:<path>} for Mode-2 handoff-merge seeds that fold a prior session's resolutions onto a parent seed."
+    },
+    "title": {
+      "type": "string",
+      "description": "Short human-readable title for this topic."
+    },
+    "slug": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$",
+      "description": "Kebab-case identifier derived from title, max ~40 chars."
+    },
+    "created": {
+      "type": "string",
+      "description": "ISO 8601 timestamp of seed creation (e.g. 2026-06-03T18:40:00Z)."
+    },
+    "summary": {
+      "type": "string",
+      "description": "One paragraph: what was discussed, what was decided, current readiness state."
+    },
+    "status": {
+      "type": "string",
+      "enum": ["ready", "draft"],
+      "description": "Derived from open_threads: 'ready' when open_threads is empty, 'draft' otherwise. Never hand-set. to-tasks hard-refuses a draft seed."
+    },
+    "decisions": {
+      "type": "array",
+      "items": {"type": "string"},
+      "description": "Resolved decisions. Each entry is a concrete resolved statement. Empty array if none."
+    },
+    "open_threads": {
+      "type": "array",
+      "items": {"type": "string"},
+      "description": "Genuinely unresolved JUDGMENT only — questions where the answer changes what gets built and no consensus was reached. Decided-but-conditional implementation details (e.g. 'use Registry API if jsonschema >=4.18 else RefResolver') are NOT open threads; they belong in task acceptance criteria. Empty array when status is 'ready'."
+    },
+    "deferred": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["text", "rationale", "context", "source_seed"],
+        "additionalProperties": false,
+        "properties": {
+          "text": {
+            "type": "string",
+            "description": "Short description of the deferred item."
+          },
+          "rationale": {
+            "type": "string",
+            "description": "Why this is deferred rather than resolved or rejected."
+          },
+          "context": {
+            "type": "string",
+            "description": "Background needed to pick this up in a future session."
+          },
+          "source_seed": {
+            "type": ["string", "null"],
+            "description": "Path to the seed that introduced this deferred item, or null if originated here."
+          }
+        }
+      },
+      "description": "Work items acknowledged but explicitly set aside for a future effort. Each item carries enough context to be revisited independently. No revisit date or dependency field — source_seed is the loose dependency hook."
+    },
+    "next_action": {
+      "type": "string",
+      "description": "The single most important next step. Not a list."
+    },
+    "problem_statement": {
+      "type": "string",
+      "description": "The problem in plain text."
+    },
+    "solution": {
+      "type": "string",
+      "description": "The solution in plain text."
+    },
+    "evidence": {
+      "type": "string",
+      "description": "One or two sentences: data, complaints, or research that motivated this."
+    },
+    "success_metrics": {
+      "type": "array",
+      "items": {"type": "string"},
+      "description": "Specific measurable success criteria."
+    },
+    "user_stories": {
+      "type": "array",
+      "minItems": 5,
+      "items": {
+        "type": "object",
+        "required": ["actor", "feature", "benefit"],
+        "properties": {
+          "actor": {"type": "string"},
+          "feature": {"type": "string"},
+          "benefit": {"type": "string"}
+        },
+        "additionalProperties": false
+      },
+      "description": "Minimum 5 entries if included. Format: As a <actor>, I want <feature>, so that <benefit>."
+    },
+    "implementation_decisions": {
+      "type": "array",
+      "items": {"type": "string"},
+      "description": "Modules, interfaces, schema, APIs decided. Implementation details that are decided but conditional on runtime conditions belong here or in task acceptance criteria, not in open_threads."
+    },
+    "testing_decisions": {
+      "type": "array",
+      "items": {"type": "string"},
+      "description": "Testing approach decisions."
+    },
+    "out_of_scope": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["text", "rationale"],
+        "additionalProperties": false,
+        "properties": {
+          "text": {
+            "type": "string",
+            "description": "Short description of the explicitly excluded item."
+          },
+          "rationale": {
+            "type": "string",
+            "description": "Why this is excluded. Consumed by to-tasks as a negative guard so no task slice is generated for this item."
+          }
+        }
+      },
+      "description": "Items explicitly rejected from scope. Structured as {text, rationale} so to-tasks can read rationale as negative context and skip any slice that would implement a rejected item."
+    },
+    "risks_and_tradeoffs": {
+      "type": "array",
+      "items": {"type": "string"},
+      "description": "Known risks and tradeoff statements."
+    },
+    "further_notes": {
+      "type": "array",
+      "items": {"type": "string"},
+      "description": "Miscellaneous notes that don't fit other fields."
+    }
+  },
+  "examples": [
+    {
+      "schema_version": "3",
+      "producer": "to-seed",
+      "source": null,
+      "title": "Replace session tokens with short-lived JWTs",
+      "slug": "replace-session-tokens-jwt",
+      "created": "2026-06-02T20:00:00Z",
+      "status": "ready",
+      "summary": "Current auth stores opaque session tokens in Redis. Legal requires short-lived, auditable tokens. All judgment calls resolved: migrate to RS256 JWTs with 15-min expiry and refresh-token rotation. Redis session store removed after migration.",
+      "decisions": [
+        "Use signed JWTs (RS256) with 15-minute access token expiry",
+        "Refresh tokens stored in HttpOnly cookies, rotated on every use",
+        "Redis session store is deprecated and removed after migration, not alongside it",
+        "No silent refresh in the client — expired token triggers a full re-auth UX"
+      ],
+      "open_threads": [],
+      "deferred": [
+        {
+          "text": "Multi-device session management",
+          "rationale": "Product has not decided the UX for concurrent sessions; deferring until that decision is made.",
+          "context": "Current implementation issues one session per user. Multi-device requires either session list UI or silent coexistence strategy.",
+          "source_seed": null
+        }
+      ],
+      "next_action": "Run /to-tasks to generate the migration task breakdown",
+      "problem_statement": "Opaque session tokens in Redis do not carry claims, cannot be audited externally, and have no expiry short of explicit revocation. Legal has flagged this for compliance.",
+      "solution": "Replace session tokens with RS256-signed JWTs. Access tokens expire in 15 minutes. Refresh tokens rotate on use and are stored in HttpOnly cookies. Redis session store is removed post-migration.",
+      "evidence": "Legal audit (2026-05-15) flagged session token storage as non-compliant. Three internal incidents involved stale tokens remaining valid after account deletion.",
+      "implementation_decisions": [
+        "JWT signing uses RS256 with a 2048-bit key pair; private key stored in secrets manager",
+        "Refresh token table added to Postgres: columns id, user_id, token_hash, expires_at, revoked_at",
+        "Auth middleware validates JWT signature and expiry before any handler runs"
+      ],
+      "testing_decisions": [
+        "Unit tests cover token signing, expiry validation, and refresh rotation logic",
+        "Integration tests hit the real Postgres refresh token table, not a mock"
+      ],
+      "out_of_scope": [
+        {
+          "text": "Token introspection endpoint for third-party consumers",
+          "rationale": "No external consumers exist today; adding this would be speculative scope."
+        }
+      ],
+      "risks_and_tradeoffs": [
+        "15-minute expiry shortens the window for revocation but increases refresh round-trips",
+        "Dual-read migration period leaves old session tokens valid; any Redis breach during this window is still a risk"
+      ],
+      "further_notes": [
+        "RS256 key rotation cadence not yet decided — revisit before go-live"
+      ]
+    }
+  ]
+}

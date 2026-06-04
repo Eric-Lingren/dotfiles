@@ -95,7 +95,9 @@ Once the prototype has answered its question and a final direction is agreed upo
    git branch -D prototype/proto-<slug>
    ```
 
-9. **Hand off to the PRD phase.** Print:
+9. **Provenance note.** Prototype does not write task files. If a future variant produces a task JSON, stamp it with `"producer": "prototype"` and `"source": {"kind": "session", "ref": null}` per `contracts/task-schema.json`.
+
+10. **Hand off to the PRD phase.** Print:
 
    ```
    Prototype complete.

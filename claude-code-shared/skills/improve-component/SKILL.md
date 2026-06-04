@@ -274,10 +274,14 @@ See `~/.dotfiles/claude-code-shared/resources/branching-strategy.md` for branch 
 
 Write one task per approved finding (or group tightly coupled findings into one task with compound acceptance criteria). Each task must be self-contained. Embed the specific file path, line numbers, principle violated, and exact fix approach in the description.
 
-Follow the canonical schema in `~/.dotfiles/claude-code-shared/resources/task-schema.md`. Do not define the JSON structure inline.
+Follow the canonical schema in `~/.dotfiles/claude-code-shared/contracts/task-schema.json`. Do not define the JSON structure inline.
 
 Key field values for improve-component tasks:
-- `prd`: `null` (no PRD for component improvement runs)
+- `schema_version`: `"2"`
+- `producer`: `"improve-component"`
+- `source`: `{"kind": "session", "ref": null}` (no upstream document for component improvement runs)
+
+HITL tasks (rare — e.g. "rotate the API key before refactoring the credential helper") must be hands-only: a keyboard action the AI cannot perform. Never emit a decision-review HITL task.
 - `branching`: use the strategy and branch from Step 7a (see branching-strategy.md for JSON format)
 - `description`: `"Principle violated: <name>. Location: <file:line>. Problem: <what is wrong and why it matters>. Fix: <concrete steps>."`
 - `acceptance_criteria[0]`: always a test criterion (`"Characterization test exists at <path> covering the behavior being changed before any refactor"` for refactors, or `"Failing test exists at <path>"` for new behavior)
