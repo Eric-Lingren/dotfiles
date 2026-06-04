@@ -26,8 +26,8 @@
         "seed-contract.md accurately describes all four new fields"
       ],
       "blocked_by": [],
-      "status": "not_started",
-      "branch": null,
+      "status": "done",
+      "branch": "feat/harden-ideation-loop-pipeline",
       "pr": null
     },
     {

@@ -2,7 +2,7 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "$id": "seed-schema",
   "title": "Seed",
-  "description": "Structured JSON intermediate representation (IR) distilled from a grill or conversation session. Version 3: provenance fields (producer/source) replace the old 'source' string and remove base_seed. Adds pipeline-gate fields: deferred[], structured out_of_scope, and derived status.",
+  "description": "Structured JSON intermediate representation (IR) distilled from a grill or conversation session. Version 4: open_threads changes from string[] to object array with id/text/first_seen_iteration. Adds disposed_threads (lock list), iteration counter, and verification stamp.",
   "type": "object",
   "required": [
     "schema_version",
@@ -21,8 +21,8 @@
   "properties": {
     "schema_version": {
       "type": "string",
-      "const": "3",
-      "description": "Always '3'. Hard cutover from v2 — old files fail validation by design."
+      "const": "4",
+      "description": "Always '4'. Hard cutover from v3 — old files fail validation by design."
     },
     "producer": {
       "$ref": "provenance-schema#/$defs/producer",
@@ -30,7 +30,7 @@
     },
     "source": {
       "$ref": "provenance-schema#/$defs/source",
-      "description": "What this seed was derived from. Null for seeds generated directly from a conversation. {kind:'seed', ref:<path>} for Mode-2 handoff-merge seeds that fold a prior session's resolutions onto a parent seed."
+      "description": "What this seed was derived from. Null for seeds generated directly from a conversation. {type:'seed', ref:<path>} for Mode-2 handoff-merge seeds that fold a prior session's resolutions onto a parent seed."
     },
     "title": {
       "type": "string",
@@ -54,6 +54,10 @@
       "enum": ["ready", "draft"],
       "description": "Derived from open_threads: 'ready' when open_threads is empty, 'draft' otherwise. Never hand-set. to-tasks hard-refuses a draft seed."
     },
+    "iteration": {
+      "type": "integer",
+      "description": "Number of grill/verification iterations this seed has gone through. Documentation and telemetry only — does not gate any pipeline step."
+    },
     "decisions": {
       "type": "array",
       "items": {"type": "string"},
@@ -61,8 +65,84 @@
     },
     "open_threads": {
       "type": "array",
-      "items": {"type": "string"},
-      "description": "Genuinely unresolved JUDGMENT only — questions where the answer changes what gets built and no consensus was reached. Decided-but-conditional implementation details (e.g. 'use Registry API if jsonschema >=4.18 else RefResolver') are NOT open threads; they belong in task acceptance criteria. Empty array when status is 'ready'."
+      "items": {
+        "type": "object",
+        "required": ["id", "text", "first_seen_iteration"],
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Stable identifier for this thread (e.g. 'ot-001'). Never reused, even after disposal."
+          },
+          "text": {
+            "type": "string",
+            "description": "The unresolved question or judgment call."
+          },
+          "first_seen_iteration": {
+            "type": "integer",
+            "description": "Iteration number when this thread was first recorded."
+          }
+        }
+      },
+      "description": "Genuinely unresolved JUDGMENT only — questions where the answer changes what gets built and no consensus was reached. Empty array when status is 'ready'."
+    },
+    "disposed_threads": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "text", "disposition", "iteration"],
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Stable identifier matching the original open_threads entry."
+          },
+          "text": {
+            "type": "string",
+            "description": "The original thread text, preserved verbatim."
+          },
+          "disposition": {
+            "type": "string",
+            "enum": ["decided", "deferred", "rejected"],
+            "description": "How the thread was resolved. 'decided': a concrete resolution was reached. 'deferred': parked for a future session. 'rejected': explicitly ruled out of scope."
+          },
+          "iteration": {
+            "type": "integer",
+            "description": "Iteration number when this thread was disposed."
+          }
+        }
+      },
+      "description": "Lock list of threads that have been disposed. Grill resume mode treats these ids as off-limits — they cannot be re-raised under any name (relabel-resurrection blocked)."
+    },
+    "verification": {
+      "type": "object",
+      "required": ["iteration", "personas", "refutations_upheld", "clean", "status"],
+      "additionalProperties": false,
+      "properties": {
+        "iteration": {
+          "type": "integer",
+          "description": "Iteration number at which verification ran."
+        },
+        "personas": {
+          "type": "array",
+          "items": {"type": "string"},
+          "description": "Names of adversary persona agents that ran (e.g. ['grounding', 'accuracy', 'completeness', 'coherence'])."
+        },
+        "refutations_upheld": {
+          "type": "integer",
+          "description": "Count of refutations the judge panel upheld (2-of-3 majority). Zero means a clean pass."
+        },
+        "clean": {
+          "type": "boolean",
+          "description": "True when refutations_upheld === 0. Convenience flag for quick gate checks."
+        },
+        "status": {
+          "type": "string",
+          "enum": ["verified", "degraded"],
+          "description": "'verified': adversary panel completed and seed passed or corrections were applied. 'degraded': panel did not fully complete (agent error/timeout); to-tasks hard-refuses degraded seeds."
+        }
+      },
+      "description": "Verification stamp written by to-seed after the adversary panel run. Absent on v3 and earlier seeds (backward-compatible: to-tasks skips the check when the field is missing)."
     },
     "deferred": {
       "type": "array",
@@ -89,7 +169,7 @@
           }
         }
       },
-      "description": "Work items acknowledged but explicitly set aside for a future effort. Each item carries enough context to be revisited independently. No revisit date or dependency field — source_seed is the loose dependency hook."
+      "description": "Work items acknowledged but explicitly set aside for a future effort. Each item carries enough context to be revisited independently."
     },
     "next_action": {
       "type": "string",
@@ -169,13 +249,14 @@
   },
   "examples": [
     {
-      "schema_version": "3",
+      "schema_version": "4",
       "producer": "to-seed",
       "source": null,
       "title": "Replace session tokens with short-lived JWTs",
       "slug": "replace-session-tokens-jwt",
       "created": "2026-06-02T20:00:00Z",
       "status": "ready",
+      "iteration": 2,
       "summary": "Current auth stores opaque session tokens in Redis. Legal requires short-lived, auditable tokens. All judgment calls resolved: migrate to RS256 JWTs with 15-min expiry and refresh-token rotation. Redis session store removed after migration.",
       "decisions": [
         "Use signed JWTs (RS256) with 15-minute access token expiry",
@@ -184,6 +265,27 @@
         "No silent refresh in the client — expired token triggers a full re-auth UX"
       ],
       "open_threads": [],
+      "disposed_threads": [
+        {
+          "id": "ot-001",
+          "text": "Should refresh token expiry be 7 days or 30 days?",
+          "disposition": "decided",
+          "iteration": 1
+        },
+        {
+          "id": "ot-002",
+          "text": "Multi-device session management approach",
+          "disposition": "deferred",
+          "iteration": 2
+        }
+      ],
+      "verification": {
+        "iteration": 2,
+        "personas": ["grounding", "accuracy", "completeness", "coherence"],
+        "refutations_upheld": 0,
+        "clean": true,
+        "status": "verified"
+      },
       "deferred": [
         {
           "text": "Multi-device session management",
