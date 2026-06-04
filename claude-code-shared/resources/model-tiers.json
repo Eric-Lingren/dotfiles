@@ -40,7 +40,12 @@
     "context-loader": "T1",
     "lint-runner": "T1",
     "test-runner": "T1",
-    "e2e-runner": "T1"
+    "e2e-runner": "T1",
+    "persona-grounding": "T1",
+    "persona-accuracy": "T1",
+    "persona-completeness": "T1",
+    "persona-coherence": "T1",
+    "persona-judge": "T3"
   },
   "delegate": [
     "run-tasks",

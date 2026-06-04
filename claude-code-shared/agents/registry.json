@@ -67,6 +67,51 @@
       "model": "haiku",
       "description": "Read-only e2e test agent. Runs a committed Playwright test suite using the resolved command from the tooling manifest. Relies on playwright.config webServer block for app lifecycle. Not wired to any consumer skill.",
       "consumers": []
+    },
+    {
+      "name": "persona-grounding",
+      "file": "agents/persona-grounding.md",
+      "model": "haiku",
+      "description": "Adversary persona that hunts unsupported content and fabricated rationale in a draft seed. Spawned by to-seed verification stage. Returns refutations with cited transcript spans.",
+      "consumers": [
+        "to-seed"
+      ]
+    },
+    {
+      "name": "persona-accuracy",
+      "file": "agents/persona-accuracy.md",
+      "model": "haiku",
+      "description": "Adversary persona that hunts semantic drift and stale-resolution in a draft seed. Spawned by to-seed verification stage. Returns refutations with cited transcript spans.",
+      "consumers": [
+        "to-seed"
+      ]
+    },
+    {
+      "name": "persona-completeness",
+      "file": "agents/persona-completeness.md",
+      "model": "haiku",
+      "description": "Adversary persona that hunts missed branches, premature closure, dropped dependencies, and merge-loss in a draft seed. Spawned by to-seed verification stage. Returns refutations with cited transcript spans.",
+      "consumers": [
+        "to-seed"
+      ]
+    },
+    {
+      "name": "persona-coherence",
+      "file": "agents/persona-coherence.md",
+      "model": "haiku",
+      "description": "Adversary persona that hunts contradiction, misclassification, dropped human dispositions, and relabel-resurrection in a draft seed. Spawned by to-seed verification stage. Returns refutations with cited transcript spans.",
+      "consumers": [
+        "to-seed"
+      ]
+    },
+    {
+      "name": "persona-judge",
+      "file": "agents/persona-judge.md",
+      "model": "sonnet",
+      "description": "Evidence-bound adjudicator spawned 3x per refutation for a 2-of-3 majority vote. Checks whether a persona refutation's cited transcript span supports the refutation. Spawned by to-seed verification stage.",
+      "consumers": [
+        "to-seed"
+      ]
     }
   ]
 }
