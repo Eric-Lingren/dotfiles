@@ -155,8 +155,8 @@
         "Degraded-check is only applied to seeds where schema_version is '4'"
       ],
       "blocked_by": ["T-0001"],
-      "status": "not_started",
-      "branch": null,
+      "status": "done",
+      "branch": "feat/harden-ideation-loop-pipeline",
       "pr": null
     }
   ],

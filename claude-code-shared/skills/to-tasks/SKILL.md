@@ -11,7 +11,7 @@ Break a PRD into independently-grabbable tasks using vertical slices (tracer bul
 
 ## Contract
 
-**Consumes:** seed file OR HTML PRD — see `contracts/seed-contract.md` (schema_version: `"2"`)
+**Consumes:** seed file OR HTML PRD — see `contracts/seed-contract.md` (schema_version: `"4"`)
 **Produces:** task file — see `contracts/task-contract.md` (schema_version: `"1"`)
 
 When input is a seed file (`.json`), apply Step-0a directly. When input is an HTML PRD (`.html` or `.md`), run `scripts/extract-prd-json.sh <path>` first to extract the embedded seed JSON, then apply Step-0a on the extracted JSON.
@@ -65,9 +65,26 @@ to resolve the threads in a new session.
 
 Do not generate any tasks. Do not ask clarifying questions. Stop.
 
+**Hard refusal for degraded seeds (v4 only):** After confirming `status` is `"ready"`, check whether `schema_version` is `"4"`. If it is, read the `verification` field. If `verification.status` is `"degraded"`, stop immediately:
+
+```
+ERROR: This seed was saved in degraded verification state.
+The adversary panel did not complete — one or more persona or judge agents failed
+during the to-seed verification stage.
+
+to-tasks cannot safely generate tasks from an unverified seed. Re-run /to-seed
+to trigger a full adversary panel run. When the seed reaches verification.status:
+'verified', this check will pass.
+```
+
+Do not generate any tasks. Do not ask clarifying questions. Stop.
+
+Seeds with `verification.status: "verified"` proceed normally.
+Seeds without a `verification` field (schema_version "3" and earlier) proceed without this check for backward compatibility.
+
 Record the source type and path for provenance stamping:
-- Seed JSON file → `source = {"kind": "seed", "ref": "<file-path>"}`
-- HTML/MD PRD file → `source = {"kind": "prd", "ref": "<file-path>"}`
+- Seed JSON file → `source = {"type": "seed", "ref": "<file-path>"}`
+- HTML/MD PRD file → `source = {"type": "prd", "ref": "<file-path>"}`
 
 ### 2. Load project context
 
