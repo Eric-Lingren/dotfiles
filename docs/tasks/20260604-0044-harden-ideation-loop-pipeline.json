@@ -83,8 +83,8 @@
         "Gate only appears when open_threads is non-empty (ready seeds bypass the gate)"
       ],
       "blocked_by": ["T-0003"],
-      "status": "not_started",
-      "branch": null,
+      "status": "done",
+      "branch": "feat/harden-ideation-loop-pipeline",
       "pr": null
     },
     {

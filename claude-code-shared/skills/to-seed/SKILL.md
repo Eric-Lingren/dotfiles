@@ -170,42 +170,44 @@ After writing, check `status`:
 
 **If `status` is `"draft"` (open_threads non-empty):**
 
-The seed is not ready. to-tasks hard-refuses a draft seed, so finishing here would block the pipeline. Refuse to show the fan-out and instead:
+The seed was written and adjudicated but open threads remain. Present exactly three options via `AskUserQuestion`:
 
-1. Generate a handoff doc (same logic as `/handoff`). Save it under `docs/handoffs/` using `~/.dotfiles/claude-code-shared/scripts/doc-filename.sh <slug> md`.
-2. Frame the open threads as the explicit agenda for the next session.
-3. Name `grill-me` in the handoff's "suggested skills" section.
-4. Embed a machine-readable seed-context block so the Mode 2 return trip can find the base seed:
+```
+Seed written to docs/seeds/<filename> (status: draft)
+Open threads (<N>):
+  <list thread text>
 
-   ````
-   ## Seed Context
-   ```json
-   {
-     "base_seed": "docs/seeds/<filename>",
-     "open_threads": [
-       {"id": "<id>", "text": "<thread text>", "first_seen_iteration": <n>}
-     ],
-     "disposed_threads": [
-       {"id": "<id>", "text": "<thread text>", "disposition": "<decided|deferred|rejected>", "iteration": <n>}
-     ]
-   }
-   ```
-   ````
+How do you want to resolve these?
+1. Continue with grill-me — drill the open threads in this window
+2. Continue with grill-with-docs — drill against the existing domain model
+3. Stop and write a handoff — resume in a fresh window later
+```
 
-5. Output to the user:
+- **Option 1**: tail-call `grill-me` via `Skill("grill-me", seed-path)`. Pass the seed path as the resume payload. **Do not write a handoff doc** — live context is the handoff.
+- **Option 2**: tail-call `grill-with-docs` via `Skill("grill-with-docs", seed-path)`. Pass the seed path as the resume payload. **Do not write a handoff doc.**
+- **Option 3**: write a handoff doc, then stop.
+  1. Generate a handoff doc (same logic as `/handoff`). Save it under `docs/handoffs/` using `~/.dotfiles/claude-code-shared/scripts/doc-filename.sh <slug> md`.
+  2. Frame the open threads as the explicit agenda for the next session.
+  3. Name `grill-me` and `grill-with-docs` in the handoff's "suggested skills" section.
+  4. Embed a machine-readable seed-context block so the Mode 2 return trip can find the base seed:
 
-   ```
-   Draft seed written to docs/seeds/<filename>
-   Open threads: <N> (listed above)
+     ````
+     ## Seed Context
+     ```json
+     {
+       "base_seed": "docs/seeds/<filename>",
+       "open_threads": [
+         {"id": "<id>", "text": "<thread text>", "first_seen_iteration": <n>}
+       ],
+       "disposed_threads": [
+         {"id": "<id>", "text": "<thread text>", "disposition": "<decided|deferred|rejected>", "iteration": <n>}
+       ]
+     }
+     ```
+     ````
+  5. Output the handoff path and stop. Do not invoke any downstream skill.
 
-   This seed cannot proceed until all judgment threads are resolved.
-   Handoff written to docs/handoffs/<handoff-filename>
-
-   To resolve: open a fresh window and run /grill-me <handoff-path>
-   When done, run /to-seed <handoff-path> to merge resolutions back.
-   ```
-
-6. **Stop. Do not show the fan-out menu. Do not invoke any downstream skill.**
+There is no fourth option. The user must choose one of the three paths. Abandoning without a handoff is not allowed.
 
 **If `status` is `"ready"` (open_threads empty):**
 
