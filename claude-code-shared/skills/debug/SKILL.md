@@ -232,42 +232,13 @@ If a seam exists but Phase 1 could not build a feedback loop, set the first acce
 
 Write to `docs/tasks/<filename>`.
 
-For single strategy:
-```json
-"branching": { "strategy": "single", "branch": "<branch from Step 1>" }
-```
-
-For per-task strategy:
-```json
-"branching": { "strategy": "per-task" }
-```
-(Each task's `branch` field holds its own auto-derived branch name.)
+See `~/.dotfiles/claude-code-shared/resources/branching-strategy.md` for JSON recording format.
 
 HITL tasks from debug (rare — e.g. "enable the feature flag to expose the buggy code path") must be hands-only: a keyboard action the AI cannot perform. Never emit a decision-review HITL task.
 
 Set `"producer": "debug"` on the root object. Set `"source": {"kind": "session", "ref": null}`. Follow all field rules from the schema above.
 
-The `follow_ups` array must include one entry for debug cleanup:
-
-```json
-{
-  "id": "FU-001",
-  "title": "Debug cleanup and post-mortem",
-  "steps": [
-    "Run full test suite and record baseline: <N> passing, <M> failing",
-    "Run: grep -r '[DEBUG-' . to find all tagged instrumentation",
-    "Remove all [DEBUG-...] tagged instrumentation",
-    "Re-run test suite and confirm no new failures vs baseline",
-    "Delete any throwaway harness files created during diagnosis",
-    "Run: find docs/browser-checks -mindepth 1 -maxdepth 1 -type d | sort -- list all browser-check run dirs",
-    "Delete any stale docs/browser-checks run dirs from this debug session: rm -rf docs/browser-checks/<run_dir>",
-    "State the winning hypothesis in the PR description",
-    "If no correct test seam existed, open /improve-codebase-architecture with the specific coupling details"
-  ],
-  "trigger_task": "<first task ID>",
-  "source": "planned"
-}
-```
+The `follow_ups` array must include one entry for debug cleanup. Use the "Debug cleanup and post-mortem" runbook from `~/.dotfiles/claude-code-shared/resources/hitl-steps-runbooks.md`. Set `id` to `"FU-001"`, `trigger_task` to the first task ID, and `source` to `"planned"`.
 
 **browser_verify note:** Populate `browser_verify` on each fix task for any bug that manifested as a user-visible UI issue. The URL and assertions come directly from the Phase 1 headless browser feedback loop. Omit `browser_verify` for pure backend or non-UI bugs.
 

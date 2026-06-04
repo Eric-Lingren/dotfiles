@@ -1,6 +1,8 @@
 {
-  "schema_version": "2",
-  "source": "to-seed",
+  "schema_version": "3",
+  "producer": "to-seed",
+  "source": {"kind": "session", "ref": null},
+  "status": "ready",
   "title": "Prevent run-tasks test-gate CPU blowup",
   "slug": "run-tasks-cpu-blowup-prevention",
   "created": "2026-06-03T16:49:00Z",
@@ -35,9 +37,18 @@
     "contracts/runner-result-contract.md and runner-result-schema.json: add a status enum {pass|fail|warn|timeout|deps-missing} alongside the existing {passed,failed,skipped} counts"
   ],
   "out_of_scope": [
-    "pytest-testmon-based affected-test selection",
-    "A full-suite precommit hook (deferred, optional)",
-    "Per-N dividing of the worker cap across parallel workspace runners (rejected in favor of serializing)"
+    {
+      "text": "pytest-testmon-based affected-test selection",
+      "rationale": "No investment in pytest testmon at this stage."
+    },
+    {
+      "text": "Full-suite precommit hook",
+      "rationale": "Deferred; optional for a later effort."
+    },
+    {
+      "text": "Per-N dividing of the worker cap across parallel workspace runners",
+      "rationale": "Rejected in favor of serializing runners."
+    }
   ],
   "risks_and_tradeoffs": [
     "Affected selection can miss non-static coupling (dynamic imports, shared global state, snapshot/fixture files, integration tests that do not statically import the changed file); CI's full suite catches these before merge so a local miss surfaces in CI, not prod",

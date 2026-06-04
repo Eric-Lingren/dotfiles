@@ -1,6 +1,8 @@
 {
-  "schema_version": "2",
-  "source": "to-seed",
+  "schema_version": "3",
+  "producer": "to-seed",
+  "source": {"kind": "session", "ref": null},
+  "status": "ready",
   "title": "Brainstorm-to-tasks pipeline: judgment gate and seed lifecycle",
   "slug": "brainstorm-to-tasks-pipeline-redesign",
   "created": "2026-06-03T18:31:00Z",
@@ -46,10 +48,22 @@
     "Validate schema changes with validate-schema.sh, including the in-file examples self-validation, and dry-run the grill -> seed -> to-tasks -> run-tasks flow manually to confirm the gate and the removed prompts behave as intended."
   ],
   "out_of_scope": [
-    "Branching strategy redesign (single vs per-task and the shared branching-strategy.md used by 7 skills). Deferred to its own dedicated grill, not this pipeline.",
-    "Building the future ticket-gen skill that consumes deferred[]. The data contract is instrumented now; the skill is built later.",
-    "Any seed-to-ADR extraction mechanism. Explicitly rejected in favor of live reconciliation in grill-with-docs.",
-    "Migrating existing on-disk task files to the new hands-only HITL semantics. Not needed; these are disposable infra artifacts."
+    {
+      "text": "Branching strategy redesign",
+      "rationale": "Deferred to its own dedicated grill, not this pipeline."
+    },
+    {
+      "text": "Building the future ticket-gen skill that consumes deferred[]",
+      "rationale": "The data contract is instrumented now; the skill is built later."
+    },
+    {
+      "text": "Seed-to-ADR extraction mechanism",
+      "rationale": "Explicitly rejected in favor of live reconciliation in grill-with-docs."
+    },
+    {
+      "text": "Migrating existing on-disk task files to the new hands-only HITL semantics",
+      "rationale": "Not needed; these are disposable infra artifacts."
+    }
   ],
   "risks_and_tradeoffs": [
     "The seed-schema changes overlap the in-flight provenance-contract work on the same branch. Coordinating them in one effort avoids a fork but couples two changesets that must land together.",

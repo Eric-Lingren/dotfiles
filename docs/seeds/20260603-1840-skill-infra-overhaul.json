@@ -1,6 +1,8 @@
 {
-  "schema_version": "2",
-  "source": "to-seed",
+  "schema_version": "3",
+  "producer": "to-seed",
+  "source": {"kind": "session", "ref": null},
+  "status": "ready",
   "title": "Skill infra overhaul: contracts, run-tasks safety, pipeline gate",
   "slug": "skill-infra-overhaul",
   "created": "2026-06-03T18:40:00Z",
@@ -88,16 +90,46 @@
     "The runner status enum is validated against contracts/runner-result-contract.md."
   ],
   "out_of_scope": [
-    "[contracts] runner-result-schema.json stays out of the shared provenance concept; it is an ephemeral verdict, not a persisted lineage document.",
-    "[contracts] No migration script or dual-version validator acceptance; hard cutover only.",
-    "[contracts] Adding source.kind 'task' is deferred until a real producer derives from a task file.",
-    "[run-tasks-safety] pytest-testmon-based affected-test selection.",
-    "[run-tasks-safety] A full-suite precommit hook (deferred, optional).",
-    "[run-tasks-safety] Per-N dividing of the worker cap across parallel workspace runners (rejected in favor of serializing).",
-    "[pipeline-gate] Branching strategy redesign (single vs per-task and the shared branching-strategy.md used by 7 skills). Deferred to its own dedicated grill.",
-    "[pipeline-gate] Building the future ticket-gen skill that consumes deferred[]. The data contract is instrumented now; the skill is built later.",
-    "[pipeline-gate] Any seed-to-ADR extraction mechanism. Explicitly rejected in favor of live reconciliation in grill-with-docs.",
-    "[pipeline-gate] Migrating existing on-disk task files to the new hands-only HITL semantics. Not needed; these are disposable infra artifacts."
+    {
+      "text": "[contracts] runner-result-schema.json in shared provenance concept",
+      "rationale": "It is an ephemeral verdict, not a persisted lineage document."
+    },
+    {
+      "text": "[contracts] Migration script or dual-version validator acceptance",
+      "rationale": "Hard cutover only; old on-disk files fail by design."
+    },
+    {
+      "text": "[contracts] Adding source.kind 'task'",
+      "rationale": "Deferred until a real producer derives from a task file."
+    },
+    {
+      "text": "[run-tasks-safety] pytest-testmon-based affected-test selection",
+      "rationale": "No investment in pytest testmon at this stage."
+    },
+    {
+      "text": "[run-tasks-safety] Full-suite precommit hook",
+      "rationale": "Deferred; optional for a later effort."
+    },
+    {
+      "text": "[run-tasks-safety] Per-N dividing of the worker cap across parallel workspace runners",
+      "rationale": "Rejected in favor of serializing runners."
+    },
+    {
+      "text": "[pipeline-gate] Branching strategy redesign",
+      "rationale": "Deferred to its own dedicated grill."
+    },
+    {
+      "text": "[pipeline-gate] Building the future ticket-gen skill that consumes deferred[]",
+      "rationale": "The data contract is instrumented now; the skill is built later."
+    },
+    {
+      "text": "[pipeline-gate] Seed-to-ADR extraction mechanism",
+      "rationale": "Explicitly rejected in favor of live reconciliation in grill-with-docs."
+    },
+    {
+      "text": "[pipeline-gate] Migrating existing on-disk task files to the new hands-only HITL semantics",
+      "rationale": "Not needed; these are disposable infra artifacts."
+    }
   ],
   "risks_and_tradeoffs": [
     "The three workstreams edit overlapping files (to-tasks/SKILL.md, to-seed/SKILL.md, run-tasks/SKILL.md, seed-schema.json, task-schema.json). Task generation MUST sequence edits to each shared file so the [contracts], [run-tasks-safety], and [pipeline-gate] changes do not clobber one another. This is the primary reason the seeds were consolidated.",

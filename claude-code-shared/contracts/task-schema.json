@@ -127,6 +127,10 @@
       },
       "description": "Array of task objects to execute in order."
     },
+    "source_branch": {
+      "type": "string",
+      "description": "Source branch this e2e task file was generated from. Written by to-e2e-tasks only. Optional."
+    },
     "follow_ups": {
       "type": "array",
       "items": {

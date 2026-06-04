@@ -84,7 +84,7 @@
     },
     "skipped_reason": {
       "type": ["string", "null"],
-      "description": "Explanation when status is warn. Null otherwise."
+      "description": "Non-null for warn, timeout, and deps-missing. Null for pass and fail."
     }
   },
   "examples": [

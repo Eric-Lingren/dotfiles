@@ -1,6 +1,8 @@
 {
-  "schema_version": "2",
-  "source": "to-seed",
+  "schema_version": "3",
+  "producer": "to-seed",
+  "source": {"kind": "session", "ref": null},
+  "status": "draft",
   "title": "Contracts as source of truth + shared walkable provenance",
   "slug": "contracts-provenance-source-of-truth",
   "created": "2026-06-03T16:10:00Z",
@@ -50,9 +52,18 @@
     "Confirm an old-version seed/task file now fails with the explicit schema_version-mismatch message, not a generic property error."
   ],
   "out_of_scope": [
-    "runner-result-schema.json stays out of the shared provenance concept; it is an ephemeral verdict, not a persisted lineage document.",
-    "No migration script or dual-version validator acceptance; hard cutover only.",
-    "Adding source.kind 'task' is deferred until a real producer derives from a task file."
+    {
+      "text": "runner-result-schema.json in shared provenance concept",
+      "rationale": "It is an ephemeral verdict, not a persisted lineage document."
+    },
+    {
+      "text": "Migration script or dual-version validator acceptance",
+      "rationale": "Hard cutover only; old on-disk files fail by design."
+    },
+    {
+      "text": "Adding source.kind 'task'",
+      "rationale": "Deferred until a real producer derives from a task file."
+    }
   ],
   "risks_and_tradeoffs": [
     "The validator upgrade touches a script 11 skills depend on; a wrong registry setup breaks validation everywhere, so it must be implemented and tested carefully.",

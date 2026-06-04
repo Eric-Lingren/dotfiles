@@ -1,5 +1,7 @@
 {
-  "prd": "docs/seeds/20260603-1610-contracts-provenance-source-of-truth.json",
+  "schema_version": "2",
+  "producer": "to-tasks",
+  "source": {"kind": "session", "ref": null},
   "generated_at": "2026-06-03T17:02:00Z",
   "branching": {
     "strategy": "single",

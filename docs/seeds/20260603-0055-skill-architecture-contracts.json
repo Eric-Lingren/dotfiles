@@ -1,6 +1,8 @@
 {
-  "schema_version": "2",
-  "source": "to-seed",
+  "schema_version": "3",
+  "producer": "to-seed",
+  "source": {"kind": "session", "ref": null},
+  "status": "ready",
   "title": "Design-by-Contract Guards for Shared Skills",
   "slug": "skill-architecture-contracts",
   "created": "2026-06-03T00:55:00Z",
@@ -39,7 +41,7 @@
   "implementation_decisions": [
     "New directory claude-code-shared/contracts/ holding three pairs: task-schema.json + task-contract.md, seed-schema.json + seed-contract.md, runner-result-schema.json + runner-result-contract.md",
     "task-schema.json authored from the existing prose resources/task-schema.md; seed-schema.json promoted from to-prd-html/resources/prd-data-schema.json; runner-result-schema.json moved from resources/ with runner-result-contract.md newly authored (it does not exist today)",
-    "New script claude-code-shared/scripts/validate-schema.sh <schema-path> <input-path>, python3+jsonschema backed, exit 0 valid / non-zero invalid with clear stderr",
+    "New script claude-code-shared/scripts/validate-schema.sh <schema-path> <instance-path>, python3+jsonschema backed, exit 0 valid / non-zero invalid with clear stderr",
     "Tasks strict schema: additionalProperties:false; schema_version required as const '1'; browser_verify optional; linear_url optional (promoted); source_branch dropped",
     "Each format-touching SKILL.md gains a `## Contract` section with a literal bash Step-0 validate-schema.sh invocation and a 'STOP on non-zero exit' instruction",
     "All four task producers (to-tasks, to-e2e-tasks, debug, improve-component) and three consumers (run-tasks, run-task-followups, tasks-to-linear) migrated in the big-bang pass; seed and runner-result waists migrated in the same pass after sampling their consumers",
@@ -52,10 +54,22 @@
     "Understood split: evals prove the SKILL.md prose reliably triggers validate-and-stop (via simulation); the script test proves the validator engine actually rejects bad input"
   ],
   "out_of_scope": [
-    "grill-me / grill-with-docs deduplication",
-    "model-tiers.json registry work (unrelated to contracts)",
-    "Tier 3 semantic checks remain prose-only and are not scripted",
-    "Hook-based hard enforcement of the validator (no clean hook trigger exists)"
+    {
+      "text": "grill-me / grill-with-docs deduplication",
+      "rationale": "Separate refactor unrelated to contracts work."
+    },
+    {
+      "text": "model-tiers.json registry work",
+      "rationale": "Unrelated to contracts work."
+    },
+    {
+      "text": "Tier 3 semantic checks",
+      "rationale": "Cannot be scripted; remain prose-only by design."
+    },
+    {
+      "text": "Hook-based hard enforcement of the validator",
+      "rationale": "No clean hook trigger exists for the right event."
+    }
   ],
   "risks_and_tradeoffs": [
     "The validate-schema.sh trigger is prose, so an agent can still skip Step-0 entirely; mitigated by evals, not eliminated. Enforcement is harder, not hard.",

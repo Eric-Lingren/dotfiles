@@ -40,6 +40,15 @@ JSON verdict returned by `lint-runner` and `test-runner` agents. The caller (run
 - `failed`: Number of tests that failed OR number of lint violations (depending on runner).
 - `skipped`: Number of tests skipped.
 
+## skipped_reason field
+
+Non-null for `warn`, `timeout`, and `deps-missing`. Null for `pass` and `fail`.
+
+Examples:
+- `warn`: `"No test command resolved for workspace '.'"`
+- `timeout`: `"Killed after 180s timeout"`
+- `deps-missing`: `"node_modules missing in workspace 'client'"`
+
 ## Violations array
 
 Each violation from the typecheck or lint runner:
