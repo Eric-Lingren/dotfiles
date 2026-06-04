@@ -8,7 +8,7 @@ effort: low
 
 Delete disposable scaffolding artifacts from `docs/` in the current working directory.
 
-This skill is **lineage-aware**: it groups artifacts by their provenance chain and only deletes a chain atomically when the entire chain is consumed and its architecture decisions are captured in ADRs. It refuses partial deletions that would leave dangling source refs.
+This skill is **lineage-aware**: it groups artifacts by their provenance chain and only deletes a chain atomically when the entire chain is consumed. It refuses partial deletions that would leave dangling source refs.
 
 ## Process
 
@@ -45,24 +45,12 @@ For each chain, a chain is "fully consumed" when:
 
 **A partial chain is NEVER deleted.** If artifact B references artifact A via `source.ref`, and A would be deleted but B would not (because B is outside the deletion scope), refuse to delete A and explain the dangling ref.
 
-**Check ADR coverage (backstop):**
-For each fully-consumed chain, read `docs/adr/` (all markdown files). Assess whether the architectural decisions recorded in the chain's seed `decisions[]` field are captured in the ADRs. Apply the three-criteria filter: a decision needs an ADR only if it is hard to reverse, would surprise a future reader without context, and was the result of a real trade-off.
-
-If the chain has architecture-grade decisions NOT yet captured in `docs/adr/`: refuse to delete it and print a clear message:
-
-```
-REFUSED: Chain rooted at <seed-file> has uncaptured architecture decisions:
-  - "<decision text>"
-Run /grill-with-docs to capture these in docs/adr/ before cleaning.
-```
-
 ### 4. Report chains
 
 After analysis, categorize each chain:
 
-- **Ready to delete**: fully consumed + ADR coverage confirmed.
+- **Ready to delete**: fully consumed.
 - **Not consumed**: tasks still in progress or not started.
-- **ADR missing**: consumed but architecture decisions not captured.
 - **Partial (dangling ref)**: a child artifact is referenced by something outside the chain.
 
 Report all categories to the user before asking to confirm.
@@ -75,7 +63,7 @@ If `skip_confirm` is false, call `AskUserQuestion`:
 - Question: `Delete N files across M chains? This cannot be undone in repos where these files are untracked.`
 - Options: `Yes, delete confirmed chains` / `No, cancel`
 
-Stop if the user cancels or if there are no chains ready to delete. If `skip_confirm` is true, skip this step.
+Stop if the user cancels or if no chains are ready to delete. If `skip_confirm` is true, skip this step.
 
 ### 6. Delete (atomic, per confirmed chain)
 
@@ -90,4 +78,4 @@ This mode deletes only the specified files and removes any now-empty directories
 
 ### 7. Report
 
-Relay the script's `removed ...` lines and `Deleted N files.` summary. Note any chains that were refused (not consumed or ADR missing) and what the user must do before those chains can be cleaned.
+Relay the script's `removed ...` lines and `Deleted N files.` summary. Note any chains that were refused (not consumed or dangling ref) and what the user must do before those chains can be cleaned.

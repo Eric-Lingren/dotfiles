@@ -148,50 +148,13 @@ If a file for this slug already exists (any prefix), ask the user whether to:
 - **Overwrite** — replace the file entirely with the new breakdown (re-scan all other files to find the next task ID, excluding this file; keep the existing filename prefix)
 - **Merge** — keep existing task statuses/PRs and add/update task definitions (new tasks continue from the current global max; keep the existing filename prefix)
 
-See `~/.dotfiles/claude-code-shared/contracts/task-schema.json` for the canonical schema and all field rules. The structure below is illustrative:
+Read the canonical schema now:
+```bash
+cat ~/.dotfiles/claude-code-shared/contracts/task-schema.json
+```
+Use that schema exactly. Do not guess field names or structure.
 
-<task-json-schema>
-{
-  "schema_version": "2",
-  "producer": "to-tasks",
-  "source": {"kind": "seed", "ref": "docs/seeds/YYYYMMDD-HHMM-{slug}.json"},
-  "generated_at": "<ISO 8601 timestamp>",
-  "branching": {
-    "strategy": "single",
-    "branch": "feat/my-feature"
-  },
-  "tasks": [
-    {
-      "id": "T-0023",
-      "title": "Short descriptive title",
-      "type": "AFK",
-      "description": "End-to-end behavior description, not layer-by-layer implementation. For refactor tasks: state that characterization tests must be written for existing behavior before restructuring begins.",
-      "acceptance_criteria": [
-        "Criterion 1 (always include test-related criteria)",
-        "Criterion 2"
-      ],
-      "blocked_by": [],
-      "status": "not_started",
-      "branch": "feat/t-0023-short-title",
-      "pr": null
-    }
-  ],
-  "follow_ups": [
-    {
-      "id": "FU-001",
-      "title": "Add STRIPE_KEY to Cloudflare",
-      "steps": [
-        "Go to Cloudflare dashboard > Workers & Pages > your-app > Settings > Variables",
-        "Click 'Add variable'",
-        "Name: STRIPE_KEY, Value: from Stripe dashboard > API keys",
-        "Click 'Encrypt' then 'Save'"
-      ],
-      "trigger_task": "T-0024",
-      "source": "planned"
-    }
-  ]
-}
-</task-json-schema>
+Set `"producer": "to-tasks"`.
 
 After writing, output a single line:
 

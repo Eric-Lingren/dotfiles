@@ -200,60 +200,16 @@ Run `~/.dotfiles/claude-code-shared/scripts/task-filename.sh e2e-<slug>` to gene
 
 If a file for this slug already exists (any prefix), ask whether to overwrite or merge (same logic as `/to-tasks`).
 
-See `~/.dotfiles/claude-code-shared/contracts/task-schema.json` for the canonical schema and field rules. The structure below is illustrative:
+Read the canonical schema now:
+```bash
+cat ~/.dotfiles/claude-code-shared/contracts/task-schema.json
+```
+Use that schema exactly. Do not guess field names or structure.
+
+Set `"producer": "to-e2e-tasks"`. Add one e2e-specific top-level field alongside the standard fields:
+- `"source_branch"`: the branch name these tests were generated from.
 
 HITL tasks (rare — e.g. "provision Playwright auth credentials") must be hands-only: a keyboard action the AI cannot perform. Never emit a decision-review HITL task.
-
-<task-json-schema>
-{
-  "schema_version": "2",
-  "producer": "to-e2e-tasks",
-  "source": {"kind": "seed", "ref": "docs/seeds/YYYYMMDD-HHMM-{slug}.json"},
-  "generated_at": "<ISO 8601 timestamp>",
-  "source_branch": "<branch name these tests were generated from>",
-  "branching": {
-    "strategy": "single",
-    "branch": "<current branch name>"
-  },
-  "tasks": [
-    {
-      "id": "T-0030",
-      "title": "Create page objects and fixtures for invoice flow",
-      "type": "AFK",
-      "description": "Set up reusable Playwright page objects and fixtures for the invoice creation and export workflows. Pages: LoginPage, DashboardPage, InvoiceFormPage, InvoiceDetailPage. Fixtures: authenticated-user (cached browser state), test-organization (seeded test data).",
-      "acceptance_criteria": [
-        "Page object classes exist for each page touched by test scenarios",
-        "Auth fixture creates and caches authenticated browser state",
-        "Test data fixture seeds required entities",
-        "A smoke test using the fixtures passes"
-      ],
-      "blocked_by": [],
-      "status": "not_started",
-      "branch": null,
-      "pr": null
-    },
-    {
-      "id": "T-0031",
-      "title": "Test: create invoice with valid data",
-      "type": "AFK",
-      "description": "E2E test for invoice creation happy path. Workflow: user navigates to invoice form, fills all required fields, submits, and sees the created invoice on the detail page. Use InvoiceFormPage and InvoiceDetailPage page objects. Setup fixtures: authenticated-user, test-organization.",
-      "acceptance_criteria": [
-        "Test navigates to /invoices/new",
-        "Test fills all required fields using page object methods",
-        "Test submits the form and asserts redirect to invoice detail",
-        "Test verifies invoice data appears correctly on detail page"
-      ],
-      "blocked_by": ["T-0030"],
-      "status": "not_started",
-      "branch": null,
-      "pr": null
-    }
-  ],
-  "follow_ups": []
-}
-</task-json-schema>
-
-Note: `source_branch` is an e2e-specific top-level field recording which branch the tests were generated from. All other fields follow the canonical schema.
 
 Tell the user the output path and ID range once written.
 
