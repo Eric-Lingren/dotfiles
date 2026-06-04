@@ -101,8 +101,8 @@
         "Resume trigger is defined as argument-presence detection, not schema validation"
       ],
       "blocked_by": ["T-0001"],
-      "status": "not_started",
-      "branch": null,
+      "status": "done",
+      "branch": "feat/harden-ideation-loop-pipeline",
       "pr": null
     },
     {
