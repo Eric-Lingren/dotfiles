@@ -235,11 +235,47 @@ def run_self_test(make_validator):
     return ok
 
 
+def validate_instance(schema_path, data_path, make_validator):
+    """Validate data_path against schema_path. Returns True on success."""
+    schema_path = pathlib.Path(schema_path)
+    data_path = pathlib.Path(data_path)
+
+    try:
+        schema = json.loads(schema_path.read_text())
+    except Exception as e:
+        print(f"ERROR: could not read schema {schema_path}: {e}", file=sys.stderr)
+        return False
+
+    try:
+        data = json.loads(data_path.read_text())
+    except Exception as e:
+        print(f"ERROR: could not read data {data_path}: {e}", file=sys.stderr)
+        return False
+
+    try:
+        validator = make_validator(schema)
+    except Exception as e:
+        print(f"ERROR: could not build validator for {schema_path.name}: {e}", file=sys.stderr)
+        return False
+
+    errors = sorted(validator.iter_errors(data), key=lambda e: list(e.absolute_path))
+    if errors:
+        for err in errors:
+            path_parts = list(err.absolute_path)
+            path_str = ".".join(str(p) for p in path_parts) if path_parts else "(root)"
+            print(f"ERROR: {data_path.name}: {path_str}: {err.message}", file=sys.stderr)
+        return False
+
+    print(f"OK: {data_path.name} is valid against {schema_path.name}")
+    return True
+
+
 def main():
     args = sys.argv[1:]
     if not args:
         print(
-            "Usage: validate-schema.py <contracts_dir> [--self-test] [schema_file ...]",
+            "Usage: validate-schema.py <contracts_dir> [--self-test] [schema_file ...]\n"
+            "       validate-schema.py <contracts_dir> --instance <schema-file> <data-file>",
             file=sys.stderr,
         )
         sys.exit(1)
@@ -250,6 +286,31 @@ def main():
         sys.exit(1)
 
     args = args[1:]
+
+    # --instance mode: validate a data file against a named schema
+    if "--instance" in args:
+        idx = args.index("--instance")
+        rest = args[idx + 1:]
+        if len(rest) < 2:
+            print(
+                "ERROR: --instance requires exactly 2 arguments: <schema-file> <data-file>",
+                file=sys.stderr,
+            )
+            sys.exit(1)
+        schema_file, data_file = rest[0], rest[1]
+        all_schemas = load_all_schemas(contracts_dir)
+        make_validator = build_validator_factory(all_schemas)
+        ok = validate_instance(schema_file, data_file, make_validator)
+        if not ok:
+            sys.exit(1)
+        return
+
+    # Unknown flags
+    for arg in args:
+        if arg.startswith("--") and arg not in ("--self-test",):
+            print(f"ERROR: unknown flag: {arg}", file=sys.stderr)
+            sys.exit(1)
+
     self_test = "--self-test" in args
     args = [a for a in args if a != "--self-test"]
 

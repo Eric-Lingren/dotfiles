@@ -19,15 +19,19 @@ When input is a seed file (`.json`), apply Step-0a directly. When input is an HT
 **Step-0a — validate seed input before processing:**
 ```bash
 bash ~/.dotfiles/claude-code-shared/scripts/validate-schema.sh \
-  ~/.dotfiles/claude-code-shared/contracts/seed-schema.json \
+  --instance ~/.dotfiles/claude-code-shared/contracts/seed-schema.json \
   <seed-path-or-extracted-json>
 ```
-On non-zero exit: STOP. Report stderr to the user. Do not process the seed.
+
+Gate is deterministic:
+- Exit 0: proceed.
+- Non-zero exit: STOP. Report the stderr output to the user verbatim. Do not process the seed.
+- If validate-schema.sh itself errors or is not found: STOP. Report the error to the user. Do not improvise alternate validation.
 
 **Step-0b — validate task output after writing:**
 ```bash
 bash ~/.dotfiles/claude-code-shared/scripts/validate-schema.sh \
-  ~/.dotfiles/claude-code-shared/contracts/task-schema.json \
+  --instance ~/.dotfiles/claude-code-shared/contracts/task-schema.json \
   <output-path>
 ```
 On non-zero exit: STOP. Report stderr to the user. Do not write the file.
@@ -65,21 +69,39 @@ to resolve the threads in a new session.
 
 Do not generate any tasks. Do not ask clarifying questions. Stop.
 
-**Hard refusal for degraded seeds (v4 only):** After confirming `status` is `"ready"`, check whether `schema_version` is `"4"`. If it is, read the `verification` field. If `verification.status` is `"degraded"`, stop immediately:
+**Quality-gate override for degraded seeds (v4 only):** After confirming `status` is `"ready"`, check whether `schema_version` is `"4"`. If it is, read the `verification` field. If `verification.status` is `"degraded"`, show the following and ask the user to confirm (one-click confirm, not a type-confirm):
 
 ```
-ERROR: This seed was saved in degraded verification state.
+Quality gate: this seed has verification.status: 'degraded'.
 The adversary panel did not complete — one or more persona or judge agents failed
 during the to-seed verification stage.
 
-to-tasks cannot safely generate tasks from an unverified seed. Re-run /to-seed
-to trigger a full adversary panel run. When the seed reaches verification.status:
-'verified', this check will pass.
+Generating tasks from an unverified seed carries risk: fabrications or omissions
+in the seed may not have been caught.
+
+Confirm to override this gate and generate tasks anyway, or cancel to re-run /to-seed.
 ```
 
-Do not generate any tasks. Do not ask clarifying questions. Stop.
+- If the user confirms: proceed. Record the override in the tasks artifact as `gate_override: {gate: "quality", reason: "user confirmed override of degraded verification.status", confirmed_at: "<ISO 8601 timestamp>"}`. **Do not flip the seed's verification.status to 'verified'.** The seed stays honestly degraded.
+- If the user cancels: stop. Do not generate any tasks.
 
-Seeds with `verification.status: "verified"` proceed normally.
+**Note:** a sanctioned override never launders the seed. The seed's `verification.status` field must not be changed to `"verified"` as a side effect of generating tasks.
+
+**Structural-gate override for schema-invalid seeds:** If Step-0a exits non-zero (schema validation failed), show the exact validation errors from stderr, then ask the user to type-confirm to override:
+
+```
+Structural gate: seed schema validation failed.
+Errors:
+  <exact stderr output from validate-schema.sh>
+
+Type "override" to generate tasks anyway (risky — schema errors may cause downstream failures),
+or press Enter to cancel.
+```
+
+- If the user types "override": proceed. Record the override as `gate_override: {gate: "structural", reason: "user typed override despite schema validation errors: <first error line>", confirmed_at: "<ISO 8601 timestamp>"}`.
+- If the user does not type "override": stop.
+
+Seeds with `verification.status: "verified"` proceed normally with no gate prompt.
 Seeds without a `verification` field (schema_version "3" and earlier) proceed without this check for backward compatibility.
 
 Record the source type and path for provenance stamping:

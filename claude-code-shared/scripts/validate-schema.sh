@@ -1,32 +1,55 @@
 #!/usr/bin/env bash
-# validate-schema.sh — validate JSON schema files and their embedded examples.
+# validate-schema.sh — validate JSON schema files and their embedded examples,
+# or validate a data instance against a named schema.
 #
 # Usage:
+#   validate-schema.sh [--help]
 #   validate-schema.sh [--self-test] [schema-file ...]
+#   validate-schema.sh --instance <schema-file> <data-file>
 #
-# Validates the examples[] of each schema file against itself, with
-# cross-file $ref resolution across all contracts/*.json files.
+# Modes:
+#   (no args)                        Validate examples[] in all contracts/*.json
+#   schema-file ...                  Validate examples[] in the given schema files
+#   --self-test                      Run the cross-file $ref mechanism self-test
+#   --instance <schema-file> <data>  Validate data-file against schema-file
 #
-# Options:
-#   --self-test    Run the built-in cross-file $ref mechanism self-test
-#   (no args)      Validate all contracts/*.json
+# Exit codes:
+#   0  All checks passed
+#   1  One or more checks failed, or invalid invocation
 
 set -euo pipefail
-
-# Guard against the old 2-arg API: validate-schema.sh <schema-path> <instance-path>
-# The new API validates schema files against their embedded examples — passing an
-# instance file as the second arg silently passes (no examples[]) instead of checking it.
-if [[ $# -eq 2 && -f "$1" ]]; then
-    echo "ERROR: validate-schema.sh API changed." >&2
-    echo "  Old form: validate-schema.sh <schema-path> <instance-path>" >&2
-    echo "  New form: validate-schema.sh [--self-test] [schema-file...]" >&2
-    echo "  To validate schema files and their embedded examples, pass just the schema file(s)." >&2
-    exit 1
-fi
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 CONTRACTS_DIR="$(cd "${SCRIPT_DIR}/../contracts" && pwd)"
 PY_SCRIPT="${SCRIPT_DIR}/validate-schema.py"
+
+# --help / -h
+if [[ $# -ge 1 && ( "$1" == "--help" || "$1" == "-h" ) ]]; then
+    sed -n '2,/^$/p' "$0" | grep '^#' | sed 's/^# \?//'
+    exit 0
+fi
+
+# Guard against the old 2-arg positional API: validate-schema.sh <schema-path> <instance-path>
+# Use --instance <schema-file> <data-file> instead.
+if [[ $# -eq 2 && -f "$1" && "$1" != --* && "$2" != --* ]]; then
+    echo "ERROR: validate-schema.sh API changed." >&2
+    echo "  Old form: validate-schema.sh <schema-path> <instance-path>" >&2
+    echo "  New form: validate-schema.sh --instance <schema-file> <data-file>" >&2
+    echo "  Run: validate-schema.sh --help for full usage." >&2
+    exit 1
+fi
+
+# Unknown flags: any --flag not in the known set
+for arg in "$@"; do
+    case "$arg" in
+        --help|-h|--self-test|--instance) ;;
+        --*)
+            echo "ERROR: unknown flag: $arg" >&2
+            echo "  Run: validate-schema.sh --help for usage." >&2
+            exit 1
+            ;;
+    esac
+done
 
 if [[ ! -f "${PY_SCRIPT}" ]]; then
     echo "ERROR: ${PY_SCRIPT} not found" >&2

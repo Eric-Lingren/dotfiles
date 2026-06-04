@@ -27,6 +27,7 @@
     "editor.tabSize": 2,
     "editor.formatOnPaste": true,
     "editor.formatOnSave": true,
+    "editor.wordWrap": "on",
     "editor.inlineSuggest.enabled": true,
     "editor.accessibilitySupport": "off",
     "editor.codeActionsOnSave": {

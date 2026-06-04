@@ -100,11 +100,27 @@ Run this stage after synthesis populates all seed fields in memory and before an
 
 **Pipeline order is strict:** synthesis mints the disposed-id lock list (step 2) before any persona agent spawns. This ensures agents cannot re-raise a disposed thread by any name.
 
-#### 3a. Spawn all 4 adversary persona agents in parallel
+#### 3a. Prepare the cleaned transcript
 
-In a single message, spawn all four adversary personas simultaneously. Each persona receives:
-- The full draft seed JSON (in-memory, not yet written)
-- The source transcript text (or path to it)
+Before spawning any persona, produce the cleaned transcript from the ground-truth on-disk session JSONL:
+
+1. Resolve the session JSONL path using `$CLAUDE_CODE_SESSION_ID` and `$CLAUDE_CONFIG_DIR` (or the hook-provided `transcript_path` env var). The filter script handles resolution — see `~/.dotfiles/claude-code-shared/scripts/filter-session-transcript.sh --help`.
+
+2. Run:
+   ```bash
+   bash ~/.dotfiles/claude-code-shared/scripts/filter-session-transcript.sh /tmp/cleaned-transcript-${CLAUDE_CODE_SESSION_ID}.jsonl
+   ```
+   Store the output path as `CLEANED_TRANSCRIPT_PATH`.
+
+3. If the script exits non-zero (JSONL not found or unresolvable), mark the entire verification stage as failed (all 4 personas failed), note the error, and jump to step 3d. Do not spawn any persona agents. Do not author or summarize the transcript as a substitute.
+
+**The orchestrator must never author or summarize the transcript.** Only the deterministic pre-filter script may produce `CLEANED_TRANSCRIPT_PATH`. An LLM-authored transcript reintroduces the mirror problem this stage is designed to prevent.
+
+#### 3b. Spawn all 4 adversary persona agents in parallel
+
+In a single message, spawn all four adversary personas simultaneously. Each persona receives (per `~/.dotfiles/claude-code-shared/contracts/persona-input-contract.md`):
+- The full draft seed JSON (inline)
+- `transcript_path: <CLEANED_TRANSCRIPT_PATH>` — a file path, not inline transcript text
 - The disposed-id lock list (hard constraint: do not raise threads with these ids)
 
 Agents to spawn (by registered agent name, not file path):
@@ -113,25 +129,30 @@ Agents to spawn (by registered agent name, not file path):
 - `personas:persona-completeness` — hunts missed branches, premature closure, dropped dependencies, merge-loss
 - `personas:persona-coherence` — hunts contradiction, misclassification, dropped human dispositions, relabel-resurrection
 
-Each persona returns a JSON array of refutation objects (`[]` if nothing found).
+Each persona returns a JSON array of refutation objects (`[]` if nothing found). Validate each returned result against the shape defined in `~/.dotfiles/claude-code-shared/contracts/refutation-contract.md`. On a parse mismatch or non-JSON response, retry that persona once. If the retry also fails, note the failure (agent name + error) and continue to 3c.
 
 **Adversarial framing:** the panel's job is to disprove, not to improve. Additions and new open_threads the panel surfaces auto-apply. Removals (claiming a decision is wrong and should be removed) require a cited transcript span as evidence — no span, no removal.
 
-**Failure handling (per persona):** if a persona agent errors or times out, retry it once silently. If the retry also fails, note the failure (agent name + error) and continue to 3c.
+#### 3c. Short-circuit or adjudicate
 
-#### 3b. Adjudicate each refutation with 3 judge instances
+**If all four personas return empty arrays (`[]`):** skip the judge stage entirely. There are no refutations to adjudicate. Proceed directly to step 3d with `refutations_upheld: 0`.
 
-For each refutation returned by any persona:
-1. Spawn 3 instances of `personas:persona-judge` simultaneously.
-2. Each judge instance receives: the single refutation object, the source transcript, and the draft seed (read-only context).
-3. Collect the 3 verdicts (`upheld` / `rejected`). A flat 2-of-3 majority decides.
-4. If the refutation is upheld: apply it to the draft seed in memory (see framing rules above).
+**Otherwise:** for each refutation returned by any persona:
 
-**Failure handling (per judge):** if a judge instance errors or times out, retry it once silently. If 2 or more judge instances fail for the same refutation, skip that refutation, record the failure, and continue.
+1. Spawn 3 instances of `personas:persona-judge` simultaneously. Each judge receives (per `~/.dotfiles/claude-code-shared/contracts/persona-input-contract.md`): the single refutation object, `transcript_path: <CLEANED_TRANSCRIPT_PATH>`, and the draft seed (read-only context).
+2. Validate each returned result against the shape defined in `~/.dotfiles/claude-code-shared/contracts/verdict-contract.md`. On a parse mismatch or non-JSON response, retry that judge instance once.
+3. Collect non-failed verdicts. Apply a flat 2-of-3 majority.
+4. If the refutation is upheld: apply it to the draft seed in memory (see adversarial framing above).
 
-#### 3c. Build the verification stamp
+**Failure handling (per judge):** if 2 or more judge instances fail for the same refutation, skip that refutation, record the failure, and continue.
 
-After all refutations are adjudicated, write the `verification` field onto the draft seed:
+#### 3d. Build the verification stamp and clean up
+
+After all refutations are adjudicated:
+
+1. Delete the cleaned transcript file: `rm -f "${CLEANED_TRANSCRIPT_PATH}"`.
+
+2. Write the `verification` field onto the draft seed:
 
 ```json
 {
@@ -143,16 +164,16 @@ After all refutations are adjudicated, write the `verification` field onto the d
 }
 ```
 
-**Degraded path:** if any persona or judge failure was recorded in 3a/3b and was not recovered, set `verification.status` to `"degraded"` instead of `"verified"`. Do not silently write a degraded seed. Present the user with:
+**Degraded path:** if any persona or judge failure was recorded in 3b/3c and was not recovered, set `verification.status` to `"degraded"` instead of `"verified"`. Do not silently write a degraded seed. Present the user with:
 
 ```
 Verification incomplete — the following agents failed to complete:
   <list of failed agent names and errors>
 
 Options:
-1. Retry verification — re-run the full adversary panel now
+1. Rerun only the agents that failed
 2. Save as-is — write the seed with verification.status: 'degraded'
-   (note: to-tasks will refuse to consume a degraded seed)
+   (note: to-tasks will surface this with an override prompt — you will not be hard-blocked)
 ```
 
 Abort is never an option. The seed is always written. If the user picks option 2, write `verification.status: "degraded"` and continue to step 4.
