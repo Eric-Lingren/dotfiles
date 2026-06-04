@@ -108,10 +108,10 @@ In a single message, spawn all four adversary personas simultaneously. Each pers
 - The disposed-id lock list (hard constraint: do not raise threads with these ids)
 
 Agents to spawn (by registered agent name, not file path):
-- `persona-grounding` — hunts unsupported content and fabricated rationale
-- `persona-accuracy` — hunts semantic drift and stale-resolution
-- `persona-completeness` — hunts missed branches, premature closure, dropped dependencies, merge-loss
-- `persona-coherence` — hunts contradiction, misclassification, dropped human dispositions, relabel-resurrection
+- `personas:persona-grounding` — hunts unsupported content and fabricated rationale
+- `personas:persona-accuracy` — hunts semantic drift and stale-resolution
+- `personas:persona-completeness` — hunts missed branches, premature closure, dropped dependencies, merge-loss
+- `personas:persona-coherence` — hunts contradiction, misclassification, dropped human dispositions, relabel-resurrection
 
 Each persona returns a JSON array of refutation objects (`[]` if nothing found).
 
@@ -122,7 +122,7 @@ Each persona returns a JSON array of refutation objects (`[]` if nothing found).
 #### 3b. Adjudicate each refutation with 3 judge instances
 
 For each refutation returned by any persona:
-1. Spawn 3 instances of `persona-judge` simultaneously.
+1. Spawn 3 instances of `personas:persona-judge` simultaneously.
 2. Each judge instance receives: the single refutation object, the source transcript, and the draft seed (read-only context).
 3. Collect the 3 verdicts (`upheld` / `rejected`). A flat 2-of-3 majority decides.
 4. If the refutation is upheld: apply it to the draft seed in memory (see framing rules above).
@@ -136,7 +136,7 @@ After all refutations are adjudicated, write the `verification` field onto the d
 ```json
 {
   "iteration": <current iteration integer>,
-  "personas": ["persona-grounding", "persona-accuracy", "persona-completeness", "persona-coherence"],
+  "personas": ["personas:persona-grounding", "personas:persona-accuracy", "personas:persona-completeness", "personas:persona-coherence"],
   "refutations_upheld": <count of upheld refutations>,
   "clean": <true if refutations_upheld === 0>,
   "status": "verified"

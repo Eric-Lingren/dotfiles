@@ -70,7 +70,7 @@
     },
     {
       "name": "persona-grounding",
-      "file": "agents/persona-grounding.md",
+      "file": "agents/personas/persona-grounding.md",
       "model": "haiku",
       "description": "Adversary persona that hunts unsupported content and fabricated rationale in a draft seed. Spawned by to-seed verification stage. Returns refutations with cited transcript spans.",
       "consumers": [
@@ -79,7 +79,7 @@
     },
     {
       "name": "persona-accuracy",
-      "file": "agents/persona-accuracy.md",
+      "file": "agents/personas/persona-accuracy.md",
       "model": "haiku",
       "description": "Adversary persona that hunts semantic drift and stale-resolution in a draft seed. Spawned by to-seed verification stage. Returns refutations with cited transcript spans.",
       "consumers": [
@@ -88,7 +88,7 @@
     },
     {
       "name": "persona-completeness",
-      "file": "agents/persona-completeness.md",
+      "file": "agents/personas/persona-completeness.md",
       "model": "haiku",
       "description": "Adversary persona that hunts missed branches, premature closure, dropped dependencies, and merge-loss in a draft seed. Spawned by to-seed verification stage. Returns refutations with cited transcript spans.",
       "consumers": [
@@ -97,7 +97,7 @@
     },
     {
       "name": "persona-coherence",
-      "file": "agents/persona-coherence.md",
+      "file": "agents/personas/persona-coherence.md",
       "model": "haiku",
       "description": "Adversary persona that hunts contradiction, misclassification, dropped human dispositions, and relabel-resurrection in a draft seed. Spawned by to-seed verification stage. Returns refutations with cited transcript spans.",
       "consumers": [
@@ -106,7 +106,7 @@
     },
     {
       "name": "persona-judge",
-      "file": "agents/persona-judge.md",
+      "file": "agents/personas/persona-judge.md",
       "model": "sonnet",
       "description": "Evidence-bound adjudicator spawned 3x per refutation for a 2-of-3 majority vote. Checks whether a persona refutation's cited transcript span supports the refutation. Spawned by to-seed verification stage.",
       "consumers": [

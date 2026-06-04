@@ -158,8 +158,4 @@ Options:
 - Answering "yes" or "yep" to a specific scoped question during the session ("do I have permission to delete X?") does NOT authorize broader implementation. Specific questions have specific scope.
 - Wait for the user's answer before doing anything.
 
-## Anti-rabbit-hole guidance (soft, non-binding)
-
-See `~/.dotfiles/claude-code-shared/resources/soft-dimension-list.md` for a starter set of commonly-missed decision branches. Use it as a reminder, not a checklist. Skip dimensions that are irrelevant to the session topic. Do not inline the list — read the file when you need it.
-
 </session-end-protocol>
