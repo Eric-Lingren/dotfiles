@@ -65,8 +65,8 @@
         "A smoke test confirms the skill text references all 4 persona agent names correctly"
       ],
       "blocked_by": ["T-0001", "T-0002"],
-      "status": "not_started",
-      "branch": null,
+      "status": "done",
+      "branch": "feat/harden-ideation-loop-pipeline",
       "pr": null
     },
     {
