@@ -2,7 +2,7 @@
 name: improve-component
 description: Analyze React components or TypeScript/HTML files for reusability, modularity, and hygiene improvements. Separates business logic from presentation, enforces design system usage, and proposes focused refactors. Use when user wants to improve a specific component, clean up a file, or make code more modular.
 model: sonnet
-effort: xhigh
+effort: high
 ---
 
 <!-- tier-delegate: managed by sync-model-tiers.py -->

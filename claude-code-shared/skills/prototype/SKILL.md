@@ -2,7 +2,7 @@
 name: prototype
 description: Explore ideas, hypotheses, and design options before committing to a PRD. Runs throwaway code (terminal or UI) on a local-only git branch, then collapses findings into docs/prototypes/<filename>.md. Use when the user wants to prototype, sanity-check a data model or state machine, mock up a UI, explore design options, or says "prototype this", "let me play with it", "try a few designs".
 model: sonnet
-effort: xhigh
+effort: high
 ---
 
 # Prototype

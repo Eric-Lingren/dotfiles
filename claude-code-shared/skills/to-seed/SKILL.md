@@ -3,7 +3,7 @@ name: to-seed
 description: Distill the current conversation or grill session into a standardized JSON IR (seed) and save it to docs/seeds/. Use when user wants to capture decisions and context from a conversation before moving to /to-prd-html, /to-tasks, or /prototype.
 argument-hint: "[optional: path to a handoff doc that carries a base seed to merge into]"
 model: sonnet
-effort: xhigh
+effort: high
 ---
 
 # To Seed

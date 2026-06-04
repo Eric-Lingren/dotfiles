@@ -5,7 +5,7 @@ description: >
   performance, and adherence to project conventions. Use when user says "review my changes",
   "review this PR", "code review", or invokes /review.
 model: sonnet
-effort: xhigh
+effort: high
 ---
 
 <!-- tier-delegate: managed by sync-model-tiers.py -->

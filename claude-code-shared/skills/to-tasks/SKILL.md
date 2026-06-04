@@ -2,7 +2,7 @@
 name: to-tasks
 description: Break a PRD into independently-grabbable tasks using tracer-bullet vertical slices, then write a JSON task file to docs/tasks/. Use when user wants to convert a PRD into AI-ready tasks.
 model: sonnet
-effort: xhigh
+effort: high
 ---
 
 # To Tasks

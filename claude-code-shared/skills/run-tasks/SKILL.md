@@ -2,7 +2,7 @@
 name: run-tasks
 description: Execute tasks from a tasks JSON file sequentially using TDD. Handles branching, status updates, blocker detection, and HITL pausing. Use when user wants to run AI tasks from a docs/tasks/ file.
 model: sonnet
-effort: xhigh
+effort: high
 ---
 
 <!-- tier-delegate: managed by sync-model-tiers.py -->

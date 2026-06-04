@@ -7,7 +7,7 @@ description: >
   opportunities. Use when user says "improve skill", "eval skill", "run evals",
   "optimize skill", "self-improve", or invokes /improve-skill.
 model: sonnet
-effort: xhigh
+effort: high
 ---
 
 # Improve Skill

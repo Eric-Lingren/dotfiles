@@ -3,7 +3,7 @@
   "tiers": {
     "T1": { "model": "haiku",  "effort": "low",    "_meaning": "Lookup. No reasoning. File search, status, how-to." },
     "T2": { "model": "sonnet", "effort": "medium", "_meaning": "Mechanical. Narrow, well-defined scope." },
-    "T3": { "model": "sonnet", "effort": "xhigh",  "_meaning": "Standard build. Context-aware. THIS IS THE SESSION DEFAULT." },
+    "T3": { "model": "sonnet", "effort": "high",   "_meaning": "Standard build. Context-aware. THIS IS THE SESSION DEFAULT." },
     "T4": { "model": "opus",   "effort": "xhigh",  "_meaning": "Deep reasoning. Architecture, complex debug, planning." }
   },
   "default": "T3",

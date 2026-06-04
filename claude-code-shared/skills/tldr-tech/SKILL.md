@@ -2,7 +2,7 @@
 name: tldr-tech
 description: Summarize a technical document (code docs, API references, changelogs, config option lists, etc.) into four structured views: Engineer Concise, Engineer Full, Product Concise, Product Full. Use when user wants a structured breakdown of a technical document, config reference, or API spec.
 model: sonnet
-effort: xhigh
+effort: high
 ---
 
 Summarize the following technical content across four outputs. Use simple markdown throughout — bullets, bold, short lines. No long prose blocks. Everything must be skimmable at a glance.

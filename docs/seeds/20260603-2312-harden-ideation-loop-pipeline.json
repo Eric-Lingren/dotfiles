@@ -1,0 +1,99 @@
+{
+  "schema_version": "3",
+  "producer": "to-seed",
+  "source": { "kind": "session", "ref": null },
+  "title": "Harden the Brainstorming/Ideation Loop at the Front of the AI Pipeline",
+  "slug": "harden-ideation-loop-pipeline",
+  "created": "2026-06-04T06:11:59Z",
+  "summary": "Design session to harden the grill → to-seed → loop workflow so it produces verified, hallucination-free seed artifacts reliably. Resolved the full loop architecture: ownership stays in to-seed + grill skills (no new controller), resume contract uses tail-call grill with mode-aware settled-vs-live framing, verification is a mandatory internal to-seed stage with a 4-persona Haiku adversary panel and 3-judge Sonnet High adjudication panel, and the seed schema gains thread identity (stable ids, disposed_threads lock list, iteration counter, verification stamp). Exit mechanism is per-thread human disposition with sticky locked ids. Two threads are genuinely open: how the draft gate presents its three-way choice, and the exact context-switch nudge mechanism.",
+  "decisions": [
+    "Loop ownership: extend to-seed + grill skills with no new controller. The loop is emergent from grill → seed → grill. to-seed is the gate, to-tasks is the downstream guard.",
+    "Same-window re-entry: to-seed's draft branch tail-calls the grill skill via Skill() with the seed path as resume payload. Both loop paths (same-window and cross-window) share one resume contract. Simply printing open_threads and chatting does not re-inject the grill framework; a tail-call does.",
+    "Resume scope: resumed grill drills open_threads only. A resolution that contradicts a prior decision reopens that specific decision (contradiction-only reopen), not a free re-sweep. Resume loads full context: the handoff document and the base_seed it points at.",
+    "Resume trigger: grill resume is triggered by argument presence (a seed or handoff path passed in). Detection = the argument. No strict schema validation gate inside grill. Three distinct exits when a doc is passed: (a) has open_threads → resume, drill them; (b) open_threads empty (status ready) → stop, tell user it is solidified, suggest downstream skills; (c) unreadable or missing → say so plainly, ask what the user wants. Never a silent re-grill.",
+    "grill-with-docs 'don't extract from seeds' rule becomes mode-aware: fresh grill = decisions from live conversation only (guard intact); resume grill = seed/handoff decisions loaded as settled givens, open_threads is the live agenda. The intent (don't fabricate decisions from a doc as if they were discussed) is preserved; the scope is narrowed to fresh sessions only.",
+    "Grill stays free: no hard coverage gates or mandatory rubric added to the grill skills. Grill's power is free-flowing ideation. A soft, non-binding dimension list is added as anti-rabbit-hole guidance only. Exact contents are implementation-level.",
+    "All verification guardrails live at the to-seed boundary. Grill skills are essentially untouched except for the resume contract and soft dimension list. to-seed gets a mandatory internal verification stage.",
+    "Verification is an internal stage of to-seed, atomic. No seed ever commits to disk without passing the adversary panel and judge adjudication. Synthesis runs in memory, panel audits the draft, judges reconcile, then the file is written.",
+    "Synthesis does the honest first pass populating all fields including open_threads. The adversary panel reconciles on top: additions auto-apply (erring toward more grilling is the safe direction), removals must be justified with cited transcript evidence.",
+    "Adversarial framing: the panel's job is to disprove the synthesis, not validate it. Content is presumed valid unless refuted with transcript evidence. Completeness is presumed incomplete unless the panel fails to surface new threads. This fights LLM sycophancy by design.",
+    "Adjudication: every refutation must cite a transcript span. Three Sonnet High judges check each citation against the actual transcript (ground truth). Flat 2-of-3 majority decides both directions. Transcript is ground truth, not panel consensus.",
+    "Panel composition: 4 Haiku adversary personas (Grounding, Accuracy, Completeness, Coherence), each with an internal sub-lens checklist. All 4 run every time. 3 Sonnet High judges. Shared cached input prefix (~21k tokens). Haiku finds, Sonnet adjudicates.",
+    "Grounding persona: hunts unsupported content and fabricated rationale. Question: 'Is this claim, decision, or rationale actually in the transcript, or invented?'",
+    "Accuracy persona: hunts semantic drift and stale-resolution. Question: 'Does the seed faithfully represent what was said, with no over-confident restatement and no overturned position still marked resolved?'",
+    "Completeness persona: hunts missed branches, premature closure, unstated assumptions, dropped dependencies, and merge-loss. Runs a sub-lens checklist covering all five. Auto-extends with merge-loss lens when a base seed is present (Mode 2).",
+    "Coherence persona: hunts contradiction, misclassification (wrong bucket), and dropped human dispositions. Sub-lenses: consistency across decisions, correct routing, and 'you said defer but it is missing from deferred[]'.",
+    "Thread identity: open_threads field changes from string[] to [{id, text, first_seen_iteration}]. Stable thread ids across loop iterations. The id is the handle that makes the sticky-lock enforceable.",
+    "New disposed_threads field: [{id, text, disposition, iteration}]. disposition is decided | deferred | rejected. This is the canonical lock list. Synthesis and panel read it; locked ids cannot be re-raised. Text is included so relabel-resurrection can be detected.",
+    "Sticky-lock pipeline order inside to-seed: synthesis runs first and builds the disposed-id lock list from its output. The panel and judges receive this lock list as a hard constraint. The lock is established before any adversary agent spawns, closing the race condition.",
+    "Relabel-resurrection guard: Coherence persona checks proposed new threads against disposed-id text for substantive overlap. A relabeled resurrection of a locked thread is rejected by 2-of-3 judges.",
+    "Disposition-fidelity check: verification confirms every human disposition expressed in conversation actually landed in its bucket in the seed before commit. If 'defer this' was said but is missing from deferred[], it is flagged.",
+    "New iteration field: integer, incremented each loop pass. Powers the persistence nudge ('this thread survived N loops, recommend disposing') and is the context-switch proxy at the draft gate.",
+    "Verification stamp: new verification field: {iteration, personas[], refutations_upheld, clean}. clean = no upheld refutation left unaddressed. Stores counts only, not full refutation detail. Gives downstream consumers a readable signal that this seed was adjudicated.",
+    "Seed lineage: each loop iteration writes a new chained seed file. source links to the predecessor. Only the ready seed is valid downstream input. Draft seeds are ephemeral scaffolding, purged by clean-scaffolding. to-tasks already hard-refuses drafts.",
+    "Human exit mechanism: loop exits by per-thread human disposition (decide / defer / reject) expressed naturally in conversation, not only by organic resolution. No blind iteration cap. Disposing routes a thread into decisions[], deferred[], or out_of_scope[]. Locked ids prevent the loop from re-litigating a closed thread.",
+    "Domain-role personas (CEO, architect, customer, designer, etc.) are not part of the seed verification panel because their claims are not transcript-adjudicable. Deferred to the grill phase as optional, user-summoned idea-stress lenses.",
+    "Model stack: 4 adversary personas → Haiku. 3 judges → Sonnet High. Sonnet High effort is sufficient for evidence-bound adjudication; xhigh adds deduction depth this task does not need. The safety margin is the 2-of-3 majority, not the effort dial."
+  ],
+  "open_threads": [
+    "Draft gate behavior: how to-seed presents the three-way choice (continue grilling here / write handoff and stop for cross-window pickup / just stop) after writing a draft seed, and when the handoff doc is generated (only on cross-window choice vs always). Discussion started in Q12 but user did not evaluate or confirm before context ran out.",
+    "Context-switch nudge mechanism: iteration count was proposed as a proxy for 'context is getting heavy, recommend switching windows,' but the specific threshold, how the recommendation is surfaced, and whether it is the right proxy were not confirmed."
+  ],
+  "next_action": "Open a fresh context window with the handoff document and resolve the two open draft-gate threads, then proceed to implementation tasks for the skill and schema changes.",
+  "status": "draft",
+  "deferred": [
+    {
+      "text": "Exact contents of the soft dimension list for grill skills",
+      "rationale": "Implementation-level. The decision to have it is made; the wording is a build-time tuning knob.",
+      "context": "Light guidance to prevent rabbit-holing in grill sessions. Non-binding.",
+      "source_seed": "docs/seeds/20260603-2312-harden-ideation-loop-pipeline.json"
+    },
+    {
+      "text": "Exact sub-lens checklists for each of the 4 adversary personas",
+      "rationale": "Implementation-level. Persona roles and scope are decided; the exact checklist items are written during build.",
+      "context": "Each persona carries a short rubric of exactly what to attack so broad-scope personas (especially Completeness) do not dilute across sub-lenses.",
+      "source_seed": "docs/seeds/20260603-2312-harden-ideation-loop-pipeline.json"
+    },
+    {
+      "text": "Which grill variant (grill-me vs grill-with-docs) to-seed re-invokes on resume when the originating variant is ambiguous",
+      "rationale": "Implementation-level tuning knob. Default to grill-me; refine during build.",
+      "context": "to-seed tail-calls whichever grill variant produced the session if detectable from context, else defaults to grill-me.",
+      "source_seed": "docs/seeds/20260603-2312-harden-ideation-loop-pipeline.json"
+    },
+    {
+      "text": "Domain-role personas (CEO, architect, customer, designer) as optional user-summoned lenses during grill",
+      "rationale": "Explicitly pinned/deferred. Not part of the verification panel. Valuable as idea-stress tools in the grill phase but not needed for the core loop hardening.",
+      "context": "User liked the concept. These are idea-quality lenses, not artifact-integrity lenses. They belong upstream in the grill, not at the seed verification stage.",
+      "source_seed": "docs/seeds/20260603-2312-harden-ideation-loop-pipeline.json"
+    },
+    {
+      "text": "Panel failure handling: what to-seed does when an adversary agent errors out or times out during verification",
+      "rationale": "Operational resilience detail. Decide during build (e.g., retry once, skip persona and note in verification stamp, or abort and surface error).",
+      "context": "Should not block the main design; handle at implementation time.",
+      "source_seed": "docs/seeds/20260603-2312-harden-ideation-loop-pipeline.json"
+    },
+    {
+      "text": "File location for shared persona instruction files and sub-lens checklists",
+      "rationale": "Implementation-level. contracts/ vs resources/ vs inline in SKILL.md are all viable.",
+      "context": "Decide during build based on how other shared resources are structured.",
+      "source_seed": "docs/seeds/20260603-2312-harden-ideation-loop-pipeline.json"
+    }
+  ],
+  "out_of_scope": [
+    {
+      "text": "Ingestion pipeline at the front (pulling from Linear, GitHub issues queue, Sentry, etc.)",
+      "rationale": "Explicitly deferred by user. Will be built separately after this ideation loop is solid. Not needed for this design."
+    }
+  ],
+  "implementation_decisions": [
+    "Thread-id assignment: synthesis mints new ids for threads first raised in the current session; on Mode 2 merge, ids from the base seed are preserved unchanged.",
+    "The handoff's ## Seed Context block must be extended to carry the full open_threads object array (with ids) and the disposed_threads lock list so a resumed grill can enforce stickiness across windows.",
+    "Grill resume mode must read the disposed_threads lock list and treat those ids as off-limits for the duration of the session.",
+    "Schema version must be bumped to '4' to reflect the breaking changes: open_threads becoming an object array, new disposed_threads, iteration, and verification fields."
+  ],
+  "risks_and_tradeoffs": [
+    "The 4-Haiku + 3-Sonnet-High panel adds latency to every to-seed run. On a clean seed this is pure overhead. Acceptable because the shared cached prefix (~21k tokens) means the marginal cost per agent is low, and the panel runs in parallel.",
+    "Synthesis must now handle two ingest modes (fresh vs merge) plus populate a richer schema. More surface area for synthesis errors, which are exactly what the panel is there to catch.",
+    "open_threads changing from string[] to object[] is a breaking schema change. Any existing draft seeds on disk will need to be migrated or re-run."
+  ]
+}
