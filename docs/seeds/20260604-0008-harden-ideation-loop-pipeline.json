@@ -1,7 +1,7 @@
 {
   "schema_version": "3",
   "producer": "to-seed",
-  "source": { "kind": "seed", "ref": "docs/seeds/20260603-2312-harden-ideation-loop-pipeline.json" },
+  "source": { "type": "seed", "ref": "docs/seeds/20260603-2312-harden-ideation-loop-pipeline.json" },
   "title": "Harden the Brainstorming/Ideation Loop at the Front of the AI Pipeline",
   "slug": "harden-ideation-loop-pipeline",
   "created": "2026-06-04T07:08:22Z",

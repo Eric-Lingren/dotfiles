@@ -63,8 +63,8 @@ Gather three sources of information:
 **a. Project vocabulary and ADRs.** Spawn the `context-loader` agent (`subagent_type: context-loader`, repo root as working directory). It returns `vocabulary` (domain terms, inlined) and `adrs` (one-line decisions + paths). Use `vocabulary` terms in workflow names and test scenario descriptions. If the payload's `missing` list is non-empty, proceed without domain vocabulary.
 
 **b. The source artifact.** Look for an existing task JSON in `docs/tasks/` for the current branch. If found, read its `source` field:
-- When `source.kind` is `"seed"` or `"prd"` and `source.ref` is non-null: load the artifact at `source.ref` for context (seed or PRD respectively).
-- When `source.kind` is `"session"` (ref null): fall through to the prompt-or-skip path below.
+- When `source.type` is `"seed"` or `"prd"` and `source.ref` is non-null: load the artifact at `source.ref` for context (seed or PRD respectively).
+- When `source.type` is `"session"` (ref null): fall through to the prompt-or-skip path below.
 - When multiple task files exist: ask the user which one corresponds to the current work.
 
 If no task JSON exists, or the source cannot be resolved, ask the user to provide the seed/PRD path directly or skip context.

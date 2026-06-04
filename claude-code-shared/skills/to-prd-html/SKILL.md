@@ -92,10 +92,10 @@ Every HTML PRD MUST contain two metadata script blocks at the bottom of `<body>`
    ```json
    {
      "producer": "to-prd-html",
-     "source": {"kind": "seed", "ref": "<absolute-or-relative-path-to-seed-file>"}
+     "source": {"type": "seed", "ref": "<absolute-or-relative-path-to-seed-file>"}
    }
    ```
-   Use the seed file path as passed to this skill (the same path from step 1). This enables reverse-tracing: a task file stamped with `source: {kind: "prd", ref: <html-path>}` can follow the prd-provenance block to reach the originating seed.
+   Use the seed file path as passed to this skill (the same path from step 1). This enables reverse-tracing: a task file stamped with `source: {type: "prd", ref: <html-path>}` can follow the prd-provenance block to reach the originating seed.
 
 **Never auto-commit.**
 

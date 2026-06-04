@@ -236,7 +236,7 @@ See `~/.dotfiles/claude-code-shared/resources/branching-strategy.md` for JSON re
 
 HITL tasks from debug (rare — e.g. "enable the feature flag to expose the buggy code path") must be hands-only: a keyboard action the AI cannot perform. Never emit a decision-review HITL task.
 
-Set `"producer": "debug"` on the root object. Set `"source": {"kind": "session", "ref": null}`. Follow all field rules from the schema above.
+Set `"producer": "debug"` on the root object. Set `"source": {"type": "session", "ref": null}`. Follow all field rules from the schema above.
 
 The `follow_ups` array must include one entry for debug cleanup. Use the "Debug cleanup and post-mortem" runbook from `~/.dotfiles/claude-code-shared/resources/hitl-steps-runbooks.md`. Set `id` to `"FU-001"`, `trigger_task` to the first task ID, and `source` to `"planned"`.
 

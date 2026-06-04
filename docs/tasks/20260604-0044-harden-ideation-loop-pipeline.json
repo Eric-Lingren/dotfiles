@@ -2,7 +2,7 @@
   "schema_version": "2",
   "producer": "to-tasks",
   "source": {
-    "kind": "seed",
+    "type": "seed",
     "ref": "docs/seeds/20260604-0008-harden-ideation-loop-pipeline.json"
   },
   "generated_at": "2026-06-04T00:44:00Z",
@@ -127,6 +127,7 @@
       "id": "T-0008",
       "title": "Rename source.kind to source.type across all JSON contracts and instances",
       "type": "AFK",
+      "status": "in_progress",
       "description": "Rename the 'kind' key to 'type' in all 'source' objects across JSON contracts, instance files, validation scripts, and skill docs. Core change is in provenance-schema.json where the property is defined. Cascade to all consumers. Files in scope: (1) claude-code-shared/contracts/provenance-schema.json — rename the 'kind' property to 'type' in the source object definition; (2) claude-code-shared/contracts/task-schema.json and seed-schema.json — update any inline references to source.kind; (3) all existing JSON instance files that carry source.kind: docs/tasks/20260604-0044-harden-ideation-loop-pipeline.json, docs/seeds/20260603-2312-harden-ideation-loop-pipeline.json, docs/seeds/20260604-0008-harden-ideation-loop-pipeline.json; (4) claude-code-shared/scripts/validate-schema.py — update test case key names; (5) all SKILL.md files that reference source.kind in prose or examples: to-seed, to-tasks, tasks-to-linear, to-prd-html, code-review, improve-component, to-e2e-tasks, clean-scaffolding, debug. After all edits run validate-schema.sh --self-test to confirm no schema violations. Grep the repo to confirm zero remaining occurrences of '\"kind\"' inside any source object.",
       "acceptance_criteria": [
         "provenance-schema.json defines the source discriminator as 'type' not 'kind'",
@@ -138,8 +139,8 @@
         "validate-schema.sh --self-test passes after all changes"
       ],
       "blocked_by": [],
-      "status": "not_started",
-      "branch": null,
+      "status": "done",
+      "branch": "feat/harden-ideation-loop-pipeline",
       "pr": null
     },
     {
