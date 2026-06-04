@@ -9,6 +9,29 @@ effort: xhigh
 
 Break a PRD into independently-grabbable tasks using vertical slices (tracer bullets) and write the result as a JSON file to `docs/tasks/`.
 
+## Contract
+
+**Consumes:** seed file OR HTML PRD — see `contracts/seed-contract.md` (schema_version: `"2"`)
+**Produces:** task file — see `contracts/task-contract.md` (schema_version: `"1"`)
+
+When input is a seed file (`.json`), apply Step-0a directly. When input is an HTML PRD (`.html` or `.md`), run `scripts/extract-prd-json.sh <path>` first to extract the embedded seed JSON, then apply Step-0a on the extracted JSON.
+
+**Step-0a — validate seed input before processing:**
+```bash
+bash ~/.dotfiles/claude-code-shared/scripts/validate-schema.sh \
+  ~/.dotfiles/claude-code-shared/contracts/seed-schema.json \
+  <seed-path-or-extracted-json>
+```
+On non-zero exit: STOP. Report stderr to the user. Do not process the seed.
+
+**Step-0b — validate task output after writing:**
+```bash
+bash ~/.dotfiles/claude-code-shared/scripts/validate-schema.sh \
+  ~/.dotfiles/claude-code-shared/contracts/task-schema.json \
+  <output-path>
+```
+On non-zero exit: STOP. Report stderr to the user. Do not write the file.
+
 ## Process
 
 ### 1. Locate the source artifact

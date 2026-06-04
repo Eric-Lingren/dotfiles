@@ -1,7 +1,7 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
   "title": "prd-data",
-  "description": "Canonical shape for PRD JSON embedded in HTML PRDs and written by to-seed.",
+  "description": "DEPRECATED: Canonical schema has moved to contracts/seed-schema.json. This file is kept for backward compatibility.",
   "type": "object",
   "required": [
     "schema_version",

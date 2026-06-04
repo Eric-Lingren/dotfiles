@@ -56,6 +56,64 @@ If neither exists, stop and tell the user: the file must exist before registerin
 
 If both exist (unusual), ask the user which path they want to register.
 
+### 1b. Skill path — format contract gate (hard-FAIL)
+
+> Architecture overview: `claude-code-shared/contracts/overview.html`
+
+Before proceeding with registration, grep the SKILL.md for format signals that indicate the skill touches a shared contract format:
+
+```bash
+grep -E "docs/tasks/|docs/seeds/|-schema\.json|contracts/" \
+  claude-code-shared/skills/<name>/SKILL.md
+```
+
+**If any signal is found:** also check whether the file contains a `## Contract` section with a `validate-schema.sh` line:
+
+```bash
+grep -c "## Contract" claude-code-shared/skills/<name>/SKILL.md
+grep -c "validate-schema.sh" claude-code-shared/skills/<name>/SKILL.md
+```
+
+**Decision:**
+- **Signal found AND both checks pass (Contract section + validate-schema.sh line present):** proceed to step 2a.
+- **Signal found AND either check fails:** HARD-FAIL. Print:
+
+  ```
+  ERROR: Registration blocked.
+  <name>/SKILL.md references a shared format (docs/tasks/, docs/seeds/, *-schema.json, or contracts/)
+  but is missing a ## Contract section with a validate-schema.sh Step-0 invocation.
+
+  Add a ## Contract section. See contracts/task-contract.md (or seed-contract.md, runner-result-contract.md)
+  for the required section format. Re-run /register-skill after adding it.
+  ```
+
+  Stop. Do not proceed with registration.
+
+- **No signal found:** skip this check entirely. Proceed to step 2a.
+
+This gate ships as hard-FAIL. There is no WARN fallback.
+
+### 1c. Skill path — update interactive diagram (format-touching skills only)
+
+Skip this step if step 1b found no format signals.
+
+If the skill touches a shared format, add it to `claude-code-shared/contracts/overview.html`. Open the file and locate the Mermaid flowchart. Add the skill node to the correct subgraph:
+
+- **Planning** — skills that produce or consume `seed.json` or `HTML PRD`
+- **Tasking** — skills that produce `task.json`
+- **Execution** — skills that consume `task.json` or produce `verdict`
+- **Triaging** — skills that consume `task.json` for tracking/routing
+
+Add the node with a quoted label:
+
+```
+skillId["/skill-name"]
+```
+
+Add edges reflecting the actual data flow (solid `-->` for unconditional, dashed `-.->` for conditional). Add the new node ID to the `class ... skill` line at the bottom of the classDef block.
+
+After editing, open the file in a browser and confirm the diagram renders without syntax errors before proceeding.
+
 ### 2a. Skill path — choose a tier
 
 Read `claude-code-shared/resources/model-tiers.json` — it is the source of truth for all tier definitions. The `tiers` map contains each tier's model, effort, and meaning. Present those to the user directly from the file rather than from a hardcoded table here.

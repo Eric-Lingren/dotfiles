@@ -2,9 +2,17 @@
 
 JSON verdict returned by `lint-runner` and `test-runner` agents. The caller (run-tasks) inspects `status` to gate task completion.
 
-## Schema
+**Schema:** `runner-result-schema.json` in this directory (schema_version: `"1"`)
 
-See `runner-result-schema.json` in this directory for the machine-readable schema.
+## Producers
+
+- `agents/lint-runner.md` — runs lint/format checks, returns verdict
+- `agents/test-runner.md` — runs unit/integration tests and typecheck, returns verdict
+- `agents/e2e-runner.md` — runs Playwright e2e suite, returns verdict
+
+## Consumers
+
+- `skills/run-tasks/` — spawns runners in parallel, gates task done on all verdicts passing
 
 ## Status enum
 
@@ -65,6 +73,7 @@ Each failed test case (test-runner only):
 
 ```json
 {
+  "schema_version": "1",
   "status": "fail",
   "check_type": "test",
   "workspace": "client",

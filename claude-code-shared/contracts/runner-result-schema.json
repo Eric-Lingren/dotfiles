@@ -4,9 +4,14 @@
   "title": "Runner Result",
   "description": "JSON verdict returned by lint-runner and test-runner agents. Ephemeral — not a lineage document and not part of the shared provenance concept.",
   "type": "object",
-  "required": ["status", "check_type", "workspace", "command", "summary", "counts", "violations", "failures", "skipped_reason"],
+  "required": ["schema_version", "status", "check_type", "workspace", "command", "summary", "counts", "violations", "failures", "skipped_reason"],
   "additionalProperties": false,
   "properties": {
+    "schema_version": {
+      "type": "string",
+      "const": "1",
+      "description": "Schema version. Must be '1'."
+    },
     "status": {
       "type": "string",
       "enum": ["pass", "fail", "warn", "timeout", "deps-missing"],
@@ -84,6 +89,7 @@
   },
   "examples": [
     {
+      "schema_version": "1",
       "status": "pass",
       "check_type": "test",
       "workspace": "client",
@@ -95,6 +101,7 @@
       "skipped_reason": null
     },
     {
+      "schema_version": "1",
       "status": "fail",
       "check_type": "test",
       "workspace": "client",
@@ -123,6 +130,7 @@
       "skipped_reason": null
     },
     {
+      "schema_version": "1",
       "status": "warn",
       "check_type": "test",
       "workspace": ".",
@@ -134,6 +142,7 @@
       "skipped_reason": "No test command resolved for workspace '.'"
     },
     {
+      "schema_version": "1",
       "status": "timeout",
       "check_type": "test",
       "workspace": "client",
@@ -145,6 +154,7 @@
       "skipped_reason": "Killed after 180s timeout"
     },
     {
+      "schema_version": "1",
       "status": "deps-missing",
       "check_type": "test",
       "workspace": "client",

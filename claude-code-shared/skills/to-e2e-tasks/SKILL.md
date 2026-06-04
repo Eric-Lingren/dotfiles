@@ -23,6 +23,19 @@ the current model. Delegate only the menial searching.
 
 Analyze the current branch's changes, discover which critical user-facing workflows are affected, stress-test the test plan with the user, and output a Playwright e2e tasks JSON file to `docs/tasks/` that `/run-tasks` can execute. This skill is a planner — it produces a task list, not implemented test code.
 
+## Contract
+
+**Format:** task file — see `contracts/task-contract.md` (schema_version: `"1"`)
+**Role:** producer
+
+**Step-0 — validate output after writing:**
+```bash
+bash ~/.dotfiles/claude-code-shared/scripts/validate-schema.sh \
+  ~/.dotfiles/claude-code-shared/contracts/task-schema.json \
+  <output-path>
+```
+On non-zero exit: STOP. Report stderr to the user. Do not write the file.
+
 ## Process
 
 ### 1. Detect Playwright setup

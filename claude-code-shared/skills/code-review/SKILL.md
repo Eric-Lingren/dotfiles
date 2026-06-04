@@ -22,6 +22,21 @@ general agent with `model: haiku`. Keep all reasoning, decisions, and edits on
 the current model. Delegate only the menial searching.
 <!-- /tier-delegate -->
 
+## Contract
+
+**Format (optional output):** task file — see `contracts/task-contract.md` (schema_version: `"1"`)
+**Role:** conditional producer (produces a task file only when the user promotes findings to tasks)
+
+**HITL vetting required before task output:** After review findings are displayed, present each finding as a numbered checklist. Prompt the user: "Which findings should become tasks? Select by number." Only selected findings are promoted to tasks. Validate the final output:
+```bash
+bash ~/.dotfiles/claude-code-shared/scripts/validate-schema.sh \
+  ~/.dotfiles/claude-code-shared/contracts/task-schema.json \
+  <output-path>
+```
+On non-zero exit: STOP. Report stderr to the user. Do not write the file.
+
+---
+
 You are performing a thorough code review. Follow this process exactly.
 
 ## Step 1: Gather the diff

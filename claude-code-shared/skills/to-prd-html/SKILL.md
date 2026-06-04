@@ -5,6 +5,23 @@ model: sonnet
 effort: xhigh
 ---
 
+## Contract
+
+**Consumes:** seed file — see `contracts/seed-contract.md` (schema_version: `"2"`)
+**Produces:** HTML PRD (`docs/prd/<filename>`, filename via `scripts/doc-filename.sh <slug> html`)
+
+The HTML PRD embeds the seed JSON verbatim. `to-tasks` can read the HTML PRD as an alternate input via `scripts/extract-prd-json.sh`, making the chain `seed → HTML PRD → tasks` valid.
+
+**Step-0 — validate seed input before processing:**
+```bash
+bash ~/.dotfiles/claude-code-shared/scripts/validate-schema.sh \
+  ~/.dotfiles/claude-code-shared/contracts/seed-schema.json \
+  <input-path>
+```
+On non-zero exit: STOP. Report stderr to the user. Do not process the file.
+
+---
+
 This skill renders a seed `.json` file into an interactive HTML PRD. It does NOT synthesize from conversation — the seed is the source of truth.
 
 ## Process

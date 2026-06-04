@@ -23,6 +23,19 @@ the current model. Delegate only the menial searching.
 
 A discipline for hard bugs. Skip phases only when explicitly justified.
 
+## Contract
+
+**Format (conditional output):** task file — see `contracts/task-contract.md` (schema_version: `"1"`)
+**Role:** conditional producer (produces a task file only for non-inline fixes; inline single-file fixes are applied directly)
+
+**Step-0 fires only when a tasks file is actually written:**
+```bash
+bash ~/.dotfiles/claude-code-shared/scripts/validate-schema.sh \
+  ~/.dotfiles/claude-code-shared/contracts/task-schema.json \
+  <output-path>
+```
+On non-zero exit: STOP. Report stderr to the user. Do not write the file.
+
 When exploring the codebase, use the project's domain glossary to get a clear mental model of the relevant modules, and check ADRs in the area you're touching.
 
 ## Complexity gate
@@ -213,7 +226,7 @@ If a seam exists but Phase 1 could not build a feedback loop, set the first acce
 
 **Generate the filename:** Run `~/.dotfiles/claude-code-shared/scripts/task-filename.sh debug-<slug>`
 
-Write to `docs/tasks/<filename>` using this structure.
+Write to `docs/tasks/<filename>`. See `contracts/task-contract.md` for the full schema.
 
 For single strategy:
 ```json

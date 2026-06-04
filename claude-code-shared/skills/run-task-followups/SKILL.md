@@ -9,6 +9,19 @@ effort: medium
 
 Interactive walkthrough of manual follow-ups from a `docs/tasks/` JSON file. Reads the `follow_ups` array and guides the user through each item one at a time.
 
+## Contract
+
+**Format:** task file — see `contracts/task-contract.md` (schema_version: `"1"`)
+**Role:** consumer
+
+**Step-0 — validate input before processing:**
+```bash
+bash ~/.dotfiles/claude-code-shared/scripts/validate-schema.sh \
+  ~/.dotfiles/claude-code-shared/contracts/task-schema.json \
+  <input-path>
+```
+On non-zero exit: STOP. Report stderr to the user. Do not process the file.
+
 ## Process
 
 ### 1. Ask for task file

@@ -7,7 +7,20 @@ effort: xhigh
 
 # Prototype
 
-A prototype is **throwaway code that answers a question**. It sits between `/grill-me` and `/to-prd-html` in the pipeline. The only durable output is a findings doc. The code is scaffolding and gets deleted.
+A prototype is **throwaway code that answers a question**.
+
+## Contract
+
+**Format (conditional output):** seed file — see `contracts/seed-contract.md` (schema_version: `"2"`)
+**Role:** conditional producer (produces a seed file only when user chooses option 1 in the end-of-run save prompt)
+
+**Step-0 fires only when a seed file is chosen:**
+```bash
+bash ~/.dotfiles/claude-code-shared/scripts/validate-schema.sh \
+  ~/.dotfiles/claude-code-shared/contracts/seed-schema.json \
+  <output-path>
+```
+On non-zero exit: STOP. Report stderr to the user. Do not write the file. It sits between `/grill-me` and `/to-prd-html` in the pipeline. The only durable output is a findings doc. The code is scaffolding and gets deleted.
 
 ## Setup
 
@@ -95,15 +108,26 @@ Once the prototype has answered its question and a final direction is agreed upo
    git branch -D prototype/proto-<slug>
    ```
 
-9. **Provenance note.** Prototype does not write task files. If a future variant produces a task JSON, stamp it with `"producer": "prototype"` and `"source": {"kind": "session", "ref": null}` per `contracts/task-schema.json`.
+9. **Prompt: save output as seed, handoff, or neither.**
+
+   ```
+   How should I save this prototype's findings?
+   1. Seed file (docs/seeds/) — feeds directly into /to-prd-html and /to-tasks
+   2. Handoff file (docs/prototypes/) — human-readable only, no downstream skills
+   3. Neither — findings are in the PR description only
+   ```
+
+   - **Option 1 (seed):** Write a seed file to `docs/seeds/` following `contracts/seed-contract.md`. Run Step-0 validation before writing. On validation failure: STOP and report stderr.
+   - **Option 2 (handoff):** Write to `docs/prototypes/` using `prototype-template.md`. No schema validation.
+   - **Option 3 (neither):** Skip artifact writing entirely.
 
 10. **Hand off to the PRD phase.** Print:
 
-   ```
-   Prototype complete.
+    ```
+    Prototype complete.
 
-   Artifact: <absolute-path-to-docs/prototypes/<filename>>
-   PR:       <pr-url>
+    Artifact: <absolute-path-to-artifact> (or "none" if option 3)
+    PR:       <pr-url>
 
-   Run /to-prd-html to continue.
-   ```
+    Run /to-prd-html or /to-tasks to continue.
+    ```

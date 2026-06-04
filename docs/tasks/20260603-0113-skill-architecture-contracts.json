@@ -1,0 +1,168 @@
+{
+  "prd": "docs/seeds/20260603-0055-skill-architecture-contracts.json",
+  "generated_at": "2026-06-03T01:13:00Z",
+  "branching": {
+    "strategy": "single",
+    "branch": "feat/skill-architecture-contracts"
+  },
+  "tasks": [
+    {
+      "id": "T-0001",
+      "title": "Scaffold contracts/ directory and author three JSON Schemas",
+      "type": "AFK",
+      "description": "Create claude-code-shared/contracts/ as a new first-class directory. Move resources/runner-result-schema.json to contracts/runner-result-schema.json and add schema_version const '1'. Promote skills/to-prd-html/resources/prd-data-schema.json to contracts/seed-schema.json, add additionalProperties: false, and enforce schema_version const '2'. Author contracts/task-schema.json from the prose in resources/task-schema.md: additionalProperties: false, schema_version const '1', browser_verify optional, linear_url optional (documented), source_branch dropped. Author three short contract.md files (task-contract.md, seed-contract.md, runner-result-contract.md), each declaring the format name, listing producers and consumers, and linking to its schema file. Update the original source locations (resources/ and to-prd-html/resources/) to point to the new canonical paths.",
+      "acceptance_criteria": [
+        "contracts/ directory exists with six files: task-schema.json, task-contract.md, seed-schema.json, seed-contract.md, runner-result-schema.json, runner-result-contract.md",
+        "All three schemas have additionalProperties: false",
+        "task-schema.json enforces schema_version as const '1'; seed-schema.json enforces const '2'; runner-result-schema.json enforces const '1'",
+        "task-schema.json does not contain source_branch; linear_url is present as an optional documented field",
+        "Each contract.md names producers, consumers, and links to its schema file"
+      ],
+      "blocked_by": [],
+      "status": "done",
+      "branch": "feat/skill-architecture-contracts",
+      "pr": "gh pr create --title \"feat: design-by-contract guards for shared skill formats\" --body \"See PR description\""
+    },
+    {
+      "id": "T-0002",
+      "title": "Write validate-schema.sh validator script",
+      "type": "AFK",
+      "description": "Create scripts/validate-schema.sh <schema-path> <input-path>. The script uses python3 + the jsonschema library (Draft 2020-12 capable). Exit 0 on valid input; non-zero on invalid with a clear human-readable error to stderr. On missing jsonschema import, hard-fail: print 'pip install jsonschema' to stderr and exit non-zero. Never auto-install dependencies. Never degrade to key-only presence checks. The script must be executable and handle both absolute and relative paths.",
+      "acceptance_criteria": [
+        "validate-schema.sh exists in scripts/ and is executable",
+        "Exits 0 on a valid JSON file matching the schema",
+        "Exits non-zero with a clear stderr error on schema violations",
+        "Prints 'pip install jsonschema' and exits non-zero if jsonschema is not importable",
+        "Never degrades silently to key-only checks"
+      ],
+      "blocked_by": [],
+      "status": "done",
+      "branch": "feat/skill-architecture-contracts",
+      "pr": "gh pr create --title \"feat: design-by-contract guards for shared skill formats\" --body \"See PR description\""
+    },
+    {
+      "id": "T-0003",
+      "title": "Write deterministic fixtures test for validate-schema.sh",
+      "type": "AFK",
+      "description": "Create a test script (scripts/tests/test-validate-schema.sh or similar) with four fixtures against the task schema: (1) a valid task file, (2) a file missing a required field, (3) a file with wrong schema_version, (4) a file with an extra undeclared field. Assert that fixture 1 exits 0 and fixtures 2-4 each exit non-zero. This is a deliberate carve-out from the no-infra-tests rule because validate-schema.sh is the single load-bearing guard the whole architecture rests on and an LLM eval cannot prove a bash script actually rejects bad JSON.",
+      "acceptance_criteria": [
+        "Test script exists and is executable",
+        "Valid fixture passes (exit 0)",
+        "Missing-field fixture fails (non-zero exit)",
+        "Wrong schema_version fixture fails (non-zero exit)",
+        "Extra-field fixture fails (non-zero exit)",
+        "Test script prints a clear pass/fail summary"
+      ],
+      "blocked_by": [
+        "T-0001",
+        "T-0002"
+      ],
+      "status": "done",
+      "branch": "feat/skill-architecture-contracts",
+      "pr": "gh pr create --title \"feat: design-by-contract guards for shared skill formats\" --body \"See PR description\""
+    },
+    {
+      "id": "T-0004",
+      "title": "Migrate all format-touching skills with ## Contract sections (big-bang)",
+      "type": "AFK",
+      "description": "Add a ## Contract section to every format-touching skill and agent file. Remove all hand-copied data shapes from SKILL.md files; replace with a pointer to the relevant contract.md. Each ## Contract section declares which formats the skill produces or consumes and includes a literal bash Step-0: `validate-schema.sh <schema-path> <input-path>` with instruction to STOP and report stderr on non-zero exit. Skills covered: task producers (to-tasks, to-e2e-tasks, debug, improve-component, code-review); task consumers (run-tasks, run-task-followups, tasks-to-linear); seed producer (prototype); seed consumers (to-tasks, to-prd-html); runner-result agent files (lint-runner, test-runner, e2e-runner). Conditional producer notes: debug produces tasks only on non-inline fixes (Step-0 fires only when a tasks file is actually written). code-review task output requires HITL vetting: after findings are displayed, prompt the user to review each finding as a checklist and select which to promote; only selected findings become tasks; validate-schema.sh runs on the final output. prototype prompts at end of run: 'Save output as: (1) seed file, (2) handoff file, (3) neither'; schema validation runs only if seed is chosen. Quirk cleanup in this same pass: drop source_branch from to-e2e-tasks SKILL.md (no consumer reads it); promote linear_url as a documented optional output field in task-contract.md and affected SKILL.md files.",
+      "acceptance_criteria": [
+        "Every format-touching skill and agent file has a ## Contract section",
+        "No SKILL.md hand-copies a data shape; each points to the relevant contract.md",
+        "Each ## Contract section includes a literal validate-schema.sh Step-0 invocation with STOP instruction",
+        "debug ## Contract notes Step-0 fires only when a tasks file is actually written",
+        "code-review ## Contract describes the HITL finding-vetting checklist step before task output",
+        "prototype ## Contract describes the end-of-run prompt (seed / handoff / neither) and conditional validation",
+        "source_branch is removed from to-e2e-tasks SKILL.md",
+        "linear_url is documented as an optional output field in task-contract.md"
+      ],
+      "blocked_by": [
+        "T-0001",
+        "T-0002"
+      ],
+      "status": "done",
+      "branch": "feat/skill-architecture-contracts",
+      "pr": "gh pr create --title \"feat: design-by-contract guards for shared skill formats\" --body \"See PR description\""
+    },
+    {
+      "id": "T-0005",
+      "title": "Update register-skill with conditional grep-based format gate",
+      "type": "AFK",
+      "description": "Add a conditional gate to register-skill that greps a candidate SKILL.md for strong format signals: docs/tasks/, docs/seeds/, *-schema.json, contracts/. If any signal is found but the file lacks a ## Contract section containing a validate-schema.sh line, hard-FAIL registration with a clear error message. Ships as hard-FAIL from day one with no WARN phase, because the big-bang in T-0004 migrates every current format-touching skill before this gate is added, leaving no legacy skill to trip a false failure. Skills touching no shared format are unaffected.",
+      "acceptance_criteria": [
+        "register-skill greps candidate SKILL.md for format signals before registration",
+        "Hard-FAILs (non-zero exit, clear error) if format signal present without ## Contract section containing validate-schema.sh",
+        "Skills with no format signals register normally without the check",
+        "Gate operates as hard-FAIL with no WARN fallback"
+      ],
+      "blocked_by": [
+        "T-0001",
+        "T-0002"
+      ],
+      "status": "done",
+      "branch": "feat/skill-architecture-contracts",
+      "pr": "gh pr create --title \"feat: design-by-contract guards for shared skill formats\" --body \"See PR description\""
+    },
+    {
+      "id": "T-0006",
+      "title": "Add jsonschema to dotfiles bootstrap",
+      "type": "AFK",
+      "description": "Add pip install jsonschema to the dotfiles bootstrap or setup script so fresh machines can run validate-schema.sh without hitting the hard-fail. The bootstrap owns dependency installation; validate-schema.sh itself must not auto-install. Verify the existing machine (python3 3.9.6, jsonschema 4.25.1) is already satisfied and will not be affected.",
+      "acceptance_criteria": [
+        "dotfiles bootstrap/setup script includes pip install jsonschema (or equivalent)",
+        "validate-schema.sh continues to hard-fail (not auto-install) when jsonschema is absent"
+      ],
+      "blocked_by": [],
+      "status": "done",
+      "branch": "feat/skill-architecture-contracts",
+      "pr": "gh pr create --title \"feat: design-by-contract guards for shared skill formats\" --body \"See PR description\""
+    },
+    {
+      "id": "T-0007",
+      "title": "Add malformed-input eval scenarios per format-consuming skill",
+      "type": "AFK",
+      "description": "Add one malformed-input eval scenario to the improve-skill harness for each format-consuming skill. Each scenario provides a structurally invalid input file (wrong schema_version, missing required field, or extra undeclared field) and asserts that the skill STOPs immediately with a clear error referencing the validator output, not rationalizing past the invalid input. Skills to cover: run-tasks, run-task-followups, tasks-to-linear, to-tasks, to-prd-html. These evals police the residual skip risk (agent skips Step-0 under load) that cannot be eliminated by script alone.",
+      "acceptance_criteria": [
+        "Each covered skill has at least one malformed-input eval scenario in the improve-skill harness",
+        "Each scenario provides a structurally invalid input file",
+        "Expected outcome is STOP with a clear validator error, not partial processing",
+        "Eval scenarios are runnable via /improve-skill <skill-name>"
+      ],
+      "blocked_by": [
+        "T-0004"
+      ],
+      "status": "done",
+      "branch": "feat/skill-architecture-contracts",
+      "pr": "gh pr create --title \"feat: design-by-contract guards for shared skill formats\" --body \"See PR description\""
+    }
+  ],
+  "follow_ups": [
+    {
+      "id": "FU-001",
+      "title": "Run improve-skill evals to verify malformed-input scenarios pass",
+      "steps": [
+        "Run: /improve-skill run-tasks \u2014 confirm malformed-input scenario STOPs with clear validator error",
+        "Run: /improve-skill run-task-followups \u2014 same assertion",
+        "Run: /improve-skill tasks-to-linear \u2014 same assertion",
+        "Run: /improve-skill to-tasks \u2014 same assertion",
+        "Run: /improve-skill to-prd-html \u2014 same assertion",
+        "For any skill where the eval rationalizes past the invalid input, tighten the ## Contract Step-0 wording and re-run"
+      ],
+      "trigger_task": "T-0007",
+      "source": "planned"
+    },
+    {
+      "id": "FU-002",
+      "title": "Audit other repos for un-versioned task files",
+      "steps": [
+        "Run: find ~ -name '*.json' -path '*/docs/tasks/*' 2>/dev/null | head -50",
+        "For each found file, check: python3 -c \"import json; d=json.load(open('<file>')); print('OK' if 'schema_version' in d else 'MISSING: <file>')\"",
+        "For any file missing schema_version, add '\"schema_version\": \"1\"' as a top-level field",
+        "Verify each updated file passes: validate-schema.sh contracts/task-schema.json <file>"
+      ],
+      "trigger_task": "T-0004",
+      "source": "planned"
+    }
+  ],
+  "schema_version": "1"
+}

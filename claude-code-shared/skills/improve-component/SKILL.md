@@ -23,6 +23,19 @@ the current model. Delegate only the menial searching.
 
 Analyze specific files or components for modularity, reusability, and hygiene. Propose focused refactors that make components easier to test, reuse, and maintain.
 
+## Contract
+
+**Format:** task file — see `contracts/task-contract.md` (schema_version: `"1"`)
+**Role:** producer
+
+**Step-0 — validate output before returning:**
+```bash
+bash ~/.dotfiles/claude-code-shared/scripts/validate-schema.sh \
+  ~/.dotfiles/claude-code-shared/contracts/task-schema.json \
+  <output-path>
+```
+On non-zero exit: STOP. Report stderr to the user. Do not write the file.
+
 This skill operates on individual files or small clusters of related files.
 
 ## Principles
