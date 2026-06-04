@@ -136,7 +136,7 @@ After all refutations are adjudicated, write the `verification` field onto the d
 ```json
 {
   "iteration": <current iteration integer>,
-  "personas": ["personas:persona-grounding", "personas:persona-accuracy", "personas:persona-completeness", "personas:persona-coherence"],
+  "personas": ["grounding", "accuracy", "completeness", "coherence"],
   "refutations_upheld": <count of upheld refutations>,
   "clean": <true if refutations_upheld === 0>,
   "status": "verified"
@@ -207,7 +207,7 @@ How do you want to resolve these?
      ````
   5. Output the handoff path and stop. Do not invoke any downstream skill.
 
-There is no fourth option. The user must choose one of the three paths. Abandoning without a handoff is not allowed.
+If the user selects "Other" or gives an unrecognized response, re-present the three options and ask them to choose one. Abandoning without a handoff is not allowed.
 
 **If `status` is `"ready"` (open_threads empty):**
 
