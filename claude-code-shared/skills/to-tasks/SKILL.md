@@ -134,9 +134,13 @@ Check `~/.dotfiles/claude-code-shared/resources/hitl-steps-runbooks.md` for exis
 
 Run `~/.dotfiles/claude-code-shared/scripts/next-task-id.sh docs/tasks/` to get the next available ID. The script scans all JSON files in the directory and returns the next globally unique ID.
 
-### 5. Ask about branching strategy
+### 5. Derive branch name
 
-Follow `~/.dotfiles/claude-code-shared/resources/branching-strategy.md` for how to present the choice, derive branch names, and record the result in the `branching` field of the JSON.
+Always use `strategy: "single"`. Never ask the user to choose between single and per-task.
+
+Ask only: "Branch name?" — use the naming conventions in `~/.dotfiles/claude-code-shared/resources/branching-strategy.md` to suggest a default (derive from current branch prefix + slug). User can accept or override.
+
+Record in the JSON: `{"strategy": "single", "branch": "{confirmed-name}"}`.
 
 ### 6. Write the JSON file
 
