@@ -1,8 +1,37 @@
 ---
 name: grill-with-docs
 description: Grilling session that challenges your plan against the existing domain model, sharpens terminology, and updates documentation (CONTEXT.md, ADRs) inline as decisions crystallise. Use when user wants to stress-test a plan against their project's language and documented decisions.
+argument-hint: "[optional: path to a seed or handoff doc to resume from]"
 model: opus
 effort: xhigh
+---
+
+## Mode detection
+
+**Trigger:** argument-presence detection. If ARGUMENTS contains a path, this is a resume. Do not inspect the schema — just check whether a path was passed.
+
+### Fresh grill (no argument)
+
+Read decisions from the live conversation only. Do not extract decisions from any seed or handoff file that happens to exist on disk. The live context is authoritative.
+
+### Resume grill (argument present)
+
+Read the file at the given path and check for `open_threads`:
+
+**(a) open_threads is non-empty:** enter resume mode.
+- Load `decisions` (from the seed or handoff's embedded base seed) as settled givens. Challenge these only if the live conversation or codebase evidence directly contradicts them.
+- Load `disposed_threads` as the off-limits lock list. Every id in this list is blocked from re-entry — under the original name or any relabeled form. Relabel-resurrection (same semantic content, different wording) is blocked.
+- Treat `open_threads` as the live agenda. Drill each one in sequence using the domain model and codebase as grounding material, same as a fresh grill question.
+- Apply the standard one-question-per-turn protocol.
+
+**(b) open_threads is empty (status: ready):** stop immediately.
+- Tell the user: "This seed is already solidified — all threads are resolved. No grilling needed."
+- Suggest next steps: `/to-tasks <path>` to generate tasks, or `/to-prd-html <path>` to render a PRD.
+- Do not start a grill session.
+
+**(c) path is unreadable or missing:** say so plainly and ask what the user wants.
+- Do not guess or fall back to a fresh grill. State the exact error and stop until the user responds.
+
 ---
 
 <what-to-do>

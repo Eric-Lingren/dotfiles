@@ -191,23 +191,23 @@ def run_self_test(make_validator):
             print(f"{result}: {label}")
 
     check(
-        "valid stamp (kind:seed, ref:non-null)",
-        {"producer": "to-seed", "source": {"kind": "seed", "ref": "docs/seeds/20260603-foo.json"}},
+        "valid stamp (type:seed, ref:non-null)",
+        {"producer": "to-seed", "source": {"type": "seed", "ref": "docs/seeds/20260603-foo.json"}},
         expect_valid=True,
     )
     check(
-        "invalid stamp (kind:seed, ref:null) — should be rejected",
-        {"producer": "to-tasks", "source": {"kind": "seed", "ref": None}},
+        "invalid stamp (type:seed, ref:null) — should be rejected",
+        {"producer": "to-tasks", "source": {"type": "seed", "ref": None}},
         expect_valid=False,
     )
     check(
-        "valid stamp (kind:session, ref:null)",
-        {"producer": "debug", "source": {"kind": "session", "ref": None}},
+        "valid stamp (type:session, ref:null)",
+        {"producer": "debug", "source": {"type": "session", "ref": None}},
         expect_valid=True,
     )
     check(
-        "invalid stamp (kind:session, ref:non-null) — should be rejected",
-        {"producer": "debug", "source": {"kind": "session", "ref": "docs/seeds/foo.json"}},
+        "invalid stamp (type:session, ref:non-null) — should be rejected",
+        {"producer": "debug", "source": {"type": "session", "ref": "docs/seeds/foo.json"}},
         expect_valid=False,
     )
     check(
@@ -221,13 +221,13 @@ def run_self_test(make_validator):
         expect_valid=False,
     )
     check(
-        "valid stamp (kind:prd, ref:non-null)",
-        {"producer": "to-tasks", "source": {"kind": "prd", "ref": "docs/prd/20260603-foo.html"}},
+        "valid stamp (type:prd, ref:non-null)",
+        {"producer": "to-tasks", "source": {"type": "prd", "ref": "docs/prd/20260603-foo.html"}},
         expect_valid=True,
     )
     check(
-        "invalid stamp (kind:prd, ref:null) — should be rejected",
-        {"producer": "to-tasks", "source": {"kind": "prd", "ref": None}},
+        "invalid stamp (type:prd, ref:null) — should be rejected",
+        {"producer": "to-tasks", "source": {"type": "prd", "ref": None}},
         expect_valid=False,
     )
 

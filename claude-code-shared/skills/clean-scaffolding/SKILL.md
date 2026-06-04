@@ -34,7 +34,7 @@ This prints the full grouped file list and a total to the terminal.
 Read every JSON file in `docs/seeds/`, `docs/prd/`, and `docs/tasks/` (do not delete anything yet). Build a lineage chain for each root artifact:
 
 **Walk the chain:**
-1. A root artifact has `source: null` or `source.kind = "session"` (no upstream document).
+1. A root artifact has `source: null` or `source.type = "session"` (no upstream document).
 2. A child artifact has `source.ref` pointing to a file in the chain (e.g. a PRD whose source.ref is a seed, or a task file whose source.ref is a seed or PRD).
 3. Group artifacts into chains: `{root, children[]}`. An artifact that isn't referenced by anyone is a standalone chain of one.
 

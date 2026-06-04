@@ -292,7 +292,7 @@ Follow the canonical schema in `~/.dotfiles/claude-code-shared/contracts/task-sc
 Key field values for improve-component tasks:
 - `schema_version`: `"2"`
 - `producer`: `"improve-component"`
-- `source`: `{"kind": "session", "ref": null}` (no upstream document for component improvement runs)
+- `source`: `{"type": "session", "ref": null}` (no upstream document for component improvement runs)
 
 HITL tasks (rare — e.g. "rotate the API key before refactoring the credential helper") must be hands-only: a keyboard action the AI cannot perform. Never emit a decision-review HITL task.
 - `branching`: use the strategy and branch from Step 7a (see branching-strategy.md for JSON format)

@@ -39,7 +39,7 @@ Read the selected JSON file. Extract:
 - `source` field — the upstream artifact, if any.
 - `tasks` array — the issues to create.
 
-**Load upstream context (when available):** If `source.ref` is non-null (source.kind is `"seed"` or `"prd"`), read the artifact at `source.ref` and extract:
+**Load upstream context (when available):** If `source.ref` is non-null (source.type is `"seed"` or `"prd"`), read the artifact at `source.ref` and extract:
 - **Problem Statement** — why this work exists
 - **Solution** — the high-level approach
 - **Implementation Decisions** — all phases, rules, and technical decisions
@@ -47,7 +47,7 @@ Read the selected JSON file. Extract:
 
 Embed this context in every ticket description so that agents working the ticket have full context without needing to access the source file separately.
 
-**When `source.ref` is null** (source.kind is `"session"`, or source is null): skip the upstream context load. The ticket descriptions will be built from each task's own `description` and `acceptance_criteria` fields, which must already be self-contained.
+**When `source.ref` is null** (source.type is `"session"`, or source is null): skip the upstream context load. The ticket descriptions will be built from each task's own `description` and `acceptance_criteria` fields, which must already be self-contained.
 
 ### 3. Ask for the Linear team
 

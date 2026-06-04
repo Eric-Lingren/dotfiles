@@ -1,8 +1,31 @@
 ---
 name: grill-me
 description: Interview the user relentlessly about a plan or design until reaching shared understanding, resolving each branch of the decision tree. Use when user wants to stress-test a plan, get grilled on their design, or mentions "grill me".
+argument-hint: "[optional: path to a seed or handoff doc to resume from]"
 model: opus
 effort: xhigh
+---
+
+## Resume mode
+
+**Trigger:** argument-presence detection. If ARGUMENTS contains a path, this is a resume. Do not inspect the schema or validate the file type — just check whether a path was passed.
+
+**On resume, read the file at the given path and check for `open_threads`:**
+
+**(a) open_threads is non-empty:** enter resume mode.
+- Treat `decisions` (from the seed or handoff's embedded base seed) as settled givens. Do not re-litigate them.
+- Treat `disposed_threads` as the off-limits lock list. Load every id from this list. Do not allow any thread matching a locked id to be raised again — not even under a different name. Relabel-resurrection (same semantic content, different wording) is blocked.
+- Drill only the `open_threads` items. Each one is a judgment call that must be resolved, deferred, or rejected before the session ends.
+- Apply the standard one-question-per-turn protocol to each open thread in sequence.
+
+**(b) open_threads is empty (status: ready):** stop immediately.
+- Tell the user: "This seed is already solidified — all threads are resolved. No grilling needed."
+- Suggest next steps: `/to-tasks <path>` to generate tasks, or `/to-prd-html <path>` to render a PRD.
+- Do not start a grill session.
+
+**(c) path is unreadable or missing:** say so plainly and ask what the user wants.
+- Do not guess or fall back to a fresh grill. State the exact error and stop until the user responds.
+
 ---
 
 Interview me relentlessly about every aspect of this plan until we reach a shared understanding. Walk down each branch of the design tree, resolving dependencies between decisions one-by-one.

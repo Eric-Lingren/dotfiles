@@ -26,7 +26,7 @@
     },
     "source": {
       "$ref": "provenance-schema#/$defs/source",
-      "description": "What the task file was generated from. {kind:'seed', ref:<path>} when generated from a seed. {kind:'prd', ref:<path>} when generated from an HTML PRD. {kind:'session', ref:null} when generated directly from a grill/debug/review session."
+      "description": "What the task file was generated from. {type:'seed', ref:<path>} when generated from a seed. {type:'prd', ref:<path>} when generated from an HTML PRD. {type:'session', ref:null} when generated directly from a grill/debug/review session."
     },
     "generated_at": {
       "type": "string",
@@ -171,7 +171,7 @@
     {
       "schema_version": "2",
       "producer": "to-tasks",
-      "source": {"kind": "seed", "ref": "docs/seeds/20260602-2000-replace-session-tokens-jwt.json"},
+      "source": {"type": "seed", "ref": "docs/seeds/20260602-2000-replace-session-tokens-jwt.json"},
       "generated_at": "2026-06-02T21:00:00Z",
       "branching": {
         "strategy": "single",

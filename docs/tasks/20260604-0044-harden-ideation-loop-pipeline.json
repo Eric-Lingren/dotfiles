@@ -2,7 +2,7 @@
   "schema_version": "2",
   "producer": "to-tasks",
   "source": {
-    "kind": "seed",
+    "type": "seed",
     "ref": "docs/seeds/20260604-0008-harden-ideation-loop-pipeline.json"
   },
   "generated_at": "2026-06-04T00:44:00Z",
@@ -26,14 +26,15 @@
         "seed-contract.md accurately describes all four new fields"
       ],
       "blocked_by": [],
-      "status": "not_started",
-      "branch": null,
+      "status": "done",
+      "branch": "feat/harden-ideation-loop-pipeline",
       "pr": null
     },
     {
       "id": "T-0002",
       "title": "Register persona agents and update model-tiers",
       "type": "AFK",
+      "status": "in_progress",
       "description": "Create 5 registered agent definition files under claude-code-shared/agents/personas/: 4 adversary personas (grounding, accuracy, completeness, coherence) and 1 judge. Each persona file's body is its sub-lens checklist (what to attack and how). Grounding hunts unsupported content and fabricated rationale. Accuracy hunts semantic drift and stale-resolution. Completeness hunts missed branches, premature closure, dropped dependencies, and merge-loss (auto-extended on Mode 2). Coherence hunts contradiction, misclassification, and dropped human dispositions, including relabel-resurrection checks against the disposed_threads lock list. The judge file defines the evidence-bound adjudicator spawned 3x for the 2-of-3 vote. Update agents/registry.json with all 5 entries (4 personas Haiku tier, judge Sonnet tier). Update resources/model-tiers.json: add 4 persona agents at T1 and the judge agent at T3. Verify whether the harness agent loader discovers agents in subdirectories (agents/personas/*.md) or only flat agents/*.md; if flat-only, place all 5 files flat under agents/ instead of in the personas/ subdirectory.",
       "acceptance_criteria": [
         "5 agent definition files exist (either at agents/personas/ or flat under agents/ depending on loader discovery)",
@@ -43,8 +44,8 @@
         "Spawning a persona agent by name (e.g. subagent_type: 'personas/grounding') resolves without error, or flat names work if loader is flat-only"
       ],
       "blocked_by": [],
-      "status": "not_started",
-      "branch": null,
+      "status": "done",
+      "branch": "feat/harden-ideation-loop-pipeline",
       "pr": null
     },
     {
@@ -64,8 +65,8 @@
         "A smoke test confirms the skill text references all 4 persona agent names correctly"
       ],
       "blocked_by": ["T-0001", "T-0002"],
-      "status": "not_started",
-      "branch": null,
+      "status": "done",
+      "branch": "feat/harden-ideation-loop-pipeline",
       "pr": null
     },
     {
@@ -82,8 +83,8 @@
         "Gate only appears when open_threads is non-empty (ready seeds bypass the gate)"
       ],
       "blocked_by": ["T-0003"],
-      "status": "not_started",
-      "branch": null,
+      "status": "done",
+      "branch": "feat/harden-ideation-loop-pipeline",
       "pr": null
     },
     {
@@ -100,14 +101,15 @@
         "Resume trigger is defined as argument-presence detection, not schema validation"
       ],
       "blocked_by": ["T-0001"],
-      "status": "not_started",
-      "branch": null,
+      "status": "done",
+      "branch": "feat/harden-ideation-loop-pipeline",
       "pr": null
     },
     {
       "id": "T-0006",
       "title": "Add shared dimension-list resource",
       "type": "AFK",
+      "status": "in_progress",
       "description": "Create a new shared resource file at claude-code-shared/resources/soft-dimension-list.md. Content is the starter set of soft dimensions sketched in the grill (data model, state transitions, failure modes, boundaries/contracts, dependencies/ordering, human touch points, scope/out-of-scope, reversibility/migration), clearly marked as DRAFT and data-gated pending instrumentation. The file must include a prominent note that its contents must not be tuned without measurement data. Update both grill-me/SKILL.md and grill-with-docs/SKILL.md to reference this resource file as non-binding anti-rabbit-hole guidance (soft, not prescriptive). The decision to have the list and share it across both skills is locked; the contents are explicitly provisional.",
       "acceptance_criteria": [
         "resources/soft-dimension-list.md exists with the starter dimension set",
@@ -117,8 +119,28 @@
         "Neither skill inlines the dimension list content (reference only, no duplication)"
       ],
       "blocked_by": [],
-      "status": "not_started",
-      "branch": null,
+      "status": "done",
+      "branch": "feat/harden-ideation-loop-pipeline",
+      "pr": null
+    },
+    {
+      "id": "T-0008",
+      "title": "Rename source.kind to source.type across all JSON contracts and instances",
+      "type": "AFK",
+      "status": "in_progress",
+      "description": "Rename the 'kind' key to 'type' in all 'source' objects across JSON contracts, instance files, validation scripts, and skill docs. Core change is in provenance-schema.json where the property is defined. Cascade to all consumers. Files in scope: (1) claude-code-shared/contracts/provenance-schema.json — rename the 'kind' property to 'type' in the source object definition; (2) claude-code-shared/contracts/task-schema.json and seed-schema.json — update any inline references to source.kind; (3) all existing JSON instance files that carry source.kind: docs/tasks/20260604-0044-harden-ideation-loop-pipeline.json, docs/seeds/20260603-2312-harden-ideation-loop-pipeline.json, docs/seeds/20260604-0008-harden-ideation-loop-pipeline.json; (4) claude-code-shared/scripts/validate-schema.py — update test case key names; (5) all SKILL.md files that reference source.kind in prose or examples: to-seed, to-tasks, tasks-to-linear, to-prd-html, code-review, improve-component, to-e2e-tasks, clean-scaffolding, debug. After all edits run validate-schema.sh --self-test to confirm no schema violations. Grep the repo to confirm zero remaining occurrences of '\"kind\"' inside any source object.",
+      "acceptance_criteria": [
+        "provenance-schema.json defines the source discriminator as 'type' not 'kind'",
+        "task-schema.json and seed-schema.json contain no reference to source.kind",
+        "All existing task and seed JSON instance files use source.type not source.kind",
+        "validate-schema.py test cases use 'type' not 'kind' in source fixture objects",
+        "All SKILL.md files that previously referenced source.kind now reference source.type",
+        "grep -r '\"kind\"' across contracts/ and docs/ returns zero matches inside source objects",
+        "validate-schema.sh --self-test passes after all changes"
+      ],
+      "blocked_by": [],
+      "status": "done",
+      "branch": "feat/harden-ideation-loop-pipeline",
       "pr": null
     },
     {
@@ -134,8 +156,8 @@
         "Degraded-check is only applied to seeds where schema_version is '4'"
       ],
       "blocked_by": ["T-0001"],
-      "status": "not_started",
-      "branch": null,
+      "status": "done",
+      "branch": "feat/harden-ideation-loop-pipeline",
       "pr": null
     }
   ],

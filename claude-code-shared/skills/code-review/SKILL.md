@@ -204,7 +204,7 @@ Run this checklist against **every changed file**, not just files that appear se
 
 ## Provenance
 
-code-review does not write task files. If a future variant writes a task JSON, stamp it with `"producer": "code-review"` and `"source": {"kind": "session", "ref": null}` per `contracts/task-schema.json`.
+code-review does not write task files. If a future variant writes a task JSON, stamp it with `"producer": "code-review"` and `"source": {"type": "session", "ref": null}` per `contracts/task-schema.json`.
 
 ## Output format
 
