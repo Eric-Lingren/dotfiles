@@ -39,18 +39,18 @@ echo "NOTE: only uncommitted working-tree changes are moved."
 echo "      local-only commits stay on $FROM."
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
-printf "Proceed? [y/N] "
+printf "Proceed? [Y/n] "
 read -r CONFIRM
-if [[ "$CONFIRM" != "y" && "$CONFIRM" != "Y" ]]; then
+if [[ "$CONFIRM" == "n" || "$CONFIRM" == "N" ]]; then
   echo "Aborted."
   exit 0
 fi
 
 # Check if target branch exists locally
 if ! git show-ref --verify --quiet "refs/heads/$TARGET"; then
-  printf "Branch '$TARGET' does not exist locally. Create it? [y/N] "
+  printf "Branch '$TARGET' does not exist locally. Create it? [Y/n] "
   read -r CREATE_CONFIRM
-  if [[ "$CREATE_CONFIRM" != "y" && "$CREATE_CONFIRM" != "Y" ]]; then
+  if [[ "$CREATE_CONFIRM" == "n" || "$CREATE_CONFIRM" == "N" ]]; then
     echo "Aborted."
     exit 0
   fi

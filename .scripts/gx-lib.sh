@@ -21,8 +21,18 @@ gx_normalize_url() {
   echo "$url"
 }
 
+# Map account shorthand to CLAUDE_CONFIG_DIR path.
+# "cco" -> ~/.cco (work), "cch" -> ~/.cch (home). Default: ~/.cch (safe for personal repos).
+_gx_account_to_config() {
+  case "$1" in
+    cco) echo "$HOME/.cco" ;;
+    cch) echo "$HOME/.cch" ;;
+    *)   echo "$HOME/.cch" ;;
+  esac
+}
+
 # Look up the policy entry for the current repo.
-# Sets GX_LABEL, GX_BASE_BRANCH, GX_EXCLUDE_JSON in the caller's environment.
+# Sets GX_LABEL, GX_BASE_BRANCH, GX_EXCLUDE_JSON, GX_CLAUDE_CONFIG in the caller's environment.
 # Returns 0 on registered hit, 1 on unregistered fallback (with stderr warning).
 gx_load_policy() {
   local remote_url key
@@ -32,6 +42,7 @@ gx_load_policy() {
     GX_LABEL="unknown"
     GX_BASE_BRANCH="${GX_BASE_BRANCH:-main}"
     GX_EXCLUDE_JSON="[]"
+    GX_CLAUDE_CONFIG="$(_gx_account_to_config cch)"
     return 1
   fi
 
@@ -42,6 +53,7 @@ gx_load_policy() {
     GX_LABEL="unknown"
     GX_BASE_BRANCH="${GX_BASE_BRANCH:-main}"
     GX_EXCLUDE_JSON="[]"
+    GX_CLAUDE_CONFIG="$(_gx_account_to_config cch)"
     return 1
   fi
 
@@ -56,6 +68,7 @@ if key in data:
     print(e.get('label', 'unknown'))
     print(e.get('base_branch', 'main'))
     print(json.dumps(e.get('exclude', [])))
+    print(e.get('account', 'cch'))
 else:
     sys.exit(1)
 " 2>/dev/null)
@@ -65,6 +78,7 @@ else:
     GX_LABEL="unknown"
     GX_BASE_BRANCH="${GX_BASE_BRANCH:-main}"
     GX_EXCLUDE_JSON="[]"
+    GX_CLAUDE_CONFIG="$(_gx_account_to_config cch)"
     return 1
   fi
 
@@ -72,6 +86,7 @@ else:
   # Respect GX_BASE_BRANCH if already set in env (allows tests to inject a value)
   GX_BASE_BRANCH="${GX_BASE_BRANCH:-$(echo "$entry" | sed -n '2p')}"
   GX_EXCLUDE_JSON=$(echo "$entry" | sed -n '3p')
+  GX_CLAUDE_CONFIG="$(_gx_account_to_config "$(echo "$entry" | sed -n '4p')")"
   return 0
 }
 

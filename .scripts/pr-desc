@@ -1,5 +1,9 @@
 #!/bin/bash
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/gx-lib.sh"
+gx_load_policy 2>/dev/null
+
 STDOUT_MODE=false
 for arg in "$@"; do
   [[ "$arg" == "--stdout" ]] && STDOUT_MODE=true
@@ -38,7 +42,7 @@ Rules:
 - Separate thoughts with periods or commas only
 - Concise, no run-on sentences"
 
-BODY=$(CLAUDE_CONFIG_DIR="${CC_WORK_DIR:-$HOME/.cco}" command claude -p "$PROMPT")
+BODY=$(CLAUDE_CONFIG_DIR="${GX_CLAUDE_CONFIG:-$HOME/.cch}" command claude -p "$PROMPT")
 
 if $STDOUT_MODE; then
   echo "$BODY"

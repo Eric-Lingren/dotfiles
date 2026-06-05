@@ -23,8 +23,8 @@ done
 BRANCH=$(git rev-parse --abbrev-ref HEAD)
 BASE="${GX_BASE_BRANCH:-main}"
 
-# Build exclude patterns as a bash array
-mapfile -t EXCLUDE_PATTERNS < <(gx_exclude_patterns)
+# Newline-separated exclude patterns from registry
+GX_EXCLUDE_PATS=$(gx_exclude_patterns)
 
 # Determine which files will be staged
 compute_staged_list() {
@@ -33,31 +33,35 @@ compute_staged_list() {
 
 compute_will_add() {
   if $MODE_ALL; then
-    # git add -A would add all untracked + modified
     { git diff --name-only; git ls-files --others --exclude-standard; } | sort -u
   else
-    # default: git add -u stages tracked modified files only
     git diff --name-only
   fi
 }
 
+# Returns newline-separated list of files matching any exclude pattern
+_matches_exclude() {
+  local f="$1"
+  while IFS= read -r pat; do
+    [[ -z "$pat" ]] && continue
+    if [[ "$f" == "$pat"* || "$f" == *"/$pat"* ]]; then
+      return 0
+    fi
+  done <<< "$GX_EXCLUDE_PATS"
+  return 1
+}
+
 compute_excluded() {
-  local -a result=()
-  local files
+  local all_files
   if $MODE_ALL; then
-    mapfile -t files < <({ git diff --name-only; git ls-files --others --exclude-standard; } | sort -u)
+    all_files=$({ git diff --name-only; git ls-files --others --exclude-standard; } | sort -u)
   else
-    mapfile -t files < <(git diff --name-only)
+    all_files=$(git diff --name-only)
   fi
-  for f in "${files[@]}"; do
-    for pat in "${EXCLUDE_PATTERNS[@]}"; do
-      if [[ "$f" == "$pat"* || "$f" == *"$pat"* ]]; then
-        result+=("$f")
-        break
-      fi
-    done
-  done
-  printf '%s\n' "${result[@]}"
+  while IFS= read -r f; do
+    [[ -z "$f" ]] && continue
+    _matches_exclude "$f" && echo "$f"
+  done <<< "$all_files"
 }
 
 # Secret scanning: look for common secret patterns in staged + will-add files
@@ -182,9 +186,9 @@ if ! $MODE_PUSH_ONLY; then
 fi
 
 # Confirm
-printf "Proceed? [y/N] "
+printf "Proceed? [Y/n] "
 read -r CONFIRM
-if [[ "$CONFIRM" != "y" && "$CONFIRM" != "Y" ]]; then
+if [[ "$CONFIRM" == "n" || "$CONFIRM" == "N" ]]; then
   echo "Aborted."
   exit 0
 fi
@@ -209,12 +213,17 @@ if ! $MODE_PUSH_ONLY; then
     unstage_excluded
   fi
 
-  printf "Commit message: "
-  read -r COMMIT_MSG
+  echo "Generating commit message..."
+  COMMIT_MSG=$("$SCRIPT_DIR/pr-commit" --stdout 2>/dev/null)
+
   if [[ -z "$COMMIT_MSG" ]]; then
-    echo "Empty commit message. Aborting."
-    git reset HEAD 2>/dev/null
-    exit 1
+    COMMIT_MSG="update files"
+  fi
+
+  printf "Commit message [enter to accept]: %s\n> " "$COMMIT_MSG"
+  read -r OVERRIDE
+  if [[ -n "$OVERRIDE" ]]; then
+    COMMIT_MSG="$OVERRIDE"
   fi
 
   git commit -m "$COMMIT_MSG"
