@@ -17,7 +17,7 @@ A prototype is **throwaway code that answers a question**.
 **Step-0 fires only when a seed file is chosen:**
 ```bash
 bash ~/.dotfiles/claude-code-shared/scripts/validate-schema.sh \
-  ~/.dotfiles/claude-code-shared/contracts/seed-schema.json \
+  --instance ~/.dotfiles/claude-code-shared/contracts/seed-schema.json \
   <output-path>
 ```
 On non-zero exit: STOP. Report stderr to the user. Do not write the file. It sits between `/grill-me` and `/to-prd-html` in the pipeline. The only durable output is a findings doc. The code is scaffolding and gets deleted.

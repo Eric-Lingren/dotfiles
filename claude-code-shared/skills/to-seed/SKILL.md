@@ -135,16 +135,19 @@ Each persona returns a JSON array of refutation objects (`[]` if nothing found).
 
 #### 3c. Short-circuit or adjudicate
 
-**If all four personas return empty arrays (`[]`):** skip the judge stage entirely. There are no refutations to adjudicate. Proceed directly to step 3d with `refutations_upheld: 0`.
+**If all four personas return empty arrays (`[]`):** skip the judge stage entirely. There are no refutations to adjudicate. Proceed directly to step 3d with `refutations_upheld: 0` and `refutations_screened: 0`.
 
-**Otherwise:** for each refutation returned by any persona:
+**Otherwise:** maintain a `refutations_screened` counter (starts at 0). For each refutation returned by any persona, apply the two-round escalation ladder:
 
-1. Spawn 3 instances of `personas:persona-judge` simultaneously. Each judge receives (per `~/.dotfiles/claude-code-shared/contracts/persona-input-contract.md`): the single refutation object, `transcript_path: <CLEANED_TRANSCRIPT_PATH>`, and the draft seed (read-only context).
-2. Validate each returned result against the shape defined in `~/.dotfiles/claude-code-shared/contracts/verdict-contract.md`. On a parse mismatch or non-JSON response, retry that judge instance once.
-3. Collect non-failed verdicts. Apply a flat 2-of-3 majority.
-4. If the refutation is upheld: apply it to the draft seed in memory (see adversarial framing above).
+**Round 1 — screener:** spawn 1 `personas:persona-judge` instance using the Sonnet model. The judge receives (per `~/.dotfiles/claude-code-shared/contracts/persona-input-contract.md`): the single refutation object, `transcript_path: <CLEANED_TRANSCRIPT_PATH>`, and the draft seed (read-only context). Validate the returned result against `~/.dotfiles/claude-code-shared/contracts/verdict-contract.md`. On a parse mismatch or non-JSON response, retry that judge once.
 
-**Failure handling (per judge):** if 2 or more judge instances fail for the same refutation, skip that refutation, record the failure, and continue.
+- **Round-1 returns `rejected`:** increment `refutations_screened`. Move to the next refutation. Do not escalate.
+- **Round-1 returns `upheld`:** escalate to round 2.
+- **Round-1 judge fails after retry:** record the failure (same degraded-path accounting as 3b) and skip the refutation.
+
+**Round 2 — panel:** spawn 3 fresh `personas:persona-judge` instances simultaneously, each using the Sonnet model. The round-1 verdict is not reused as a pre-vote — all 3 instances receive the refutation fresh. Validate each returned result against `~/.dotfiles/claude-code-shared/contracts/verdict-contract.md`. On a parse mismatch or non-JSON response, retry that judge instance once. Collect non-failed verdicts. Apply a 2-of-3 majority — if fewer than 2 non-failed verdicts are available, fall through to the failure handler below. If the refutation is upheld: apply it to the draft seed in memory (see adversarial framing above).
+
+**Failure handling (round-2 judges):** if 2 or more judge instances fail for the same refutation, skip that refutation, record the failure, and continue.
 
 #### 3d. Build the verification stamp and clean up
 
@@ -159,6 +162,7 @@ After all refutations are adjudicated:
   "iteration": <current iteration integer>,
   "personas": ["grounding", "accuracy", "completeness", "coherence"],
   "refutations_upheld": <count of upheld refutations>,
+  "refutations_screened": <count of refutations terminated at round-1 via lone reject>,
   "clean": <true if refutations_upheld === 0>,
   "status": "verified"
 }

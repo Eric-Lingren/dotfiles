@@ -31,7 +31,7 @@ Analyze the current branch's changes, discover which critical user-facing workfl
 **Step-0 — validate output after writing:**
 ```bash
 bash ~/.dotfiles/claude-code-shared/scripts/validate-schema.sh \
-  ~/.dotfiles/claude-code-shared/contracts/task-schema.json \
+  --instance ~/.dotfiles/claude-code-shared/contracts/task-schema.json \
   <output-path>
 ```
 On non-zero exit: STOP. Report stderr to the user. Do not write the file.

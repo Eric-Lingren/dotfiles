@@ -31,7 +31,7 @@ A discipline for hard bugs. Skip phases only when explicitly justified.
 **Step-0 fires only when a tasks file is actually written:**
 ```bash
 bash ~/.dotfiles/claude-code-shared/scripts/validate-schema.sh \
-  ~/.dotfiles/claude-code-shared/contracts/task-schema.json \
+  --instance ~/.dotfiles/claude-code-shared/contracts/task-schema.json \
   <output-path>
 ```
 On non-zero exit: STOP. Report stderr to the user. Do not write the file.
