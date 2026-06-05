@@ -1,0 +1,83 @@
+{
+  "schema_version": "4",
+  "producer": "to-seed",
+  "source": {"type": "session", "ref": null},
+  "title": "Harden to-seed verification pipeline and to-tasks gates",
+  "slug": "seed-pipeline-hardening",
+  "created": "2026-06-04T15:41:00Z",
+  "status": "ready",
+  "iteration": 1,
+  "summary": "The to-seed verification stage (4 adversary personas + a 3-judge panel) crashed and burned excess tokens because it was fed an inline summary instead of the ground-truth transcript: the accuracy persona crashed asking for a file path, and all four personas ran on input that cannot support span citation, producing meaningless results. Downstream, to-tasks gates were also broken (validate-schema.sh dropped instance validation so the seed was never actually validated, and degraded seeds hit an unconditional hard block that forced manual JSON edits). This session resolved a full hardening plan across two rounds: read the on-disk session JSONL via a deterministic pre-filter and Grep, keep the subagent architecture, short-circuit judging when clean, formalize persona/judge I/O as contracts, make failure handling machine-parseable with rerun-only-failed, restore instance validation in validate-schema.sh behind a deterministic to-tasks gate, and give to-tasks a universal informed override that records the decision without laundering the seed to verified. Status ready; all judgments resolved.",
+  "decisions": [
+    "Fix transcript ingestion first to establish a clean verification baseline, then measure token cost and apply the remaining cleanups.",
+    "The verification panel reads the ground-truth on-disk session JSONL as its transcript source, resolved from CLAUDE_CODE_SESSION_ID plus the URL-encoded cwd under $CLAUDE_CONFIG_DIR/projects (or the hook-provided transcript_path). It never receives an orchestrator-authored summary or transcript.",
+    "A standalone mechanical pre-filter script produces the cleaned transcript: it strips thinking/signature blocks and metadata entry types, keeps verbatim user and assistant text, and caps each tool_result at ~2KB. The cleaned file is what the personas read. Only a deterministic script may produce it; the model never authors the transcript.",
+    "Persona and judge agents get Grep added to their tool allowlist so they locate targeted spans instead of ingesting the whole transcript.",
+    "The verification stage keeps its subagent architecture. Inline main-thread personas are rejected because the orchestrator would grade its own work, its context is compacted and lacks the verbatim transcript, and inline is not cheaper once the 16 stacked re-attentions are counted.",
+    "The judge stage is short-circuited entirely when all personas return empty arrays; with no refutations there is nothing to adjudicate.",
+    "All 3 judges keep firing per refutation for now; the escalation ladder is deferred to a later optimization pass.",
+    "Persona and judge input and output are formalized as contract files in contracts/ following the schema.json plus contract.md pair convention: a refutation contract (persona output, including an error-object form), a verdict contract (judge output), and a persona/judge input contract. OVERVIEW.md indexes them, and the five specs plus SKILL.md reference the contracts as the single source of truth.",
+    "Personas and judges output only JSON, never prose or questions. On unrecoverable failure (such as an unreadable transcript) they return a structured error object, never a free-text request.",
+    "The orchestrator validates each returned result against the expected shape and retries once on a parse mismatch; the retry can now succeed because the input is the clean transcript rather than a summary.",
+    "The degraded path reruns only the agents that failed, not the full panel. SKILL.md degraded-path option 1 is corrected from 're-run the full adversary panel' to rerun-only-failed.",
+    "Instance validation (a data instance against a schema) is restored as a mode inside validate-schema.sh (e.g. --instance <schema> <data>), reusing the cross-file $ref registry the script already builds. The script gains a real --help and strict argument parsing so unknown flags fail loudly instead of being treated as filenames.",
+    "to-tasks Step-0a becomes a deterministic exit-code gate: exit 0 proceeds, non-zero stops and reports stderr, and if the validation tool itself errors the skill stops and reports rather than improvising alternate invocations.",
+    "to-tasks gains a universal informed override with severity-scaled friction, scoped to to-tasks only: a quality gate (degraded verification) is a one-click confirm, a structural gate (schema-invalid) requires a type-confirm and shows the exact validation errors. The override always shows what broke before asking and records the decision in the tasks artifact.",
+    "A sanctioned override never flips the seed's verification.status to 'verified'. The seed stays honestly 'degraded' and the override is recorded downstream in the tasks output, removing any need to hand-edit the seed JSON."
+  ],
+  "open_threads": [],
+  "disposed_threads": [
+    {"id": "ot-001", "text": "Transcript source: ground-truth session JSONL vs an orchestrator-authored transcript/summary", "disposition": "decided", "iteration": 1},
+    {"id": "ot-002", "text": "Run personas inline in the main thread vs as isolated subagents", "disposition": "rejected", "iteration": 1},
+    {"id": "ot-003", "text": "Adopt the judge escalation ladder (1 judge then escalate to 3) now vs keep flat-3 judges", "disposition": "deferred", "iteration": 1},
+    {"id": "ot-004", "text": "Override scope: universal across all pipeline steps vs scoped to to-tasks only", "disposition": "rejected", "iteration": 1},
+    {"id": "ot-005", "text": "Restore instance validation as a mode inside validate-schema.sh vs a separate sibling script", "disposition": "decided", "iteration": 1}
+  ],
+  "verification": {
+    "iteration": 1,
+    "personas": ["grounding", "accuracy", "completeness", "coherence"],
+    "refutations_upheld": 0,
+    "clean": true,
+    "status": "verified"
+  },
+  "deferred": [
+    {
+      "text": "Judge escalation ladder: 1 judge first, escalate to the full 3 only on uphold-or-uncertain.",
+      "rationale": "Keep flat-3 judges until a clean baseline exists. The escalation could cut roughly two-thirds of judge cost on clear rejections but risks a confidently-wrong lone judge killing a real refutation.",
+      "context": "Judges were 72% of the original run's ~88k verification tokens (12 of 16 agents). Revisit after the ingestion fix gives a real baseline.",
+      "source_seed": null
+    }
+  ],
+  "next_action": "Implement the ingestion fix first: write the standalone mechanical pre-filter script and switch the personas to the cleaned ground-truth transcript path, then re-measure token cost against a clean baseline.",
+  "problem_statement": "The to-seed verification stage (4 adversary personas + a 3-judge panel) crashes and burns excess tokens. It feeds personas an inline summary instead of the ground-truth transcript, so span-citation personas fail (accuracy crashed asking for a file path) and the whole panel runs on input that cannot support span citation, producing meaningless results. Downstream, to-tasks gates are also broken: validate-schema.sh dropped instance validation so seed validation silently never runs, and degraded seeds hit an unconditional hard block that forces manual JSON edits.",
+  "solution": "Pass the personas the cleaned ground-truth session JSONL via a deterministic pre-filter plus Grep; keep the subagent architecture; short-circuit judging when clean; formalize all persona/judge I/O as contracts; harden failure handling to be machine-parseable with rerun-only-failed; restore instance validation in validate-schema.sh behind a deterministic to-tasks gate; and give to-tasks a universal informed override that records the decision downstream without laundering the seed to verified.",
+  "evidence": "The original run burned ~88k subagent tokens across 16 agents (4 personas 25k + 12 judges 62.8k) for net zero upheld refutations; judges were 72% of cost; the accuracy persona crashed. The mechanical pre-filter measured on this conversation's session JSONL cut it ~81% (~80k to ~15k tokens; later in-session ~318KB to ~107KB). The latest KEY-1225 seed validated VALID against seed-schema.json once cross-file refs were resolved, while to-tasks' validate-schema.sh call uses the dead 2-arg API so validation never actually ran.",
+  "implementation_decisions": [
+    "New standalone mechanical pre-filter script: reads the session JSONL, drops thinking/signature blocks and metadata entry types (last-prompt, mode, permission-mode, attachment, file-history-snapshot, ai-title, system), keeps user and assistant text plus tool_use, caps each tool_result at ~2KB, and emits a cleaned transcript file.",
+    "Session path resolution: $CLAUDE_CONFIG_DIR/projects/<url-encoded-cwd>/<CLAUDE_CODE_SESSION_ID>.jsonl, or the hook-provided transcript_path.",
+    "validate-schema.sh: add an --instance <schema> <data> mode that reuses the referencing.Registry build; add a real --help; use strict argument parsing.",
+    "New contract pairs in ~/.dotfiles/claude-code-shared/contracts/: refutation-schema.json + refutation-contract.md, verdict-schema.json + verdict-contract.md, and a persona/judge input contract; update OVERVIEW.md to index them.",
+    "Add Grep to the tools front-matter of persona-grounding, persona-accuracy, persona-completeness, persona-coherence, and persona-judge."
+  ],
+  "testing_decisions": [
+    "Run the pre-filter on a real session JSONL and confirm the ~80% size cut with user/assistant text preserved verbatim.",
+    "After the fix, run one clean verification pass to establish the real token baseline; treat the original run's 0-upheld result as poisoned and non-signal.",
+    "Validate a known-good seed through validate-schema.sh --instance (expect exit 0) and a malformed seed (expect non-zero)."
+  ],
+  "out_of_scope": [
+    {"text": "Inline main-thread personas (orchestrator self-audit)", "rationale": "Mirror problem: the orchestrator would grade its own work, its compacted context lacks the verbatim transcript, and it is not cheaper once stacked re-attentions are counted."},
+    {"text": "A global override philosophy across all pipeline skills/steps", "rationale": "The user narrowed the override to to-tasks only; other gates and skills are unchanged."}
+  ],
+  "risks_and_tradeoffs": [
+    "Dropping tool_results entirely would let the grounding persona false-flag tool-sourced concrete values (numbers, paths, versions) as fabricated; mitigated by keeping tool_results capped at ~2KB.",
+    "If the escalation ladder is later adopted, a confidently-wrong lone judge could kill a real refutation on the cheap reject path; not adopted now.",
+    "The cleaned transcript must be produced by a deterministic script only; an LLM-authored 'clean transcript' would reintroduce the mirror problem.",
+    "The original run's 0-refutations-upheld carries no signal about the panel's value because all four personas ran on a summary; do not optimize judge cost against that poisoned baseline."
+  ],
+  "further_notes": [
+    "Cross-repo: this seed lands in Quaestor-Web/docs/seeds/, but the fixes live in ~/.dotfiles/claude-code-shared (scripts, contracts, agents/personas, skills).",
+    "The earlier 'verified' stamp on the KEY-1225 seed was a manual hand-edit by the user to bypass the degraded block, not a to-seed stamping bug; that hand-edit is the motivating evidence for the sanctioned override.",
+    "This conversation's session JSONL: ~/.cco/projects/-Users-eric-Documents-dev-Quaestor-Web/8eff084c-d369-44bb-bbe4-8048d7e2b4da.jsonl.",
+    "This seed was itself produced by running the to-seed verification panel the corrected way (cleaned ground-truth transcript path): 4/4 personas completed with no crash, 1 grounding refutation raised and rejected 2-1 by the judge panel, yielding a clean verified stamp. That is a live demonstration of the proposed ingestion fix."
+  ]
+}

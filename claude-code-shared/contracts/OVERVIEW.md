@@ -1,6 +1,6 @@
 # Skill Architecture Contracts Overview
 
-Three shared formats, each with a JSON Schema in this directory.
+Three pipeline formats (seed, task, runner-result) plus three verification I/O contracts (refutation, verdict, persona-input).
 
 ## Format waists
 
@@ -59,7 +59,7 @@ Every format-touching skill has a `## Contract` section with a Step-0 bash invoc
 
 ```bash
 bash ~/.dotfiles/claude-code-shared/scripts/validate-schema.sh \
-  ~/.dotfiles/claude-code-shared/contracts/<format>-schema.json \
+  --instance ~/.dotfiles/claude-code-shared/contracts/<format>-schema.json \
   <file-path>
 ```
 
@@ -67,9 +67,17 @@ Exit 0 = valid. Non-zero = STOP, report stderr, do not proceed.
 
 ## Contract files
 
+### Pipeline formats
+
 - [task-contract.md](task-contract.md) + [task-schema.json](task-schema.json)
 - [seed-contract.md](seed-contract.md) + [seed-schema.json](seed-schema.json)
 - [runner-result-contract.md](runner-result-contract.md) + [runner-result-schema.json](runner-result-schema.json)
+
+### Verification I/O (to-seed adversary panel)
+
+- [refutation-contract.md](refutation-contract.md) + [refutation-schema.json](refutation-schema.json) — persona output: array of refutation objects or error-form
+- [verdict-contract.md](verdict-contract.md) + [verdict-schema.json](verdict-schema.json) — judge output: single verdict or error-form
+- [persona-input-contract.md](persona-input-contract.md) — orchestrator-to-persona/judge input shape (transcript path, seed JSON, disposed-ids lock list)
 
 ## Interactive diagram
 

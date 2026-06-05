@@ -131,6 +131,27 @@
       "type": "string",
       "description": "Source branch this e2e task file was generated from. Written by to-e2e-tasks only. Optional."
     },
+    "gate_override": {
+      "type": "object",
+      "description": "Written by to-tasks when the user confirms a sanctioned gate override. Records what was bypassed and why. The seed's verification.status is never changed by this field.",
+      "required": ["gate", "reason", "confirmed_at"],
+      "additionalProperties": false,
+      "properties": {
+        "gate": {
+          "type": "string",
+          "enum": ["quality", "structural"],
+          "description": "'quality': degraded verification.status override. 'structural': schema-invalid override."
+        },
+        "reason": {
+          "type": "string",
+          "description": "Human-readable description of what was bypassed."
+        },
+        "confirmed_at": {
+          "type": "string",
+          "description": "ISO 8601 timestamp when the user confirmed the override."
+        }
+      }
+    },
     "follow_ups": {
       "type": "array",
       "items": {

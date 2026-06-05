@@ -29,6 +29,7 @@
     "defaultMode": "auto"
   },
   "model": "sonnet",
+  "effortLevel": "high",
   "hooks": {
     "PreToolUse": [
       {
@@ -144,7 +145,6 @@
       }
     }
   },
-  "effortLevel": "xhigh",
   "theme": "dark",
   "allowedTools": [
     "Bash(cat ~/.dotfiles/claude-code-shared/**)",
