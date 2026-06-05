@@ -31,7 +31,7 @@ Execute tasks from a `docs/tasks/` JSON file sequentially, using `/tdd` for each
 **Step-0 — validate input before processing:**
 ```bash
 bash ~/.dotfiles/claude-code-shared/scripts/validate-schema.sh \
-  ~/.dotfiles/claude-code-shared/contracts/task-schema.json \
+  --instance ~/.dotfiles/claude-code-shared/contracts/task-schema.json \
   <input-path>
 ```
 On non-zero exit: STOP. Report stderr to the user. Do not process the file.

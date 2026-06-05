@@ -15,7 +15,7 @@ The HTML PRD embeds the seed JSON verbatim. `to-tasks` can read the HTML PRD as 
 **Step-0 — validate seed input before processing:**
 ```bash
 bash ~/.dotfiles/claude-code-shared/scripts/validate-schema.sh \
-  ~/.dotfiles/claude-code-shared/contracts/seed-schema.json \
+  --instance ~/.dotfiles/claude-code-shared/contracts/seed-schema.json \
   <input-path>
 ```
 On non-zero exit: STOP. Report stderr to the user. Do not process the file.

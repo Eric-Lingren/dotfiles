@@ -1,0 +1,64 @@
+{
+  "schema_version": "4",
+  "producer": "to-seed",
+  "source": {"type": "session", "ref": null},
+  "title": "Judge escalation ladder for to-seed verification",
+  "slug": "judge-escalation-ladder",
+  "created": "2026-06-04T20:52:00Z",
+  "status": "ready",
+  "iteration": 1,
+  "summary": "Grill session to design the judge escalation ladder optimization for the to-seed verification pipeline. Currently 3 Sonnet judges fire flat per refutation regardless of evidence clarity, with 2-of-3 majority binding. The escalation ladder fires 1 Sonnet judge first (round 1); a lone 'upheld' escalates to 3 fresh Sonnet judges in parallel (round 2, 2-of-3 majority); a lone 'rejected' terminates the refutation immediately. All five judgment calls resolved: binary trigger with no 'uncertain' state and no verdict contract change; failure mode (confidently-wrong lone reject) accepted as-is because the evidence-bound constraint is the guardrail; Sonnet for both rounds to prioritize quality; fresh 3 judges on escalation with round-1 verdict not reused to avoid asymmetry; and a refutations_screened counter added to the verification stamp for observability. Status: ready.",
+  "decisions": [
+    "The escalation ladder uses a binary trigger: a lone round-1 'upheld' escalates to the full 3-judge panel; a lone 'rejected' terminates that refutation immediately with no second opinion.",
+    "No 'uncertain' verdict state is added. The verdict contract (verdict-contract.md, verdict-schema.json) remains unchanged with only 'upheld' and 'rejected' as valid values.",
+    "The risk of a confidently-wrong lone reject terminating a valid refutation is accepted as-is. The evidence-bound constraint — the judge can only uphold if a real span exists and clearly supports the claim — is the guardrail.",
+    "Both round-1 and round-2 judges use Sonnet. Quality is prioritized over micro-optimization on the screener.",
+    "When round-1 returns 'upheld', the orchestrator spawns 3 fresh Sonnet judges in parallel. The round-1 verdict is not reused as a pre-vote in the escalated panel.",
+    "The verification stamp gains a 'refutations_screened' integer field tracking how many refutations terminated at round-1 via lone reject. This provides observability data for future calibration of the escalation threshold."
+  ],
+  "open_threads": [],
+  "disposed_threads": [
+    {"id": "ot-001", "text": "Add 'uncertain' as a third verdict state to create a ternary escalation trigger (upheld or uncertain escalates, rejected terminates)", "disposition": "rejected", "iteration": 1},
+    {"id": "ot-002", "text": "Use Haiku for the round-1 screener judge to reduce compute cost", "disposition": "rejected", "iteration": 1},
+    {"id": "ot-003", "text": "Reuse the round-1 judge verdict as vote 1 in the escalated panel to save one Sonnet call per escalated refutation", "disposition": "rejected", "iteration": 1},
+    {"id": "ot-004", "text": "Add uphold-bias to round-1 judge instructions (return upheld when evidence is weak) to protect against wrong rejects", "disposition": "rejected", "iteration": 1}
+  ],
+  "verification": {
+    "iteration": 1,
+    "personas": ["grounding", "accuracy", "completeness", "coherence"],
+    "refutations_upheld": 1,
+    "clean": false,
+    "status": "verified"
+  },
+  "next_action": "Update to-seed SKILL.md step 3c to implement the escalation ladder, and update seed-schema.json to add refutations_screened to the verification object definition.",
+  "problem_statement": "The to-seed verification stage fires 3 Sonnet judges per refutation unconditionally. When evidence is clear-cut, 2 of those 3 calls are wasted compute. Judges were 72% of the original verification token cost (~62.8k of ~88k tokens).",
+  "solution": "A two-round escalation ladder: round 1 fires 1 Sonnet judge; lone 'upheld' escalates to 3 fresh Sonnet judges in parallel (2-of-3 majority binding); lone 'rejected' terminates immediately. The verification stamp gains a refutations_screened counter for observability.",
+  "evidence": "The pipeline-hardening seed identified judges as 72% of original verification cost (~62.8k of ~88k tokens across 16 agents). The escalation ladder could eliminate 2 of 3 Sonnet judge calls per refutation that terminates at round 1.",
+  "implementation_decisions": [
+    "to-seed SKILL.md step 3c is rewritten: for each refutation, spawn 1 round-1 Sonnet judge; if 'upheld', spawn 3 fresh Sonnet judges in parallel and apply 2-of-3 majority; if 'rejected', record to refutations_screened and move to next refutation.",
+    "The verdict contract (verdict-contract.md, verdict-schema.json) is NOT changed. Binary upheld/rejected stays.",
+    "seed-schema.json: add 'refutations_screened' as an optional integer field inside the verification object definition. The current additionalProperties: false on that object requires an explicit schema update.",
+    "persona-judge.md agent instructions are NOT changed. The judge continues to return upheld or rejected only."
+  ],
+  "testing_decisions": [
+    "Run to-seed on a session that produces at least one refutation to confirm round-1 fires and escalation triggers on upheld.",
+    "Verify refutations_screened increments for each lone-reject termination.",
+    "Confirm short-circuit (all 4 personas return []) still skips the judge stage entirely — the escalation ladder only activates when refutations exist."
+  ],
+  "out_of_scope": [
+    {"text": "Ternary escalation trigger with an 'uncertain' verdict state", "rationale": "User chose binary after expressing uncertainty about calibrating the 'uncertain' definition precisely enough to trust a Sonnet judge to apply it consistently. The calibration risk — LLM over-use of 'uncertain' as a hedge defeating the cost savings — outweighed the benefit."},
+    {"text": "Haiku for round-1 screener judge", "rationale": "Judges make binding decisions. Quality over micro-optimization. Both rounds use Sonnet."},
+    {"text": "Reusing round-1 verdict as pre-vote in the escalated panel", "rationale": "Introduces asymmetry: round-1 judge has no panel context, round-2 judges do. Cost savings (one Sonnet call) are negligible. Fresh 3-judge panel chosen."},
+    {"text": "Uphold-bias in round-1 judge instructions", "rationale": "Undermines the judge's purpose. Evidence-bound constraint is the correct guardrail, not instruction bias."}
+  ],
+  "risks_and_tradeoffs": [
+    "A confidently-wrong lone reject terminates a valid refutation with no second opinion. Accepted: the evidence-bound constraint (span must exist and clearly support the claim) makes this rare.",
+    "If the lone-reject rate is very low (most refutations escalate), cost savings are minimal or nil. The refutations_screened counter surfaces this after a few real runs.",
+    "When refutations do escalate, the total cost is 1 + 3 = 4 Sonnet judge calls vs the current flat 3. Escalated refutations are slightly more expensive than today."
+  ],
+  "further_notes": [
+    "The seed-schema.json change (adding refutations_screened to verification) is a non-breaking additive change — existing seeds without the field remain valid since the field is optional.",
+    "The short-circuit (skip judges when all personas return []) is unchanged and takes priority over the escalation ladder. The ladder only fires when at least one persona returns a refutation.",
+    "Verification note: accuracy persona raised 1 refutation (out_of_scope[0] rationale mischaracterized user's stated reason); upheld 3-0 by judges and corrected. Coherence failed on first run due to unexpanded env var in transcript path; rerun clean."
+  ]
+}
