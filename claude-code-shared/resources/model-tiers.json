@@ -45,7 +45,9 @@
     "persona-accuracy": "T1",
     "persona-completeness": "T1",
     "persona-coherence": "T1",
-    "persona-judge": "T3"
+    "persona-judge": "T3",
+    "learning-grounding-judge": "T1",
+    "capture-learning": "T3"
   },
   "delegate": [
     "run-tasks",

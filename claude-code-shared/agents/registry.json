@@ -114,6 +114,38 @@
       ]
     },
     {
+      "name": "capture-learning",
+      "file": "agents/capture-learning.md",
+      "model": "sonnet",
+      "description": "End-of-run learning capture agent. Receives a rough correction-event description from a skill, expands it into a schema-valid entry with discrete transcript anchors, runs the grounding judge, and writes the entry to the per-skill JSONL file if grounded. Spawned by the managed tail block in every shared skill when a correction-event occurred.",
+      "consumers": [
+        "cc-usage-analytics",
+        "clean-scaffolding",
+        "code-review",
+        "debug",
+        "fact-check",
+        "find-work",
+        "grill-me",
+        "grill-with-docs",
+        "handoff",
+        "how-to",
+        "improve-codebase-architecture",
+        "improve-component",
+        "improve-skill",
+        "prototype",
+        "register-skill",
+        "run-task-followups",
+        "run-tasks",
+        "tasks-to-linear",
+        "tdd",
+        "tldr-tech",
+        "to-e2e-tasks",
+        "to-prd-html",
+        "to-seed",
+        "to-tasks"
+      ]
+    },
+    {
       "name": "learning-grounding-judge",
       "file": "agents/learning-grounding-judge.md",
       "model": "haiku",
