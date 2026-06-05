@@ -32,11 +32,7 @@ compute_staged_list() {
 }
 
 compute_will_add() {
-  if $MODE_ALL; then
-    { git diff --name-only; git ls-files --others --exclude-standard; } | sort -u
-  else
-    git diff --name-only
-  fi
+  { git diff --name-only; git ls-files --others --exclude-standard; } | sort -u
 }
 
 # Returns newline-separated list of files matching any exclude pattern
@@ -53,11 +49,7 @@ _matches_exclude() {
 
 compute_excluded() {
   local all_files
-  if $MODE_ALL; then
-    all_files=$({ git diff --name-only; git ls-files --others --exclude-standard; } | sort -u)
-  else
-    all_files=$(git diff --name-only)
-  fi
+  all_files=$({ git diff --name-only; git ls-files --others --exclude-standard; } | sort -u)
   while IFS= read -r f; do
     [[ -z "$f" ]] && continue
     _matches_exclude "$f" && echo "$f"
@@ -205,11 +197,8 @@ unstage_excluded() {
 if ! $MODE_PUSH_ONLY; then
   if $MODE_PICK; then
     git add -p
-  elif $MODE_ALL; then
-    git add -A
-    unstage_excluded
   else
-    git add -u
+    git add -A
     unstage_excluded
   fi
 

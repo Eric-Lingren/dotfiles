@@ -1,0 +1,43 @@
+#!/bin/bash
+# pr-commit — AI-generated git commit message from staged diff
+# Usage: pr-commit [--stdout]
+#   --stdout  print to stdout instead of clipboard
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/gx-lib.sh"
+gx_load_policy 2>/dev/null
+
+STDOUT_MODE=false
+for arg in "$@"; do
+  [[ "$arg" == "--stdout" ]] && STDOUT_MODE=true
+done
+
+DIFF_STAT=$(git diff --cached --stat 2>/dev/null | tail -1)
+DIFF_BODY=$(git diff --cached 2>/dev/null | head -n 150)
+
+if [[ -z "$DIFF_STAT" && -z "$DIFF_BODY" ]]; then
+  echo "No staged changes to summarize." >&2
+  exit 1
+fi
+
+PROMPT="Write one git commit message in imperative mood, under 72 chars.
+Output ONLY the message — no quotes, no trailing punctuation, nothing else.
+
+Stat: $DIFF_STAT
+
+Diff:
+$DIFF_BODY"
+
+MSG=$(CLAUDE_CONFIG_DIR="${GX_CLAUDE_CONFIG:-$HOME/.cch}" command claude -p "$PROMPT" 2>/dev/null)
+
+if [[ -z "$MSG" ]]; then
+  echo "Failed to generate commit message." >&2
+  exit 1
+fi
+
+if $STDOUT_MODE; then
+  echo "$MSG"
+else
+  echo "$MSG" | pbcopy
+  echo "SUCCESS -- Commit message copied to clipboard."
+fi
