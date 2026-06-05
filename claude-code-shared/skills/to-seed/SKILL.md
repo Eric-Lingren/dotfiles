@@ -269,3 +269,18 @@ What next?
 - If the user picks **4**: do nothing. Confirm the seed path and stop.
 
 **CRITICAL:** Never commit any artifact. Never push. The only things written to disk are the seed file (every run) and, when status is draft, the handoff doc.
+
+<!-- learning-capture:start -->
+## Learning Capture
+
+**Default: do nothing.** Most runs record nothing. Only proceed if an observable
+correction-event occurred this run.
+
+If one occurred: identify the `trigger` (tool_failure | backtrack | user_correction |
+instruction_gap | redundant_effort | uncategorized), a one-sentence description of what
+happened (`brief_evidence`), and `trigger_label` (snake_case if uncategorized, else null).
+Spawn the `capture-learning` agent (`subagent_type: capture-learning`) with: `skill`
+(this skill's slug), `trigger`, `trigger_label`, `brief_evidence`, `transcript_path`
+(absolute path to session transcript). The agent builds the full schema-valid entry,
+runs grounding verification, and writes if grounded.
+<!-- learning-capture:end -->

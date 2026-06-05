@@ -210,6 +210,29 @@ Confirm `tier-advisor.sh` emits the advisory block with the correct tier. If it 
 
 To confirm the weekly usage report will count it: the benchmark uses `SKILL_BODY_RE = re.compile(r"skills/([a-z0-9-]+)/SKILL\.md", re.I)` to extract skill names from transcript paths. The skill name in `model-tiers.json` must match the directory name under `skills/` exactly.
 
+### 2g. Skill path — learning capture integration
+
+Stamp the new skill with the managed learning-capture tail block and register it as a learning producer.
+
+**Step 1 — inject the tail block:**
+
+```bash
+python3 ~/.dotfiles/claude-code-shared/scripts/inject-learning-tail.py \
+  --apply --skills-dir ~/.dotfiles/claude-code-shared/skills
+```
+
+The script only modifies skills that are missing the block. Running it after step 2e is safe and idempotent.
+
+**Step 2 — add the skill to the producers list in learning-contract.md:**
+
+Edit `claude-code-shared/contracts/learning-contract.md`. Locate the `## Producers` section and add a line for the new skill in alphabetical order:
+
+```
+- `skills/<new-skill-name>/`
+```
+
+The new skill name must exactly match the directory name under `skills/`.
+
 ### 3. Agent path — assign a tier in model-tiers.json
 
 Read `claude-code-shared/resources/model-tiers.json` and add the agent to the `agents` map:
@@ -285,4 +308,20 @@ Registered: <name> (<skill|agent>)
   Delegate: <yes | no | n/a (agent)>
   Hooks:   tier-advisor ✓  usage-benchmark ✓  sync ✓   (skill)
            usage-benchmark ✓  sync ✓  tier-advisor n/a  (agent)
+  Learning: tail-block ✓  producers-list ✓              (skill only)
 ```
+
+<!-- learning-capture:start -->
+## Learning Capture
+
+**Default: do nothing.** Most runs record nothing. Only proceed if an observable
+correction-event occurred this run.
+
+If one occurred: identify the `trigger` (tool_failure | backtrack | user_correction |
+instruction_gap | redundant_effort | uncategorized), a one-sentence description of what
+happened (`brief_evidence`), and `trigger_label` (snake_case if uncategorized, else null).
+Spawn the `capture-learning` agent (`subagent_type: capture-learning`) with: `skill`
+(this skill's slug), `trigger`, `trigger_label`, `brief_evidence`, `transcript_path`
+(absolute path to session transcript). The agent builds the full schema-valid entry,
+runs grounding verification, and writes if grounded.
+<!-- learning-capture:end -->

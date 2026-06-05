@@ -85,3 +85,18 @@ Side effects happen inline as decisions crystallize:
 - **Sharpening a fuzzy term during the conversation?** Update `CONTEXT.md` right there.
 - **User rejects the candidate with a load-bearing reason?** Offer an ADR, framed as: _"Want me to record this as an ADR so future architecture reviews don't re-suggest it?"_ Only offer when the reason would actually be needed by a future explorer to avoid re-suggesting the same thing — skip ephemeral reasons ("not worth it right now") and self-evident ones. See [ADR-FORMAT.md](../grill-with-docs/resources/ADR-FORMAT.md).
 - **Want to explore alternative interfaces for the deepened module?** See [INTERFACE-DESIGN.md](resources/INTERFACE-DESIGN.md).
+
+<!-- learning-capture:start -->
+## Learning Capture
+
+**Default: do nothing.** Most runs record nothing. Only proceed if an observable
+correction-event occurred this run.
+
+If one occurred: identify the `trigger` (tool_failure | backtrack | user_correction |
+instruction_gap | redundant_effort | uncategorized), a one-sentence description of what
+happened (`brief_evidence`), and `trigger_label` (snake_case if uncategorized, else null).
+Spawn the `capture-learning` agent (`subagent_type: capture-learning`) with: `skill`
+(this skill's slug), `trigger`, `trigger_label`, `brief_evidence`, `transcript_path`
+(absolute path to session transcript). The agent builds the full schema-valid entry,
+runs grounding verification, and writes if grounded.
+<!-- learning-capture:end -->
