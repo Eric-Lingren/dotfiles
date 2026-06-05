@@ -152,6 +152,20 @@ precmd_functions+=(_fix_cursor)
 
 
 # ─────────────────────────────────────────#
+# gx git toolkit                           #
+# ─────────────────────────────────────────#
+
+export GX_SCRIPTS_DIR="$HOME/.dotfiles/.scripts"
+alias gxcheck="$GX_SCRIPTS_DIR/gxcheck"
+alias gxpush="$GX_SCRIPTS_DIR/gxpush"
+alias gxmove="$GX_SCRIPTS_DIR/gxmove"
+alias gxclean="$GX_SCRIPTS_DIR/gxclean"
+alias gxsync="$GX_SCRIPTS_DIR/gxsync"
+alias pr-commit="$GX_SCRIPTS_DIR/pr-commit"
+alias pr-desc="$GX_SCRIPTS_DIR/pr-desc"
+
+
+# ─────────────────────────────────────────#
 # MACHINE-LOCAL OVERRIDES                  #
 # ─────────────────────────────────────────#
 # Gitignored — see local/zshrc.local.template

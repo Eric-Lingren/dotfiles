@@ -1,0 +1,26 @@
+{
+  "Eric-Lingren/dotfiles": {
+    "label": "dotfiles",
+    "account": "cch",
+    "base_branch": "main",
+    "exclude": ["docs/prototype/", "docs/browser-checks/", "docs/seeds/", "docs/tasks/", "docs/handoffs/", "docs/prd/"]
+  },
+  "Quaestor-Technologies/Quaestor-Web": {
+    "label": "quaestor-web",
+    "account": "cco",
+    "base_branch": "main",
+    "exclude": ["docs/adr/", "docs/prototype/", "docs/browser-checks/", "docs/seeds/", "docs/tasks/", "docs/handoffs/", "docs/prd/"]
+  },
+  "Eric-Lingren/SpawnedSapien": {
+    "label": "spawnedsapien",
+    "account": "cch",
+    "base_branch": "main",
+    "exclude": ["docs/prototype/", "docs/browser-checks/"]
+  },
+  "Eric-Lingren/ericlingren": {
+    "label": "ericlingren",
+    "account": "cch",
+    "base_branch": "main",
+    "exclude": ["docs/browser-checks/"]
+  }
+}

@@ -79,7 +79,7 @@ Once the prototype has answered its question and a final direction is agreed upo
    git checkout <original-branch>
    git checkout -b prototype/<slug>
    git cherry-pick <artifact-commit-sha>
-   git push -u origin prototype/<slug>
+   ~/.dotfiles/.scripts/gxpush --push-only
    ```
 
 6. **Open a PR** targeting the original branch. Auto-generate the PR body from the artifact:

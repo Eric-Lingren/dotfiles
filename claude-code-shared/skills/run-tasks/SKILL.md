@@ -299,6 +299,5 @@ Rules for the description:
 
 #### b. Push and create the PR
 
-1. Run `git push -u origin HEAD` to push the branch.
-2. Run `gh pr create --title "<title>" --body "<description>"` using the generated title and body.
-3. Return the PR URL to the user.
+1. Run `~/.dotfiles/.scripts/gxpush --pr` to stage, commit, push, and open the PR. gxpush shows a preview manifest and prompts for confirmation before any git operation runs.
+2. Return the PR URL to the user (gxpush prints it after `gh pr create` completes).

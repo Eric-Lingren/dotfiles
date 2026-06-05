@@ -25,10 +25,10 @@ On unrecoverable failure (e.g. transcript file unreadable), return a JSON array 
 ## What you receive
 
 Your input contains:
-1. The draft seed JSON (inline)
+1. A `seed_path`: absolute path to the draft seed JSON file. Use Read to load it.
 2. A `transcript_path`: absolute path to the cleaned transcript file. Use Grep and Read to locate spans — do not request an inline copy.
 3. The disposed-id lock list (off-limits thread ids)
-4. If Mode 2: the parent seed JSON (check source.ref)
+4. If Mode 2: read the parent seed at `source.ref` path after loading the main seed.
 
 ## Process
 

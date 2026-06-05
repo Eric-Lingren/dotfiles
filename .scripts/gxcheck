@@ -1,0 +1,56 @@
+#!/usr/bin/env bash
+# gxcheck — read-only branch state reporter
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/gx-lib.sh"
+
+gx_load_policy 2>/dev/null
+
+CURRENT=$(git rev-parse --abbrev-ref HEAD)
+BASE="${GX_BASE_BRANCH:-main}"
+GIT_USER=$(git config user.name)
+HEAD_AUTHOR=$(git log -1 --format="%an" 2>/dev/null)
+WARNINGS=0
+
+# ON_BASE: currently on the base branch itself
+if [[ "$CURRENT" == "$BASE" ]]; then
+  echo "WARN: currently on base branch ($BASE)"
+  ((WARNINGS++))
+fi
+
+# MERGED: branch is fully merged into base
+if git branch --merged "origin/$BASE" 2>/dev/null | grep -qE "^\s*$(echo "$CURRENT" | sed 's/[.[\*^$]/\\&/g')\s*$"; then
+  echo "WARN: branch already merged into $BASE"
+  ((WARNINGS++))
+fi
+
+# FOREIGN: HEAD commit author is not the local git user
+if [[ -n "$HEAD_AUTHOR" && -n "$GIT_USER" && "$HEAD_AUTHOR" != "$GIT_USER" ]]; then
+  echo "WARN: HEAD commit author ($HEAD_AUTHOR) differs from local git user ($GIT_USER)"
+  ((WARNINGS++))
+fi
+
+# REMOTE_GONE: tracking remote branch no longer exists
+TRACKING=$(git rev-parse --abbrev-ref --symbolic-full-name "@{u}" 2>/dev/null)
+if [[ -n "$TRACKING" ]]; then
+  REMOTE_BRANCH="${TRACKING#origin/}"
+  if ! git ls-remote --exit-code --heads origin "$REMOTE_BRANCH" &>/dev/null; then
+    echo "WARN: remote tracking branch '$TRACKING' no longer exists"
+    ((WARNINGS++))
+  fi
+fi
+
+# STALE: local branch is behind origin/<current-branch>
+if [[ -n "$TRACKING" ]]; then
+  BEHIND=$(git rev-list --count "HEAD...$TRACKING" 2>/dev/null | awk '{print $1}')
+  if [[ -n "$BEHIND" && "$BEHIND" -gt 0 ]]; then
+    echo "WARN: local branch is $BEHIND commit(s) behind $TRACKING"
+    ((WARNINGS++))
+  fi
+fi
+
+if [[ $WARNINGS -eq 0 ]]; then
+  echo "OK: branch looks clean"
+fi
+
+exit 0

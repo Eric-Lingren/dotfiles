@@ -23,6 +23,8 @@ Mode 2 is additive: it reads the handoff AND the current conversation, then merg
 
 ### 1. Branch sanity-check (the only interactive prompt)
 
+**gxcheck pre-flight:** Before asking the user, run `~/.dotfiles/.scripts/gxcheck` and surface its output as a brief status block (e.g. `Branch check: OK: branch looks clean`). This is advisory only — the skill continues regardless of the output.
+
 Run `git rev-parse --abbrev-ref HEAD` to get the current branch. Then ask ONE question using `AskUserQuestion`:
 
 ```
@@ -100,9 +102,11 @@ Run this stage after synthesis populates all seed fields in memory and before an
 
 **Pipeline order is strict:** synthesis mints the disposed-id lock list (step 2) before any persona agent spawns. This ensures agents cannot re-raise a disposed thread by any name.
 
-#### 3a. Prepare the cleaned transcript
+#### 3a. Prepare the cleaned transcript and seed temp file
 
-Before spawning any persona, produce the cleaned transcript from the ground-truth on-disk session JSONL:
+Before spawning any persona, produce two temp files:
+
+**Cleaned transcript:**
 
 1. Resolve the session JSONL path using `$CLAUDE_CODE_SESSION_ID` and `$CLAUDE_CONFIG_DIR` (or the hook-provided `transcript_path` env var). The filter script handles resolution — see `~/.dotfiles/claude-code-shared/scripts/filter-session-transcript.sh --help`.
 
@@ -116,10 +120,18 @@ Before spawning any persona, produce the cleaned transcript from the ground-trut
 
 **The orchestrator must never author or summarize the transcript.** Only the deterministic pre-filter script may produce `CLEANED_TRANSCRIPT_PATH`. An LLM-authored transcript reintroduces the mirror problem this stage is designed to prevent.
 
+**Seed temp file:**
+
+Write the draft seed JSON to:
+```
+/tmp/seed-${CLAUDE_CODE_SESSION_ID}.json
+```
+Store the output path as `SEED_PATH`. Pass this path to all personas and judges. Do not inline the seed JSON in any agent prompt — passing a file path prevents generation drift when spawning multiple agents simultaneously.
+
 #### 3b. Spawn all 4 adversary persona agents in parallel
 
 In a single message, spawn all four adversary personas simultaneously. Each persona receives (per `~/.dotfiles/claude-code-shared/contracts/persona-input-contract.md`):
-- The full draft seed JSON (inline)
+- `seed_path: <SEED_PATH>` — a file path, not inline JSON
 - `transcript_path: <CLEANED_TRANSCRIPT_PATH>` — a file path, not inline transcript text
 - The disposed-id lock list (hard constraint: do not raise threads with these ids)
 
@@ -139,7 +151,7 @@ Each persona returns a JSON array of refutation objects (`[]` if nothing found).
 
 **Otherwise:** maintain a `refutations_screened` counter (starts at 0). For each refutation returned by any persona, apply the two-round escalation ladder:
 
-**Round 1 — screener:** spawn 1 `personas:persona-judge` instance using the Sonnet model. The judge receives (per `~/.dotfiles/claude-code-shared/contracts/persona-input-contract.md`): the single refutation object, `transcript_path: <CLEANED_TRANSCRIPT_PATH>`, and the draft seed (read-only context). Validate the returned result against `~/.dotfiles/claude-code-shared/contracts/verdict-contract.md`. On a parse mismatch or non-JSON response, retry that judge once.
+**Round 1 — screener:** spawn 1 `personas:persona-judge` instance using the Sonnet model. The judge receives (per `~/.dotfiles/claude-code-shared/contracts/persona-input-contract.md`): the single refutation object, `seed_path: <SEED_PATH>`, and `transcript_path: <CLEANED_TRANSCRIPT_PATH>`. Validate the returned result against `~/.dotfiles/claude-code-shared/contracts/verdict-contract.md`. On a parse mismatch or non-JSON response, retry that judge once.
 
 - **Round-1 returns `rejected`:** increment `refutations_screened`. Move to the next refutation. Do not escalate.
 - **Round-1 returns `upheld`:** escalate to round 2.
@@ -153,7 +165,10 @@ Each persona returns a JSON array of refutation objects (`[]` if nothing found).
 
 After all refutations are adjudicated:
 
-1. Delete the cleaned transcript file: `rm -f "${CLEANED_TRANSCRIPT_PATH}"`.
+1. Delete both temp files:
+   ```bash
+   rm -f "${CLEANED_TRANSCRIPT_PATH}" "${SEED_PATH}"
+   ```
 
 2. Write the `verification` field onto the draft seed:
 

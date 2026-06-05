@@ -52,6 +52,8 @@ Read the chosen theme file and replace the `:root` CSS custom properties block i
 
 ### 3. Ask where to write
 
+**gxcheck pre-flight:** Before asking the user, run `~/.dotfiles/.scripts/gxcheck` and surface its output as a brief status block (e.g. `Branch check: OK: branch looks clean`). This is advisory only — the skill continues regardless of the output.
+
 ```
 Where should this PRD go?
 1. Current branch

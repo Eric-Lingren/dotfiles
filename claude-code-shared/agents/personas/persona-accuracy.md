@@ -25,13 +25,13 @@ On unrecoverable failure (e.g. transcript file unreadable), return a JSON array 
 ## What you receive
 
 Your input contains:
-1. The draft seed JSON (inline)
+1. A `seed_path`: absolute path to the draft seed JSON file. Use Read to load it.
 2. A `transcript_path`: absolute path to the cleaned transcript file. Use Grep and Read to locate spans — do not request an inline copy.
 3. The disposed-id lock list (off-limits thread ids)
 
 ## Process
 
-1. For each entry in `decisions` and each sentence in `summary`, locate the corresponding transcript span.
+1. Read the seed file at `seed_path`. Then for each entry in `decisions` and each sentence in `summary`, locate the corresponding transcript span.
 2. Compare the seed text to the span. Flag any place where the seed's meaning is not a faithful representation of the span.
 3. If the transcript has a later span that overrides an earlier one, check whether the seed reflects the later (authoritative) span.
 

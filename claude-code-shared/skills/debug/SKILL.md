@@ -176,6 +176,8 @@ Do not proceed to Phase 4 until both steps are complete.
 
 ### Step 1: Branch
 
+**gxcheck pre-flight:** Before asking the user, run `~/.dotfiles/.scripts/gxcheck` and surface its output as a brief status block (e.g. `Branch check: OK: branch looks clean`). This is advisory only — the skill continues regardless of the output.
+
 Run `git branch --show-current`. Then ask the user:
 
 ```

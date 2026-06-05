@@ -1,0 +1,250 @@
+#!/usr/bin/env bash
+# gxpush — preview-and-confirm push with flags
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/gx-lib.sh"
+
+gx_load_policy 2>/dev/null
+
+MODE_ALL=false
+MODE_PICK=false
+MODE_PR=false
+MODE_PUSH_ONLY=false
+
+for arg in "$@"; do
+  case "$arg" in
+    --all)        MODE_ALL=true ;;
+    --pick)       MODE_PICK=true ;;
+    --pr)         MODE_PR=true ;;
+    --push-only)  MODE_PUSH_ONLY=true ;;
+  esac
+done
+
+BRANCH=$(git rev-parse --abbrev-ref HEAD)
+BASE="${GX_BASE_BRANCH:-main}"
+
+# Newline-separated exclude patterns from registry
+GX_EXCLUDE_PATS=$(gx_exclude_patterns)
+
+# Determine which files will be staged
+compute_staged_list() {
+  git diff --cached --name-only
+}
+
+compute_will_add() {
+  if $MODE_ALL; then
+    { git diff --name-only; git ls-files --others --exclude-standard; } | sort -u
+  else
+    git diff --name-only
+  fi
+}
+
+# Returns newline-separated list of files matching any exclude pattern
+_matches_exclude() {
+  local f="$1"
+  while IFS= read -r pat; do
+    [[ -z "$pat" ]] && continue
+    if [[ "$f" == "$pat"* || "$f" == *"/$pat"* ]]; then
+      return 0
+    fi
+  done <<< "$GX_EXCLUDE_PATS"
+  return 1
+}
+
+compute_excluded() {
+  local all_files
+  if $MODE_ALL; then
+    all_files=$({ git diff --name-only; git ls-files --others --exclude-standard; } | sort -u)
+  else
+    all_files=$(git diff --name-only)
+  fi
+  while IFS= read -r f; do
+    [[ -z "$f" ]] && continue
+    _matches_exclude "$f" && echo "$f"
+  done <<< "$all_files"
+}
+
+# Secret scanning: look for common secret patterns in staged + will-add files
+secret_scan() {
+  local -a files=("$@")
+  local -a hits=()
+  local patterns=(
+    'AKIA[0-9A-Z]{16}'
+    'ghp_[A-Za-z0-9]{36}'
+    'sk-[A-Za-z0-9]{20,}'
+    'token\s*=\s*["\x27][A-Za-z0-9\-_]{20,}'
+    'password\s*=\s*["\x27][^\s"\x27]{8,}'
+    'secret\s*=\s*["\x27][A-Za-z0-9\-_]{16,}'
+    '\.env$'
+    'id_rsa'
+    'id_ed25519'
+  )
+  for f in "${files[@]}"; do
+    [[ -f "$f" ]] || continue
+    for pat in "${patterns[@]}"; do
+      if grep -qE "$pat" "$f" 2>/dev/null; then
+        hits+=("$f")
+        break
+      fi
+    done
+    # Flag .env files by name
+    if [[ "$f" == *.env || "$f" == .env || "$f" == */.env ]]; then
+      hits+=("$f")
+    fi
+  done
+  printf '%s\n' "${hits[@]}" | sort -u
+}
+
+# --- Compute preview data ---
+STAGED=$(compute_staged_list)
+WILL_ADD=$(compute_will_add)
+EXCLUDED=$(compute_excluded)
+
+# Compute UNSTAGED: modified tracked files not being committed and not in will-add
+ALL_MODIFIED=$(git diff --name-only)
+UNSTAGED=""
+while IFS= read -r f; do
+  [[ -z "$f" ]] && continue
+  if ! echo "$WILL_ADD" | grep -qxF "$f" && ! echo "$EXCLUDED" | grep -qxF "$f"; then
+    UNSTAGED+="$f"$'\n'
+  fi
+done <<< "$ALL_MODIFIED"
+
+# Filter excluded from will-add
+WILL_ADD_FILTERED=""
+while IFS= read -r f; do
+  [[ -z "$f" ]] && continue
+  if ! echo "$EXCLUDED" | grep -qxF "$f"; then
+    WILL_ADD_FILTERED+="$f"$'\n'
+  fi
+done <<< "$WILL_ADD"
+
+# Secret scan on will-add + staged
+SECRET_FILES=""
+while IFS= read -r f; do
+  [[ -z "$f" ]] && continue
+  secret_scan "$f"
+done <<< "$WILL_ADD_FILTERED"$'\n'"$STAGED" | sort -u | while IFS= read -r f; do
+  SECRET_FILES+="$f"$'\n'
+done
+
+# --- Print preview manifest ---
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo "  gxpush preview — branch: $BRANCH"
+if $MODE_ALL; then echo "  mode: --all (blast-radius)"; fi
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo ""
+
+echo "STAGED (already in index):"
+if [[ -n "$STAGED" ]]; then
+  while IFS= read -r f; do [[ -n "$f" ]] && echo "  $f"; done <<< "$STAGED"
+else
+  echo "  (none)"
+fi
+echo ""
+
+echo "WILL ADD:"
+if [[ -n "$WILL_ADD_FILTERED" ]]; then
+  while IFS= read -r f; do [[ -n "$f" ]] && echo "  $f"; done <<< "$WILL_ADD_FILTERED"
+else
+  echo "  (none)"
+fi
+echo ""
+
+echo "EXCLUDED (policy — will not be staged):"
+if [[ -n "$EXCLUDED" ]]; then
+  while IFS= read -r f; do [[ -n "$f" ]] && echo "  $f"; done <<< "$EXCLUDED"
+else
+  echo "  (none)"
+fi
+echo ""
+
+echo "SECRETS (potential — review before pushing):"
+SECRETS=$( (while IFS= read -r f; do [[ -n "$f" ]] && secret_scan "$f"; done <<< "$WILL_ADD_FILTERED"$'\n'"$STAGED") | sort -u )
+if [[ -n "$SECRETS" ]]; then
+  while IFS= read -r f; do [[ -n "$f" ]] && echo "  !! $f"; done <<< "$SECRETS"
+else
+  echo "  (none)"
+fi
+echo ""
+
+if [[ -n "$UNSTAGED" ]]; then
+  echo "UNSTAGED (modified but not being committed):"
+  while IFS= read -r f; do [[ -n "$f" ]] && echo "  $f"; done <<< "$UNSTAGED"
+  echo ""
+fi
+
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+
+# In push-only mode, skip staging/commit gate
+if ! $MODE_PUSH_ONLY; then
+  # Hard stop if nothing to commit
+  if [[ -z "$STAGED" && -z "$WILL_ADD_FILTERED" ]]; then
+    echo "Nothing to commit. Aborting."
+    exit 0
+  fi
+fi
+
+# Confirm
+printf "Proceed? [Y/n] "
+read -r CONFIRM
+if [[ "$CONFIRM" == "n" || "$CONFIRM" == "N" ]]; then
+  echo "Aborted."
+  exit 0
+fi
+
+# --- Execute ---
+
+# Apply excludes: temporarily move excluded files out of staging
+unstage_excluded() {
+  while IFS= read -r f; do
+    [[ -n "$f" ]] && git reset HEAD -- "$f" 2>/dev/null
+  done <<< "$EXCLUDED"
+}
+
+if ! $MODE_PUSH_ONLY; then
+  if $MODE_PICK; then
+    git add -p
+  elif $MODE_ALL; then
+    git add -A
+    unstage_excluded
+  else
+    git add -u
+    unstage_excluded
+  fi
+
+  echo "Generating commit message..."
+  COMMIT_MSG=$("$SCRIPT_DIR/pr-commit" --stdout 2>/dev/null)
+
+  if [[ -z "$COMMIT_MSG" ]]; then
+    COMMIT_MSG="update files"
+  fi
+
+  printf "Commit message [enter to accept]: %s\n> " "$COMMIT_MSG"
+  read -r OVERRIDE
+  if [[ -n "$OVERRIDE" ]]; then
+    COMMIT_MSG="$OVERRIDE"
+  fi
+
+  git commit -m "$COMMIT_MSG"
+  if [[ $? -ne 0 ]]; then
+    echo "Commit failed. Aborting push."
+    exit 1
+  fi
+fi
+
+git push -u origin HEAD
+if [[ $? -ne 0 ]]; then
+  echo "Push failed."
+  exit 1
+fi
+
+if $MODE_PR; then
+  echo ""
+  echo "Creating PR..."
+  PR_BODY=$("$SCRIPT_DIR/pr-desc" --stdout)
+  BRANCH_SLUG=$(echo "$BRANCH" | tr '/' '-')
+  gh pr create --title "$BRANCH_SLUG" --body "$PR_BODY"
+fi
+
+echo "Done."

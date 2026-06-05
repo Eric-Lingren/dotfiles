@@ -25,13 +25,13 @@ On unrecoverable failure (e.g. transcript file unreadable), return a JSON array 
 ## What you receive
 
 Your input contains:
-1. The draft seed JSON (inline)
+1. A `seed_path`: absolute path to the draft seed JSON file. Use Read to load it.
 2. A `transcript_path`: absolute path to the cleaned transcript file. Use Grep and Read to locate spans — do not request an inline copy.
 3. The disposed-id lock list (off-limits thread ids) — required for relabel-resurrection checks
 
 ## Process
 
-1. Check `decisions` for any two entries that logically contradict each other.
+1. Read the seed file at `seed_path`. Then check `decisions` for any two entries that logically contradict each other.
 2. Check `open_threads` against the transcript to find entries the transcript actually resolved.
 3. Check the transcript for explicit user accept/reject/defer statements and verify each appears correctly in the seed.
 4. **For every entry in `open_threads`**: compare its text against all disposed-id lock list entries. If the semantic content matches a disposed thread (even under a different name), raise a relabel-resurrection refutation. Do not rely on exact string match — compare meaning.

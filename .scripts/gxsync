@@ -1,0 +1,63 @@
+#!/usr/bin/env bash
+# gxsync — sync feature branch with base via merge
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/gx-lib.sh"
+
+gx_load_policy 2>/dev/null
+
+BASE="${GX_BASE_BRANCH:-main}"
+CURRENT=$(git rev-parse --abbrev-ref HEAD)
+
+if [[ "$CURRENT" == "$BASE" ]]; then
+  echo "Already on base branch ($BASE). Nothing to sync."
+  exit 0
+fi
+
+# Fetch latest from origin
+echo "Fetching from origin..."
+git fetch origin
+
+AHEAD=$(git rev-list --count "origin/$BASE..HEAD" 2>/dev/null || echo "?")
+BEHIND=$(git rev-list --count "HEAD..origin/$BASE" 2>/dev/null || echo "?")
+
+echo ""
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo "  gxsync — merge preview"
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo ""
+echo "Will merge origin/$BASE into $CURRENT"
+echo "  $AHEAD commit(s) ahead of origin/$BASE"
+echo "  $BEHIND commit(s) behind origin/$BASE"
+echo ""
+
+if [[ "$BEHIND" == "0" || "$BEHIND" == "?" && "$AHEAD" != "?" ]]; then
+  echo "Branch is already up to date with origin/$BASE."
+  [[ "$BEHIND" == "0" ]] && exit 0
+fi
+
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+printf "Proceed? [Y/n] "
+read -r CONFIRM
+if [[ "$CONFIRM" == "n" || "$CONFIRM" == "N" ]]; then
+  echo "Aborted."
+  exit 0
+fi
+
+echo ""
+git merge "origin/$BASE"
+MERGE_EXIT=$?
+
+if [[ $MERGE_EXIT -ne 0 ]]; then
+  echo ""
+  echo "Merge conflict detected. Resolve conflicts manually, then run git merge --continue."
+  echo ""
+  echo "Conflicting files:"
+  git diff --name-only --diff-filter=U | while IFS= read -r f; do
+    echo "  $f"
+  done
+  exit 1
+fi
+
+echo ""
+echo "Sync complete. $CURRENT is now up to date with origin/$BASE."
