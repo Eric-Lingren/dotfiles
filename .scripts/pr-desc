@@ -1,5 +1,10 @@
 #!/bin/bash
 
+STDOUT_MODE=false
+for arg in "$@"; do
+  [[ "$arg" == "--stdout" ]] && STDOUT_MODE=true
+done
+
 BRANCH=$(git rev-parse --abbrev-ref HEAD)
 TICKET=$(echo "$BRANCH" | grep -oE '[A-Za-z]+-[0-9]+' | tr '[:lower:]' '[:upper:]')
 LINEAR_URL="https://linear.app/standard-metrics/issue/$TICKET"
@@ -35,5 +40,9 @@ Rules:
 
 BODY=$(CLAUDE_CONFIG_DIR="${CC_WORK_DIR:-$HOME/.cco}" command claude -p "$PROMPT")
 
-echo "$BODY" | pbcopy
-echo "SUCCESS -- PR description copied to clipboard."
+if $STDOUT_MODE; then
+  echo "$BODY"
+else
+  echo "$BODY" | pbcopy
+  echo "SUCCESS -- PR description copied to clipboard."
+fi

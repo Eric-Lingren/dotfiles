@@ -15,7 +15,7 @@ The orchestrator must pass the following as the agent prompt:
 ```
 ## Seed
 
-<full draft seed JSON, inline>
+seed_path: <absolute path to the seed JSON file produced in step 3a>
 
 ## Transcript
 
@@ -29,7 +29,7 @@ The following thread ids are disposed and must never be re-raised under any name
 
 ### Requirements
 
-- **Seed**: full JSON, inline in the prompt. Not a file path. Not a summary.
+- **Seed**: a file path only. The persona uses Read to load the full JSON. Not inline JSON. Not a summary. The path must point to the temp seed file written by the orchestrator in step 3a.
 - **Transcript**: a file path only. The persona uses Grep and Read to locate relevant spans. The path must point to the output of `filter-session-transcript.sh`, not the raw session JSONL.
 - **Disposed-id lock list**: the `id` values from all entries in `seed.disposed_threads`. A persona that raises a refutation with a disposed id is producing an invalid result — the orchestrator discards it without judging.
 
@@ -44,7 +44,7 @@ The orchestrator spawns 3 judge instances per refutation. Each receives:
 
 ## Seed (read-only context)
 
-<full draft seed JSON, inline>
+seed_path: <absolute path to the seed JSON file produced in step 3a>
 
 ## Transcript
 
@@ -54,7 +54,7 @@ transcript_path: <absolute path to the cleaned transcript file>
 ### Requirements
 
 - **Refutation**: a single refutation object (normal form), not an array.
-- **Seed**: full JSON inline. Read-only — the judge must not propose changes to the seed.
+- **Seed**: a file path only. Read-only — the judge reads the file and must not propose changes to the seed.
 - **Transcript**: same cleaned transcript path used by personas.
 
 ## Cleaned transcript path

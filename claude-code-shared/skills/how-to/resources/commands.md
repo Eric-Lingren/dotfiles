@@ -488,3 +488,38 @@ dev aidp reset
 ```bash
 dev aidp logs
 ```
+
+---
+
+## gx Git Toolkit
+
+Personal git toolkit for dotfiles and personal repos. All verbs live in `~/.dotfiles/.scripts/`. From skills, always invoke via absolute path (aliases are absent in non-interactive shells).
+
+**gxcheck** — read-only branch state reporter. Outputs MERGED, FOREIGN, STALE, REMOTE_GONE, and ON_BASE signals. Always exits 0 (advisory only).
+```bash
+~/.dotfiles/.scripts/gxcheck
+```
+
+**gxpush** — preview-and-confirm push. Shows staged, will-add, excluded, and secret files before any git operation. Default confirmation is N.
+```bash
+~/.dotfiles/.scripts/gxpush           # stage tracked files, commit, push
+~/.dotfiles/.scripts/gxpush --all     # stage everything (git add -A), confirm, push
+~/.dotfiles/.scripts/gxpush --pick    # interactive hunk selection (git add -p)
+~/.dotfiles/.scripts/gxpush --pr      # push and open PR (uses pr-desc --stdout)
+~/.dotfiles/.scripts/gxpush --push-only  # skip staging/commit; push only (for cherry-pick flows)
+```
+
+**gxmove** — relocate uncommitted changes to another branch.
+```bash
+~/.dotfiles/.scripts/gxmove <target-branch>
+```
+
+**gxclean** — list and delete merged local branches. Shows prototype/* branches as [PRIORITY]. Default confirmation is N.
+```bash
+~/.dotfiles/.scripts/gxclean
+```
+
+**gxsync** — fetch + merge origin/<base_branch> into current branch. No rebase, no force-push.
+```bash
+~/.dotfiles/.scripts/gxsync
+```

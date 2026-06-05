@@ -267,7 +267,7 @@ Present findings as a numbered list and ask: "Which of these do you want to act 
 
 After the user approves changes, write a tasks file before touching any code.
 
-**Step 7a: Branching.** Run `git branch --show-current`. Then ask:
+**Step 7a: Branching.** **gxcheck pre-flight:** Before asking the user, run `~/.dotfiles/.scripts/gxcheck` and surface its output as a brief status block (e.g. `Branch check: OK: branch looks clean`). This is advisory only — the skill continues regardless of the output. Then run `git branch --show-current` and ask:
 
 ```
 Branching strategy:

@@ -25,13 +25,13 @@ On unrecoverable failure (e.g. transcript file unreadable), return a JSON array 
 ## What you receive
 
 Your input contains:
-1. The draft seed JSON (inline)
+1. A `seed_path`: absolute path to the draft seed JSON file. Use Read to load it.
 2. A `transcript_path`: absolute path to the cleaned transcript file. Use Grep and Read to locate spans — do not request an inline copy.
 3. The disposed-id lock list (off-limits thread ids)
 
 ## Process
 
-1. Read the seed's `decisions`, `summary`, and `open_threads` fields.
+1. Read the seed file at `seed_path`. Then read its `decisions`, `summary`, and `open_threads` fields.
 2. For each claim, find the supporting span in the transcript. A span is a direct quote or paraphrase that backs the claim.
 3. If no span exists, or the span contradicts the claim, raise a refutation.
 

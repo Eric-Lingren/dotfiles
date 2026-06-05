@@ -1,0 +1,69 @@
+#!/usr/bin/env bash
+# gxclean — on-demand merged branch cleanup
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/gx-lib.sh"
+
+gx_load_policy 2>/dev/null
+
+BASE="${GX_BASE_BRANCH:-main}"
+CURRENT=$(git rev-parse --abbrev-ref HEAD)
+
+# ON_BASE warning
+if [[ "$CURRENT" == "$BASE" ]]; then
+  echo "WARN: currently on base branch ($BASE)"
+  echo ""
+fi
+
+# Collect merged branches (exclude current and base)
+MERGED_LIST=$(
+  git branch --merged "origin/$BASE" 2>/dev/null \
+    | grep -v "^\*" \
+    | grep -v "^\s*$BASE$" \
+    | sed 's/^[[:space:]]*//' \
+    | grep -v "^$"
+)
+
+if [[ -z "$MERGED_LIST" ]]; then
+  echo "No merged branches to clean up."
+  exit 0
+fi
+
+MERGED_COUNT=$(echo "$MERGED_LIST" | wc -l | tr -d ' ')
+
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo "  gxclean — merged branches (base: $BASE)"
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo ""
+echo "MERGED BRANCHES ($MERGED_COUNT):"
+while IFS= read -r branch; do
+  [[ -z "$branch" ]] && continue
+  if [[ "$branch" == prototype/* ]]; then
+    echo "  $branch [PRIORITY]"
+  else
+    echo "  $branch"
+  fi
+done <<< "$MERGED_LIST"
+echo ""
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+
+printf "Delete all? [y/N] "
+read -r CONFIRM
+if [[ "$CONFIRM" != "y" && "$CONFIRM" != "Y" ]]; then
+  echo "Aborted."
+  exit 0
+fi
+
+echo ""
+while IFS= read -r branch; do
+  [[ -z "$branch" ]] && continue
+  git branch -d "$branch" 2>&1
+  if [[ $? -eq 0 ]]; then
+    echo "Deleted: $branch"
+  else
+    echo "Skipped (not fully merged or error): $branch"
+  fi
+done <<< "$MERGED_LIST"
+
+echo ""
+echo "Done."

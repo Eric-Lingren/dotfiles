@@ -1,0 +1,92 @@
+#!/usr/bin/env bash
+# gxmove — relocate uncommitted changes to another branch
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/gx-lib.sh"
+
+TARGET="$1"
+
+if [[ -z "$TARGET" ]]; then
+  echo "Usage: gxmove <target-branch>"
+  exit 1
+fi
+
+FROM=$(git rev-parse --abbrev-ref HEAD)
+
+# Collect uncommitted changes (staged + unstaged, not untracked by default)
+CHANGES=$(git diff --name-only; git diff --cached --name-only)
+CHANGES=$(echo "$CHANGES" | sort -u)
+
+if [[ -z "$CHANGES" ]]; then
+  echo "No uncommitted changes to move. Aborting."
+  exit 0
+fi
+
+# --- Preview ---
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo "  gxmove preview"
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo ""
+echo "FROM: $FROM"
+echo "TO:   $TARGET"
+echo ""
+echo "CHANGES TO MOVE:"
+while IFS= read -r f; do
+  [[ -n "$f" ]] && echo "  $f"
+done <<< "$CHANGES"
+echo ""
+echo "NOTE: only uncommitted working-tree changes are moved."
+echo "      local-only commits stay on $FROM."
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+
+printf "Proceed? [y/N] "
+read -r CONFIRM
+if [[ "$CONFIRM" != "y" && "$CONFIRM" != "Y" ]]; then
+  echo "Aborted."
+  exit 0
+fi
+
+# Check if target branch exists locally
+if ! git show-ref --verify --quiet "refs/heads/$TARGET"; then
+  printf "Branch '$TARGET' does not exist locally. Create it? [y/N] "
+  read -r CREATE_CONFIRM
+  if [[ "$CREATE_CONFIRM" != "y" && "$CREATE_CONFIRM" != "Y" ]]; then
+    echo "Aborted."
+    exit 0
+  fi
+  git branch "$TARGET"
+  if [[ $? -ne 0 ]]; then
+    echo "Failed to create branch '$TARGET'. Aborting."
+    exit 1
+  fi
+fi
+
+# Stash all changes (staged + unstaged)
+STASH_OUT=$(git stash push --include-untracked -m "gxmove to $TARGET" 2>&1)
+STASH_EXIT=$?
+if [[ $STASH_EXIT -ne 0 ]] || echo "$STASH_OUT" | grep -q "No local changes"; then
+  echo "Stash failed or no changes to stash: $STASH_OUT"
+  exit 1
+fi
+
+STASH_REF=$(git stash list | head -1 | cut -d: -f1)
+
+# Switch to target branch
+git switch "$TARGET"
+if [[ $? -ne 0 ]]; then
+  echo "Failed to switch to '$TARGET'. Stash preserved at $STASH_REF."
+  echo "Recover with: git stash pop $STASH_REF"
+  exit 1
+fi
+
+# Pop the stash
+git stash pop
+if [[ $? -ne 0 ]]; then
+  echo "Stash pop failed (conflict). Stash preserved at $STASH_REF."
+  echo "Resolve conflicts manually, then: git stash pop $STASH_REF"
+  git checkout "$FROM" 2>/dev/null
+  exit 1
+fi
+
+echo ""
+echo "Done. Changes moved from '$FROM' to '$TARGET'."

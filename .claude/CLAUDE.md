@@ -13,6 +13,8 @@ Key shared paths:
 - Skills: `~/.dotfiles/claude-code-shared/skills/`
 - Resources: `~/.dotfiles/claude-code-shared/resources/`
 
+**Exception — gx git toolkit:** Skills may invoke `~/.dotfiles/.scripts/gx*` verbs (`gxcheck`, `gxpush`, `gxmove`, `gxclean`, `gxsync`) via absolute path `~/.dotfiles/.scripts/<verb>`. These are intentionally outside `claude-code-shared/` and the path restriction above does not apply to them.
+
 ## Delegate menial work to Haiku
 
 Push pure read-only lookups (multi-file grep/glob, "where is X", mapping a dir, reading many files to locate something, fetching a URL) to the `caveman:cavecrew-investigator` subagent (Haiku) instead of running them on the session model. Keep reasoning and edits on the session model. Skills that do heavy searching restate this; this is the default everywhere else.

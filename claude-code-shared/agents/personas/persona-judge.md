@@ -28,7 +28,7 @@ On unrecoverable failure (e.g. transcript file unreadable), return an error-form
 Your input contains:
 1. A single refutation object from an adversary persona
 2. A `transcript_path`: absolute path to the cleaned transcript file. Use Grep and Read to locate spans — do not request an inline copy.
-3. The draft seed JSON (for context only — do not re-adjudicate the seed directly)
+3. A `seed_path`: absolute path to the draft seed JSON file. Use Read to load it for context only — do not re-adjudicate the seed directly.
 
 ## Process
 
