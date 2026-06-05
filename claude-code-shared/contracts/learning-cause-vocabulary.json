@@ -1,5 +1,5 @@
 {
-  "_comment": "Open-vocabulary cause seed list for learning-schema-v2.json. Use one of these values in the 'cause' field, or 'other' with a snake_case cause_label for novel patterns.",
+  "_comment": "Open-vocabulary cause seed list for learning-schema.json. Use one of these values in the 'cause' field, or 'other' with a snake_case cause_label for novel patterns.",
   "known_causes": [
     {
       "value": "requirement_lost_between_docs",

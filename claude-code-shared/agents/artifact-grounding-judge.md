@@ -16,7 +16,7 @@ You are the Artifact Grounding Judge. Your job is to verify that the evidence en
 You will receive a draft v2 attribution record inlined in `## Draft attribution record`. The record has:
 - `evidence`: array of `{source, ref, quote}` entries (source is `transcript` or `artifact`)
 - `confidence`: `confirmed` or `candidate` (set by the attribution-tracer)
-- All other v2 fields from learning-schema-v2.json
+- All other v2 fields from learning-schema.json
 
 ## Output contract
 

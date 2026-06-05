@@ -1,17 +1,17 @@
 #!/usr/bin/env python3
-"""log-learning.py — validate and atomically append a v2 learning entry to unified.jsonl.
+"""log-learning.py — validate and atomically append a v2 learning entry to unified-learnings.jsonl.
 
 Reads a partial learning entry as JSON from stdin. Rejects any caller-provided
 server-injected fields (schema_version, id, timestamp), injects them, validates
-against learning-schema-v2.json, then atomically appends to
-claude-code-shared/learnings/unified.jsonl.
+against learning-schema.json, then atomically appends to
+claude-code-shared/learnings/unified-learnings.jsonl.
 
 Usage:
     echo '{...}' | python log-learning.py
 
 Caller supplies all fields EXCEPT: schema_version, id, timestamp.
 
-Required caller fields (see learning-schema-v2.json for full contract):
+Required caller fields (see learning-schema.json for full contract):
     type, reported_by, improves_type, cause, problem, why_missed, lesson,
     fix, evidence, confidence
     Plus: improves (nullable), cause_label (null unless cause=='other'),
@@ -35,7 +35,7 @@ from datetime import datetime, timezone
 
 SCRIPT_DIR = pathlib.Path(__file__).resolve().parent
 CONTRACTS_DIR = SCRIPT_DIR.parent / "contracts"
-SCHEMA_PATH = CONTRACTS_DIR / "learning-schema-v2.json"
+SCHEMA_PATH = CONTRACTS_DIR / "learning-schema.json"
 
 _dest_override = os.environ.get("LOG_LEARNING_DEST")
 LEARNINGS_DIR = pathlib.Path(_dest_override) if _dest_override else SCRIPT_DIR.parent / "learnings"
@@ -120,7 +120,7 @@ def main():
     try:
         schema = json.loads(SCHEMA_PATH.read_text())
     except Exception as e:
-        print(f"ERROR: could not load learning-schema-v2.json: {e}", file=sys.stderr)
+        print(f"ERROR: could not load learning-schema.json: {e}", file=sys.stderr)
         sys.exit(1)
 
     # Validate
@@ -139,7 +139,7 @@ def main():
 
     # Atomic append: write to temp file then rename (append semantics via lock)
     LEARNINGS_DIR.mkdir(parents=True, exist_ok=True)
-    out_path = LEARNINGS_DIR / "unified.jsonl"
+    out_path = LEARNINGS_DIR / "unified-learnings.jsonl"
     line = json.dumps(entry, ensure_ascii=False, separators=(",", ":")) + "\n"
 
     try:

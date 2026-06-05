@@ -1,4 +1,4 @@
-"""Tests for learning-schema-v2.json and the v2 log-learning.py writer."""
+"""Tests for learning-schema.json and the log-learning.py writer."""
 
 import json
 import pathlib
@@ -12,7 +12,7 @@ import pytest
 
 DOTFILES = pathlib.Path(__file__).resolve().parents[3]
 SHARED = DOTFILES / "claude-code-shared"
-SCHEMA_V2 = SHARED / "contracts" / "learning-schema-v2.json"
+SCHEMA = SHARED / "contracts" / "learning-schema.json"
 LOG_LEARNING = SHARED / "scripts" / "log-learning.py"
 LEARNINGS_DIR = SHARED / "learnings"
 
@@ -56,7 +56,7 @@ _SERVER_STUB = {
 
 
 def _load_schema():
-    return json.loads(SCHEMA_V2.read_text())
+    return json.loads(SCHEMA.read_text())
 
 
 def _build_validator(schema):
@@ -76,7 +76,7 @@ def _validate(payload):
 
 class TestSchemaV2Structure:
     def test_schema_file_exists(self):
-        assert SCHEMA_V2.exists(), f"Schema not found: {SCHEMA_V2}"
+        assert SCHEMA.exists(), f"Schema not found: {SCHEMA}"
 
     def test_schema_is_valid_json(self):
         schema = _load_schema()
@@ -192,21 +192,21 @@ class TestWriterInjectsFields:
     def test_injects_schema_version(self, tmp_path):
         result = _run_writer(MINIMAL_SELF, learnings_dir=tmp_path)
         assert result.returncode == 0, f"stderr: {result.stderr}"
-        line = (tmp_path / "unified.jsonl").read_text().strip()
+        line = (tmp_path / "unified-learnings.jsonl").read_text().strip()
         record = json.loads(line)
         assert record["schema_version"] == "2"
 
     def test_injects_timestamp(self, tmp_path):
         result = _run_writer(MINIMAL_SELF, learnings_dir=tmp_path)
         assert result.returncode == 0
-        record = json.loads((tmp_path / "unified.jsonl").read_text().strip())
+        record = json.loads((tmp_path / "unified-learnings.jsonl").read_text().strip())
         import re
         assert re.match(r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$", record["timestamp"])
 
     def test_injects_uuid_id(self, tmp_path):
         result = _run_writer(MINIMAL_SELF, learnings_dir=tmp_path)
         assert result.returncode == 0
-        record = json.loads((tmp_path / "unified.jsonl").read_text().strip())
+        record = json.loads((tmp_path / "unified-learnings.jsonl").read_text().strip())
         assert "id" in record
         parsed = uuid.UUID(record["id"])  # raises if invalid
         assert parsed.version == 4
@@ -227,7 +227,7 @@ class TestWriterAppendsToUnified:
     def test_appends_to_unified_jsonl(self, tmp_path):
         result = _run_writer(MINIMAL_SELF, learnings_dir=tmp_path)
         assert result.returncode == 0, f"stderr: {result.stderr}"
-        unified = tmp_path / "unified.jsonl"
+        unified = tmp_path / "unified-learnings.jsonl"
         assert unified.exists()
         lines = unified.read_text().strip().split("\n")
         assert len(lines) == 1
@@ -237,13 +237,13 @@ class TestWriterAppendsToUnified:
     def test_appends_multiple_entries(self, tmp_path):
         _run_writer(MINIMAL_SELF, learnings_dir=tmp_path)
         _run_writer(MINIMAL_ATTRIBUTION, learnings_dir=tmp_path)
-        lines = (tmp_path / "unified.jsonl").read_text().strip().split("\n")
+        lines = (tmp_path / "unified-learnings.jsonl").read_text().strip().split("\n")
         assert len(lines) == 2
 
     def test_written_record_validates_against_schema(self, tmp_path):
         result = _run_writer(MINIMAL_SELF, learnings_dir=tmp_path)
         assert result.returncode == 0
-        line = (tmp_path / "unified.jsonl").read_text().strip()
+        line = (tmp_path / "unified-learnings.jsonl").read_text().strip()
         record = json.loads(line)
         errors = _validate(record)
         assert errors == [], f"Written record fails schema: {[e.message for e in errors]}"

@@ -26,7 +26,7 @@ You will receive these fields in the prompt:
 
 ## Output contract
 
-Return a v2 attribution record draft (JSON, pre-grounding) suitable for passing to the artifact-grounding-judge. The record has type: `attribution` and all required fields from learning-schema-v2.json. Do not include server-injected fields (schema_version, id, timestamp) — the writer injects those.
+Return a v2 attribution record draft (JSON, pre-grounding) suitable for passing to the artifact-grounding-judge. The record has type: `attribution` and all required fields from learning-schema.json. Do not include server-injected fields (schema_version, id, timestamp) — the writer injects those.
 
 ## Step 1 — Walk the provenance chain
 
@@ -122,18 +122,20 @@ Use `source: transcript` for transcript-derived evidence, `source: artifact` for
 
 ## Step 6 — Pass to artifact-grounding-judge
 
-Spawn the `artifact-grounding-judge` agent with the draft record:
+Use the Agent tool with subagent_type: artifact-grounding-judge and pass the draft record in the prompt body:
 
 ```
 ## Draft attribution record
 <draft JSON from Step 5>
 ```
 
-The judge verifies evidence anchors against artifacts and writes to `learnings/unified.jsonl` if grounded, or returns a rejection reason if not.
+The judge verifies evidence anchors against artifacts and calls log-learning.py only if grounded, or returns a rejection reason if not.
+
+Your final action is spawning the artifact-grounding-judge. You do not call log-learning.py. You do not report a write. The judge's verdict and write are its own responsibility.
 
 ## What you must not do
 
-- Do not write to `learnings/unified.jsonl` directly — that is the judge's job after verification.
+- Do not write to `learnings/unified-learnings.jsonl` directly. Calling log-learning.py directly bypasses grounding verification and self-grades the record. Only the artifact-grounding-judge writes.
 - Do not invent evidence anchors. If no quote can be found, set `confidence: candidate` and note the gap in `why_missed`.
 - Do not produce multiple attribution records per invocation. One issue → one record.
 - Do not change the `issue_description` or `fix` passed by the calling skill.

@@ -56,6 +56,11 @@
     "[github-actions-workflow]": {
         "editor.defaultFormatter": "redhat.vscode-yaml"
     },
+    "[json]": {
+        "editor.formatOnSave": true,
+        "editor.wordWrap": "on",
+        "editor.defaultFormatter": "vscode.json-language-features"
+    },
     "notebook.cellToolbarLocation": {
         "default": "right",
         "jupyter-notebook": "left"
@@ -75,6 +80,9 @@
         "suppressGitMissingWarning": true
     },
     "files.autoSave": "afterDelay",
+    "files.associations": {
+        "*.jsonl": "json"
+    },
     "python.analysis.extraPaths": ["app"],
     "python.analysis.typeCheckingMode": "basic",
     "python.languageServer": "None",

@@ -309,7 +309,7 @@ Spawn the `attribution-tracer` agent (`subagent_type: attribution-tracer`) with:
 The attribution-tracer walks the provenance chain backward to find the earliest
 escape point, drafts a v2 attribution record, and passes it to the
 `artifact-grounding-judge` agent for verification. The judge writes to
-`learnings/unified.jsonl` if grounded.
+`learnings/unified-learnings.jsonl` if grounded.
 
 This block fires once per confirmed root cause — not once per session. If multiple
 root causes are confirmed in one run, spawn attribution-tracer once per root cause.

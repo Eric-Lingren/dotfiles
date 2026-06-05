@@ -1,6 +1,6 @@
 ---
 name: capture-learning
-description: End-of-run learning capture agent. Receives a rough correction-event description from a skill, expands it into a schema-valid v2 self-learning entry with discrete transcript anchors, runs the grounding judge, and writes the entry to learnings/unified.jsonl if grounded. Spawned by the managed tail block in every shared skill when a correction-event occurred.
+description: End-of-run learning capture agent. Receives a rough correction-event description from a skill, expands it into a schema-valid v2 self-learning entry with discrete transcript anchors, runs the grounding judge, and writes the entry to learnings/unified-learnings.jsonl if grounded. Spawned by the managed tail block in every shared skill when a correction-event occurred.
 tools: Read, Bash, Agent
 model: sonnet
 ---
