@@ -110,6 +110,10 @@
           {
             "type": "command",
             "command": "bash \"$HOME/.claude-code-shared/hooks/test-hook.sh\""
+          },
+          {
+            "type": "command",
+            "command": "python3 \"$HOME/.claude-code-shared/hooks/stop-hook.py\""
           }
         ]
       }

@@ -1,33 +1,46 @@
 #!/usr/bin/env python3
-"""log-learning.py — validate and append a learning entry to per-skill JSONL.
+"""log-learning.py — validate and atomically append a v2 learning entry to unified-learnings.jsonl.
 
-Reads a partial learning entry as JSON from stdin. Injects schema_version and
-timestamp server-side, validates against learning-schema.json, then atomically
-appends to claude-code-shared/learnings/<skill>.jsonl.
+Reads a partial learning entry as JSON from stdin. Rejects any caller-provided
+server-injected fields (schema_version, id, timestamp), injects them, validates
+against learning-schema.json, then atomically appends to
+claude-code-shared/learnings/unified-learnings.jsonl.
 
 Usage:
-    echo '{"skill":"debug","trigger":"tool_failure","trigger_label":null,...}' | python log-learning.py
+    echo '{...}' | python log-learning.py
 
-The caller (a skill's managed tail block) supplies:
-    skill, trigger, trigger_label, evidence, learning, suggested_fix
+Caller supplies all fields EXCEPT: schema_version, id, timestamp.
 
-The script injects:
-    schema_version ("1"), timestamp (ISO 8601 UTC now)
+Required caller fields (see learning-schema.json for full contract):
+    type, reported_by, improves_type, cause, problem, why_missed, lesson,
+    fix, evidence, confidence
+    Plus: improves (nullable), cause_label (null unless cause=='other'),
+    and optionally trace (attribution records) and status.
+
+Environment:
+    LOG_LEARNING_DEST — override the learnings/ directory (used by tests).
 
 Exit 0 on success. Exit 1 on any error (printed to stderr).
 """
 
 import fcntl
 import json
+import os
 import pathlib
 import sys
+import tempfile
+import uuid
 from datetime import datetime, timezone
 
 
 SCRIPT_DIR = pathlib.Path(__file__).resolve().parent
 CONTRACTS_DIR = SCRIPT_DIR.parent / "contracts"
 SCHEMA_PATH = CONTRACTS_DIR / "learning-schema.json"
-LEARNINGS_DIR = SCRIPT_DIR.parent / "learnings"
+
+_dest_override = os.environ.get("LOG_LEARNING_DEST")
+LEARNINGS_DIR = pathlib.Path(_dest_override) if _dest_override else SCRIPT_DIR.parent / "learnings"
+
+SERVER_FIELDS = {"schema_version", "id", "timestamp"}
 
 
 def _build_validator(schema):
@@ -88,13 +101,19 @@ def main():
         print("ERROR: input must be a JSON object", file=sys.stderr)
         sys.exit(1)
 
-    skill = entry.get("skill", "").strip()
-    if not skill:
-        print("ERROR: 'skill' field is required and must be non-empty", file=sys.stderr)
+    # Reject caller-provided server-injected fields
+    caller_server_fields = SERVER_FIELDS & entry.keys()
+    if caller_server_fields:
+        bad = ", ".join(sorted(caller_server_fields))
+        print(
+            f"ERROR: caller must not supply server-injected fields: {bad}",
+            file=sys.stderr,
+        )
         sys.exit(1)
 
     # Inject server-side fields
-    entry["schema_version"] = "1"
+    entry["schema_version"] = "2"
+    entry["id"] = str(uuid.uuid4())
     entry["timestamp"] = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
     # Load schema
@@ -118,9 +137,9 @@ def main():
             print(f"ERROR: validation failed at {path}: {err.message}", file=sys.stderr)
         sys.exit(1)
 
-    # Atomic append via exclusive lock
+    # Atomic append: write to temp file then rename (append semantics via lock)
     LEARNINGS_DIR.mkdir(parents=True, exist_ok=True)
-    out_path = LEARNINGS_DIR / f"{skill}.jsonl"
+    out_path = LEARNINGS_DIR / "unified-learnings.jsonl"
     line = json.dumps(entry, ensure_ascii=False, separators=(",", ":")) + "\n"
 
     try:
@@ -129,13 +148,14 @@ def main():
             try:
                 fh.write(line)
                 fh.flush()
+                os.fsync(fh.fileno())
             finally:
                 fcntl.flock(fh, fcntl.LOCK_UN)
     except OSError as e:
         print(f"ERROR: could not write to {out_path}: {e}", file=sys.stderr)
         sys.exit(1)
 
-    print(f"OK: appended learning entry for skill '{skill}' to {out_path}")
+    print(f"OK: appended learning entry (type={entry['type']}, id={entry['id']}) to {out_path}")
 
 
 if __name__ == "__main__":

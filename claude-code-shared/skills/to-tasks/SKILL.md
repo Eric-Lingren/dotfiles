@@ -216,14 +216,20 @@ Next steps:
 <!-- learning-capture:start -->
 ## Learning Capture
 
-**Default: do nothing.** Most runs record nothing. Only proceed if an observable
-correction-event occurred this run.
+Run this as the FINAL action of this skill's terminal turn, BEFORE printing the
+closing suggestion or handoff. Most runs record nothing — only proceed if an
+observable correction-event occurred this run.
 
-If one occurred: identify the `trigger` (tool_failure | backtrack | user_correction |
-instruction_gap | redundant_effort | uncategorized), a one-sentence description of what
-happened (`brief_evidence`), and `trigger_label` (snake_case if uncategorized, else null).
-Spawn the `capture-learning` agent (`subagent_type: capture-learning`) with: `skill`
-(this skill's slug), `trigger`, `trigger_label`, `brief_evidence`, `transcript_path`
-(absolute path to session transcript). The agent builds the full schema-valid entry,
-runs grounding verification, and writes if grounded.
+<!-- learning-eval: to-tasks -->
+If a correction-event occurred: identify the `trigger` (tool_failure | backtrack |
+user_correction | instruction_gap | redundant_effort | uncategorized), a one-sentence
+description of what happened (`brief_evidence`), and `trigger_label` (snake_case if
+uncategorized, else null). Spawn the `capture-learning` agent
+(`subagent_type: capture-learning`) with: `skill` (this skill's slug: `to-tasks`),
+`trigger`, `trigger_label`, `brief_evidence`, `transcript_path` (absolute path to
+session transcript). The agent builds the full schema-valid entry, runs grounding
+verification, and writes if grounded.
+**What's next:**
+<!-- skill-done: to-tasks -->
+  - `/run-tasks` — tasks are ready to execute
 <!-- learning-capture:end -->
