@@ -161,6 +161,8 @@ alias gxpush="$GX_SCRIPTS_DIR/gxpush"
 alias gxmove="$GX_SCRIPTS_DIR/gxmove"
 alias gxclean="$GX_SCRIPTS_DIR/gxclean"
 alias gxsync="$GX_SCRIPTS_DIR/gxsync"
+alias pr-commit="$GX_SCRIPTS_DIR/pr-commit"
+alias pr-desc="$GX_SCRIPTS_DIR/pr-desc"
 
 
 # ─────────────────────────────────────────#
