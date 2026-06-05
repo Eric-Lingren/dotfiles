@@ -112,6 +112,38 @@
       "consumers": [
         "to-seed"
       ]
+    },
+    {
+      "name": "learning-grounding-judge",
+      "file": "agents/learning-grounding-judge.md",
+      "model": "haiku",
+      "description": "Anchor-verification agent that confirms whether a candidate learning entry's evidence anchors actually appear in the session transcript. Returns a JSON verdict {grounded: bool, reason: string}. Spawned by the managed tail block in every shared skill at end-of-run.",
+      "consumers": [
+        "cc-usage-analytics",
+        "clean-scaffolding",
+        "code-review",
+        "debug",
+        "fact-check",
+        "find-work",
+        "grill-me",
+        "grill-with-docs",
+        "handoff",
+        "how-to",
+        "improve-codebase-architecture",
+        "improve-component",
+        "improve-skill",
+        "prototype",
+        "register-skill",
+        "run-task-followups",
+        "run-tasks",
+        "tasks-to-linear",
+        "tdd",
+        "tldr-tech",
+        "to-e2e-tasks",
+        "to-prd-html",
+        "to-seed",
+        "to-tasks"
+      ]
     }
   ]
 }

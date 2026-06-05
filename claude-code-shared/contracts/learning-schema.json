@@ -1,0 +1,88 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "learning-schema",
+  "title": "Learning Entry",
+  "description": "A single learning entry appended by a shared skill via log-learning.py. schema_version and timestamp are injected server-side by the writer; they are not supplied by the skill.",
+  "type": "object",
+  "required": ["schema_version", "skill", "timestamp", "trigger", "evidence", "learning", "suggested_fix"],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "const": "1",
+      "description": "Always '1'. Injected by log-learning.py."
+    },
+    "skill": {
+      "type": "string",
+      "minLength": 1,
+      "description": "The slug of the shared skill that generated this entry (e.g. 'debug', 'run-tasks')."
+    },
+    "timestamp": {
+      "type": "string",
+      "description": "ISO 8601 UTC timestamp. Injected by log-learning.py.",
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(\\.[0-9]+)?Z$"
+    },
+    "trigger": {
+      "type": "string",
+      "enum": ["tool_failure", "backtrack", "user_correction", "instruction_gap", "redundant_effort", "uncategorized"],
+      "description": "Label for the class of correction-event that prompted this learning. Open vocabulary: named values for known patterns; 'uncategorized' for novel patterns that must carry a free-text trigger_label. Grounding, not enum-match, is the membership gate."
+    },
+    "trigger_label": {
+      "type": ["string", "null"],
+      "description": "Required non-null snake_case string when trigger == 'uncategorized'; must be null for all other trigger values. Recurring uncategorized labels are promoted to named trigger values in this schema."
+    },
+    "evidence": {
+      "type": "string",
+      "minLength": 1,
+      "description": "WHAT happened this run. Must be observable and run-specific. For aggregated observations (redundant_effort, backtrack, or any 'tried N times' pattern), must list discrete quoted transcript anchors rather than asserting a bare count. Count is derived as len(anchors) by the grounding judge."
+    },
+    "learning": {
+      "type": "string",
+      "minLength": 1,
+      "description": "WHY it happened and the general reusable rule that must hold beyond this run. If the sentence only describes this run it belongs in evidence, not learning."
+    },
+    "suggested_fix": {
+      "type": ["string", "null"],
+      "description": "The concrete skill or script edit that would prevent recurrence (nullable). Consumed by improve-skill when it applies entries."
+    }
+  },
+  "if": {
+    "properties": {
+      "trigger": {"const": "uncategorized"}
+    },
+    "required": ["trigger"]
+  },
+  "then": {
+    "properties": {
+      "trigger_label": {"type": "string", "minLength": 1}
+    },
+    "required": ["trigger_label"]
+  },
+  "else": {
+    "properties": {
+      "trigger_label": {"type": "null"}
+    }
+  },
+  "examples": [
+    {
+      "schema_version": "1",
+      "skill": "debug",
+      "timestamp": "2026-06-05T03:10:00Z",
+      "trigger": "tool_failure",
+      "trigger_label": null,
+      "evidence": "Bash tool returned 'command not found: jq' when running the JSON filter step.",
+      "learning": "Check for jq availability with 'which jq' before piping to it; fall back to python -m json.tool when jq is absent.",
+      "suggested_fix": "Add a jq availability check at the start of any skill step that pipes to jq."
+    },
+    {
+      "schema_version": "1",
+      "skill": "run-tasks",
+      "timestamp": "2026-06-05T04:20:00Z",
+      "trigger": "uncategorized",
+      "trigger_label": "stale_task_status_read",
+      "evidence": "Task file was read at start of run and cached; a mid-run status update to T-0015 was not reflected in subsequent blocked_by checks.",
+      "learning": "Re-read the task JSON before each blocked_by check rather than relying on the in-memory snapshot from run start.",
+      "suggested_fix": "In the blocked_by check loop, call Read on the task file path to get the latest status rather than using the initial parse result."
+    }
+  ]
+}
