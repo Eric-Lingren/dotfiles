@@ -287,17 +287,49 @@ If new failures appear: your cleanup caused a regression. Fix before proceeding.
 
 **Then ask: what would have prevented this bug?** If the answer involves architectural change (no correct test seam, tangled callers, hidden coupling), hand off to `/improve-codebase-architecture` with the specifics. Make the recommendation after the fix is in, not before.
 
+<!-- attribution-capture:start -->
+## Attribution Capture
+
+For each confirmed root cause found this run: run this block BEFORE printing the
+closing suggestion or handoff.
+
+Collect available repo pointers from context:
+- `transcript_path`: absolute path to the session transcript (always available)
+- `seed_path`: path to the seed file if referenced in this session (e.g. `docs/seeds/…`)
+- `tasks_path`: path to the tasks file if referenced in this session
+- `branch`: current git branch name (run `git rev-parse --abbrev-ref HEAD` if needed)
+- `pr_url`: merged PR URL if this debugging session followed a PR merge
+
+Spawn the `attribution-tracer` agent (`subagent_type: attribution-tracer`) with:
+- `issue_description`: the confirmed root cause description
+- `fix`: the confirmed fix applied or recommended
+- `transcript_path`: from above
+- Any optional pointers available (seed_path, tasks_path, branch, pr_url)
+
+The attribution-tracer walks the provenance chain backward to find the earliest
+escape point, drafts a v2 attribution record, and passes it to the
+`artifact-grounding-judge` agent for verification. The judge writes to
+`learnings/unified.jsonl` if grounded.
+
+This block fires once per confirmed root cause — not once per session. If multiple
+root causes are confirmed in one run, spawn attribution-tracer once per root cause.
+<!-- attribution-capture:end -->
+
 <!-- learning-capture:start -->
 ## Learning Capture
 
-**Default: do nothing.** Most runs record nothing. Only proceed if an observable
-correction-event occurred this run.
+Run this as the FINAL action of this skill's terminal turn, BEFORE printing the
+closing suggestion or handoff. Most runs record nothing — only proceed if an
+observable correction-event occurred this run.
 
-If one occurred: identify the `trigger` (tool_failure | backtrack | user_correction |
-instruction_gap | redundant_effort | uncategorized), a one-sentence description of what
-happened (`brief_evidence`), and `trigger_label` (snake_case if uncategorized, else null).
-Spawn the `capture-learning` agent (`subagent_type: capture-learning`) with: `skill`
-(this skill's slug), `trigger`, `trigger_label`, `brief_evidence`, `transcript_path`
-(absolute path to session transcript). The agent builds the full schema-valid entry,
-runs grounding verification, and writes if grounded.
+<!-- learning-eval: debug -->
+If a correction-event occurred: identify the `trigger` (tool_failure | backtrack |
+user_correction | instruction_gap | redundant_effort | uncategorized), a one-sentence
+description of what happened (`brief_evidence`), and `trigger_label` (snake_case if
+uncategorized, else null). Spawn the `capture-learning` agent
+(`subagent_type: capture-learning`) with: `skill` (this skill's slug: `debug`),
+`trigger`, `trigger_label`, `brief_evidence`, `transcript_path` (absolute path to
+session transcript). The agent builds the full schema-valid entry, runs grounding
+verification, and writes if grounded.
+<!-- skill-done: debug -->
 <!-- learning-capture:end -->

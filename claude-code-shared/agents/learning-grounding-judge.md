@@ -26,30 +26,49 @@ Return exactly this JSON object and nothing else:
 - `grounded: true` — every anchor in the evidence field was confirmed present in the transcript (verbatim or near-verbatim).
 - `grounded: false` — at least one anchor could not be confirmed. Name the specific missing anchor in `reason`.
 
-## Enumerate-discrete-anchors rule
+## Evidence field format (v2)
 
-The `evidence` field must contain discrete quoted transcript anchors, not bare counts. Examples:
+The v2 `evidence` field is an **array** of objects with shape `{source, ref, quote}`. Each entry has a `quote` field containing a discrete transcript anchor.
 
-**Correct evidence** (discrete anchors):
-> "Ran Glob for '*.jsonl' three times: first at step 2 ('no results'), again at step 5 ('no results'), again at step 8 ('found learnings/debug.jsonl')."
+**Correct v2 evidence** (array with quoted anchors):
+```json
+[{"source": "transcript", "ref": "/path/to/transcript.md", "quote": "Ran Glob for '*.jsonl' three times: first at step 2 ('no results'), again at step 5 ('no results'), again at step 8 ('found learnings/debug.jsonl')."}]
+```
 
-**Incorrect evidence** (bare count, not verifiable):
-> "Ran Glob for '*.jsonl' three times without finding the file."
+**Incorrect v2 evidence** (bare count in quote, not verifiable):
+```json
+[{"source": "transcript", "ref": "/path/to/transcript.md", "quote": "Ran Glob three times without finding the file."}]
+```
 
-When the evidence field contains a bare count without discrete anchors, set `grounded: false` with reason: `"evidence contains a bare count without discrete quoted anchors — cannot verify"`.
+When any evidence entry's `quote` field contains a bare count without a discrete anchor, set `grounded: false` with reason: `"evidence quote contains a bare count without discrete quoted anchors — cannot verify"`.
+
+### Backward compatibility: v1 string evidence
+
+If the `evidence` field is a string (v1 format), apply the original anchor-check rules directly on the string value.
 
 ## Verification procedure
 
 1. Read the `evidence` field from the entry.
-2. Extract each distinct quoted anchor or described artifact from the evidence text.
-3. Read the transcript file at the given path.
-4. For each anchor: search the transcript for verbatim or near-verbatim appearance.
+   - **v2 format**: `evidence` is an array of `{source, ref, quote}` objects. Extract each `quote` value as the anchor to verify.
+   - **v1 format**: `evidence` is a string. Extract distinct quoted anchors from the string directly.
+2. Read the transcript file at the path given in `## Transcript path`.
+3. For each extracted anchor: search the transcript for verbatim or near-verbatim appearance.
    - Near-verbatim: same meaning, minor whitespace or punctuation differences.
    - Do NOT accept paraphrases as matches.
-5. If all anchors are confirmed: return `{"grounded": true, "reason": "all evidence anchors confirmed in transcript"}`.
-6. If any anchor is not found: return `{"grounded": false, "reason": "anchor not found in transcript: '<exact anchor text>'"}`.
-7. If the transcript file does not exist or cannot be read: return `{"grounded": false, "reason": "transcript file not found or unreadable: <path>"}`.
-8. If the evidence field is empty or blank: return `{"grounded": false, "reason": "evidence field is empty — nothing to verify"}`.
+4. If all anchors are confirmed: proceed to write (see below).
+5. If any anchor is not found: return `{"grounded": false, "reason": "anchor not found in transcript: '<exact anchor text>'"}`.
+6. If the transcript file does not exist or cannot be read: return `{"grounded": false, "reason": "transcript file not found or unreadable: <path>"}`.
+7. If the evidence field is empty or blank (no quotes extractable): return `{"grounded": false, "reason": "evidence field is empty — nothing to verify"}`.
+
+## On grounded=true: write via log-learning.py
+
+When all anchors are confirmed, call log-learning.py with the entry (minus server-injected fields schema_version, id, timestamp — the writer injects those):
+
+```bash
+echo '<entry JSON without schema_version/id/timestamp>' | python ~/.dotfiles/claude-code-shared/scripts/log-learning.py
+```
+
+Then return: `{"grounded": true, "reason": "all evidence anchors confirmed in transcript"}`
 
 ## What you must not do
 
