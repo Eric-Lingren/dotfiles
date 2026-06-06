@@ -31,7 +31,11 @@
     "fact-check": "T2",
     "register-skill": "T2",
     "handoff": "T2",
-    "clean-scaffolding": "T1"
+    "clean-scaffolding": "T1",
+    "revise-pr": "T3",
+    "vet": "T3",
+    "relay": "T2",
+    "investigate": "T3"
   },
   "agents": {
     "fact-checker": "T3",
@@ -55,6 +59,7 @@
     "code-review",
     "to-e2e-tasks",
     "debug",
-    "improve-codebase-architecture"
+    "improve-codebase-architecture",
+    "revise-pr"
   ]
 }

@@ -41,6 +41,21 @@
         {"skill": "to-seed", "when": "prototype confirmed the approach and ready to capture decisions"}
       ]
     },
+    "revise-pr": {
+      "next": [
+        {"skill": "to-tasks", "when": "seed is verified and ready for implementation"},
+        {"skill": "relay", "when": "non-code items need user notification"}
+      ]
+    },
+    "vet": {
+      "next": []
+    },
+    "relay": {
+      "next": []
+    },
+    "investigate": {
+      "next": []
+    },
     "debug": {
       "next": []
     },
