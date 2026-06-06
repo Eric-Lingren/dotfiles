@@ -294,7 +294,14 @@ For each confirmed root cause found this run: run this block BEFORE printing the
 closing suggestion or handoff.
 
 Collect available repo pointers from context:
-- `transcript_path`: absolute path to the session transcript (always available)
+- `transcript_path`: resolve via bash before spawning the agent:
+  ```bash
+  CLAUDE_CONFIG_DIR="${CLAUDE_CONFIG_DIR:-$HOME/.claude}"
+  encoded_cwd=$(pwd | sed 's|[./]|-|g')
+  transcript_path="${CLAUDE_CONFIG_DIR}/projects/${encoded_cwd}/${CLAUDE_CODE_SESSION_ID}.jsonl"
+  echo "$transcript_path"
+  ```
+  Run this command and capture the output. Pass the resulting absolute path explicitly in the agent prompt under the `transcript_path` key. Do not assume the path — derive it.
 - `seed_path`: path to the seed file if referenced in this session (e.g. `docs/seeds/…`)
 - `tasks_path`: path to the tasks file if referenced in this session
 - `branch`: current git branch name (run `git rev-parse --abbrev-ref HEAD` if needed)
@@ -303,7 +310,7 @@ Collect available repo pointers from context:
 Spawn the `attribution-tracer` agent (`subagent_type: attribution-tracer`) with:
 - `issue_description`: the confirmed root cause description
 - `fix`: the confirmed fix applied or recommended
-- `transcript_path`: from above
+- `transcript_path`: the resolved absolute path from above (required — attribution-tracer will fail-fast if absent or unreadable)
 - Any optional pointers available (seed_path, tasks_path, branch, pr_url)
 
 The attribution-tracer walks the provenance chain backward to find the earliest
