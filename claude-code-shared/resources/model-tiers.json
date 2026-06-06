@@ -14,8 +14,7 @@
     "run-task-followups": "T2",
     "cc-usage-analytics": "T2",
     "build-code": "T3",
-    "dispatch-tasks": "T3",
-    "export-tasks": "T3",
+    "dispatch-tasks": "T2",
     "tdd": "T3",
     "improve-component": "T3",
     "code-review": "T3",
@@ -53,7 +52,8 @@
     "persona-coherence": "T1",
     "persona-judge": "T3",
     "learning-grounding-judge": "T1",
-    "capture-learning": "T3"
+    "capture-learning": "T3",
+    "export-tasks": "T2"
   },
   "delegate": [
     "build-code",

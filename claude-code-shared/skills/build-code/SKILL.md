@@ -319,7 +319,5 @@ uncategorized, else null). Spawn the `capture-learning` agent
 `trigger`, `trigger_label`, `brief_evidence`, `transcript_path` (absolute path to
 session transcript). The agent builds the full schema-valid entry, runs grounding
 verification, and writes if grounded.
-**What's next:**
 <!-- skill-done: build-code -->
-  - `/to-e2e-tasks` — want e2e coverage for the completed changes
 <!-- learning-capture:end -->

@@ -2,7 +2,7 @@
 name: dispatch-tasks
 description: Orchestrate a task file by partitioning items by task_type and running one branch per invocation. Routes code items to build-code (inline) and triage items to export-tasks (agent). Re-entrant — run once per branch until all items are done. Use when user wants to dispatch a mixed task file, route deferred triage items to destinations, or run one pass of the pipeline.
 model: sonnet
-effort: high
+effort: medium
 ---
 
 # Dispatch Tasks
@@ -168,5 +168,5 @@ session transcript). The agent builds the full schema-valid entry, runs groundin
 verification, and writes if grounded.
 **What's next:**
 <!-- skill-done: dispatch-tasks -->
-  - `/run-task-followups` — walk through manual follow-ups after dispatch completes
+  - `/to-e2e-tasks` — want e2e coverage for the completed changes
 <!-- learning-capture:end -->

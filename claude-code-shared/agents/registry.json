@@ -114,6 +114,15 @@
       ]
     },
     {
+      "name": "export-tasks",
+      "file": "agents/export-tasks.md",
+      "model": "sonnet",
+      "description": "Export triage tasks from a task file to configured external destinations. Resolves each item's (deliverable, domain) pair against task-routing.json, shows a dry-run table with wall-crossing warnings, then writes to the matched adapter. Updates item status and export_url on success. Spawned by dispatch-tasks as an isolated agent.",
+      "consumers": [
+        "dispatch-tasks"
+      ]
+    },
+    {
       "name": "capture-learning",
       "file": "agents/capture-learning.md",
       "model": "sonnet",

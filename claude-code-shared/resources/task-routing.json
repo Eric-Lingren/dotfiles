@@ -1,5 +1,6 @@
 {
   "_doc": "Routing configuration for the dispatch-tasks pipeline. 'runners' maps task_type to runner+mode. 'destinations' maps domain -> deliverable -> {adapter, location}. Each destination also carries 'wall' for hard-barrier enforcement. Modeled on resources/model-tiers.json.",
+  "_active_corporate_domain": "standard-metrics",
   "runners": {
     "code": {
       "runner": "build-code",

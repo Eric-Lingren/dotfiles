@@ -1,16 +1,15 @@
 ---
 name: export-tasks
-description: Export triage tasks from a task file to external destinations (GitHub Issues for code deliverables, personal Notion for non-code deliverables). Resolves each item's (deliverable, domain) pair against task-routing.json, shows a dry-run table with wall-crossing warnings, then writes to the matched adapter. Spawned by dispatch-tasks as an isolated agent. Use when dispatching triage items to external destinations.
+description: Export triage tasks from a task file to configured external destinations. Resolves each item's (deliverable, domain) pair against task-routing.json, shows a dry-run table with wall-crossing warnings, then writes to the matched adapter. Updates item status and export_url on success. Spawned by dispatch-tasks as an isolated agent.
+tools: Read, Write, Bash, mcp__claude_ai_Notion__notion-create-pages
 model: sonnet
-effort: high
-spawn_mode: agent
 ---
 
 # Export Tasks
 
 Export triage-typed items from a task file to external destinations. Resolves routing via `task-routing.json`, shows a dry-run table for human review, and writes to the matched adapter. Updates item status and `export_url` on success.
 
-**Spawn mode:** this skill is spawned as an isolated agent by `dispatch-tasks`. It receives the task file path as the sole argument.
+**Spawn mode:** this agent is spawned as an isolated agent by `dispatch-tasks`. It receives the task file path as the sole argument.
 
 ## Contract
 
@@ -55,19 +54,17 @@ To find your Notion DB ID:
   5. Replace the placeholder at destinations.<domain>.non-code.location with the real ID.
   6. Verify: jq '.destinations.<domain>["non-code"].location' ~/.dotfiles/claude-code-shared/resources/task-routing.json
 
-See FU-001 in the task file for full steps.
 ```
 
 Stop immediately if any required Notion DB ID is a placeholder. Do not write anything.
 
-Also check: for any `auth=api-token` Notion route, source secrets first, then verify the token is set:
+Also check: for any `auth=api-token` Notion route, verify the token is set:
 
 ```bash
-[ -f ~/.dotfiles/local/secrets.env ] && source ~/.dotfiles/local/secrets.env
-echo $NOTION_PERSONAL_TOKEN
+bash ~/.dotfiles/claude-code-shared/scripts/export-tasks-check-notion-token.sh
 ```
 
-If empty after sourcing, print the setup instructions from the api-token section in step 6 and stop.
+If the script exits non-zero, print its stderr output and stop.
 
 ### 3. Resolve routing for each item
 
@@ -129,14 +126,13 @@ After user approval, write each item to its adapter in sequence:
 #### GitHub Issues adapter
 
 ```bash
-gh issue create \
-  --title "<item.title>" \
-  --body "<item.description>" \
-  --label triage \
-  --repo <Org/Repo>
+bash ~/.dotfiles/claude-code-shared/scripts/export-tasks-gh-issue.sh \
+  "$ITEM_TITLE" \
+  "$ITEM_DESCRIPTION" \
+  "$ORG_REPO"
 ```
 
-Capture the issue URL from stdout (GitHub CLI prints `https://github.com/<org>/<repo>/issues/<number>`).
+Capture the issue URL from stdout (the script prints `https://github.com/<org>/<repo>/issues/<number>`).
 
 #### Notion adapter (non-code)
 
@@ -162,38 +158,24 @@ mcp__claude_ai_Notion__notion-create-pages(
 
 **auth=api-token (personal workspace):**
 
-Check that `NOTION_PERSONAL_TOKEN` is set. If not, abort with:
-```
-ERROR: NOTION_PERSONAL_TOKEN is not set.
-
-Steps:
-  1. Go to notion.so/profile/integrations
-  2. Create a new Internal integration, select your personal workspace
-  3. Copy the secret (starts with ntn_)
-  4. Copy ~/.dotfiles/local/secrets.env.template to ~/.dotfiles/local/secrets.env
-  5. Uncomment and fill in: export NOTION_PERSONAL_TOKEN=ntn_...
-  6. Open your personal Notion DB, click ... > Connections > add the integration
-```
-
-If set, write via the Notion REST API:
+First verify the token is available:
 
 ```bash
-curl -s -X POST https://api.notion.com/v1/pages \
-  -H "Authorization: Bearer $NOTION_PERSONAL_TOKEN" \
-  -H "Notion-Version: 2022-06-28" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "parent": {"database_id": "<resolved-db-id>"},
-    "properties": {
-      "Name": {"title": [{"text": {"content": "<item.title>"}}]}
-    },
-    "children": [{"object":"block","type":"paragraph","paragraph":{"rich_text":[{"type":"text","text":{"content":"<item.description>"}}]}}]
-  }'
+bash ~/.dotfiles/claude-code-shared/scripts/export-tasks-check-notion-token.sh
 ```
 
-Capture the `url` field from the JSON response.
+If the script exits non-zero, abort with the printed error.
 
-Capture the returned page URL (MCP) or `url` field from the JSON response (API).
+If the token check passes, write via the Notion REST API:
+
+```bash
+bash ~/.dotfiles/claude-code-shared/scripts/export-tasks-notion-page-api.sh \
+  "$RESOLVED_DB_ID" \
+  "$ITEM_TITLE" \
+  "$ITEM_DESCRIPTION"
+```
+
+Capture the returned page URL from stdout.
 
 ### 7. Update task file
 
@@ -237,8 +219,7 @@ description of what happened (`brief_evidence`), and `trigger_label` (snake_case
 uncategorized, else null). Spawn the `capture-learning` agent
 (`subagent_type: capture-learning`) with: `skill` (this skill's slug: `export-tasks`),
 `trigger`, `trigger_label`, `brief_evidence`, `transcript_path` (absolute path to
-session transcript). The agent builds the full schema-valid entry, runs grounding
-verification, and writes if grounded.
+session transcript). The agent builds the full schema-valid entry, writes if grounded.
 **What's next:**
 <!-- skill-done: export-tasks -->
   - `/dispatch-tasks` — return to dispatcher for next branch

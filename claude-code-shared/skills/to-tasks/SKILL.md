@@ -227,12 +227,13 @@ After writing, output a single line:
 docs created here: docs/tasks/<filename>
 ```
 
-Then output the handoff block:
+Run `python3 ~/.dotfiles/claude-code-shared/scripts/print-skill-next-steps.py to-tasks` and print the output as the closing suggestion. Output text like:
 
 ```
+docs created here: docs/tasks/<filename>
+
 Next steps:
-  /build-code docs/tasks/<filename>   — implement tasks with TDD
-  /to-e2e-tasks                      — add e2e coverage after build-code (optional)
+<script output>
 ```
 
 <!-- learning-capture:start -->
@@ -253,5 +254,5 @@ session transcript). The agent builds the full schema-valid entry, runs groundin
 verification, and writes if grounded.
 **What's next:**
 <!-- skill-done: to-tasks -->
-  - `/build-code` — tasks are ready to execute
+  - `/dispatch-tasks` — tasks are ready to execute
 <!-- learning-capture:end -->
