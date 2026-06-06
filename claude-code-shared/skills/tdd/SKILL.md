@@ -18,12 +18,12 @@ If the user's input contains any of the following, pause and ask before proceedi
 
 Ask:
 
-> It looks like you're passing a task file directly to `/tdd`. Were you meaning to run `/run-tasks` instead?
+> It looks like you're passing a task file directly to `/tdd`. Were you meaning to run `/build-code` instead?
 >
-> `/run-tasks` is the correct entry point for task files. It handles branching, status tracking, follow-up discovery, and PR creation. It also seeds `/tdd` with additional test requirements that do not apply when `/tdd` is called directly.
+> `/build-code` is the correct entry point for task files. It handles branching, status tracking, follow-up discovery, and PR creation. It also seeds `/tdd` with additional test requirements that do not apply when `/tdd` is called directly.
 >
-> - **Yes, use `/run-tasks`** — stop here. Tell the user to run `/run-tasks docs/tasks/<filename>`.
-> - **No, I want raw `/tdd`** — continue, but warn: "Note: test requirements from run-tasks are not active. Tests are still mandatory."
+> - **Yes, use `/build-code`** — stop here. Tell the user to run `/build-code docs/tasks/<filename>`.
+> - **No, I want raw `/tdd`** — continue, but warn: "Note: test requirements from build-code are not active. Tests are still mandatory."
 
 If the input is a free-form feature description, bug report, or characterization request with no task file reference, skip this check and proceed normally.
 

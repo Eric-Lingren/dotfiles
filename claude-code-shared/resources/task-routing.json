@@ -1,0 +1,52 @@
+{
+  "_doc": "Routing configuration for the dispatch-tasks pipeline. 'runners' maps task_type to runner+mode. 'destinations' maps domain -> deliverable -> {adapter, location}. Each destination also carries 'wall' for hard-barrier enforcement. Modeled on resources/model-tiers.json.",
+  "runners": {
+    "code": {
+      "runner": "build-code",
+      "mode": "inline-skill",
+      "_meaning": "Code tasks run build-code inline (TDD loop needs HITL interactivity in the main thread)."
+    },
+    "triage": {
+      "runner": "export-tasks",
+      "mode": "spawn-agent",
+      "_meaning": "Triage tasks spawn export-tasks as an isolated agent (mechanical external writes, no interactivity needed)."
+    }
+  },
+  "destinations": {
+    "personal": {
+      "wall": "personal",
+      "code": {
+        "adapter": "github-issues",
+        "location": "current-repo",
+        "_meaning": "Code deliverables park in the current repo's GitHub Issues with label 'triage'."
+      },
+      "non-code": {
+        "adapter": "notion",
+        "auth": "api-token",
+        "token_env": "NOTION_PERSONAL_TOKEN",
+        "location": "5b429f8f74d249d48e837717e3ae5403",
+        "_meaning": "Non-code items land in personal Notion DB via REST API (separate workspace from SS, cannot use MCP)."
+      }
+    },
+    "spawned-sapien": {
+      "wall": "project",
+      "code": {
+        "adapter": "github-issues",
+        "location": "current-repo",
+        "_meaning": "Code deliverables park in the SS repo's GitHub Issues."
+      },
+      "non-code": {
+        "adapter": "notion",
+        "auth": "mcp",
+        "location": "31981a8e067e8021aaf2d55893f55ba4",
+        "_meaning": "Non-code items land in Spawned Sapien Notion DB via MCP (SS workspace already connected to Claude)."
+      }
+    },
+    "standard-metrics": {
+      "wall": "corporate",
+      "adapter": "linear",
+      "location": "sm-linear",
+      "_meaning": "All Standard Metrics items route to Linear regardless of deliverable. Hard wall — no Notion or GitHub Issues for this domain."
+    }
+  }
+}

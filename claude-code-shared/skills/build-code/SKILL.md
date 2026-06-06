@@ -1,5 +1,5 @@
 ---
-name: run-tasks
+name: build-code
 description: Execute tasks from a tasks JSON file sequentially using TDD. Handles branching, status updates, blocker detection, and HITL pausing. Use when user wants to run AI tasks from a docs/tasks/ file.
 model: sonnet
 effort: high
@@ -172,9 +172,9 @@ A task is not done until tests exist that verify the behavior described in the a
       ```bash
       curl -s -o /dev/null -w "%{http_code}" <base_url>
       ```
-      - If the server responds (any 2xx or 3xx): reuse it. Record that run-tasks did NOT start it.
+      - If the server responds (any 2xx or 3xx): reuse it. Record that build-code did NOT start it.
       - If no response: start the server via `start_command` using `run_in_background: true`. Poll `base_url` every 2 s until it responds, with a 60 s hard timeout. If the server never comes up, mark the task `blocked` and halt.
-      - Track whether run-tasks started the server (boolean `server_started_by_run_tasks`).
+      - Track whether build-code started the server (boolean `server_started_by_build_code`).
 
    3. **Iterate (cap 3):** Maintain an iteration log. For each attempt (max 3 total):
       a. Spawn the `browser-checker` agent with: `base_url`, `url_path` (from `browser_verify.url_path`), `assertions` (from `browser_verify.assertions`), `storageState`, Playwright module location, `run_slug` (derived from task id + iteration index, e.g. `t-0023-check-1`), `cwd` (project root).
@@ -184,12 +184,12 @@ A task is not done until tests exist that verify the behavior described in the a
       e. **`status: "fail"`**: append the failing assertions and screenshot path to the iteration log. If this is not the last attempt: attempt to fix the source. If two consecutive runs produced identical failing assertions (no-progress): bail early.
 
    4. **On cap or no-progress bail:**
-      - Tear down the server if `server_started_by_run_tasks` is true.
+      - Tear down the server if `server_started_by_build_code` is true.
       - Print a **Browser check failed** block with: failing assertions from the final run, the iteration log, and absolute screenshot paths from `docs/browser-checks/`.
       - Update task status to `blocked` in the JSON.
       - Halt the run (same blocker logic as a TDD failure in step 6 below).
 
-   5. **Tear down.** After a pass or skipped result: if `server_started_by_run_tasks` is true, kill the dev server process. Never kill a server that was already running before this task.
+   5. **Tear down.** After a pass or skipped result: if `server_started_by_build_code` is true, kill the dev server process. Never kill a server that was already running before this task.
 
    **f. Mark done**
    - Update task status to `done` in the JSON.
@@ -310,16 +310,16 @@ Run this as the FINAL action of this skill's terminal turn, BEFORE printing the
 closing suggestion or handoff. Most runs record nothing — only proceed if an
 observable correction-event occurred this run.
 
-<!-- learning-eval: run-tasks -->
+<!-- learning-eval: build-code -->
 If a correction-event occurred: identify the `trigger` (tool_failure | backtrack |
 user_correction | instruction_gap | redundant_effort | uncategorized), a one-sentence
 description of what happened (`brief_evidence`), and `trigger_label` (snake_case if
 uncategorized, else null). Spawn the `capture-learning` agent
-(`subagent_type: capture-learning`) with: `skill` (this skill's slug: `run-tasks`),
+(`subagent_type: capture-learning`) with: `skill` (this skill's slug: `build-code`),
 `trigger`, `trigger_label`, `brief_evidence`, `transcript_path` (absolute path to
 session transcript). The agent builds the full schema-valid entry, runs grounding
 verification, and writes if grounded.
 **What's next:**
-<!-- skill-done: run-tasks -->
+<!-- skill-done: build-code -->
   - `/to-e2e-tasks` — want e2e coverage for the completed changes
 <!-- learning-capture:end -->

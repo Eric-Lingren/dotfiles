@@ -172,7 +172,7 @@ Do not proceed to Phase 4 until both steps are complete.
 
 ## Phase 4 — Write fix tasks, then stop
 
-**The debug skill does not apply any fix. It writes a tasks file and stops. All implementation happens in a separate `/run-tasks` session.**
+**The debug skill does not apply any fix. It writes a tasks file and stops. All implementation happens in a separate `/build-code` session.**
 
 ### Step 1: Branch
 
@@ -208,7 +208,7 @@ Use that schema exactly. Do not guess field names or structure.
 - Independent bugs (different files, different call paths): write one task per bug.
 - Coupled bugs (shared state, same callsite): write one task with compound acceptance criteria, and note the coupling explicitly in the description.
 
-Each task must be self-contained. A future `/run-tasks` session has no memory of this diagnosis. Embed the full context in each task `description` using this pattern:
+Each task must be self-contained. A future `/build-code` session has no memory of this diagnosis. Embed the full context in each task `description` using this pattern:
 
 ```
 Root cause: <confirmed cause>. Failing scenario: <minimised repro>. Test seam: <file:line — or 'no correct seam: reason'>. Failing test: <path from Phase 1 exit gate>. Fix approach: <what to change and why>.
@@ -253,8 +253,8 @@ Tasks written: docs/tasks/<filename>
 Tasks: <T-XXXX list>
 
 Next steps:
-  /run-tasks docs/tasks/<filename>   — apply fixes with TDD
-  /run-task-followups                — walk through FU-001 cleanup after run-tasks completes
+  /build-code docs/tasks/<filename>   — apply fixes with TDD
+  /run-task-followups                — walk through FU-001 cleanup after build-code completes
   /to-e2e-tasks                      — add e2e coverage (optional)
 ```
 
@@ -262,7 +262,7 @@ Next steps:
 
 ## Phase 5 — Cleanup + post-mortem
 
-Run this after `/run-tasks` completes and all tasks are `done`. Triggered by the FU-001 follow-up in the tasks file.
+Run this after `/build-code` completes and all tasks are `done`. Triggered by the FU-001 follow-up in the tasks file.
 
 **Run full test suite before cleanup.** Capture:
 

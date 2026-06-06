@@ -254,7 +254,7 @@ End with a prioritized recommendation: "Start with X because it unlocks Y."
 **Clean bill of health path:** If analysis finds no structural or hygiene violations worth flagging, check for test coverage before ending.
 
 1. Look for a colocated test file (`ComponentName.test.tsx`, `ComponentName.spec.tsx`, or `__tests__/ComponentName.*`).
-2. If no test file exists or the file only has trivial "renders without crashing" coverage: use `AskUserQuestion` to ask: "Component looks good. No meaningful test coverage found. Want me to generate a task to backfill tests via `/run-tasks`?" If yes, go to step 7 with one task: backfill characterization tests. If no, end.
+2. If no test file exists or the file only has trivial "renders without crashing" coverage: use `AskUserQuestion` to ask: "Component looks good. No meaningful test coverage found. Want me to generate a task to backfill tests via `/build-code`?" If yes, go to step 7 with one task: backfill characterization tests. If no, end.
 3. If adequate test coverage exists: note it and end.
 
 ### 6. Discuss and refine
@@ -306,16 +306,16 @@ Tasks written: docs/tasks/<filename>
 Tasks: <T-XXXX list>
 ```
 
-### 8. Hand off to run-tasks
+### 8. Hand off to build-code
 
 Tell the user:
 
 ```
 Next steps:
-  /run-tasks docs/tasks/<filename>   -- execute approved changes with TDD and status tracking
+  /build-code docs/tasks/<filename>   -- execute approved changes with TDD and status tracking
 ```
 
-Do not invoke `/tdd` directly. Do not make any code changes. All execution happens in `/run-tasks`.
+Do not invoke `/tdd` directly. Do not make any code changes. All execution happens in `/build-code`.
 
 <!-- learning-capture:start -->
 ## Learning Capture

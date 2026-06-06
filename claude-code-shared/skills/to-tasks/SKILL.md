@@ -157,6 +157,28 @@ Before finalizing tasks for any auth-gated route, check for a storageState file 
 
 Never skip `browser_verify` on an auth-gated route without first checking for storageState. "Route is auth-gated" is not a valid reason to omit verification.
 
+### 3a. Capture deferred[] items as triage tasks
+
+After emitting build tasks, scan `deferred[]` from the seed. If `deferred[]` is empty or absent, skip this section and produce no triage tasks.
+
+For each item in `deferred[]`, emit one triage task:
+
+- **title**: first sentence of `deferred.text` (up to the first `.` or end of string)
+- **description**: full `deferred.text`. Append `deferred.context` on a new paragraph if present.
+- **type**: `AFK` (triage tasks are routed mechanically, no keyboard action required)
+- **task_type**: `triage`
+- **domain**: resolve from `~/.dotfiles/claude-code-shared/resources/repo-policy.json` using the current repo. Run `git remote get-url origin`, normalize to `Org/Repo` format (strip protocol/host, remove `.git` suffix), look up the `domain` field on that entry. Default to `"personal"` if the repo is not found.
+- **deliverable**: `"non-code"` by default. Reclassify to `"code"` only when `deferred.text` explicitly contains the word `"PR"` or the exact phrase `"code change"`.
+- **acceptance_criteria**: a single string: `"Item has been exported to its destination by export-tasks"`.
+- **blocked_by**: `[]` unless `deferred.context` explicitly names a dependency on a code task ID (`T-XXXX`) in the same file.
+- **status**: `not_started`
+- **branch**: `null`
+- **pr**: `null`
+
+Omit `browser_verify` and `linear_url` for triage tasks. Do not emit triage tasks for items in `out_of_scope[]` or `disposed_threads[]`.
+
+Append triage tasks after all build tasks in the `tasks[]` array.
+
 ### 3b. Infer follow-ups from the source artifact
 
 Scan the source artifact for manual actions outside the task graph: env var provisioning, DNS config, external service setup, database migrations, manual testing, deployment steps, credential rotation, etc.
@@ -209,8 +231,8 @@ Then output the handoff block:
 
 ```
 Next steps:
-  /run-tasks docs/tasks/<filename>   — implement tasks with TDD
-  /to-e2e-tasks                      — add e2e coverage after run-tasks (optional)
+  /build-code docs/tasks/<filename>   — implement tasks with TDD
+  /to-e2e-tasks                      — add e2e coverage after build-code (optional)
 ```
 
 <!-- learning-capture:start -->
@@ -231,5 +253,5 @@ session transcript). The agent builds the full schema-valid entry, runs groundin
 verification, and writes if grounded.
 **What's next:**
 <!-- skill-done: to-tasks -->
-  - `/run-tasks` — tasks are ready to execute
+  - `/build-code` — tasks are ready to execute
 <!-- learning-capture:end -->

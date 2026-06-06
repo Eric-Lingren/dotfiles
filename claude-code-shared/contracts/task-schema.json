@@ -122,6 +122,24 @@
           "linear_url": {
             "type": ["string", "null"],
             "description": "Linear issue URL written back by tasks-to-linear after issue creation."
+          },
+          "task_type": {
+            "type": "string",
+            "enum": ["code", "triage"],
+            "description": "Runner selector. 'code': routed to build-code (inline-skill). 'triage': routed to export-tasks (spawn-agent). Optional — omit for legacy files."
+          },
+          "domain": {
+            "type": "string",
+            "description": "Destination zone for routing. Matches a key in resources/task-routing.json destinations map. Optional — omit for legacy files."
+          },
+          "deliverable": {
+            "type": "string",
+            "enum": ["code", "non-code"],
+            "description": "Classifies the task output. 'code': output is a PR or code change. 'non-code': output is a note, research item, or non-code artifact. Optional — omit for legacy files."
+          },
+          "export_url": {
+            "type": ["string", "null"],
+            "description": "Written back by export-tasks after a successful external write (GitHub issue URL, Notion page URL, etc.). null until then. Optional — omit for legacy files."
           }
         }
       },

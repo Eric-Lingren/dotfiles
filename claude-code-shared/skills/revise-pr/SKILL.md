@@ -326,7 +326,7 @@ Attribution fires **once per `confirmed_escape` item**, not once per session. Ea
 
 The `fix` field in the generated attribution record will be empty or TBD. This is intentional. The escape is being attributed before a fix exists; downstream sessions will confirm or fill the fix. Attribution demotes to candidate/`improves: null` when the escape is ambiguous.
 
-**Invariant: this skill never makes outward HTTP writes during its own run.** No GitHub comment is posted. No review thread is resolved. No branch is checked out or pushed. All such actions are deferred to downstream skills (`relay`, `run-tasks`, etc.).
+**Invariant: this skill never makes outward HTTP writes during its own run.** No GitHub comment is posted. No review thread is resolved. No branch is checked out or pushed. All such actions are deferred to downstream skills (`relay`, `build-code`, etc.).
 
 ---
 
@@ -363,7 +363,7 @@ threads since thread resolution operates on the thread, not an individual commen
 
 Include one entry per harvested item.
 
-**Skill boundary:** This skill stops after `/to-seed` completes. It does not invoke `/to-tasks`, `/run-tasks`, branch checkout, or push. What the downstream pipeline does with the seed is outside this skill's concern.
+**Skill boundary:** This skill stops after `/to-seed` completes. It does not invoke `/to-tasks`, `/build-code`, branch checkout, or push. What the downstream pipeline does with the seed is outside this skill's concern.
 
 ---
 
