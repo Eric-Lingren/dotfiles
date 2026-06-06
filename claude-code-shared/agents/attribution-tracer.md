@@ -35,7 +35,7 @@ After all processing is complete, your final summary output **must** end with ex
 - `WROTE: <id>` — the grounding judge returned a pass verdict AND log-learning.py exited 0.
 - `NOT WRITTEN: <reason>` — any other outcome.
 
-Before the terminal line, echo the judge's raw verdict JSON verbatim.
+Before the terminal line, echo the judge's raw verdict JSON verbatim (For cases 1 and 2 only — Step 0 failures have no judge verdict to echo).
 
 This rule applies to all exit paths:
 
@@ -54,8 +54,7 @@ Before doing anything else, check `transcript_path`:
 
 If either check fails:
 
-- Return immediately with `{"error": "transcript_path missing or unreadable: <path>"}` as your entire response.
-- End your summary with `NOT WRITTEN: transcript_path missing or unreadable`.
+- Emit `{"error": "transcript_path missing or unreadable: <path>"}` as your only output. End with `NOT WRITTEN: transcript_path missing or unreadable`.
 - Do not draft a record. Do not build evidence. Do not spawn the artifact-grounding-judge.
 
 Only proceed to Step 1 if `transcript_path` is present and the file is readable.
@@ -166,7 +165,7 @@ The judge verifies evidence anchors against artifacts and calls log-learning.py 
 When the judge returns its result:
 
 1. Echo the judge's raw verdict JSON verbatim in your summary.
-2. If the judge passed and log-learning.py exited 0: end your summary with `WROTE: <id>` where `<id>` is the record id from the judge's verdict.
+2. If the judge passed and log-learning.py exited 0: end your summary with `WROTE: <id>` where `<id>` is parsed from the `OK:` line in log-learning.py stdout (e.g., `OK: appended learning entry (type=..., id=<uuid>) to ...`).
 3. If the judge rejected the record: end your summary with `NOT WRITTEN: grounding judge rejected (<judge reason>)`.
 4. If the judge passed but log-learning.py returned a non-zero exit: end your summary with `NOT WRITTEN: log-learning.py exited non-zero (<exit code>)`.
 
