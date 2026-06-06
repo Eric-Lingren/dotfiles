@@ -4,7 +4,7 @@
     "account": "cch",
     "base_branch": "main",
     "domain": "personal",
-    "exclude": ["docs/prototype/", "docs/browser-checks/", "docs/seeds/", "docs/tasks/", "docs/handoffs/", "docs/prd/"]
+    "exclude": ["docs/prototype/", "docs/browser-checks/"]
   },
   "Quaestor-Technologies/Quaestor-Web": {
     "label": "quaestor-web",

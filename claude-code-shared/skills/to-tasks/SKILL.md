@@ -168,7 +168,7 @@ For each item in `deferred[]`, emit one triage task:
 - **type**: `AFK` (triage tasks are routed mechanically, no keyboard action required)
 - **task_type**: `triage`
 - **domain**: resolve from `~/.dotfiles/claude-code-shared/resources/repo-policy.json` using the current repo. Run `git remote get-url origin`, normalize to `Org/Repo` format (strip protocol/host, remove `.git` suffix), look up the `domain` field on that entry. Default to `"personal"` if the repo is not found.
-- **deliverable**: `"non-code"` by default. Reclassify to `"code"` only when `deferred.text` explicitly contains the word `"PR"` or the exact phrase `"code change"`.
+- **deliverable**: classify by what the item produces. Use `"code"` when the item describes building, implementing, extending, or modifying software, skills, agents, scripts, adapters, schemas, or any other code artifact — even if the words "PR" or "code change" do not appear literally. Use `"non-code"` only for items that genuinely produce no code output: research, reading lists, process planning, documentation, or organizational notes.
 - **acceptance_criteria**: a single string: `"Item has been exported to its destination by export-tasks"`.
 - **blocked_by**: `[]` unless `deferred.context` explicitly names a dependency on a code task ID (`T-XXXX`) in the same file.
 - **status**: `not_started`

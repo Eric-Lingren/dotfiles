@@ -1,0 +1,202 @@
+{
+  "schema_version": "2",
+  "producer": "to-tasks",
+  "source": {"type": "seed", "ref": "docs/seeds/20260605-1358-retro-attribution-learning.json"},
+  "generated_at": "2026-06-05T21:00:00Z",
+  "branching": {
+    "strategy": "single",
+    "branch": "feat/retro-attribution-learning"
+  },
+  "tasks": [
+    {
+      "id": "T-0026",
+      "title": "Create v2 unified learning schema and writer",
+      "type": "AFK",
+      "description": "Create the v2 superset learning schema at `claude-code-shared/contracts/learning-schema-v2.json`. Fields: schema_version (server-injected), id (server-injected), timestamp (server-injected), type (self|attribution), reported_by (slug), improves (slug|null), improves_type (skill|agent|process|contract), cause (open vocab string), cause_label (required iff cause=='other'), problem, why_missed, lesson, fix, evidence (array of {source: transcript|artifact, ref, quote}), trace ({seed?, tasks?, task_id?, pr?, branch?}, attribution-only), confidence (confirmed|candidate), status (captured|applied, optional). Create the unified atomic-append writer script at `claude-code-shared/scripts/log-learning.py` (replacing the existing per-skill version): validates the input record against learning-schema-v2.json, injects timestamp+schema_version+id (UUID), appends as a JSONL line to `claude-code-shared/learnings/unified.jsonl`. Create the `claude-code-shared/learnings/` directory structure (remove existing per-skill *.jsonl files if any exist — the system has zero data so migration is trivial). The writer must be idempotent-safe: atomic append (write to temp, rename) to prevent partial writes. Include the open-vocab cause seed list as a JSON comment or companion file: requirement_lost_between_docs, context_lost_in_handoff, requirement_never_elicited, intentionally_descoped, data_contract_gap, general_best_practice, other.",
+      "acceptance_criteria": [
+        "learning-schema-v2.json validates a minimal self record and a minimal attribution record (test with validate-schema.sh)",
+        "learning-schema-v2.json rejects records missing required fields",
+        "log-learning.py appends a valid JSONL line to learnings/unified.jsonl and the line validates against the schema",
+        "log-learning.py rejects a malformed record and exits non-zero",
+        "log-learning.py injects timestamp, schema_version, and id — caller does not provide these",
+        "Per-skill learnings/*.jsonl files are removed; only learnings/unified.jsonl remains"
+      ],
+      "blocked_by": [],
+      "status": "done",
+      "branch": "feat/retro-attribution-learning",
+      "pr": null
+    },
+    {
+      "id": "T-0027",
+      "title": "Create attribution-tracer agent",
+      "type": "AFK",
+      "description": "Create `claude-code-shared/agents/attribution-tracer.md`. This agent is the analog of capture-learning but for attribution records (type: attribution). It receives: confirmed issue description, proposed fix, transcript path, and available repo pointers (seed path if known, tasks file path if known, branch name, PR URL if merged). It walks the provenance chain backward — tasks.source.ref to find the seed, task pr/branch to find the code diff, and runtime skill-to-skill handoff boundaries recorded in the transcript — to find the SINGLE earliest escape point: the first layer going downstream where the criterion should have appeared but did not. It classifies the cause using the open-vocab seed list (or coins a snake_case cause_label for 'other'). It sets improves (the slug of the skill/agent that owns the escape point, or null if genuinely un-actionable), improves_type (skill|agent|process|contract), and confidence (confirmed if it can point at a specific artifact quote, candidate if the link is inference or scaffolding is gone). It drafts a full v2 attribution record and passes it to the artifact-grounding judge. The agent must demote-on-doubt: when attribution is uncertain, set confidence: candidate and/or improves: null rather than blaming a specific target or dropping the record.",
+      "acceptance_criteria": [
+        "Agent markdown file exists at claude-code-shared/agents/attribution-tracer.md",
+        "Agent contract specifies input fields: issue_description, fix, transcript_path, and optional seed_path, tasks_path, branch, pr_url",
+        "Agent contract specifies output: a v2 attribution record draft (pre-grounding)",
+        "Agent instructions describe walking the provenance chain in order: transcript runtime handoffs → tasks file → seed → code diff",
+        "Agent instructions include the open-vocab cause list and the 'other' + cause_label escape hatch",
+        "Agent instructions include demote-on-doubt rule (candidate confidence and/or improves: null when uncertain)"
+      ],
+      "blocked_by": ["T-0026"],
+      "status": "done",
+      "branch": "feat/retro-attribution-learning",
+      "pr": null
+    },
+    {
+      "id": "T-0028",
+      "title": "Create artifact-grounding judge agent",
+      "type": "AFK",
+      "description": "Create `claude-code-shared/agents/artifact-grounding-judge.md`. This agent is a peer to the existing transcript-grounding learning-grounding-judge but operates on artifact evidence (seed files, tasks files, code diffs, SKILL.md files) rather than transcript spans. It receives a draft attribution record from the attribution-tracer. For each evidence entry: if source=='artifact', it opens the cited ref and checks that the quoted text actually appears (positive anchor) OR that the claimed absence is real (reads the whole artifact to confirm the criterion never appears). It rejects fabricated evidence (any quote that does not match the cited file) and returns verdict: rejected with a reason. For real-but-low-confidence attributions it never rejects; instead it stamps confidence: candidate. On pass, it calls log-learning.py (the unified writer from T-0026) to append the record. The two agents — attribution-tracer and artifact-grounding judge — must remain separate (verifier never grades its own draft).",
+      "acceptance_criteria": [
+        "Agent markdown file exists at claude-code-shared/agents/artifact-grounding-judge.md",
+        "Agent contract specifies input: draft v2 attribution record with evidence array",
+        "Agent contract specifies output: verdict (pass|rejected) + stamped confidence tag + reason on rejection",
+        "Agent instructions describe checking positive anchors by reading the cited artifact and locating the quoted text",
+        "Agent instructions describe checking absence anchors by reading the entire artifact and confirming the criterion is absent",
+        "Agent instructions state: on rejection, do NOT call log-learning.py; on pass, call log-learning.py to append",
+        "Agent instructions explicitly forbid self-grading (this agent never grades a record it drafted)"
+      ],
+      "blocked_by": ["T-0026"],
+      "status": "done",
+      "branch": "feat/retro-attribution-learning",
+      "pr": null
+    },
+    {
+      "id": "T-0029",
+      "title": "Migrate skill-learning system to unified log",
+      "type": "AFK",
+      "description": "Update the existing skill-learning infrastructure to use the v2 unified schema and the unified writer from T-0026. Three changes: (1) Update `claude-code-shared/agents/capture-learning.md` to produce v2 records with type: 'self' (reported_by == improves == the skill's own slug), filling in the new v2 fields (improves_type: 'skill', cause from open vocab, why_missed, lesson, fix). (2) Update `claude-code-shared/agents/learning-grounding-judge.md` to validate the new v2 self-record shape and call the updated log-learning.py writer. (3) Confirm the per-skill learnings/<skill>.jsonl files were removed by T-0026 and that all writes now go to learnings/unified.jsonl. The 24 skill SKILL.md tail blocks do NOT change their data payload here — they still pass the same slug and evidence. The structural rewording of those tail blocks (execution order, markers) is handled by T-0031.",
+      "acceptance_criteria": [
+        "capture-learning agent produces a v2 record with type: 'self', reported_by == improves == skill slug",
+        "capture-learning agent populates improves_type: 'skill' for self-records",
+        "learning-grounding-judge agent accepts v2 record shape and calls log-learning.py (the unified writer)",
+        "A manual end-to-end test: invoke capture-learning with a synthetic self-learning entry and verify a valid JSONL line appears in learnings/unified.jsonl",
+        "No per-skill learnings/*.jsonl files exist after the migration"
+      ],
+      "blocked_by": ["T-0026"],
+      "status": "done",
+      "branch": "feat/retro-attribution-learning",
+      "pr": null
+    },
+    {
+      "id": "T-0030",
+      "title": "Create skill-pipeline.json workflow DAG",
+      "type": "AFK",
+      "description": "Create `claude-code-shared/skill-pipeline.json` as the single source of truth for the workflow DAG. Shape: { '<slug>': { 'next': [ { 'skill': '<slug>', 'when': '<short condition label>' } ] } }. This is the input consumed by inject-learning-tail.py (T-0031) at inject time to bake each skill's closing next-step suggestion. Cover the full known DAG: grill-me → to-seed; grill-with-docs → to-seed; to-seed → [to-tasks, to-prd-html, prototype]; to-prd-html → to-tasks; to-tasks → run-tasks; run-tasks → to-e2e-tasks; to-e2e-tasks → (nothing); debug → (nothing); code-review → (nothing); improve-skill → (nothing); prototype → to-seed. Also include skills whose next step is context-dependent (e.g. to-seed can go to to-tasks or to-prd-html). The 'when' label is a short human-readable condition: 'ready to implement', 'want richer PRD', 'exploring first', etc. Add an injector validation check: inject-learning-tail.py must verify that every skill slug referenced in 'next' exists in the skills/ directory. Document the file's purpose and shape in a JSON comment block or adjacent README note.",
+      "acceptance_criteria": [
+        "skill-pipeline.json exists at claude-code-shared/skill-pipeline.json",
+        "Every skill slug in the DAG corresponds to an existing skill directory under claude-code-shared/skills/",
+        "to-seed, to-tasks, run-tasks, debug, code-review, grill-me, grill-with-docs, improve-skill, prototype, to-prd-html, to-e2e-tasks are all represented",
+        "Each entry has at least one 'next' edge (or an empty array if genuinely terminal)",
+        "JSON is valid (validate with: python3 -c \"import json; json.load(open('skill-pipeline.json'))\")"
+      ],
+      "blocked_by": [],
+      "status": "done",
+      "branch": "feat/retro-attribution-learning",
+      "pr": null
+    },
+    {
+      "id": "T-0031",
+      "title": "Upgrade inject-learning-tail.py and re-run on all skills",
+      "type": "AFK",
+      "description": "Upgrade `claude-code-shared/scripts/inject-learning-tail.py` to implement the three changes decided in Iteration 2, then re-run it on all skills. Changes: (a) Reword the injected tail block instruction from 'after the run' to 'run as the FINAL action of this skill's terminal turn, BEFORE printing the closing suggestion or handoff'; the block stays at EOF but execution order is enforced by wording. (b) Bake two HTML-comment markers into the block with the skill slug substituted: `<!-- skill-done: <slug> -->` (emitted alongside the closing suggestion) and `<!-- learning-eval: <slug> -->` (emitted with the tail). (c) Read skill-pipeline.json (T-0030) and bake each skill's closing next-step suggestion text as static prose, replacing any existing hand-written AskUserQuestion end-of-run menus. The injector must validate that every referenced next-skill in pipeline.json exists in the skills/ directory before writing. After upgrading the injector, re-run it on all ~24 skill SKILL.md files. The injector remains idempotent: re-running on an already-updated skill is a no-op. Coordinate with T-0029 so the learnings/ layout is finalized before this run.",
+      "acceptance_criteria": [
+        "inject-learning-tail.py reads skill-pipeline.json and fails loudly if a referenced slug is missing from skills/",
+        "Injected tail block in every skill SKILL.md contains <!-- skill-done: <slug> --> and <!-- learning-eval: <slug> --> with the correct slug",
+        "Injected tail block instruction text says to run before the closing suggestion, not after",
+        "Each skill's closing suggestion/handoff text matches the 'next' edges from skill-pipeline.json (not a hand-written AskUserQuestion menu)",
+        "Re-running inject-learning-tail.py on an already-updated skill produces no diff (idempotent)",
+        "All ~24 skill SKILL.md files are updated in a single commit"
+      ],
+      "blocked_by": ["T-0029", "T-0030"],
+      "status": "done",
+      "branch": "feat/retro-attribution-learning",
+      "pr": null
+    },
+    {
+      "id": "T-0032",
+      "title": "Create Stop hook and hook-audit.jsonl telemetry",
+      "type": "AFK",
+      "description": "Create the Stop hook that provides a safety net when a skill's learning-eval tail is skipped. Create the hook script at `claude-code-shared/hooks/stop-hook.py` (or .sh). Logic: scan the last assistant turn text for the two HTML-comment markers from T-0031; if skill-done is present AND learning-eval is absent AND this skill has not already been nudged this session (check per-session state file at e.g. /tmp/cc-nudged-<session-id>.json), re-inject a nudge message asking the model to run the capture-learning tail now, then record the skill as nudged in the state file. For every detected skill completion (skill-done present), append one line to `claude-code-shared/learnings/audit/hook-audit.jsonl` with schema {ts, skill, outcome} where outcome is 'ran' (both markers present), 'nudged' (skill-done present, learning-eval absent, nudge fired), or 'missed' (skill-done absent — best-effort detection of a skill that completed without any markers). Register the hook in `claude-code-shared/settings.json` under the Stop event. Create the `claude-code-shared/learnings/audit/` directory. The audit log must never be ingested by the unified learning log consumers (it is NOT validated against learning-schema-v2.json).",
+      "acceptance_criteria": [
+        "stop-hook.py exists at claude-code-shared/hooks/stop-hook.py",
+        "Hook is registered in claude-code-shared/settings.json under the Stop event",
+        "Hook appends a JSONL line to learnings/audit/hook-audit.jsonl for every detected skill completion",
+        "Hook fires a nudge message at most once per skill per session (per-session state file prevents double-nudge)",
+        "audit/ directory exists and hook-audit.jsonl is outside the learnings/*.jsonl glob pattern used by unified log consumers",
+        "Manual test: run a skill that has both markers → audit shows outcome: ran; run a skill that prints skill-done but not learning-eval → audit shows outcome: nudged"
+      ],
+      "blocked_by": ["T-0031"],
+      "status": "done",
+      "branch": "feat/retro-attribution-learning",
+      "pr": null
+    },
+    {
+      "id": "T-0033",
+      "title": "Inject attribution capture tail into debug skill",
+      "type": "AFK",
+      "description": "Inject the attribution capture tail block into `claude-code-shared/skills/debug/SKILL.md` using the same HTML-comment marker style as the existing learning-capture block. The attribution block fires per confirmed root cause found by the debug skill. Its instructions: after confirming the root cause and fix, collect available repo pointers (transcript path, seed path if known from context, tasks file path if known, branch, PR URL), spawn the attribution-tracer agent (T-0027) with the confirmed issue description + fix + pointers, pass the draft record to the artifact-grounding judge agent (T-0028), which verifies and appends to learnings/unified.jsonl if grounded. The tail runs BEFORE the debug skill's closing suggestion (consistent with the ordering rule from T-0031). Use the markers `<!-- skill-done: debug -->` and `<!-- learning-eval: debug -->` already baked in by T-0031 — do not duplicate them. The attribution block is a separate, additional block from the existing self-learning tail.",
+      "acceptance_criteria": [
+        "debug/SKILL.md contains the attribution capture tail block",
+        "The block clearly says to run before the closing suggestion/handoff",
+        "The block instructions reference attribution-tracer and artifact-grounding-judge agents by name",
+        "The block fires once per confirmed root cause (not once per session)",
+        "The block does not duplicate the skill-done/learning-eval markers already injected by T-0031",
+        "The attribution block is distinct from and additive to the existing self-learning tail block"
+      ],
+      "blocked_by": ["T-0027", "T-0028", "T-0031"],
+      "status": "done",
+      "branch": "feat/retro-attribution-learning",
+      "pr": null
+    },
+    {
+      "id": "T-0034",
+      "title": "Inject attribution capture tail into code-review skill",
+      "type": "AFK",
+      "description": "Inject the attribution capture tail block into `claude-code-shared/skills/code-review/SKILL.md`, mirroring the approach from T-0033. The code-review skill can surface multiple confirmed issues per run; the attribution tail iterates once per real confirmed issue (issues already verified and not dismissed as false positives). For each: collect available repo pointers from context, spawn attribution-tracer, pass draft to artifact-grounding judge, write if grounded. The tail runs BEFORE the code-review skill's closing suggestion. Use the markers `<!-- skill-done: code-review -->` and `<!-- learning-eval: code-review -->` already baked in by T-0031 — do not duplicate them.",
+      "acceptance_criteria": [
+        "code-review/SKILL.md contains the attribution capture tail block",
+        "The block iterates once per confirmed issue (not once per session)",
+        "The block runs before the closing suggestion",
+        "The block references attribution-tracer and artifact-grounding-judge agents",
+        "The block does not duplicate markers from T-0031",
+        "Manual end-to-end test: run code-review on a file with a known bug, confirm a JSONL line with type: attribution appears in learnings/unified.jsonl"
+      ],
+      "blocked_by": ["T-0027", "T-0028", "T-0031"],
+      "status": "done",
+      "branch": "feat/retro-attribution-learning",
+      "pr": null
+    }
+  ],
+  "follow_ups": [
+    {
+      "id": "FU-001",
+      "title": "Verify Stop hook telemetry is accumulating correctly",
+      "steps": [
+        "After T-0032 merges, run any skill that has both markers (e.g. /to-seed or /grill-me).",
+        "After the skill completes, check: cat claude-code-shared/learnings/audit/hook-audit.jsonl",
+        "Confirm the last line has outcome: 'ran' for the skill you just ran.",
+        "Run a skill and intentionally skip the tail (simulate by not running capture-learning). Check that the hook adds a row with outcome: 'nudged'.",
+        "Verify hook-audit.jsonl is NOT included in any learnings/*.jsonl glob: grep -r 'hook-audit' claude-code-shared/learnings/ and confirm no consumer reads it as learning data."
+      ],
+      "trigger_task": "T-0032",
+      "source": "planned"
+    },
+    {
+      "id": "FU-002",
+      "title": "Smoke test attribution capture end-to-end via debug skill",
+      "steps": [
+        "After T-0033 merges, run /debug on a feature branch with a known bug.",
+        "Allow debug to complete its root-cause analysis and confirm the fix.",
+        "Verify the attribution-tracer agent is spawned (watch model output for agent call).",
+        "After the run, check: cat claude-code-shared/learnings/unified.jsonl | tail -1 | python3 -m json.tool",
+        "Confirm the last line has type: 'attribution', reported_by: 'debug', and a non-null improves field.",
+        "Run: bash claude-code-shared/scripts/validate-schema.sh --instance claude-code-shared/contracts/learning-schema-v2.json <(tail -1 claude-code-shared/learnings/unified.jsonl) and confirm exit 0."
+      ],
+      "trigger_task": "T-0033",
+      "source": "planned"
+    }
+  ]
+}

@@ -249,6 +249,11 @@
       "type": "array",
       "items": {"type": "string"},
       "description": "Miscellaneous notes that don't fit other fields."
+    },
+    "condensed_from": {
+      "type": "array",
+      "items": {"type": "string"},
+      "description": "List of original seed filenames (basenames only) that were merged to produce this condensed seed. Used by tools that resolve backlinks when the original file is no longer present. Optional — omit for non-condensed seeds."
     }
   },
   "examples": [

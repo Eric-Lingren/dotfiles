@@ -140,6 +140,14 @@
           "export_url": {
             "type": ["string", "null"],
             "description": "Written back by export-tasks after a successful external write (GitHub issue URL, Notion page URL, etc.). null until then. Optional — omit for legacy files."
+          },
+          "seed_ref": {
+            "type": "string",
+            "description": "Seed filename (basename only, no directory prefix) from which this triage task was generated. Written by to-tasks for triage items. Optional — omit for code tasks and legacy files."
+          },
+          "task_ref": {
+            "type": "string",
+            "description": "Task file filename (basename only, no directory prefix) in which this triage task lives. Written by to-tasks for triage items. Optional — omit for code tasks and legacy files."
           }
         }
       },
