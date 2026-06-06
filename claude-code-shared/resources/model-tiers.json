@@ -32,7 +32,10 @@
     "register-skill": "T2",
     "handoff": "T2",
     "clean-scaffolding": "T1",
-    "revise-pr": "T3"
+    "revise-pr": "T3",
+    "vet": "T3",
+    "relay": "T2",
+    "investigate": "T3"
   },
   "agents": {
     "fact-checker": "T3",
