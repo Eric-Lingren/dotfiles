@@ -9,6 +9,7 @@
     "label": "quaestor-web",
     "account": "cco",
     "base_branch": "main",
+    "pr_draft": true,
     "exclude": ["docs/adr/", "docs/prototype/", "docs/browser-checks/", "docs/seeds/", "docs/tasks/", "docs/handoffs/", "docs/prd/"]
   },
   "Eric-Lingren/SpawnedSapien": {

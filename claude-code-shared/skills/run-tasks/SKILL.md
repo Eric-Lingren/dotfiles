@@ -299,8 +299,9 @@ Rules for the description:
 
 #### b. Push and create the PR
 
-1. Run `~/.dotfiles/.scripts/gxpush --pr` to stage, commit, push, and open the PR. gxpush shows a preview manifest and prompts for confirmation before any git operation runs.
-2. Return the PR URL to the user (gxpush prints it after `gh pr create` completes).
+1. Run `~/.dotfiles/.scripts/gxpush --pr` via the Bash tool. gxpush runs non-interactively (the Proceed prompt auto-accepts empty input), so the user never sees it live.
+2. After the Bash tool returns, print the full gxpush output verbatim to the user. This includes the STAGED, WILL ADD, EXCLUDED, and SECRETS sections so they can see exactly what was committed.
+3. Return the PR URL to the user (gxpush prints it after `gh pr create` completes).
 
 <!-- learning-capture:start -->
 ## Learning Capture

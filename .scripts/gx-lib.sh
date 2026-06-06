@@ -69,6 +69,7 @@ if key in data:
     print(e.get('base_branch', 'main'))
     print(json.dumps(e.get('exclude', [])))
     print(e.get('account', 'cch'))
+    print('true' if e.get('pr_draft', False) else 'false')
 else:
     sys.exit(1)
 " 2>/dev/null)
@@ -87,6 +88,7 @@ else:
   GX_BASE_BRANCH="${GX_BASE_BRANCH:-$(echo "$entry" | sed -n '2p')}"
   GX_EXCLUDE_JSON=$(echo "$entry" | sed -n '3p')
   GX_CLAUDE_CONFIG="$(_gx_account_to_config "$(echo "$entry" | sed -n '4p')")"
+  GX_PR_DRAFT=$(echo "$entry" | sed -n '5p')
   return 0
 }
 

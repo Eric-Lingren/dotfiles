@@ -4,7 +4,7 @@
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/gx-lib.sh"
 
-gx_load_policy 2>/dev/null
+gx_load_policy
 
 MODE_ALL=false
 MODE_PICK=false
@@ -240,7 +240,12 @@ if $MODE_PR; then
   echo "Creating PR..."
   PR_BODY=$("$SCRIPT_DIR/pr-desc" --stdout)
   BRANCH_SLUG=$(echo "$BRANCH" | tr '/' '-')
-  gh pr create --title "$BRANCH_SLUG" --body "$PR_BODY"
+  if [[ "${GX_PR_DRAFT:-false}" == "true" ]]; then
+    echo "  [draft — repo policy requires draft PRs for this repo]"
+    gh pr create --title "$BRANCH_SLUG" --body "$PR_BODY" --draft
+  else
+    gh pr create --title "$BRANCH_SLUG" --body "$PR_BODY"
+  fi
 fi
 
 echo "Done."
