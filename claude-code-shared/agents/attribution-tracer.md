@@ -28,6 +28,37 @@ You will receive these fields in the prompt:
 
 Return a v2 attribution record draft (JSON, pre-grounding) suitable for passing to the artifact-grounding-judge. The record has type: `attribution` and all required fields from learning-schema.json. Do not include server-injected fields (schema_version, id, timestamp) — the writer injects those.
 
+### Terminal output rule
+
+After all processing is complete, your final summary output **must** end with exactly one of these two lines:
+
+- `WROTE: <id>` — the grounding judge returned a pass verdict AND log-learning.py exited 0.
+- `NOT WRITTEN: <reason>` — any other outcome.
+
+Before the terminal line, echo the judge's raw verdict JSON verbatim (For cases 1 and 2 only — Step 0 failures have no judge verdict to echo).
+
+This rule applies to all exit paths:
+
+1. **Verdict rejected:** judge returned a non-pass verdict → echo the verdict JSON → `NOT WRITTEN: grounding judge rejected (<judge reason>)`
+2. **log-learning.py non-zero exit:** judge passed but the write script errored → echo the verdict JSON → `NOT WRITTEN: log-learning.py exited non-zero (<exit code>)`
+3. **Input validation failure (Step 0):** transcript_path absent or unreadable → no judge spawn → `NOT WRITTEN: transcript_path missing or unreadable`
+
+Never emit a summary that claims the record was written unless the terminal line is `WROTE: <id>`.
+
+## Step 0 — Validate inputs
+
+Before doing anything else, check `transcript_path`:
+
+1. Is `transcript_path` present in the input prompt?
+2. If present, does the file at that path exist on disk? (Run `test -f <transcript_path>` or attempt to read it.)
+
+If either check fails:
+
+- Emit `{"error": "transcript_path missing or unreadable: <path>"}` as your only output. End with `NOT WRITTEN: transcript_path missing or unreadable`.
+- Do not draft a record. Do not build evidence. Do not spawn the artifact-grounding-judge.
+
+Only proceed to Step 1 if `transcript_path` is present and the file is readable.
+
 ## Step 1 — Walk the provenance chain
 
 Walk backward through the following layers, in this order, stopping at the first layer where the criterion was present but should have been carried forward and was not:
@@ -131,7 +162,14 @@ Use the Agent tool with subagent_type: artifact-grounding-judge and pass the dra
 
 The judge verifies evidence anchors against artifacts and calls log-learning.py only if grounded, or returns a rejection reason if not.
 
-Your final action is spawning the artifact-grounding-judge. You do not call log-learning.py. You do not report a write. The judge's verdict and write are its own responsibility.
+When the judge returns its result:
+
+1. Echo the judge's raw verdict JSON verbatim in your summary.
+2. If the judge passed and log-learning.py exited 0: end your summary with `WROTE: <id>` where `<id>` is parsed from the `OK:` line in log-learning.py stdout (e.g., `OK: appended learning entry (type=..., id=<uuid>) to ...`).
+3. If the judge rejected the record: end your summary with `NOT WRITTEN: grounding judge rejected (<judge reason>)`.
+4. If the judge passed but log-learning.py returned a non-zero exit: end your summary with `NOT WRITTEN: log-learning.py exited non-zero (<exit code>)`.
+
+You do not call log-learning.py. You do not claim a write without a confirmed `WROTE:` terminal line.
 
 ## What you must not do
 
