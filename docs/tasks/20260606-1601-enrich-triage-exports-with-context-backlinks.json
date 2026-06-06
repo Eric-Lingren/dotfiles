@@ -35,7 +35,7 @@
         "A triage task emitted from a deferred[] item that has a context field carries that context appended to its description"
       ],
       "blocked_by": ["T-0059"],
-      "status": "not_started",
+      "status": "done",
       "branch": null,
       "pr": null
     },
@@ -51,7 +51,7 @@
         "wall value is read from task-routing.json destinations[domain].wall, not hardcoded"
       ],
       "blocked_by": ["T-0059"],
-      "status": "not_started",
+      "status": "done",
       "branch": null,
       "pr": null
     },

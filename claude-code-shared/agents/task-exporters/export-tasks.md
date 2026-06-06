@@ -128,6 +128,21 @@ Hard wall violations show a WARNING line. If any hard wall violation exists, do 
 
 After user approval, write each item to its adapter in sequence. Spawn the appropriate adapter agent per item and parse the URL from its response.
 
+#### Body assembly (backlink footer)
+
+Before spawning an adapter for each item, build the final body string:
+
+1. Start with `body = item.description`.
+2. Read `destinations[item.domain].wall` from `task-routing.json`.
+3. If `wall != "corporate"` AND `item.seed_ref` is present AND `item.task_ref` is present, append the backlink footer:
+
+```
+body = item.description + "\n\n---\nseed: " + item.seed_ref + "\ntask: " + item.task_ref + "\ntask_id: " + item.id
+```
+
+4. If `wall == "corporate"`, use `body = item.description` unchanged. No footer.
+5. Pass `body` (not `item.description`) to the adapter prompt.
+
 #### GitHub Issues adapter
 
 Spawn the `export-tasks-gh` adapter:
@@ -137,7 +152,7 @@ Agent(
   subagent_type="export-tasks-gh",
   prompt=JSON.stringify({
     "title": item.title,
-    "description": item.description,
+    "description": body,
     "org_repo": org_repo
   })
 )
@@ -155,7 +170,7 @@ Agent(
   prompt=JSON.stringify({
     "db_id": resolved_db_id,
     "title": item.title,
-    "description": item.description,
+    "description": body,
     "auth": route.auth
   })
 )

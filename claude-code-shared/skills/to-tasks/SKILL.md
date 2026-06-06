@@ -174,6 +174,8 @@ For each item in `deferred[]`, emit one triage task:
 - **status**: `not_started`
 - **branch**: `null`
 - **pr**: `null`
+- **seed_ref**: seed filename basename only (e.g. `20260606-1550-foo.json`, no directory prefix). Derive with `basename(seed_path)`.
+- **task_ref**: output task file filename basename only (e.g. `20260606-1601-foo.json`, no directory prefix). Use the filename produced by `task-filename.sh` in step 6.
 
 Omit `browser_verify` and `linear_url` for triage tasks. Do not emit triage tasks for items in `out_of_scope[]` or `disposed_threads[]`.
 
@@ -220,6 +222,8 @@ cat ~/.dotfiles/claude-code-shared/contracts/task-schema.json
 Use that schema exactly. Do not guess field names or structure.
 
 Set `"producer": "to-tasks"`.
+
+Set `source.ref` to the seed filename basename only (e.g. `"20260606-1550-foo.json"`), not a relative or absolute path. Strip the directory prefix when writing this field.
 
 After writing, output a single line:
 
