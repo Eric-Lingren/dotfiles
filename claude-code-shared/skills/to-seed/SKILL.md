@@ -210,22 +210,21 @@ After writing, check `status`:
 
 **If `status` is `"draft"` (open_threads non-empty):**
 
-The seed was written and adjudicated but open threads remain. Present exactly three options via `AskUserQuestion`:
+Print the open threads and suggest how to continue. Do not use `AskUserQuestion`. Output text like:
 
 ```
 Seed written to docs/seeds/<filename> (status: draft)
 Open threads (<N>):
-  <list thread text>
+  - <thread text>
+  ...
 
-How do you want to resolve these?
-1. Continue with grill-me — drill the open threads in this window
-2. Continue with grill-with-docs — drill against the existing domain model
-3. Stop and write a handoff — resume in a fresh window later
+To resolve:
+  /grill-me docs/seeds/<filename> — drill these threads in this window
+  /grill-with-docs docs/seeds/<filename> — drill against the existing domain model
+  Say "write a handoff" to park this for a fresh window.
 ```
 
-- **Option 1**: tail-call `grill-me` via `Skill("grill-me", seed-path)`. Pass the seed path as the resume payload. **Do not write a handoff doc** — live context is the handoff.
-- **Option 2**: tail-call `grill-with-docs` via `Skill("grill-with-docs", seed-path)`. Pass the seed path as the resume payload. **Do not write a handoff doc.**
-- **Option 3**: write a handoff doc, then stop.
+Then stop. If the user responds "write a handoff" (or similar), write the handoff doc:
   1. Generate a handoff doc (same logic as `/handoff`). Save it under `docs/handoffs/` using `~/.dotfiles/claude-code-shared/scripts/doc-filename.sh <slug> md`.
   2. Frame the open threads as the explicit agenda for the next session.
   3. Name `grill-me` and `grill-with-docs` in the handoff's "suggested skills" section.
@@ -247,26 +246,18 @@ How do you want to resolve these?
      ````
   5. Output the handoff path and stop. Do not invoke any downstream skill.
 
-If the user selects "Other" or gives an unrecognized response, re-present the three options and ask them to choose one. Abandoning without a handoff is not allowed.
-
 **If `status` is `"ready"` (open_threads empty):**
 
-Show the fan-out using `AskUserQuestion`:
+Run `python3 ~/.dotfiles/claude-code-shared/scripts/print-skill-next-steps.py to-seed` and print the output as the closing suggestion. Do not use `AskUserQuestion`. Output text like:
 
 ```
 Seed written to docs/seeds/<filename> (status: ready)
 
-What next?
-1. /to-prd-html <seed-path> — render a full HTML PRD from this seed
-2. /to-tasks <seed-path> — break this into tasks for /run-tasks
-3. /prototype — explore ideas or UI options before committing
-4. Nothing yet
+What's next:
+<skill-next-steps.py output>
 ```
 
-- If the user picks **1**: invoke `/to-prd-html` with the seed path as argument.
-- If the user picks **2**: invoke `/to-tasks` with the seed path as argument.
-- If the user picks **3**: invoke `/prototype`.
-- If the user picks **4**: do nothing. Confirm the seed path and stop.
+Then stop.
 
 **CRITICAL:** Never commit any artifact. Never push. The only things written to disk are the seed file (every run) and, when status is draft, the handoff doc.
 
