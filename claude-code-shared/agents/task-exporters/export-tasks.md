@@ -1,21 +1,22 @@
 ---
 name: export-tasks
-description: Export triage tasks from a task file to configured external destinations. Resolves each item's (deliverable, domain) pair against task-routing.json, shows a dry-run table with wall-crossing warnings, then writes to the matched adapter. Updates item status and export_url on success. Spawned by dispatch-tasks as an isolated agent.
-tools: Read, Write, Bash, mcp__claude_ai_Notion__notion-create-pages
+description: Export triage tasks from a task file to configured external destinations. Resolves each item's (deliverable, domain) pair against task-routing.json, shows a dry-run table with wall-crossing warnings, then delegates writes to adapter agents. Updates item status and export_url on success. Spawned by dispatch-tasks as an isolated agent.
+tools: Read, Write, Bash, Agent
 model: sonnet
 ---
 
 # Export Tasks
 
-Export triage-typed items from a task file to external destinations. Resolves routing via `task-routing.json`, shows a dry-run table for human review, and writes to the matched adapter. Updates item status and `export_url` on success.
+Coordinator for exporting triage-typed items from a task file to external destinations. Resolves routing, validates config, presents a dry-run table for approval, then spawns focused adapter agents to execute writes. Updates item status and `export_url` on success.
 
-**Spawn mode:** this agent is spawned as an isolated agent by `dispatch-tasks`. It receives the task file path as the sole argument.
+**Spawn mode:** this agent is spawned by `dispatch-tasks`. It receives the task file path as the sole argument.
 
 ## Contract
 
 **Format:** task file — see `contracts/task-contract.md` (schema_version: `"2"`)
 **Routing config:** `~/.dotfiles/claude-code-shared/resources/task-routing.json`
-**Role:** triage branch executor
+**Role:** triage branch coordinator
+**Adapters:** `export-tasks-gh` (GitHub Issues), `export-tasks-notion` (Notion MCP + API)
 
 ## Process
 
@@ -31,7 +32,9 @@ Filter the task file to items where:
 
 If no eligible items remain, print "No triage items to export." and exit cleanly.
 
-### 2. Placeholder check
+### 2. Preflight validation
+
+#### Placeholder check
 
 For each item in the run, resolve its route (see step 3 for flat vs split shape). Collect all Notion routes. For each Notion route, check whether `location` is a known placeholder value (`"personal-notion-db"`, `"ss-notion-db"`).
 
@@ -58,10 +61,12 @@ To find your Notion DB ID:
 
 Stop immediately if any required Notion DB ID is a placeholder. Do not write anything.
 
-Also check: for any `auth=api-token` Notion route, verify the token is set:
+#### Token check
+
+For any `auth=api-token` Notion route, verify the token is set before showing the dry-run:
 
 ```bash
-bash ~/.dotfiles/claude-code-shared/scripts/export-tasks-check-notion-token.sh
+bash ~/.dotfiles/claude-code-shared/agents/task-exporters/export-tasks-notion/check-token.sh
 ```
 
 If the script exits non-zero, print its stderr output and stop.
@@ -87,8 +92,8 @@ location = route.location // "current-repo" or a Notion DB ID
 ```
 
 Resolve concrete targets:
-- **github-issues + location=current-repo:** extract `Org/Repo` from `git remote get-url origin` (strip protocol/host, remove `.git` suffix). Use `--repo <Org/Repo>` in the gh CLI command.
-- **notion:** use `location` as the Notion database ID. Use the Notion MCP (`mcp__claude_ai_Notion__` tools).
+- **github-issues + location=current-repo:** extract `Org/Repo` from `git remote get-url origin` (strip protocol/host, remove `.git` suffix). Use as `org_repo` in the adapter input.
+- **notion:** use `location` as the Notion database ID. Pass `route.auth` as the `auth` field to the adapter.
 - **linear:** Linear adapter is deferred past v1. If a `linear` route is resolved, print a warning and skip the item: "Linear adapter not yet implemented. Item skipped."
 
 ### 4. Wall-crossing check
@@ -119,76 +124,56 @@ Review the plan above. Press Enter to proceed or type "abort" to cancel.
 
 Hard wall violations show a WARNING line. If any hard wall violation exists, do not proceed until the user either removes the item from scope or corrects the domain. Ask the user to resolve each violation before continuing.
 
-### 6. Execute writes
+### 6. Execute writes via adapter agents
 
-After user approval, write each item to its adapter in sequence:
+After user approval, write each item to its adapter in sequence. Spawn the appropriate adapter agent per item and parse the URL from its response.
 
 #### GitHub Issues adapter
 
-```bash
-bash ~/.dotfiles/claude-code-shared/scripts/export-tasks-gh-issue.sh \
-  "$ITEM_TITLE" \
-  "$ITEM_DESCRIPTION" \
-  "$ORG_REPO"
-```
-
-Capture the issue URL from stdout (the script prints `https://github.com/<org>/<repo>/issues/<number>`).
-
-#### Notion adapter (non-code)
-
-Check `route.auth` from `task-routing.json` to determine which write path to use.
-
-**auth=mcp (Spawned Sapien workspace):**
-
-Use the Notion MCP tools. Set `Status="Todo"` and `Type="Task"` to match the SS Tasks Tracker schema:
+Spawn the `export-tasks-gh` adapter:
 
 ```
-mcp__claude_ai_Notion__notion-create-pages(
-  parent_database_id: "<resolved-db-id>",
-  pages: [{
-    title: "<item.title>",
-    properties: {
-      "Status": "Todo",
-      "Type": "Task"
-    },
-    children: [{"paragraph": {"rich_text": [{"text": {"content": "<item.description>"}}]}}]
-  }]
+Agent(
+  subagent_type="export-tasks-gh",
+  prompt=JSON.stringify({
+    "title": item.title,
+    "description": item.description,
+    "org_repo": org_repo
+  })
 )
 ```
 
-**auth=api-token (personal workspace):**
+The adapter responds with the issue URL as its sole content, or `ERROR: <reason>` on failure.
 
-First verify the token is available:
+#### Notion adapter
 
-```bash
-bash ~/.dotfiles/claude-code-shared/scripts/export-tasks-check-notion-token.sh
+Spawn the `export-tasks-notion` adapter:
+
+```
+Agent(
+  subagent_type="export-tasks-notion",
+  prompt=JSON.stringify({
+    "db_id": resolved_db_id,
+    "title": item.title,
+    "description": item.description,
+    "auth": route.auth
+  })
+)
 ```
 
-If the script exits non-zero, abort with the printed error.
+The adapter responds with the page URL as its sole content, or `ERROR: <reason>` on failure.
 
-If the token check passes, write via the Notion REST API:
+#### Parsing adapter responses
 
-```bash
-bash ~/.dotfiles/claude-code-shared/scripts/export-tasks-notion-page-api.sh \
-  "$RESOLVED_DB_ID" \
-  "$ITEM_TITLE" \
-  "$ITEM_DESCRIPTION"
-```
-
-Capture the returned page URL from stdout.
+Extract the URL from the adapter's response text. The adapter outputs exactly one meaningful line: a URL or `ERROR: ...`. If the response starts with `ERROR:`, treat the write as failed.
 
 ### 7. Update task file
 
-After each successful write, immediately update the task file JSON:
-- Set `item.status` to `"done"`
-- Set `item.export_url` to the external URL (GitHub issue URL or Notion page URL)
+After each adapter returns, immediately update the task file JSON:
+- **Success:** set `item.status` to `"done"`, set `item.export_url` to the returned URL.
+- **Failure:** set `item.status` to `"blocked"`, log the error in the end-of-run summary.
 
-Write the updated JSON to disk after each item (do not batch).
-
-If a write fails for a specific item:
-- Set `item.status` to `"blocked"`
-- Log the error in the end-of-run summary
-- Continue to the next item (do not abort the whole run)
+Write the updated JSON to disk after each item (do not batch). Continue to the next item on failure — do not abort the whole run.
 
 ### 8. End-of-run summary
 
