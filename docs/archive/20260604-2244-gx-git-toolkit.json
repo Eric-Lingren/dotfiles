@@ -1,0 +1,555 @@
+{
+  "kind": "condensed",
+  "producer": "clean-scaffolding",
+  "slug": "gx-git-toolkit",
+  "title": "gx git toolkit: guardrail-first git verbs",
+  "condensed_at": "2026-06-07T07:03:33Z",
+  "condensed_from": [
+    "20260604-2244-gx-git-toolkit.json",
+    "20260604-2258-gx-git-toolkit.json"
+  ],
+  "artifacts": [
+    {
+      "filename": "20260604-2244-gx-git-toolkit.json",
+      "type": "seed",
+      "content": {
+        "schema_version": "4",
+        "producer": "to-seed",
+        "source": null,
+        "title": "gx git toolkit: guardrail-first git verbs",
+        "slug": "gx-git-toolkit",
+        "created": "2026-06-04T22:44:00Z",
+        "status": "ready",
+        "iteration": 1,
+        "summary": "Eric works across 3-4 repos daily, context-switches constantly, and is self-described as weak at git, causing repeated foot-guns: code on the wrong or already-merged branch, wrong files staged, dropped local fixes, never-cleaned branches, and risk of pushing secrets or scaffolding. Decided to build a guardrail-first bash toolkit namespaced 'gx' (verified zero collisions vs the oh-my-zsh git plugin) that previews and confirms before any dangerous git op. Five verbs: gxpush (+flags --pr/--all/--pick), gxcheck, gxclean, gxmove, gxsync. A per-repo policy registry supplies safety constraints; action mode is chosen per-invocation by which verb is fired, never inferred from the repo. Bash verbs hold the safety-critical core; Claude skills are thin callers via absolute path, giving exactly one push path. Existing pipeline skills (prototype, run-tasks, run-task-followups, debug) get rewired onto gxpush; entry-point skills get a read-only gxcheck pre-flight. All judgments resolved; ready to build.",
+        "decisions": [
+          "Guardrail-first today (preview + confirm before any dangerous op, no silent auto-execution); full hands-off automation deferred until the guarded version is proven.",
+          "Bash verbs hold the safety-critical logic; Claude skills are thin callers that invoke the verbs by absolute path; exactly one execution path for pushes.",
+          "Verbs live as executables in ~/.dotfiles/.scripts/ (already on PATH via .zshrc), registered in .zshrc under a labeled '# gx git toolkit' block and in the how-to skill; skills invoke them by absolute path ~/.dotfiles/.scripts/<verb>.",
+          "Global CLAUDE.md gets an explicit carve-out allowing skills to run gx verbs from .scripts/, overriding the 'shared scripts only live in claude-code-shared/scripts/' rule.",
+          "Namespace is 'gx' (verified zero collisions against the oh-my-zsh git plugin), chosen over git-subcommands so the guarded lane is visually distinct from raw git.",
+          "OMZ git aliases stay as the raw/fast lane for safe ops; gx wraps only the dangerous surface; never override existing OMZ aliases.",
+          "Per-repo policy registry at claude-code-shared/resources/repo-policy.json, keyed by normalized git remote URL; fields are label, base_branch, exclude (globs held back from push).",
+          "Unregistered repos fall to a conservative default: push current branch, no PR, confirm everything, no excludes, warn on direct push to base branch.",
+          "Action mode is chosen per-invocation by the verb fired, never inferred from the repo; the registry supplies safety constraints applied underneath whatever verb runs.",
+          "allow_pr and protected_branches are rejected from the registry schema; every repo eventually PRs, and branch protection is dynamic state not a static list.",
+          "Dynamic branch-state warnings (merged into base, foreign author, stale/behind, remote gone, on base branch) are computed live by gxcheck, not stored in the registry.",
+          "exclude is a script-level filter shown in the preview and overridable per run; it is NOT .gitignore and not a git hook, because the doc scaffolding is contextually excluded not permanently untracked, and some repos' gitignores are admin-controlled.",
+          "Verb set: gxpush (with flags --pr, --all, --pick), gxcheck, gxclean, gxmove, gxsync.",
+          "gxpush default commits tracked changes and pushes the current branch with no PR; --pr opens a PR; --all does a git add -A blast radius; --pick is interactive staging.",
+          "Every dangerous verb shows a four-section preview manifest before acting: staged files, files the verb will add, policy-excluded paths, and possible secrets; it also surfaces modified-but-unstaged files; confirm before anything leaves the machine.",
+          "gxpush --pr reuses the existing pr-desc script for the PR body; pr-desc gains a stdout mode so the verb can capture the text for gh pr create.",
+          "gxcheck is read-only and reports branch state: merged into base, foreign author, stale/behind, remote gone, on base branch.",
+          "gxclean is on-demand only, never auto-triggered; it deletes only merged branches via safe git branch -d, and flags prototype/* as priority sweep.",
+          "gxmove relocates floating uncommitted or local-only changes to the correct branch, with preview and confirm.",
+          "gxsync syncs the current feature branch with main via merge (git merge origin/<base>), not rebase, to avoid force-push and the destructive-git hook; it detects merge conflicts and stops clean without resolving them.",
+          "Scope is prong 3 (push/PR verbs) plus a read-only branch-state guardrail (gxcheck) for prong 2; branch-name derivation as a verb is deferred.",
+          "Rewire outbound push/PR in prototype, run-tasks, run-task-followups, and debug to call gxpush, done in one shot rather than phased.",
+          "Entry-point skills (to-seed, to-prd-html, debug, improve-component) get a read-only gxcheck pre-flight; branch creation stays in those skills as-is.",
+          "prototype's throwaway-branch deletion (git branch -D of unmerged prototype/proto-*) is left as-is because gxclean deliberately refuses unmerged deletes.",
+          "Register all five gx verbs in the how-to skill (resources/commands.md) with purpose and flags."
+        ],
+        "open_threads": [],
+        "disposed_threads": [
+          {
+            "id": "ot-001",
+            "text": "Should prong 3 be a guardrail or a full automator?",
+            "disposition": "decided",
+            "iteration": 1
+          },
+          {
+            "id": "ot-002",
+            "text": "Where do per-repo push rules live: per-repo config, per-task, or ad hoc?",
+            "disposition": "decided",
+            "iteration": 1
+          },
+          {
+            "id": "ot-003",
+            "text": "How is the push mode chosen: inferred from repo, explicit verb, or interactive menu?",
+            "disposition": "decided",
+            "iteration": 1
+          },
+          {
+            "id": "ot-004",
+            "text": "Where does the never-push enforcement live: script filter, gitignore, or git hook?",
+            "disposition": "decided",
+            "iteration": 1
+          },
+          {
+            "id": "ot-005",
+            "text": "Division of labor between bash scripts and Claude skills.",
+            "disposition": "decided",
+            "iteration": 1
+          },
+          {
+            "id": "ot-006",
+            "text": "Which script home and how to expose to PATH for both terminal and skills.",
+            "disposition": "decided",
+            "iteration": 1
+          },
+          {
+            "id": "ot-007",
+            "text": "Use gx prefix or git-subcommands for the verbs?",
+            "disposition": "decided",
+            "iteration": 1
+          },
+          {
+            "id": "ot-008",
+            "text": "Registry schema fields and lookup key.",
+            "disposition": "decided",
+            "iteration": 1
+          },
+          {
+            "id": "ot-009",
+            "text": "Verb set shape: one gxpush with flags or many separate scripts?",
+            "disposition": "decided",
+            "iteration": 1
+          },
+          {
+            "id": "ot-010",
+            "text": "Branch cleanup approach and whether to auto-trigger.",
+            "disposition": "decided",
+            "iteration": 1
+          },
+          {
+            "id": "ot-011",
+            "text": "Scope boundary: prong 3 only or also prong 2?",
+            "disposition": "decided",
+            "iteration": 1
+          },
+          {
+            "id": "ot-012",
+            "text": "Add a gxmove verb to relocate changes to another branch?",
+            "disposition": "decided",
+            "iteration": 1
+          },
+          {
+            "id": "ot-013",
+            "text": "Add gxsync and whether it merges or rebases.",
+            "disposition": "decided",
+            "iteration": 1
+          },
+          {
+            "id": "ot-014",
+            "text": "Build a merge-conflict resolution skill.",
+            "disposition": "deferred",
+            "iteration": 1
+          },
+          {
+            "id": "ot-015",
+            "text": "Rewire existing skills phased or in one shot?",
+            "disposition": "decided",
+            "iteration": 1
+          },
+          {
+            "id": "ot-016",
+            "text": "Should branch-creation entry points route through a gx verb?",
+            "disposition": "decided",
+            "iteration": 1
+          },
+          {
+            "id": "ot-017",
+            "text": "Should gxpush --pr reuse pr-desc for the PR body?",
+            "disposition": "decided",
+            "iteration": 1
+          },
+          {
+            "id": "ot-018",
+            "text": "Migrate branch-name derivation into a gxbranch verb.",
+            "disposition": "deferred",
+            "iteration": 1
+          },
+          {
+            "id": "ot-019",
+            "text": "Build a PR review-comment to tasks skill (the fifth fork).",
+            "disposition": "deferred",
+            "iteration": 1
+          }
+        ],
+        "verification": {
+          "iteration": 1,
+          "personas": [
+            "grounding",
+            "accuracy",
+            "completeness",
+            "coherence"
+          ],
+          "refutations_upheld": 0,
+          "refutations_screened": 0,
+          "clean": true,
+          "status": "verified"
+        },
+        "deferred": [
+          {
+            "text": "Merge-conflict resolution skill",
+            "rationale": "Resolving conflicts needs judgment, not a fire-and-confirm bash verb; explicitly a separate conversation.",
+            "context": "gxsync detects conflicts and stops clean; resolution would be a reasoning-heavy assisted skill closer to /debug.",
+            "source_seed": null
+          },
+          {
+            "text": "PR review-comment to tasks skill (fifth fork)",
+            "rationale": "Parked early as out of scope for this build.",
+            "context": "Eric wants a skill to review reviewer comments on his PRs and turn them into tasks, like the code-review skill does for findings.",
+            "source_seed": null
+          },
+          {
+            "text": "Full hands-off git automation",
+            "rationale": "Guardrails come first; automation only after the guarded version is proven.",
+            "context": "Once processes are proven, the registry design flips cleanly from confirm to auto-execute.",
+            "source_seed": null
+          },
+          {
+            "text": "gxbranch branch-name derivation verb",
+            "rationale": "Branch naming needs ticket context (Linear title, task id) a bare terminal verb lacks, and prong 1 already works.",
+            "context": "branching-strategy.md codifies naming; cmd+shift+C from Linear handles manual cases.",
+            "source_seed": null
+          },
+          {
+            "text": "Diagnose the run-command-twice git bug",
+            "rationale": "A real bug but a separate diagnostic side-quest.",
+            "context": "Eric sometimes must run git add -A and gcam twice before files register; likely fsmonitor/watchman or editor-save timing.",
+            "source_seed": null
+          },
+          {
+            "text": "Fold gxclean into the clean-scaffolding skill",
+            "rationale": "Nice-to-have later integration.",
+            "context": "gxclean runs on-demand standalone for now.",
+            "source_seed": null
+          }
+        ],
+        "next_action": "Run /to-tasks to break the gx toolkit into build tasks",
+        "problem_statement": "Eric works across 3-4 repos daily, context-switching constantly, and is self-described as weak at git. This causes repeated foot-guns: writing code on the wrong (or already-merged, locally-stale) branch, staging the wrong files, dropping a local fix that never makes the commit, never cleaning up merged local branches, and risking pushing secrets or scaffolding folders. Existing safeguards (branching-strategy.md) only fire inside skills, not at the terminal where the worst mistakes happen.",
+        "solution": "A guardrail-first bash toolkit ('gx') that wraps the dangerous git surface (push, PR, bulk-add, branch-delete, sync, change-relocation) with a preview-and-confirm gate. A per-repo policy registry supplies safety constraints (base branch, excluded globs) applied underneath whatever verb is fired. Skills become thin callers of the same verbs, giving one guarded execution path. OMZ aliases remain the raw fast lane for safe ops.",
+        "evidence": "Live audit of the .dotfiles repo (Eric's lowest-use repo) found 15 local branches, 14 already merged into main and never deleted, including a prototype/proto-* branch that should have been cleaned per branching-strategy.md. The oh-my-zsh git plugin alias set was enumerated live and confirmed to claim the entire g* git namespace (gp, gpr, gclean, gcam), forcing a non-colliding 'gx' prefix.",
+        "implementation_decisions": [
+          "Registry file at claude-code-shared/resources/repo-policy.json, keyed by normalized `git remote get-url origin`, entry shape {label, base_branch, exclude[]}.",
+          "gx scripts canonical home is ~/.dotfiles/.scripts/ (on PATH via .zshrc).",
+          "Skills invoke verbs via absolute path ~/.dotfiles/.scripts/<verb>, never via alias (aliases are absent in the non-interactive subshell the Bash tool spawns).",
+          "pr-desc gains a stdout-emit mode alongside its existing clipboard behavior.",
+          "gxsync uses git merge origin/<base_branch>; no force-push (respects block-destructive-git.sh).",
+          "gxclean uses git branch -d (safe, merged-only); cannot delete unmerged work.",
+          "Preview manifest sections: staged / will-add / policy-excluded / possible-secrets, plus modified-but-unstaged surfaced.",
+          "gxpush flags: --pr (open PR via pr-desc), --all (git add -A), --pick (interactive staging)."
+        ],
+        "testing_decisions": [
+          "Verbs are built and exercised first standalone and through the rewired skills as real workflows arise, before relying on any future full automation."
+        ],
+        "out_of_scope": [
+          {
+            "text": "git-subcommand naming (git ship / git sync)",
+            "rationale": "Cannot shadow built-in git push, and would blur the guarded-vs-raw distinction the gx prefix exists to make visible."
+          },
+          {
+            "text": ".gitignore-based exclusion",
+            "rationale": "gitignore makes files permanently untracked, but the excluded docs are contextually held back and sometimes committed; some repos' gitignores are admin-controlled."
+          },
+          {
+            "text": "git pre-commit/pre-push hook for exclusion",
+            "rationale": "A hook fires on manual git outside the verbs and removes the escape hatch Eric wants."
+          },
+          {
+            "text": "allow_pr and protected_branches registry fields",
+            "rationale": "Every repo eventually PRs so allow_pr is never false; branch protection is dynamic state computed by gxcheck, not a static list."
+          },
+          {
+            "text": "Auto-triggered branch cleanup",
+            "rationale": "Violates the pause-don't-decide philosophy; cleanup stays on-demand."
+          },
+          {
+            "text": "Overriding existing oh-my-zsh git aliases",
+            "rationale": "Breaks portability on machines without the scripts and silently changes documented alias behavior."
+          },
+          {
+            "text": "Rebase as the gxsync default",
+            "rationale": "Rebase rewrites history and needs force-push, which the destructive-git hook blocks and which is error-prone for a git beginner; merge is the safe default."
+          }
+        ],
+        "risks_and_tradeoffs": [
+          "Registry needs an entry per repo before it helps; the conservative default covers unregistered repos but offers no excludes there.",
+          "Aliases work only in interactive shells, so the design deliberately relies on absolute-path invocation for skills.",
+          "Guardrail confirmation adds friction to every push; accepted now, revisited when automation is considered."
+        ],
+        "further_notes": [
+          "Commit-vs-push and the working-dir/staged/committed model were explained mid-session; the wrong-branch foot-gun traces to uncommitted changes following the user across branch switches.",
+          "block-destructive-git.sh already blocks force-push, hard reset, clean -f, and branch -D, which the gx design works within."
+        ]
+      }
+    },
+    {
+      "filename": "20260604-2258-gx-git-toolkit.json",
+      "type": "task",
+      "content": {
+        "schema_version": "2",
+        "producer": "to-tasks",
+        "source": {
+          "type": "seed",
+          "ref": "docs/seeds/20260604-2244-gx-git-toolkit.json"
+        },
+        "generated_at": "2026-06-04T23:00:00Z",
+        "branching": {
+          "strategy": "single",
+          "branch": "feat/gx-git-toolkit"
+        },
+        "tasks": [
+          {
+            "id": "T-0010",
+            "title": "gx scaffolding: .zshrc block + CLAUDE.md carve-out",
+            "type": "AFK",
+            "description": "Register the gx git toolkit in two places. First, add a labeled '# gx git toolkit' block to ~/.zshrc that exports the path and registers all five verbs (gxcheck, gxpush, gxmove, gxclean, gxsync) as executable aliases pointing to ~/.dotfiles/.scripts/<verb>. Second, add a carve-out to ~/.dotfiles/.claude/CLAUDE.md (the single source file \u2014 ~/.cco/CLAUDE.md, ~/.cch/CLAUDE.md, and ~/.claude/CLAUDE.md are all symlinks to it, so one edit covers all). The carve-out goes under the shared scripts section and explicitly allows skills to invoke gx verbs via absolute path ~/.dotfiles/.scripts/<verb>, overriding the 'shared scripts only live in claude-code-shared/scripts/' rule. The .scripts/ directory already exists with pr-desc in it \u2014 no directory creation needed.",
+            "acceptance_criteria": [
+              "~/.zshrc contains a '# gx git toolkit' labeled block with PATH export or alias entries for all five gx verbs",
+              "After sourcing ~/.zshrc, `which gxcheck` and `which gxpush` resolve to ~/.dotfiles/.scripts/",
+              "~/.dotfiles/.claude/CLAUDE.md contains an explicit carve-out sentence permitting skills to invoke ~/.dotfiles/.scripts/gx* via absolute path",
+              "The carve-out is visible via all three symlink paths (~/.cco/CLAUDE.md, ~/.cch/CLAUDE.md, ~/.claude/CLAUDE.md) since they all point to the same file",
+              "No existing .zshrc content is modified or removed"
+            ],
+            "blocked_by": [],
+            "status": "done",
+            "branch": null,
+            "pr": null
+          },
+          {
+            "id": "T-0011",
+            "title": "Repo policy registry: claude-code-shared/resources/repo-policy.json",
+            "type": "AFK",
+            "description": "Create the per-repo policy registry at claude-code-shared/resources/repo-policy.json. The file is a JSON object keyed by normalized git remote URL (output of `git remote get-url origin`, normalized to strip trailing .git and trailing slashes, and stripping the protocol+host prefix so both ssh and https forms produce the same key \u2014 e.g. both git@github.com:Org/Repo.git and https://github.com/Org/Repo.git normalize to 'Org/Repo'). Each entry has shape {label, base_branch, exclude[]}. Populate three initial entries: (1) .dotfiles repo \u2014 key 'Eric-Lingren/.dotfiles', label 'dotfiles', base_branch 'main', exclude ['docs/seeds/', 'docs/tasks/', 'docs/handoffs/', 'docs/prd/']; (2) Quaestor-Web repo \u2014 key 'Quaestor-Technologies/Quaestor-Web', label 'quaestor-web', base_branch 'main', exclude ['docs/seeds/', 'docs/tasks/', 'docs/handoffs/', 'docs/prd/']; (3) SpawnedSapien repo \u2014 key 'Eric-Lingren/SpawnedSapien', label 'spawnedsapien', base_branch 'main', exclude ['docs/seeds/', 'docs/tasks/', 'docs/handoffs/', 'docs/prd/']; (4) ericlingren personal repo \u2014 key 'Eric-Lingren/ericlingren', label 'ericlingren', base_branch 'main', exclude ['docs/seeds/', 'docs/tasks/', 'docs/handoffs/', 'docs/prd/']. Also write a lookup helper in ~/.dotfiles/.scripts/gx-lib.sh that: normalizes the remote URL, looks up the entry, and falls back to a conservative default (base_branch: 'main', exclude: [], label: 'unknown') when the repo is unregistered. Unregistered repos must emit a visible warning to stderr.",
+            "acceptance_criteria": [
+              "claude-code-shared/resources/repo-policy.json is valid JSON and matches the documented shape {label, base_branch, exclude[]}",
+              "Running the lookup helper from the .dotfiles repo returns label: 'dotfiles', base_branch: 'main', and the docs/* excludes",
+              "Running from an unregistered repo returns the conservative default and prints a warning to stderr",
+              "URL normalization strips trailing .git and trailing slashes so both ssh and https remote formats match the same key",
+              "Unit test (bats or inline bash test) covers: registered repo lookup, unregistered fallback, URL normalization"
+            ],
+            "blocked_by": [],
+            "status": "done",
+            "branch": null,
+            "pr": null
+          },
+          {
+            "id": "T-0012",
+            "title": "gxcheck verb: read-only branch state reporter",
+            "type": "AFK",
+            "description": "Create ~/.dotfiles/.scripts/gxcheck as an executable bash script. It is read-only \u2014 no git state is modified. It loads the repo policy via gx-lib.sh (T-0011) to get base_branch, then reports the following signals for the current branch: (1) MERGED: branch is fully merged into base (git branch --merged origin/<base_branch>), (2) FOREIGN: HEAD commit author is not the local git user, (3) STALE: local branch is behind origin/<current-branch> by one or more commits (git rev-list), (4) REMOTE_GONE: tracking remote branch no longer exists (git ls-remote), (5) ON_BASE: currently on the base branch itself. Output each signal as a labeled line (e.g. 'WARN: branch already merged into main'). Exit 0 always \u2014 gxcheck is informational, never a hard gate. Omit signals that do not apply.",
+            "acceptance_criteria": [
+              "gxcheck is executable and can be invoked from terminal as `gxcheck` after sourcing .zshrc",
+              "On the .dotfiles repo with a merged local branch: outputs the MERGED warning",
+              "On a clean feature branch: outputs no warnings",
+              "On the base branch itself: outputs the ON_BASE warning",
+              "Exit code is always 0",
+              "Script sources gx-lib.sh for registry lookup \u2014 does not hardcode base_branch",
+              "Manual test: run gxcheck on the feat/gx-git-toolkit branch and confirm output is clean or shows expected signals"
+            ],
+            "blocked_by": [
+              "T-0010",
+              "T-0011"
+            ],
+            "status": "done",
+            "branch": null,
+            "pr": null
+          },
+          {
+            "id": "T-0013",
+            "title": "pr-desc stdout mode",
+            "type": "AFK",
+            "description": "Modify ~/.dotfiles/.scripts/pr-desc to support a --stdout flag. When invoked with --stdout, emit the generated PR description to stdout instead of (or in addition to) pbcopy. When invoked without --stdout, behavior is identical to today (clipboard only). This is required so gxpush --pr can capture the PR body via command substitution without depending on pbcopy. The --stdout flag must work correctly when pr-desc is called from a non-interactive subshell (the Bash tool environment), where pbcopy may not be available \u2014 when --stdout is passed in a non-interactive context, suppress the pbcopy call silently and only emit to stdout.",
+            "acceptance_criteria": [
+              "pr-desc --stdout prints the PR description to stdout",
+              "pr-desc (without --stdout) behavior is unchanged: description goes to clipboard, success message printed",
+              "BODY=$(~/.dotfiles/.scripts/pr-desc --stdout) successfully captures the PR body in a subshell",
+              "pr-desc --stdout in a non-interactive shell (no TTY, pbcopy absent) does not error \u2014 it emits to stdout only",
+              "Manual test: run `pr-desc --stdout` from the feat/gx-git-toolkit branch and confirm PR description is printed to terminal"
+            ],
+            "blocked_by": [],
+            "status": "done",
+            "branch": null,
+            "pr": null
+          },
+          {
+            "id": "T-0014",
+            "title": "gxpush verb: preview-and-confirm push with flags",
+            "type": "AFK",
+            "description": "Create ~/.dotfiles/.scripts/gxpush as an executable bash script. Default behavior (no flags): stages tracked (modified, not new) files, commits, and pushes the current branch. Before anything leaves the machine, display a four-section preview manifest: (1) STAGED: files already in the index, (2) WILL ADD: files that will be added by this invocation, (3) EXCLUDED: files matching policy exclude[] globs (shown but not staged), (4) SECRETS: any file containing patterns matching common secret patterns (API keys, tokens, .env). Also surface UNSTAGED: modified-but-unstaged files that are NOT being committed. Prompt 'Proceed? [y/N]' \u2014 default is N (no accidental enter-to-push). Flags: --all runs git add -A before commit (blast-radius mode, explicitly shown in preview), --pick runs git add -p for interactive hunk selection, --pr opens a PR after push by calling `~/.dotfiles/.scripts/pr-desc --stdout` and piping the output to `gh pr create --title <branch-slug> --body -`. Loads registry via gx-lib.sh for base_branch and exclude[]. Excludes are applied as a filter: matching files are shown in the EXCLUDED section and skipped from staging even in --all mode.",
+            "acceptance_criteria": [
+              "gxpush is executable and invokable as `gxpush` from terminal",
+              "Preview manifest shows all four sections before any git operation runs",
+              "Default mode stages only tracked files (git add -u), not new untracked files",
+              "--all mode stages everything including new files (git add -A), shown in preview",
+              "--pick launches git add -p for interactive staging",
+              "--pr calls pr-desc --stdout and creates a PR via gh pr create",
+              "Files matching registry exclude[] globs appear in EXCLUDED and are never staged, even with --all",
+              "Default confirmation is N \u2014 pressing Enter without 'y' aborts",
+              "Manual test: run gxpush --all on feat/gx-git-toolkit with at least one excluded path present, confirm excluded file does not appear in the PR diff"
+            ],
+            "blocked_by": [
+              "T-0010",
+              "T-0011",
+              "T-0013"
+            ],
+            "status": "done",
+            "branch": null,
+            "pr": null
+          },
+          {
+            "id": "T-0015",
+            "title": "gxmove verb: relocate uncommitted changes to another branch",
+            "type": "AFK",
+            "description": "Create ~/.dotfiles/.scripts/gxmove as an executable bash script. It relocates uncommitted (staged or unstaged) changes from the current branch to a target branch specified as an argument: `gxmove <target-branch>`. Before acting, display a preview: (1) CHANGES TO MOVE: the list of modified/staged files, (2) FROM: current branch name, (3) TO: target branch name. Prompt 'Proceed? [y/N]'. On confirm: stash all changes (git stash), switch to the target branch (git switch <target>), pop the stash (git stash pop). If the target branch does not exist locally, offer to create it. If git switch fails (dirty index after stash pop, conflict), stop and leave the stash intact \u2014 print the stash ref so the user can recover manually. Local-only (unpushed) commits are NOT moved \u2014 gxmove only relocates uncommitted working-tree changes.",
+            "acceptance_criteria": [
+              "gxmove is executable and invokable as `gxmove <branch>` from terminal",
+              "Preview shows FROM, TO, and list of files to move before any action",
+              "Default confirmation is N",
+              "On success: changes appear on target branch, source branch working tree is clean",
+              "If target branch does not exist: offers to create it before proceeding",
+              "On stash-pop conflict: aborts cleanly, prints the stash ref, and leaves both branches in recoverable state",
+              "Manual test: create a scratch change on feat/gx-git-toolkit, run gxmove to a test branch, confirm change arrived and source is clean"
+            ],
+            "blocked_by": [
+              "T-0010",
+              "T-0011"
+            ],
+            "status": "done",
+            "branch": null,
+            "pr": null
+          },
+          {
+            "id": "T-0016",
+            "title": "gxclean verb: on-demand merged branch cleanup",
+            "type": "AFK",
+            "description": "Create ~/.dotfiles/.scripts/gxclean as an executable bash script. It lists all local branches that are fully merged into the base branch (git branch --merged origin/<base_branch> | grep -v '^\\*' | grep -v '<base_branch>'), with prototype/* branches flagged as priority sweep. Before deleting anything, display: (1) MERGED BRANCHES: full list, with prototype/* entries marked [PRIORITY], (2) count. Prompt 'Delete all? [y/N]' \u2014 default N. On confirm, delete each with git branch -d (safe delete \u2014 refuses unmerged branches). Report each deletion with its branch name. Unmerged branches are never touched. Also warn if the current branch is on the base branch (same ON_BASE signal as gxcheck). Loads base_branch from registry via gx-lib.sh.",
+            "acceptance_criteria": [
+              "gxclean is executable and invokable as `gxclean` from terminal",
+              "Lists all local merged branches before prompting",
+              "prototype/* branches are visually flagged in the output",
+              "Deletes only merged branches (git branch -d), never unmerged",
+              "Default confirmation is N",
+              "Manual test: run gxclean on .dotfiles repo (known to have 14+ merged local branches) and confirm only merged branches are offered for deletion"
+            ],
+            "blocked_by": [
+              "T-0010",
+              "T-0011"
+            ],
+            "status": "done",
+            "branch": null,
+            "pr": null
+          },
+          {
+            "id": "T-0017",
+            "title": "gxsync verb: sync feature branch with main via merge",
+            "type": "AFK",
+            "description": "Create ~/.dotfiles/.scripts/gxsync as an executable bash script. It syncs the current feature branch with the base branch using merge (not rebase). Steps: (1) git fetch origin, (2) display what will be merged: 'Will merge origin/<base_branch> into <current-branch> \u2014 N commits ahead, M commits behind', (3) prompt 'Proceed? [y/N]', (4) on confirm, run git merge origin/<base_branch>. If git merge exits with conflicts, stop immediately \u2014 print the list of conflicting files and the message 'Merge conflict detected. Resolve conflicts manually, then run git merge --continue.' Do NOT attempt to resolve conflicts. Do NOT run git merge --abort. Leave the repo in the mid-merge state so the user can resolve and continue. Loads base_branch from registry via gx-lib.sh. Never uses rebase or force-push (respects block-destructive-git.sh).",
+            "acceptance_criteria": [
+              "gxsync is executable and invokable as `gxsync` from terminal",
+              "Runs git fetch before computing ahead/behind count",
+              "Preview shows N commits ahead and M commits behind before merging",
+              "Default confirmation is N",
+              "On conflict: prints conflicting files and stops \u2014 does not auto-resolve or auto-abort",
+              "No rebase, no force-push at any point",
+              "Manual test: run gxsync on a branch that is behind main and confirm merge completes cleanly"
+            ],
+            "blocked_by": [
+              "T-0010",
+              "T-0011"
+            ],
+            "status": "done",
+            "branch": null,
+            "pr": null
+          },
+          {
+            "id": "T-0018",
+            "title": "Rewire outbound push in prototype, run-tasks, run-task-followups, debug",
+            "type": "AFK",
+            "description": "Update four skill SKILL.md files to call gxpush instead of raw git push + gh pr create. For each skill: (1) replace `git push -u origin HEAD` calls with `~/.dotfiles/.scripts/gxpush`, (2) replace the combined `git push ... && gh pr create ...` flow with `~/.dotfiles/.scripts/gxpush --pr`. Do NOT remove the user-facing confirmation prompts in the skill logic \u2014 gxpush has its own confirm gate, but the skills' 'Push and open a PR?' AskUserQuestion prompts are the user's decision point and must stay. The skills ask the user first; when the user says yes, they call gxpush (which then shows its own preview before acting). Skills affected: prototype/SKILL.md (the `git push -u origin` cherry-pick step for the PR branch), run-tasks/SKILL.md (the post-task push + PR flow), run-task-followups/SKILL.md (the summary push + PR flow), debug/SKILL.md (any push or PR creation steps).",
+            "acceptance_criteria": [
+              "prototype/SKILL.md no longer contains raw `git push` commands \u2014 replaced with `~/.dotfiles/.scripts/gxpush` calls",
+              "run-tasks/SKILL.md push + PR flow calls `~/.dotfiles/.scripts/gxpush --pr`",
+              "run-task-followups/SKILL.md push + PR flow calls `~/.dotfiles/.scripts/gxpush --pr`",
+              "debug/SKILL.md any push references call `~/.dotfiles/.scripts/gxpush`",
+              "Skills' own user-facing confirmation prompts (AskUserQuestion) are preserved \u2014 they are the decision gate, gxpush is the execution gate",
+              "Invocation uses absolute path ~/.dotfiles/.scripts/gxpush, not alias, because skills run in non-interactive subshells where aliases are absent"
+            ],
+            "blocked_by": [
+              "T-0014"
+            ],
+            "status": "done",
+            "branch": null,
+            "pr": null
+          },
+          {
+            "id": "T-0019",
+            "title": "gxcheck pre-flight in entry-point skills",
+            "type": "AFK",
+            "description": "Add a read-only gxcheck pre-flight to four entry-point skills: to-seed, to-prd-html, debug, improve-component. In each skill, insert a step before the existing branch creation / branch sanity-check step that runs `~/.dotfiles/.scripts/gxcheck` and surfaces its output to the user as informational context. The pre-flight does NOT block the skill \u2014 gxcheck always exits 0 and any warnings are advisory only. Branch creation logic in each skill stays exactly as-is. The gxcheck output should appear as a brief status block (e.g. 'Branch check: <output>') before the branch question. Use absolute path ~/.dotfiles/.scripts/gxcheck.",
+            "acceptance_criteria": [
+              "to-seed/SKILL.md runs gxcheck via absolute path before its branch sanity-check AskUserQuestion",
+              "to-prd-html/SKILL.md runs gxcheck before its branch choice step",
+              "debug/SKILL.md runs gxcheck before its branch strategy question",
+              "improve-component/SKILL.md runs gxcheck before its branching strategy question",
+              "Pre-flight output is surfaced as informational context, not a gate \u2014 the skill continues regardless",
+              "Branch creation logic in all four skills is unchanged"
+            ],
+            "blocked_by": [
+              "T-0012"
+            ],
+            "status": "done",
+            "branch": null,
+            "pr": null
+          },
+          {
+            "id": "T-0020",
+            "title": "Register all gx verbs in how-to skill (resources/commands.md)",
+            "type": "AFK",
+            "description": "Add a '## gx Git Toolkit' section to claude-code-shared/skills/how-to/resources/commands.md. Document all five verbs with their purpose, flags, and example invocations. Format consistent with existing sections (header, bold command labels, fenced bash blocks). Content to cover: gxcheck (read-only branch state: merged/foreign/stale/remote-gone/on-base), gxpush (preview + confirm push; flags: --pr, --all, --pick), gxmove <target-branch> (relocate uncommitted changes), gxclean (list and delete merged local branches), gxsync (fetch + merge origin/<base_branch> into current branch). Note that all verbs are invoked via absolute path ~/.dotfiles/.scripts/<verb> from skills.",
+            "acceptance_criteria": [
+              "commands.md contains a '## gx Git Toolkit' section",
+              "All five verbs are documented with purpose and flags",
+              "Each entry includes a fenced bash example",
+              "The how-to skill can match a query like 'how do I push a PR' and return the gxpush entry",
+              "No existing commands.md sections are modified or removed"
+            ],
+            "blocked_by": [
+              "T-0012",
+              "T-0014",
+              "T-0015",
+              "T-0016",
+              "T-0017"
+            ],
+            "status": "done",
+            "branch": null,
+            "pr": null
+          }
+        ],
+        "follow_ups": [
+          {
+            "id": "FU-001",
+            "title": "Add repo-policy.json entries for new repos as encountered",
+            "steps": [
+              "When starting work in a new repo, run: git remote get-url origin",
+              "Normalize the URL: strip trailing .git and trailing slashes",
+              "Open claude-code-shared/resources/repo-policy.json",
+              "Add an entry: {\"<normalized-url>\": {\"label\": \"<short-name>\", \"base_branch\": \"main\", \"exclude\": [\"docs/seeds/\", \"docs/tasks/\", \"docs/handoffs/\", \"docs/prd/\"]}}",
+              "Adjust base_branch and exclude[] to match the repo's actual defaults",
+              "Commit the updated registry to the .dotfiles repo on the current branch and push"
+            ],
+            "trigger_task": "T-0011",
+            "source": "planned"
+          },
+          {
+            "id": "FU-002",
+            "title": "Exercise all five gx verbs end-to-end after build",
+            "steps": [
+              "After all five verbs are built (T-0012 through T-0017 done), reload shell: source ~/.zshrc",
+              "On the .dotfiles repo: run gxcheck and confirm output matches current branch state",
+              "Run gxpush on a branch with at least one excluded path present and confirm excluded file does not stage",
+              "Run gxclean and confirm the 14+ merged local branches in .dotfiles are offered for cleanup",
+              "Create a scratch change, run gxmove to a new branch, confirm relocation succeeded",
+              "Run gxsync on a branch behind main and confirm merge completes",
+              "Run gxpush --pr on a real feature branch and confirm PR is created with pr-desc body"
+            ],
+            "trigger_task": "T-0017",
+            "source": "planned"
+          }
+        ]
+      }
+    }
+  ]
+}

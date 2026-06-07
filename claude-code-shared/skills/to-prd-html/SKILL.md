@@ -32,7 +32,9 @@ If a seed path was passed as an argument (e.g. `/to-prd-html docs/seeds/20260602
 
 Otherwise, list `docs/seeds/*.json` and ask the user to choose one.
 
-Run `~/.dotfiles/claude-code-shared/skills/to-tasks/scripts/extract-prd-json.sh <seed-path>` to validate and read the seed JSON. Fail if the script exits non-zero.
+Route the seed path through resolve-ref.sh before reading (see `resources/resolve-ref-pattern.md`): Run `bash ~/.dotfiles/claude-code-shared/scripts/resolve-ref.sh $(basename <seed-path>)`. On archive hit (output starts with `ARCHIVE:`), use the extracted content in place of the file. On not-found (exit non-zero), surface the diagnostic and ask "Continue anyway?" — bypass rebuilds context from conversation.
+
+Run `~/.dotfiles/claude-code-shared/skills/to-tasks/scripts/extract-prd-json.sh <seed-path>` to validate and read the seed JSON (use active path or write archive content to a temp file if archived). Fail if the script exits non-zero.
 
 ### 2. Ask: work or personal?
 

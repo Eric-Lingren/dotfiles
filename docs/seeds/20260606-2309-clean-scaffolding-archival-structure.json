@@ -1,0 +1,88 @@
+{
+  "schema_version": "4",
+  "producer": "to-seed",
+  "source": {"type": "session", "ref": null},
+  "title": "Clean-scaffolding archival structure",
+  "slug": "clean-scaffolding-archival-structure",
+  "created": "2026-06-07T06:09:50Z",
+  "status": "ready",
+  "iteration": 1,
+  "summary": "clean-scaffolding currently deletes consumed chains. With backlinks now pointing to file basenames in exported GitHub issues and Notion pages, deletion dangles those refs. This grill session resolved the full archival design: clean-scaffolding switches from delete to condense-and-archive, bundling each fully-consumed lineage chain into a verbatim JSON container in docs/archive/, then removing originals from active dirs. Archival disposition is three-way: archive = {seeds, tasks, handoffs, prd}, delete = {browser-checks}, untouched = {adr, prototypes}. A resolver script (resolve-ref.sh) is built now and wired into all docs/-path consumers so any backlink, active or archived, resolves uniformly. Not-found is a hard-fail with bypass: since nothing is ever deleted, a miss is a pipeline-integrity bug, not a soft miss.",
+  "problem_statement": "clean-scaffolding hard-deletes consumed chains. Exported GitHub issues and Notion pages carry backlink footers with seed and task filenames. After deletion, those filenames resolve nowhere. The problem was deferred since the enrich-triage seed but is now the critical blocker before backlink exports go live.",
+  "solution": "Replace deletion with per-chain archival. Each consumed chain (seed + task + handoff + prd files grouped by source.ref pointer-walk) is bundled verbatim into one docs/archive/<root-timestamp>-<slug>.json container carrying condensed_from as an alias table. Originals are then removed from active dirs. A shared resolve-ref.sh script resolves any basename to its active or archived location. All docs/-path consumers (grill-me, grill-with-docs, to-seed, to-tasks, to-prd-html, build-code, dispatch-tasks, attribution-tracer) route through the resolver. Artifact types follow a three-way disposition: archive / delete / untouched.",
+  "decisions": [
+    "clean-scaffolding's terminal action on a consumed chain switches from delete to archive: bundle chain into docs/archive/, then remove originals from active dirs. The destructive-only delete mode is removed entirely.",
+    "Archival unit is per-chain. Each feature's consumed chain collapses into one archive file. Chain grouping is a mechanical source.ref pointer-walk — no LLM, no decision reading. The skill already computes chains today for consumed-ness checks; archival extends that grouping rather than replacing it.",
+    "Bundle content is verbatim. Full original content of every file in the chain is embedded in artifacts[]. No merging, no deduplication, no decision intelligence. condensed_from lists every original basename as an alias table for backlink resolution.",
+    "One archive file per chain (not a master append file). Named <root-timestamp>-<slug>.json using the chain root's original filename. Collision-proof because the root timestamp is already unique. Readable by feature name.",
+    "Archival disposition is three-way: archive = {seeds, tasks, handoffs, prd} · delete = {browser-checks} · untouched = {adr, prototypes}. The archive set covers everything under docs/ not explicitly in delete or untouched; new doc types default to archived unless explicitly categorized otherwise.",
+    "docs/browser-checks/ items are deleted (not archived). No archival chain is maintained for browser checks.",
+    "ADRs and prototypes remain untouched and durable. They may carry source.ref for provenance traceability but are never bundled or moved.",
+    "docs/archive/ is git-tracked in personal repos (dotfiles, SpawnedSapien, ericlingren). Excluded for Standard Metrics (Quaestor-Web) by adding docs/archive/ to its exclude array in repo-policy.json.",
+    "Build resolve-ref.sh now under claude-code-shared/scripts/. Lookup order: (1) find docs/ -name <basename> for active match; (2) grep docs/archive/*.json condensed_from for basename; (3) extract matching artifacts[] entry from bundle; (4) none found = hard-fail.",
+    "Full wire: every docs/-path-accepting consumer (grill-me, grill-with-docs, to-seed, to-tasks, to-prd-html, build-code, dispatch-tasks) and attribution-tracer route through resolve-ref.sh.",
+    "Not-found behavior: resolve-ref.sh hard-fails (exit non-zero + structured diagnostic naming basename sought, dirs searched, archive bundles scanned, and explicit message that data should exist since nothing is deleted). The calling skill catches the non-zero exit, surfaces the diagnostic to the user, then prompts 'continue anyway?' for bypass. Bypass: skill rebuilds context and continues. The bypass UX lives in the calling skill, not the script.",
+    "All archived artifact types carry source.ref for provenance. Tasks, handoffs, and prd files get source.ref added where currently missing.",
+    "clean-scaffolding skill name and description shift from 'Delete disposable scaffolding' to 'Archive consumed scaffolding'. The confirm copy changes from 'cannot be undone' to a normal confirm, since archiving is recoverable."
+  ],
+  "open_threads": [],
+  "disposed_threads": [],
+  "implementation_decisions": [
+    "Bundle container schema: {kind: 'condensed', producer: 'clean-scaffolding', slug: '<slug>', title: '<title>', condensed_at: '<ISO timestamp>', condensed_from: ['<basename1>', ...], artifacts: [{filename: '<basename>', type: 'seed|task|handoff|prd', content: {<full original JSON or string for .md files>}}]}. kind: 'condensed' distinguishes bundles from seeds.",
+    "Archive file naming: <root-timestamp>-<slug>.json where root-timestamp comes from the chain root's original filename prefix. Example: 20260606-0007-dispatch-tasks-pipeline.json holds the bundle for that chain.",
+    "resolve-ref.sh signature: resolve-ref.sh <basename>. On active hit: print the file path to stdout. On archive hit: print the bundle path plus extracted artifact content to stdout. On miss: print structured diagnostic to stderr and exit non-zero.",
+    "clean-scaffolding.sh gains an 'archive-files' mode alongside the existing 'delete-files' mode. The skill calls archive-files per confirmed chain, passing all chain files as arguments. The script writes the bundle then removes the originals.",
+    "repo-policy.json Quaestor-Web exclude array: add 'docs/archive/' alongside existing scaffold exclusions.",
+    "Path drift to reconcile at build time (not blocking design): docs/prototype/ vs docs/prototypes/ in repo-policy.json vs skill; docs/prd/ singular vs plural in clean-scaffolding scope.",
+    "Skills wired to resolver: each skill's file-path argument is passed through resolve-ref.sh before the skill reads the file. If resolve-ref.sh returns an archive hit, the skill uses the extracted content in place of a direct file read."
+  ],
+  "out_of_scope": [
+    {
+      "text": "Decision merging or LLM-driven deduplication across seeds in a chain",
+      "rationale": "Explicitly rejected as over-architecting. Core goal is clean active directories with a greppable archive. No judgment or intelligence in the condense path."
+    },
+    {
+      "text": "Per-type archival (all seeds into one archive file, all tasks into another)",
+      "rationale": "Rejected in favor of per-chain. Per-type destroys provenance by splitting a feature's files across type-buckets and is logically the master-append model. The skill already groups by chain."
+    },
+    {
+      "text": "Single master archive file with all chains appended",
+      "rationale": "Rejected. Requires full read-modify-write on every sweep, grows unbounded, and forces an agent resolving one backlink to load the entire archive history into context."
+    },
+    {
+      "text": "Numbered-per-run archive files",
+      "rationale": "Rejected. Numbers convey nothing and collapse multiple unrelated features into one blob per run, reintroducing the master-append problem."
+    },
+    {
+      "text": "Keeping a destructive-only delete mode behind a flag",
+      "rationale": "Rejected. Archive replaces delete entirely. A purge flag re-arms the backlink-dangling footgun the archival design eliminates. Manual unlink is available for the rare hard-delete case."
+    },
+    {
+      "text": "Deferring the resolver script to a later iteration",
+      "rationale": "Explicitly rejected by user. Resolver must be built in this implementation round. Half-wiring consumers without a resolver produces raw file-not-found errors with no diagnostic on archived paths."
+    }
+  ],
+  "deferred": [
+    {
+      "text": "Corporate triage item enrichment and backlink strategy",
+      "rationale": "Corporate-wall items receive no backlinks by design. The enrichment strategy for corporate triage items is a separate design concern not addressed here.",
+      "context": "Deferred from the enrich-triage seed session. Corporate items exported to corporate systems (Quaestor-Web) must not expose personal scaffold context. A separate design session is needed for how to enrich these without leaking context.",
+      "source_seed": null
+    }
+  ],
+  "risks_and_tradeoffs": [
+    "skip-worktree on settings.json means intentional settings.json edits (permissions, hooks, plugins) are invisible to git until --no-skip-worktree is run first.",
+    "Archive file count grows unboundedly (one per feature). Acceptable since the archive is grep-only and never hand-browsed, but ripgrep performance degrades past thousands of files.",
+    "resolve-ref.sh archive hit extracts artifact content from the bundle. If the bundle was written with a corrupted artifacts[] entry, the resolver returns corrupt content with no integrity check. Consider a checksum field in a future iteration.",
+    "Path drift between prototype/prototypes and prd/prds across repo-policy.json and skills must be reconciled at build time or the blocklist and scope will be inconsistent."
+  ],
+  "verification": {
+    "iteration": 1,
+    "personas": ["grounding", "accuracy", "completeness", "coherence"],
+    "refutations_upheld": 1,
+    "refutations_screened": 1,
+    "clean": false,
+    "status": "verified"
+  },
+  "next_action": "Run /to-tasks to generate the implementation task breakdown for the archival design"
+}

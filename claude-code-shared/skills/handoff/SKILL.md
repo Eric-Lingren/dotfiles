@@ -16,6 +16,14 @@ Name the file by running:
 
 Where `<slug>` is a short kebab-case description of the work (e.g. `auth-refactor`). The output is `YYYYMMDD-HHMM-<slug>.md`.
 
+Include a machine-readable provenance line in the document header immediately after the title:
+
+```
+**Source ref:** `<seed-or-task-basename>`
+```
+
+Where `<seed-or-task-basename>` is the basename only (no directory prefix) of the seed or task file that triggered this handoff. Example: `20260606-0007-dispatch-tasks-pipeline.json`. This field enables clean-scaffolding to walk chains mechanically: a grep for `Source ref:` extracts the provenance pointer without LLM involvement.
+
 Include a "suggested skills" section in the document, which suggests skills that the agent should invoke.
 
 Do not duplicate content already captured in other artifacts (PRDs, plans, ADRs, issues, commits, diffs). Reference them by path or URL instead.

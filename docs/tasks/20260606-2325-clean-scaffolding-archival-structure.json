@@ -1,0 +1,144 @@
+{
+  "schema_version": "2",
+  "producer": "to-tasks",
+  "source": {
+    "type": "seed",
+    "ref": "20260606-2309-clean-scaffolding-archival-structure.json"
+  },
+  "generated_at": "2026-06-07T06:26:23Z",
+  "branching": {
+    "strategy": "single",
+    "branch": "feat/clean-scaffolding-archival"
+  },
+  "tasks": [
+    {
+      "id": "T-0064",
+      "title": "Build resolve-ref.sh with active and archive lookup",
+      "type": "AFK",
+      "description": "Create claude-code-shared/scripts/resolve-ref.sh. Signature: resolve-ref.sh <basename>. Lookup order: (1) search docs/ -name <basename> for an active file match and print its path to stdout; (2) grep docs/archive/*.json condensed_from arrays for the basename; (3) extract the matching artifacts[] entry from the bundle and print its content to stdout alongside the bundle path; (4) if no match found, print a structured diagnostic to stderr naming the basename sought, dirs searched, and archive bundles scanned, then exit non-zero. The hard-fail is intentional: since nothing is ever deleted, a miss is a pipeline-integrity bug, not a soft miss.",
+      "acceptance_criteria": [
+        "Tests cover: active-file hit returns correct path, archive hit returns bundle path + extracted artifact content, not-found exits non-zero with structured diagnostic on stderr",
+        "Script is executable and invocable from any working directory",
+        "Active lookup searches docs/ recursively (find docs/ -name <basename>)",
+        "Archive hit: condensed_from grep targets docs/archive/*.json, extracts matching artifacts[] entry content",
+        "Not-found diagnostic names: basename sought, active dirs searched, archive bundles scanned, and explicit message that data should exist since nothing is deleted"
+      ],
+      "blocked_by": [],
+      "status": "done",
+      "branch": null,
+      "pr": null
+    },
+    {
+      "id": "T-0065",
+      "title": "Add source.ref to handoff and prd producers where missing",
+      "type": "AFK",
+      "description": "All archived artifact types must carry source.ref for provenance so clean-scaffolding can walk the chain mechanically. Audit the handoff skill and to-prd-html: check whether their output JSON includes a top-level source field with a ref value. Add source.ref to any producer that currently omits it. The handoff skill output should carry source.ref pointing to the seed or task file that triggered the handoff. The prd HTML/JSON should carry source.ref pointing to the seed that was rendered. This is a prerequisite for chain-walking in T-0066.",
+      "acceptance_criteria": [
+        "Tests confirm handoff output JSON contains source.ref field",
+        "Tests confirm prd output carries source.ref pointing to the input seed",
+        "No existing handoff or prd files are modified — only producer code is updated",
+        "Schema validation passes on sample output from both producers after change"
+      ],
+      "blocked_by": [],
+      "status": "done",
+      "branch": null,
+      "pr": null
+    },
+    {
+      "id": "T-0066",
+      "title": "Implement clean-scaffolding archive mode: bundle chain and remove originals",
+      "type": "AFK",
+      "description": "Replace the delete-files mode in clean-scaffolding with an archive-files mode. Chain grouping is the existing mechanical source.ref pointer-walk the skill already performs for consumed-ness checks. For each consumed chain: (1) bundle all chain files verbatim into one docs/archive/<root-timestamp>-<slug>.json container with schema {kind: 'condensed', producer: 'clean-scaffolding', slug, title, condensed_at: '<ISO>', condensed_from: ['<basename>', ...], artifacts: [{filename: '<basename>', type: 'seed|task|handoff|prd', content: {<full original JSON>}}]}; (2) remove originals from active dirs. Three-way disposition: archive set (seeds, tasks, handoffs, prd files) gets bundled then removed; delete set (browser-checks) gets deleted without archiving; untouched set (adr, prototypes) is never moved or removed. Update the skill name, description, and confirm copy: name changes from 'Delete disposable scaffolding' to 'Archive consumed scaffolding', confirm copy changes from 'cannot be undone' to a normal confirm since archiving is recoverable. Also reconcile path drift found in implementation_decisions: docs/prototype/ vs docs/prototypes/ and docs/prd/ singular vs plural across repo-policy.json and skill scope.",
+      "acceptance_criteria": [
+        "Tests: given a consumed chain (seed + task + handoff + prd), bundle is written to docs/archive/ with correct schema and all originals removed from active dirs",
+        "Tests: browser-checks items are deleted, not archived",
+        "Tests: adr and prototype files are not touched",
+        "Bundle condensed_from lists every original basename",
+        "Bundle artifacts[] contains verbatim full content of every chain file",
+        "Archive filename is <root-timestamp>-<slug>.json derived from chain root's original filename",
+        "Skill description and confirm copy updated as specified",
+        "Path drift between prototype/prototypes and prd/prds resolved consistently across repo-policy.json and clean-scaffolding scope"
+      ],
+      "blocked_by": ["T-0064", "T-0065"],
+      "status": "done",
+      "branch": null,
+      "pr": null
+    },
+    {
+      "id": "T-0067",
+      "title": "Wire all docs/-path consumers through resolve-ref.sh",
+      "type": "AFK",
+      "description": "Every skill and agent that accepts a docs/ file path as input must route that path through resolve-ref.sh before reading the file. Consumers to update: grill-me, grill-with-docs, to-seed, to-tasks, to-prd-html, build-code, dispatch-tasks, attribution-tracer. Pattern: pass the file-path argument through resolve-ref.sh; on active hit use the returned path for a normal file read; on archive hit use the extracted artifact content returned by the resolver in place of a direct file read; on not-found (non-zero exit) surface the structured diagnostic to the user and prompt 'continue anyway?' for bypass. If the user confirms bypass, the skill rebuilds context from conversation and continues. The bypass UX lives in the calling skill, not in resolve-ref.sh.",
+      "acceptance_criteria": [
+        "Tests: each consumer can transparently read a file that has been archived (passes basename → resolver returns content → consumer processes correctly)",
+        "Tests: each consumer surfaces the resolve-ref.sh diagnostic on not-found and offers bypass",
+        "No consumer performs a direct file read on a docs/ path without first routing through resolve-ref.sh",
+        "Bypass path: consumer continues with rebuilt context when user confirms",
+        "attribution-tracer wired alongside skill consumers"
+      ],
+      "blocked_by": ["T-0064", "T-0066"],
+      "status": "done",
+      "branch": null,
+      "pr": null
+    },
+    {
+      "id": "T-0068",
+      "title": "Update repo-policy.json: exclude docs/archive/ for Quaestor-Web",
+      "type": "AFK",
+      "description": "Add docs/archive/ to the exclude array in the Quaestor-Web (Standard Metrics) entry in claude-code-shared/resources/repo-policy.json. The archive dir is git-tracked in personal repos (dotfiles, SpawnedSapien, ericlingren) but must be excluded from Quaestor-Web to avoid leaking personal scaffold context into corporate tooling. This is a one-line config change. Verify the Quaestor-Web entry exists and add docs/archive/ alongside existing scaffold exclusions.",
+      "acceptance_criteria": [
+        "repo-policy.json passes schema validation after change",
+        "Quaestor-Web exclude array contains 'docs/archive/'",
+        "Personal repo entries (dotfiles, SpawnedSapien, ericlingren) do not have docs/archive/ in their exclude arrays",
+        "No other entries in repo-policy.json are modified"
+      ],
+      "blocked_by": [],
+      "status": "done",
+      "branch": null,
+      "pr": null
+    },
+    {
+      "id": "T-0069",
+      "title": "Corporate triage item enrichment and backlink strategy",
+      "type": "AFK",
+      "task_type": "triage",
+      "domain": "personal",
+      "deliverable": "non-code",
+      "description": "Corporate-wall items receive no backlinks by design. The enrichment strategy for corporate triage items is a separate design concern not addressed in the clean-scaffolding archival session.\n\nDeferred from the enrich-triage seed session. Corporate items exported to corporate systems (Quaestor-Web) must not expose personal scaffold context. A separate design session is needed for how to enrich these without leaking context.",
+      "acceptance_criteria": [
+        "Item has been exported to its destination by export-tasks"
+      ],
+      "blocked_by": [],
+      "status": "not_started",
+      "branch": null,
+      "pr": null,
+      "seed_ref": "20260606-2309-clean-scaffolding-archival-structure.json",
+      "task_ref": "20260606-2325-clean-scaffolding-archival-structure.json"
+    }
+  ],
+  "follow_ups": [
+    {
+      "id": "FU-001",
+      "title": "Verify docs/archive/ is git-tracked in personal repos",
+      "steps": [
+        "After T-0066 lands, run: git -C ~/.dotfiles status docs/archive/ to confirm the directory appears in git tracking",
+        "Check .gitignore at repo root: grep -n 'archive' ~/.dotfiles/.gitignore — ensure no rule excludes docs/archive/",
+        "Confirm for each personal repo (SpawnedSapien, ericlingren) that docs/archive/ is not in their .gitignore"
+      ],
+      "trigger_task": "T-0066",
+      "source": "planned"
+    },
+    {
+      "id": "FU-002",
+      "title": "Smoke-test resolve-ref.sh against a real archived chain",
+      "steps": [
+        "After T-0066 archives at least one chain, pick the archive basename from docs/archive/",
+        "Run one of the original file basenames through the resolver: bash ~/.dotfiles/claude-code-shared/scripts/resolve-ref.sh <original-basename>",
+        "Confirm: resolver finds the archive bundle and returns the artifact content without error",
+        "Run the same basename through a wired consumer (e.g. to-tasks) to confirm end-to-end transparency"
+      ],
+      "trigger_task": "T-0067",
+      "source": "planned"
+    }
+  ]
+}

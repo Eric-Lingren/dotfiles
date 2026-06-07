@@ -69,11 +69,11 @@ Read `transcript_path`. Scan for skill-to-skill handoff boundaries. Look for the
 
 ### Layer 2: Tasks file
 
-If `tasks_path` is provided, read it. Check the `source.ref` field to find the seed path (even if `seed_path` was not explicitly provided). Read the tasks. Check whether the issue's acceptance criterion appears in any task's `acceptance_criteria` or `description`. If the criterion is absent from the tasks but present in the seed, the escape point is at the handoff from seed → to-tasks.
+If `tasks_path` is provided, route its basename through resolve-ref.sh before reading (see `resources/resolve-ref-pattern.md`): Run `bash ~/.dotfiles/claude-code-shared/scripts/resolve-ref.sh $(basename <tasks_path>)`. On archive hit (output starts with `ARCHIVE:`), use the extracted content. On not-found (exit non-zero), treat as if tasks_path was not provided. Then: Check the `source.ref` field to find the seed path (even if `seed_path` was not explicitly provided). Read the tasks. Check whether the issue's acceptance criterion appears in any task's `acceptance_criteria` or `description`. If the criterion is absent from the tasks but present in the seed, the escape point is at the handoff from seed → to-tasks.
 
 ### Layer 3: Seed file
 
-If a seed path is known (from `seed_path` or from `tasks_path.source.ref`), read it. Check the `decisions`, `criteria`, `constraints`, and `scope` sections. Determine whether the issue's root criterion appears in the seed. If absent from the seed, the escape point may be at the requirement elicitation phase (grill-me, grill-with-docs) or never surfaced at all.
+If a seed path is known (from `seed_path` or from `tasks_path.source.ref`), route its basename through resolve-ref.sh before reading (see `resources/resolve-ref-pattern.md`): Run `bash ~/.dotfiles/claude-code-shared/scripts/resolve-ref.sh $(basename <seed_path>)`. On archive hit (output starts with `ARCHIVE:`), use the extracted content. On not-found (exit non-zero), treat as if the seed path was not available. Then: Check the `decisions`, `criteria`, `constraints`, and `scope` sections. Determine whether the issue's root criterion appears in the seed. If absent from the seed, the escape point may be at the requirement elicitation phase (grill-me, grill-with-docs) or never surfaced at all.
 
 ### Layer 4: Code diff
 

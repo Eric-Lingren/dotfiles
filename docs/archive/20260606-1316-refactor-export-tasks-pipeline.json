@@ -1,0 +1,153 @@
+{
+  "kind": "condensed",
+  "producer": "clean-scaffolding",
+  "slug": "refactor-export-tasks-pipeline",
+  "title": "Refactor export-tasks: agent conversion, tier downgrades, and code extraction",
+  "condensed_at": "2026-06-07T07:03:33Z",
+  "condensed_from": [
+    "20260606-1316-refactor-export-tasks-pipeline.json",
+    "20260606-1324-refactor-export-tasks-pipeline.json"
+  ],
+  "artifacts": [
+    {
+      "filename": "20260606-1316-refactor-export-tasks-pipeline.json",
+      "type": "seed",
+      "content": {
+        "schema_version": "4",
+        "producer": "to-seed",
+        "source": {
+          "type": "session",
+          "ref": null
+        },
+        "title": "Refactor export-tasks: agent conversion, tier downgrades, and code extraction",
+        "slug": "refactor-export-tasks-pipeline",
+        "created": "2026-06-06T13:16:00Z",
+        "summary": "A grill session reviewing the dispatch-tasks PR uncovered seven structural issues in export-tasks and related config. All were resolved: export-tasks converts to a true agent (agents/export-tasks.md), its description becomes routing-config-driven, both dispatch-tasks and export-tasks drop from T3 to T2, all bash operations that can be codified must be codified per the user's stated principle, a scriptable-code rule is added to the repo CLAUDE.md, the corporate wall label is retained, and an _active_corporate_domain doc field is added to task-routing.json.",
+        "status": "ready",
+        "iteration": 1,
+        "decisions": [
+          "Convert export-tasks from a skill (skills/export-tasks/SKILL.md) to a true agent (agents/export-tasks.md): drop the effort and spawn_mode frontmatter fields, add a tools list, keep model: sonnet.",
+          "The export-tasks description becomes destination-agnostic: remove the 'personal Notion' reference and describe routing to configured destinations via task-routing.json instead.",
+          "export-tasks drops from T3 to T2 in model-tiers.json. The work is mechanical (fixed 8-step script, API calls, file writeback) with no deep reasoning required.",
+          "dispatch-tasks drops from T3 to T2 in model-tiers.json. Routing logic is fully specified in task-routing.json; no synthesis or context-awareness required beyond following the config.",
+          "Per the user's stated principle 'if something can be written in code, it should be written in code': all bash operations in export-tasks that are mechanical and scriptable (token sourcing check, GitHub issue creation, Notion REST call) must be codified as proper scripts in scripts/ with real argument handling. No bash operations remain as prose or inline templates.",
+          "Add a rule to the repo CLAUDE.md (/Users/eric/.dotfiles/.claude/CLAUDE.md): if something is mechanical and scriptable, it lives in code. This prevents interpretation drift.",
+          "Keep the corporate wall tier label in task-routing.json. It is concrete and unambiguous.",
+          "Add an _active_corporate_domain doc field to task-routing.json pointing to the current corporate domain (standard-metrics). This is a human pointer only, not read by code, updated whenever the active corporate domain changes."
+        ],
+        "open_threads": [],
+        "disposed_threads": [],
+        "next_action": "Run /to-tasks to generate the implementation task breakdown",
+        "problem_statement": "The dispatch-tasks PR added export-tasks as a skill with spawn_mode: agent, but the repo's agent mechanism resolves subagent_type via the agents/ directory. export-tasks also hardcodes scriptable operations as prose, carries an overly-specific description, and has inflated tier assignments.",
+        "solution": "Convert export-tasks to a proper agent in agents/, update its description and tiers, codify all scriptable bash operations as scripts in scripts/, add a scriptable-code rule to the repo CLAUDE.md, and add an _active_corporate_domain pointer to task-routing.json.",
+        "implementation_decisions": [
+          "Agent frontmatter fields: name, description, tools (list), model. No effort field. No spawn_mode field.",
+          "Extracted scripts land in claude-code-shared/scripts/ with real argument handling (no placeholder values inline).",
+          "The export-tasks skill-to-agent conversion and any dispatch-tasks reference updates must land in the same commit since Agent(subagent_type='export-tasks') only resolves if the agent is registered.",
+          "_active_corporate_domain is a top-level doc field in task-routing.json, not an operational field and not read by any code.",
+          "The scriptable-code rule goes in /Users/eric/.dotfiles/.claude/CLAUDE.md."
+        ],
+        "risks_and_tradeoffs": [
+          "dispatch-tasks calls Agent(subagent_type='export-tasks'), which only resolves if export-tasks is registered as an agent. The skill-to-agent conversion and any dispatch-tasks reference updates must land together."
+        ],
+        "further_notes": [
+          "spawn_mode: agent in the export-tasks frontmatter is the only use of that field across the entire repo. It is removed as part of the agent conversion with no other changes needed to support it."
+        ],
+        "verification": {
+          "iteration": 1,
+          "personas": [
+            "grounding",
+            "accuracy",
+            "completeness",
+            "coherence"
+          ],
+          "refutations_upheld": 1,
+          "refutations_screened": 1,
+          "clean": false,
+          "status": "verified"
+        }
+      }
+    },
+    {
+      "filename": "20260606-1324-refactor-export-tasks-pipeline.json",
+      "type": "task",
+      "content": {
+        "schema_version": "2",
+        "producer": "to-tasks",
+        "source": {
+          "type": "seed",
+          "ref": "docs/seeds/20260606-1316-refactor-export-tasks-pipeline.json"
+        },
+        "generated_at": "2026-06-06T13:24:00Z",
+        "branching": {
+          "strategy": "single",
+          "branch": "feat/refactor-export-tasks-pipeline"
+        },
+        "tasks": [
+          {
+            "id": "T-0053",
+            "title": "Convert export-tasks skill to agent and update tiers",
+            "type": "AFK",
+            "task_type": "code",
+            "domain": "personal",
+            "deliverable": "code",
+            "description": "Create `claude-code-shared/agents/export-tasks.md` as a proper agent file (frontmatter: name, description, tools, model: sonnet \u2014 no effort field, no spawn_mode field). The description must be destination-agnostic: remove the 'personal Notion' reference, describe routing to configured destinations via task-routing.json instead. Copy the full process logic from the existing `skills/export-tasks/SKILL.md` into the new agent file. Remove `claude-code-shared/skills/export-tasks/SKILL.md` and its directory. Add export-tasks to `agents/registry.json` with model: sonnet and consumers: [\"dispatch-tasks\"]. Update `resources/model-tiers.json`: remove `\"export-tasks\": \"T3\"` from the skills section, add `\"export-tasks\": \"T2\"` to the agents section, and change `\"dispatch-tasks\": \"T3\"` to `\"dispatch-tasks\": \"T2\"` in the skills section. Run `python ~/.dotfiles/claude-code-shared/scripts/sync-model-tiers.py --apply` to propagate the dispatch-tasks tier change to its skill frontmatter.",
+            "acceptance_criteria": [
+              "`agents/export-tasks.md` exists with name: export-tasks, model: sonnet, and no effort or spawn_mode fields in frontmatter",
+              "`agents/export-tasks.md` description contains no reference to 'personal Notion'",
+              "`skills/export-tasks/` directory is removed",
+              "`agents/registry.json` contains an entry for export-tasks with model: sonnet and consumers: [dispatch-tasks]",
+              "`model-tiers.json` agents section has `export-tasks: T2`; skills section has `dispatch-tasks: T2`",
+              "`skills/dispatch-tasks/SKILL.md` frontmatter shows `effort: medium` after sync-model-tiers runs"
+            ],
+            "blocked_by": [],
+            "status": "done",
+            "branch": null,
+            "pr": null
+          },
+          {
+            "id": "T-0054",
+            "title": "Extract scriptable bash operations from export-tasks into scripts",
+            "type": "AFK",
+            "task_type": "code",
+            "domain": "personal",
+            "deliverable": "code",
+            "description": "Create three scripts in `claude-code-shared/scripts/`: (1) `export-tasks-check-notion-token.sh` \u2014 sources `~/.dotfiles/local/secrets.env` if present, exits 0 if NOTION_PERSONAL_TOKEN is set, exits 1 with a descriptive error message if not; (2) `export-tasks-gh-issue.sh` \u2014 accepts positional args `<title> <body> <org/repo>`, validates all three are non-empty, runs `gh issue create --title \"$1\" --body \"$2\" --label triage --repo \"$3\"`, and prints the returned issue URL to stdout; (3) `export-tasks-notion-page-api.sh` \u2014 accepts positional args `<db_id> <title> <description>`, sources secrets.env, runs the Notion REST API curl call with NOTION_PERSONAL_TOKEN, and prints the returned page URL to stdout on success or a non-zero exit on failure. All three scripts must use `set -euo pipefail` and include argument count validation. Update `agents/export-tasks.md` to call these scripts by absolute path (`~/.dotfiles/claude-code-shared/scripts/<name>.sh`) in place of the inline prose/template blocks for those operations.",
+            "acceptance_criteria": [
+              "`scripts/export-tasks-check-notion-token.sh` exits 1 with a descriptive message when NOTION_PERSONAL_TOKEN is unset",
+              "`scripts/export-tasks-gh-issue.sh` exits non-zero with a usage message when called with fewer than 3 arguments",
+              "`scripts/export-tasks-notion-page-api.sh` exits non-zero with a usage message when called with fewer than 3 arguments",
+              "`agents/export-tasks.md` step 2 token check calls `export-tasks-check-notion-token.sh` instead of inline bash",
+              "`agents/export-tasks.md` step 6 GitHub adapter calls `export-tasks-gh-issue.sh` instead of inline prose template",
+              "`agents/export-tasks.md` step 6 Notion REST API adapter calls `export-tasks-notion-page-api.sh` instead of inline curl template"
+            ],
+            "blocked_by": [
+              "T-0053"
+            ],
+            "status": "done",
+            "branch": null,
+            "pr": null
+          },
+          {
+            "id": "T-0055",
+            "title": "Add scriptable-code rule to repo CLAUDE.md and _active_corporate_domain to task-routing.json",
+            "type": "AFK",
+            "task_type": "code",
+            "domain": "personal",
+            "deliverable": "code",
+            "description": "Edit `/Users/eric/.dotfiles/.claude/CLAUDE.md` to add a new section stating the scriptable-code principle: if something is mechanical and scriptable, it lives in code \u2014 not inline prose or template comments in skill/agent files. Edit `claude-code-shared/resources/task-routing.json` to add `\"_active_corporate_domain\": \"standard-metrics\"` as a top-level doc field adjacent to `_doc`. This field is a human pointer only \u2014 it is not read by any code and must be updated manually whenever the active corporate domain changes.",
+            "acceptance_criteria": [
+              "`/Users/eric/.dotfiles/.claude/CLAUDE.md` contains a section with the scriptable-code rule",
+              "`task-routing.json` top level has `\"_active_corporate_domain\": \"standard-metrics\"` adjacent to `\"_doc\"`"
+            ],
+            "blocked_by": [],
+            "status": "done",
+            "branch": null,
+            "pr": null
+          }
+        ],
+        "follow_ups": []
+      }
+    }
+  ]
+}

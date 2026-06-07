@@ -1,0 +1,164 @@
+{
+  "kind": "condensed",
+  "producer": "clean-scaffolding",
+  "slug": "fix-attribution-pipeline-false-positive",
+  "title": "Fix attribution pipeline false positive",
+  "condensed_at": "2026-06-07T07:03:33Z",
+  "condensed_from": [
+    "20260605-2102-fix-attribution-pipeline-false-positive.json",
+    "20260605-2112-fix-attribution-pipeline-false-positive.json"
+  ],
+  "artifacts": [
+    {
+      "filename": "20260605-2102-fix-attribution-pipeline-false-positive.json",
+      "type": "seed",
+      "content": {
+        "schema_version": "4",
+        "producer": "to-seed",
+        "source": {
+          "type": "session",
+          "ref": null
+        },
+        "title": "Fix attribution pipeline false positive",
+        "slug": "fix-attribution-pipeline-false-positive",
+        "created": "2026-06-05T21:02:00Z",
+        "status": "ready",
+        "iteration": 1,
+        "summary": "Investigation into a silent attribution pipeline failure. The attribution-tracer agent was spawned by the debug skill and claimed to have written a learning record to learnings/unified-learnings.jsonl, but no such record was written. Root cause is a three-layer failure: the debug skill gives no mechanism to derive transcript_path, the attribution-tracer has no input validation to catch a missing or unreadable transcript_path, and the attribution-tracer's summary output does not propagate the grounding judge's verdict \u2014 allowing it to claim success regardless of outcome. All judgment calls resolved. The fix spans attribution-tracer (input validation + honest summary) and the debug skill (transcript path resolution). The missing record itself was a valid attribution, so the learning was lost.",
+        "decisions": [
+          "The attribution record for the missing invalidateQueries call was valid. T-0004 in SpawnedSapien's tasks file (20260604-1727-refund-system.json:81) has the criterion 'On success: Order Item shows refunded state without full page reload', which is underspecified and does not require cache invalidation. The record should have been written.",
+          "The false success claim originated in the attribution-tracer's summary output. The summary can say 'written' regardless of what the grounding judge returned, because the tracer does not propagate the judge's verdict.",
+          "Three-layer fix is required: (1) debug skill must derive and pass transcript_path explicitly when spawning the attribution-tracer, (2) attribution-tracer must fail-fast with an explicit error when transcript_path is absent or the file is unreadable, (3) attribution-tracer must end its summary with either 'WROTE: <id>' on confirmed write or 'NOT WRITTEN: <reason>' on rejection or error.",
+          "Fix priority: Layer 3 (summary honesty) first, Layer 2 (input validation) second, Layer 1 (transcript path derivation in debug skill) last.",
+          "log-learning.py writes to ~/.dotfiles/claude-code-shared/learnings/unified-learnings.jsonl always. This is hardcoded and by design. Writes are never project-relative.",
+          "If the attribution had been written correctly, the grounding judge would have demoted confidence from confirmed to candidate because the tracer's quote ('shows refunded state without page reload') was a paraphrase of the actual criterion ('On success: Order Item shows refunded state without full page reload')."
+        ],
+        "open_threads": [],
+        "disposed_threads": [],
+        "next_action": "Run /to-tasks to generate task breakdown for the three-layer attribution pipeline fix",
+        "problem_statement": "The attribution-tracer agent claims to write learning records but silently fails. When the grounding judge rejects a record (or log-learning.py errors), the tracer's summary still reports success. The debug skill also provides no concrete mechanism to derive transcript_path, so spawns can silently pass an absent or wrong path.",
+        "solution": "Patch the attribution-tracer to validate transcript_path on entry and to end its summary with an explicit WROTE/NOT-WRITTEN verdict. Patch the debug skill's attribution-capture block to derive and pass transcript_path via the same env-var mechanism used by filter-session-transcript.sh.",
+        "evidence": "Transcript review from a SpawnedSapien debug session showed the attribution-tracer claiming success, but ~/.dotfiles/claude-code-shared/learnings/unified-learnings.jsonl contained no corresponding entry. The SpawnedSapien project has no learnings/ directory at all.",
+        "implementation_decisions": [
+          "attribution-tracer: Add input validation before Step 1. If transcript_path is absent or the file at that path does not exist, return {\"error\": \"transcript_path missing or unreadable: <path>\"} and stop. Do not proceed to draft a record.",
+          "attribution-tracer: After the grounding judge returns, the final output summary must contain one of two explicit terminal lines: 'WROTE: <id>' (judge verdict pass and log-learning.py exited 0) or 'NOT WRITTEN: <reason>' (judge verdict rejected, log-learning.py errored, or input validation failed). Echo the judge's raw verdict JSON before the terminal line.",
+          "debug skill (attribution-capture block): Before spawning the attribution-tracer, resolve transcript_path using $CLAUDE_CODE_SESSION_ID and $CLAUDE_CONFIG_DIR env vars (same mechanism as filter-session-transcript.sh). Pass the resolved absolute path explicitly in the agent prompt under the transcript_path key."
+        ],
+        "testing_decisions": [
+          "No unit tests for infra (skill/agent) changes per project convention"
+        ],
+        "out_of_scope": [
+          {
+            "text": "Change where log-learning.py writes",
+            "rationale": "Writing to the shared learnings dir is by design. Centralizing learning records cross-project is the intended behavior."
+          },
+          {
+            "text": "Change the grounding judge's paraphrase demotion threshold",
+            "rationale": "The existing behavior (demote to candidate on paraphrase) is correct and was working as designed in this case."
+          }
+        ],
+        "risks_and_tradeoffs": [
+          "Adding fail-fast input validation to attribution-tracer means any session where transcript_path is not resolvable will produce no learning record at all rather than a candidate-confidence record. This is the correct tradeoff \u2014 a fabricated record is worse than no record."
+        ],
+        "verification": {
+          "iteration": 1,
+          "personas": [
+            "grounding",
+            "accuracy",
+            "completeness",
+            "coherence"
+          ],
+          "refutations_upheld": 0,
+          "refutations_screened": 2,
+          "clean": true,
+          "status": "verified"
+        }
+      }
+    },
+    {
+      "filename": "20260605-2112-fix-attribution-pipeline-false-positive.json",
+      "type": "task",
+      "content": {
+        "schema_version": "2",
+        "producer": "to-tasks",
+        "source": {
+          "type": "seed",
+          "ref": "docs/seeds/20260605-2102-fix-attribution-pipeline-false-positive.json"
+        },
+        "generated_at": "2026-06-05T21:12:00Z",
+        "branching": {
+          "strategy": "single",
+          "branch": "fix/attribution-pipeline-hardening"
+        },
+        "tasks": [
+          {
+            "id": "T-0037",
+            "title": "Add explicit WROTE/NOT-WRITTEN verdict to attribution-tracer summary",
+            "type": "AFK",
+            "description": "Patch claude-code-shared/agents/attribution-tracer.md so the agent's final output is honest about whether the learning record was written. After the artifact-grounding-judge returns its verdict, the attribution-tracer must echo the judge's raw verdict JSON, then terminate with exactly one of: 'WROTE: <id>' (judge verdict pass AND log-learning.py exited 0) or 'NOT WRITTEN: <reason>' (judge verdict rejected, log-learning.py errored, or any earlier failure). The current behavior allows the summary to say 'written' regardless of outcome. This is the Layer 3 fix (summary honesty).",
+            "acceptance_criteria": [
+              "attribution-tracer.md contains an explicit output contract section requiring the agent to end its summary with 'WROTE: <id>' or 'NOT WRITTEN: <reason>'",
+              "The output contract specifies that the judge's raw verdict JSON must be echoed before the terminal line",
+              "The output contract covers all three failure cases: verdict rejected, log-learning.py non-zero exit, and input validation failure (pre-emptive for T-0038)",
+              "A reviewer can confirm the change by reading attribution-tracer.md without running the agent"
+            ],
+            "blocked_by": [],
+            "status": "done",
+            "branch": null,
+            "pr": null
+          },
+          {
+            "id": "T-0038",
+            "title": "Add transcript_path input validation to attribution-tracer",
+            "type": "AFK",
+            "description": "Patch claude-code-shared/agents/attribution-tracer.md to add a Step 0 (before the existing Step 1 transcript read) that validates transcript_path. If transcript_path is absent from the input prompt or if the file at that path does not exist on disk, the agent must immediately return {\"error\": \"transcript_path missing or unreadable: <path>\"} and stop. It must not proceed to draft a record, draft evidence, or spawn the grounding judge. This is the Layer 2 fix (fail-fast on bad input). The terminal output rule from T-0037 applies: this exit path must emit 'NOT WRITTEN: transcript_path missing or unreadable'.",
+            "acceptance_criteria": [
+              "attribution-tracer.md contains a Step 0 input validation block before Step 1",
+              "Step 0 specifies the exact error JSON to return when transcript_path is absent or unreadable",
+              "Step 0 specifies that the agent stops immediately \u2014 no record draft, no grounding judge spawn",
+              "The error path emits the NOT WRITTEN terminal line per the T-0037 output contract",
+              "A reviewer can confirm the change by reading attribution-tracer.md without running the agent"
+            ],
+            "blocked_by": [
+              "T-0037"
+            ],
+            "status": "done",
+            "branch": null,
+            "pr": null
+          },
+          {
+            "id": "T-0039",
+            "title": "Add transcript_path resolution to debug skill attribution-capture block",
+            "type": "AFK",
+            "description": "Patch claude-code-shared/skills/debug/SKILL.md's attribution-capture block to derive and pass transcript_path explicitly before spawning the attribution-tracer agent. The current block says transcript_path is 'always available' but provides no mechanism to obtain it. Add a concrete bash command using $CLAUDE_CODE_SESSION_ID and $CLAUDE_CONFIG_DIR env vars (the same mechanism filter-session-transcript.sh uses) to resolve the absolute path to the current session JSONL file. Require that the resolved path be passed explicitly in the agent spawn prompt under the transcript_path key. This is the Layer 1 fix (transcript path derivation at the call site).",
+            "acceptance_criteria": [
+              "debug/SKILL.md attribution-capture block contains a concrete bash command to resolve transcript_path using $CLAUDE_CODE_SESSION_ID and $CLAUDE_CONFIG_DIR before spawning the attribution-tracer",
+              "The block explicitly states that the resolved path must be passed in the agent prompt under the transcript_path key",
+              "The vague 'always available' language is replaced with the concrete resolution mechanism",
+              "A reviewer can confirm the change by reading debug/SKILL.md without running the skill"
+            ],
+            "blocked_by": [],
+            "status": "done",
+            "branch": null,
+            "pr": "gh pr create --title \"Fix attribution pipeline false positives\" --body \"$(cat <<EOF\n### Fix attribution pipeline false positives\n\nThe attribution-tracer silently claimed success when the grounding judge rejected a record or log-learning.py errored. The debug skill also had no mechanism to resolve transcript_path, causing silent empty-path failures.\n\n**Changes:**\n- attribution-tracer: Add Step 0 input validation (fail-fast on missing/unreadable transcript_path)\n- attribution-tracer: Add terminal output rule requiring WROTE/<id> or NOT WRITTEN/<reason> after judge verdict\n- debug skill: Replace vague \"always available\" transcript_path note with concrete bash derivation using CLAUDE_CODE_SESSION_ID and CLAUDE_CONFIG_DIR\nEOF\n)\""
+          }
+        ],
+        "follow_ups": [
+          {
+            "id": "FU-001",
+            "title": "Re-run attribution trace for the lost SpawnedSapien invalidateQueries learning",
+            "steps": [
+              "Switch to the SpawnedSapien project directory: cd /Users/eric/Documents/dev/personal/SpawnedSapien",
+              "Confirm T-0004 criterion exists: grep -n 'refund.*reload\\|reload.*refund' docs/tasks/20260604-1727-refund-system.json",
+              "Open a new Claude Code session in SpawnedSapien and invoke /debug with the confirmed issue: 'useRefundOrderItem.ts never called queryClient.invalidateQueries after success, causing item.refundedAt to stay null until page reload. Fix: void queryClient.invalidateQueries({ queryKey: [\"orderHistory\"] }) after setStatus(\"done\") in useRefundOrderItem.ts. Root criterion: T-0004 acceptance criterion \"On success: Order Item shows refunded state without full page reload\" was underspecified.'",
+              "Verify the attribution-tracer summary ends with 'WROTE: <id>' (not a fabricated success claim)",
+              "Confirm the entry appears in ~/.dotfiles/claude-code-shared/learnings/unified-learnings.jsonl"
+            ],
+            "trigger_task": "T-0039",
+            "source": "planned"
+          }
+        ]
+      }
+    }
+  ]
+}

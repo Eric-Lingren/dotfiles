@@ -16,7 +16,10 @@ Read decisions from the live conversation only. Do not extract decisions from an
 
 ### Resume grill (argument present)
 
-Read the file at the given path and check for `open_threads`:
+Route the path through resolve-ref.sh before reading (see `resources/resolve-ref-pattern.md`):
+- Run `bash ~/.dotfiles/claude-code-shared/scripts/resolve-ref.sh $(basename <path>)`. On archive hit (output starts with `ARCHIVE:`), use the extracted content. On not-found (exit non-zero), surface the diagnostic and ask "Continue anyway?" — bypass rebuilds context from conversation.
+
+Then read the file and check for `open_threads`:
 
 **(a) open_threads is non-empty:** enter resume mode.
 - Load `decisions` (from the seed or handoff's embedded base seed) as settled givens. Challenge these only if the live conversation or codebase evidence directly contradicts them.

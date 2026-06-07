@@ -10,7 +10,10 @@ effort: xhigh
 
 **Trigger:** argument-presence detection. If ARGUMENTS contains a path, this is a resume. Do not inspect the schema or validate the file type — just check whether a path was passed.
 
-**On resume, read the file at the given path and check for `open_threads`:**
+**On resume, route the path through resolve-ref.sh before reading** (see `resources/resolve-ref-pattern.md`):
+- Run `bash ~/.dotfiles/claude-code-shared/scripts/resolve-ref.sh $(basename <path>)`. On archive hit (output starts with `ARCHIVE:`), use the extracted content. On not-found (exit non-zero), surface the diagnostic and ask "Continue anyway?" — bypass rebuilds context from conversation. Then:
+
+**Check for `open_threads`:**
 
 **(a) open_threads is non-empty:** enter resume mode.
 - Treat `decisions` (from the seed or handoff's embedded base seed) as settled givens. Do not re-litigate them.
