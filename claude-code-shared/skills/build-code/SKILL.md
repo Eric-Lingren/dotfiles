@@ -49,6 +49,8 @@ Always ask explicitly. Do not infer from context:
    Show every file found regardless of prefix format. Present them as numbered options with the full filename.
 2. **Which task ID?** Ask for a specific task ID (e.g. `T-0005`) or leave blank to run all `not_started` tasks in order.
 
+Route the chosen path through resolve-ref.sh before reading (see `resources/resolve-ref-pattern.md`): Run `bash ~/.dotfiles/claude-code-shared/scripts/resolve-ref.sh $(basename <path>)`. On archive hit (output starts with `ARCHIVE:`), use the extracted content. On not-found (exit non-zero), surface the diagnostic and ask "Continue anyway?" — bypass rebuilds context from conversation.
+
 Read the chosen JSON file and the PRD it references (`prd` field).
 
 ### 2. Determine the run queue

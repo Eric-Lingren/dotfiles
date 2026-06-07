@@ -82,8 +82,9 @@ Set `producer: "to-seed"`. Set `source: {"type": "session", "ref": null}` for fr
 
 Run this step only when a handoff path was passed in ARGUMENTS. Skip it entirely in Mode 1.
 
-1. Read the handoff doc at the given path.
-2. Find the machine-readable seed-context block inside it (a fenced ```json block under a `## Seed Context` heading). Parse out `base_seed` (the path to the original seed file).
+1. Route the handoff path through resolve-ref.sh before reading (see `resources/resolve-ref-pattern.md`): Run `bash ~/.dotfiles/claude-code-shared/scripts/resolve-ref.sh $(basename <handoff-path>)`. On archive hit (output starts with `ARCHIVE:`), use the extracted content. On not-found (exit non-zero), surface the diagnostic and ask "Continue anyway?" — bypass rebuilds context from conversation.
+2. Read the handoff doc (active path or archive content from step 1).
+3. Find the machine-readable seed-context block inside it (a fenced ```json block under a `## Seed Context` heading). Parse out `base_seed` (the path to the original seed file).
 3. Read the base seed JSON. This is the merge foundation — it carries every decision and field from the original session, so nothing from that conversation is lost.
 4. Synthesize the current grill conversation's resolutions, then merge onto the base seed:
    - Apply thread classification (step 2 above) to ALL threads — from both the handoff and the current conversation.

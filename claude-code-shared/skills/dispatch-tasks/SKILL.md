@@ -33,6 +33,8 @@ If a path argument was passed (e.g. `/dispatch-tasks docs/tasks/20260606-0129-my
 
 Otherwise, list all `*.json` files in `docs/tasks/` and ask the user to choose.
 
+Route the task file path through resolve-ref.sh before reading (see `resources/resolve-ref-pattern.md`): Run `bash ~/.dotfiles/claude-code-shared/scripts/resolve-ref.sh $(basename <path>)`. On archive hit (output starts with `ARCHIVE:`), use the extracted content. On not-found (exit non-zero), surface the diagnostic and ask "Continue anyway?" — bypass rebuilds context from conversation.
+
 Read the task file. Read `~/.dotfiles/claude-code-shared/resources/task-routing.json` to get the runners map.
 
 ### 2. Partition items by task_type
