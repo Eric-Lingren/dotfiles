@@ -1,0 +1,54 @@
+{
+  "schema_version": "4",
+  "producer": "to-seed",
+  "source": {"type": "session", "ref": null},
+  "title": "Fix attribution pipeline false positive",
+  "slug": "fix-attribution-pipeline-false-positive",
+  "created": "2026-06-05T21:02:00Z",
+  "status": "ready",
+  "iteration": 1,
+  "summary": "Investigation into a silent attribution pipeline failure. The attribution-tracer agent was spawned by the debug skill and claimed to have written a learning record to learnings/unified-learnings.jsonl, but no such record was written. Root cause is a three-layer failure: the debug skill gives no mechanism to derive transcript_path, the attribution-tracer has no input validation to catch a missing or unreadable transcript_path, and the attribution-tracer's summary output does not propagate the grounding judge's verdict — allowing it to claim success regardless of outcome. All judgment calls resolved. The fix spans attribution-tracer (input validation + honest summary) and the debug skill (transcript path resolution). The missing record itself was a valid attribution, so the learning was lost.",
+  "decisions": [
+    "The attribution record for the missing invalidateQueries call was valid. T-0004 in SpawnedSapien's tasks file (20260604-1727-refund-system.json:81) has the criterion 'On success: Order Item shows refunded state without full page reload', which is underspecified and does not require cache invalidation. The record should have been written.",
+    "The false success claim originated in the attribution-tracer's summary output. The summary can say 'written' regardless of what the grounding judge returned, because the tracer does not propagate the judge's verdict.",
+    "Three-layer fix is required: (1) debug skill must derive and pass transcript_path explicitly when spawning the attribution-tracer, (2) attribution-tracer must fail-fast with an explicit error when transcript_path is absent or the file is unreadable, (3) attribution-tracer must end its summary with either 'WROTE: <id>' on confirmed write or 'NOT WRITTEN: <reason>' on rejection or error.",
+    "Fix priority: Layer 3 (summary honesty) first, Layer 2 (input validation) second, Layer 1 (transcript path derivation in debug skill) last.",
+    "log-learning.py writes to ~/.dotfiles/claude-code-shared/learnings/unified-learnings.jsonl always. This is hardcoded and by design. Writes are never project-relative.",
+    "If the attribution had been written correctly, the grounding judge would have demoted confidence from confirmed to candidate because the tracer's quote ('shows refunded state without page reload') was a paraphrase of the actual criterion ('On success: Order Item shows refunded state without full page reload')."
+  ],
+  "open_threads": [],
+  "disposed_threads": [],
+  "next_action": "Run /to-tasks to generate task breakdown for the three-layer attribution pipeline fix",
+  "problem_statement": "The attribution-tracer agent claims to write learning records but silently fails. When the grounding judge rejects a record (or log-learning.py errors), the tracer's summary still reports success. The debug skill also provides no concrete mechanism to derive transcript_path, so spawns can silently pass an absent or wrong path.",
+  "solution": "Patch the attribution-tracer to validate transcript_path on entry and to end its summary with an explicit WROTE/NOT-WRITTEN verdict. Patch the debug skill's attribution-capture block to derive and pass transcript_path via the same env-var mechanism used by filter-session-transcript.sh.",
+  "evidence": "Transcript review from a SpawnedSapien debug session showed the attribution-tracer claiming success, but ~/.dotfiles/claude-code-shared/learnings/unified-learnings.jsonl contained no corresponding entry. The SpawnedSapien project has no learnings/ directory at all.",
+  "implementation_decisions": [
+    "attribution-tracer: Add input validation before Step 1. If transcript_path is absent or the file at that path does not exist, return {\"error\": \"transcript_path missing or unreadable: <path>\"} and stop. Do not proceed to draft a record.",
+    "attribution-tracer: After the grounding judge returns, the final output summary must contain one of two explicit terminal lines: 'WROTE: <id>' (judge verdict pass and log-learning.py exited 0) or 'NOT WRITTEN: <reason>' (judge verdict rejected, log-learning.py errored, or input validation failed). Echo the judge's raw verdict JSON before the terminal line.",
+    "debug skill (attribution-capture block): Before spawning the attribution-tracer, resolve transcript_path using $CLAUDE_CODE_SESSION_ID and $CLAUDE_CONFIG_DIR env vars (same mechanism as filter-session-transcript.sh). Pass the resolved absolute path explicitly in the agent prompt under the transcript_path key."
+  ],
+  "testing_decisions": [
+    "No unit tests for infra (skill/agent) changes per project convention"
+  ],
+  "out_of_scope": [
+    {
+      "text": "Change where log-learning.py writes",
+      "rationale": "Writing to the shared learnings dir is by design. Centralizing learning records cross-project is the intended behavior."
+    },
+    {
+      "text": "Change the grounding judge's paraphrase demotion threshold",
+      "rationale": "The existing behavior (demote to candidate on paraphrase) is correct and was working as designed in this case."
+    }
+  ],
+  "risks_and_tradeoffs": [
+    "Adding fail-fast input validation to attribution-tracer means any session where transcript_path is not resolvable will produce no learning record at all rather than a candidate-confidence record. This is the correct tradeoff — a fabricated record is worse than no record."
+  ],
+  "verification": {
+    "iteration": 1,
+    "personas": ["grounding", "accuracy", "completeness", "coherence"],
+    "refutations_upheld": 0,
+    "refutations_screened": 2,
+    "clean": true,
+    "status": "verified"
+  }
+}

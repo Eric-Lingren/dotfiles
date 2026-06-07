@@ -1,0 +1,47 @@
+{
+  "schema_version": "4",
+  "producer": "to-seed",
+  "source": {"type": "session", "ref": null},
+  "title": "Refactor export-tasks: agent conversion, tier downgrades, and code extraction",
+  "slug": "refactor-export-tasks-pipeline",
+  "created": "2026-06-06T13:16:00Z",
+  "summary": "A grill session reviewing the dispatch-tasks PR uncovered seven structural issues in export-tasks and related config. All were resolved: export-tasks converts to a true agent (agents/export-tasks.md), its description becomes routing-config-driven, both dispatch-tasks and export-tasks drop from T3 to T2, all bash operations that can be codified must be codified per the user's stated principle, a scriptable-code rule is added to the repo CLAUDE.md, the corporate wall label is retained, and an _active_corporate_domain doc field is added to task-routing.json.",
+  "status": "ready",
+  "iteration": 1,
+  "decisions": [
+    "Convert export-tasks from a skill (skills/export-tasks/SKILL.md) to a true agent (agents/export-tasks.md): drop the effort and spawn_mode frontmatter fields, add a tools list, keep model: sonnet.",
+    "The export-tasks description becomes destination-agnostic: remove the 'personal Notion' reference and describe routing to configured destinations via task-routing.json instead.",
+    "export-tasks drops from T3 to T2 in model-tiers.json. The work is mechanical (fixed 8-step script, API calls, file writeback) with no deep reasoning required.",
+    "dispatch-tasks drops from T3 to T2 in model-tiers.json. Routing logic is fully specified in task-routing.json; no synthesis or context-awareness required beyond following the config.",
+    "Per the user's stated principle 'if something can be written in code, it should be written in code': all bash operations in export-tasks that are mechanical and scriptable (token sourcing check, GitHub issue creation, Notion REST call) must be codified as proper scripts in scripts/ with real argument handling. No bash operations remain as prose or inline templates.",
+    "Add a rule to the repo CLAUDE.md (/Users/eric/.dotfiles/.claude/CLAUDE.md): if something is mechanical and scriptable, it lives in code. This prevents interpretation drift.",
+    "Keep the corporate wall tier label in task-routing.json. It is concrete and unambiguous.",
+    "Add an _active_corporate_domain doc field to task-routing.json pointing to the current corporate domain (standard-metrics). This is a human pointer only, not read by code, updated whenever the active corporate domain changes."
+  ],
+  "open_threads": [],
+  "disposed_threads": [],
+  "next_action": "Run /to-tasks to generate the implementation task breakdown",
+  "problem_statement": "The dispatch-tasks PR added export-tasks as a skill with spawn_mode: agent, but the repo's agent mechanism resolves subagent_type via the agents/ directory. export-tasks also hardcodes scriptable operations as prose, carries an overly-specific description, and has inflated tier assignments.",
+  "solution": "Convert export-tasks to a proper agent in agents/, update its description and tiers, codify all scriptable bash operations as scripts in scripts/, add a scriptable-code rule to the repo CLAUDE.md, and add an _active_corporate_domain pointer to task-routing.json.",
+  "implementation_decisions": [
+    "Agent frontmatter fields: name, description, tools (list), model. No effort field. No spawn_mode field.",
+    "Extracted scripts land in claude-code-shared/scripts/ with real argument handling (no placeholder values inline).",
+    "The export-tasks skill-to-agent conversion and any dispatch-tasks reference updates must land in the same commit since Agent(subagent_type='export-tasks') only resolves if the agent is registered.",
+    "_active_corporate_domain is a top-level doc field in task-routing.json, not an operational field and not read by any code.",
+    "The scriptable-code rule goes in /Users/eric/.dotfiles/.claude/CLAUDE.md."
+  ],
+  "risks_and_tradeoffs": [
+    "dispatch-tasks calls Agent(subagent_type='export-tasks'), which only resolves if export-tasks is registered as an agent. The skill-to-agent conversion and any dispatch-tasks reference updates must land together."
+  ],
+  "further_notes": [
+    "spawn_mode: agent in the export-tasks frontmatter is the only use of that field across the entire repo. It is removed as part of the agent conversion with no other changes needed to support it."
+  ],
+  "verification": {
+    "iteration": 1,
+    "personas": ["grounding", "accuracy", "completeness", "coherence"],
+    "refutations_upheld": 1,
+    "refutations_screened": 1,
+    "clean": false,
+    "status": "verified"
+  }
+}

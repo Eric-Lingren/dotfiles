@@ -25,10 +25,10 @@
     },
     "to-tasks": {
       "next": [
-        {"skill": "run-tasks", "when": "tasks are ready to execute"}
+        {"skill": "dispatch-tasks", "when": "tasks are ready to execute"}
       ]
     },
-    "run-tasks": {
+    "dispatch-tasks": {
       "next": [
         {"skill": "to-e2e-tasks", "when": "want e2e coverage for the completed changes"}
       ]

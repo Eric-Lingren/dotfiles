@@ -157,6 +157,30 @@ Before finalizing tasks for any auth-gated route, check for a storageState file 
 
 Never skip `browser_verify` on an auth-gated route without first checking for storageState. "Route is auth-gated" is not a valid reason to omit verification.
 
+### 3a. Capture deferred[] items as triage tasks
+
+After emitting build tasks, scan `deferred[]` from the seed. If `deferred[]` is empty or absent, skip this section and produce no triage tasks.
+
+For each item in `deferred[]`, emit one triage task:
+
+- **title**: first sentence of `deferred.text` (up to the first `.` or end of string)
+- **description**: full `deferred.text`. Append `deferred.context` on a new paragraph if present.
+- **type**: `AFK` (triage tasks are routed mechanically, no keyboard action required)
+- **task_type**: `triage`
+- **domain**: resolve from `~/.dotfiles/claude-code-shared/resources/repo-policy.json` using the current repo. Run `git remote get-url origin`, normalize to `Org/Repo` format (strip protocol/host, remove `.git` suffix), look up the `domain` field on that entry. Default to `"personal"` if the repo is not found.
+- **deliverable**: classify by what the item produces. Use `"code"` when the item describes building, implementing, extending, or modifying software, skills, agents, scripts, adapters, schemas, or any other code artifact — even if the words "PR" or "code change" do not appear literally. Use `"non-code"` only for items that genuinely produce no code output: research, reading lists, process planning, documentation, or organizational notes.
+- **acceptance_criteria**: a single string: `"Item has been exported to its destination by export-tasks"`.
+- **blocked_by**: `[]` unless `deferred.context` explicitly names a dependency on a code task ID (`T-XXXX`) in the same file.
+- **status**: `not_started`
+- **branch**: `null`
+- **pr**: `null`
+- **seed_ref**: seed filename basename only (e.g. `20260606-1550-foo.json`, no directory prefix). Derive with `basename(seed_path)`.
+- **task_ref**: output task file filename basename only (e.g. `20260606-1601-foo.json`, no directory prefix). Use the filename produced by `task-filename.sh` in step 6.
+
+Omit `browser_verify` and `linear_url` for triage tasks. Do not emit triage tasks for items in `out_of_scope[]` or `disposed_threads[]`.
+
+Append triage tasks after all build tasks in the `tasks[]` array.
+
 ### 3b. Infer follow-ups from the source artifact
 
 Scan the source artifact for manual actions outside the task graph: env var provisioning, DNS config, external service setup, database migrations, manual testing, deployment steps, credential rotation, etc.
@@ -199,18 +223,21 @@ Use that schema exactly. Do not guess field names or structure.
 
 Set `"producer": "to-tasks"`.
 
+Set `source.ref` to the seed filename basename only (e.g. `"20260606-1550-foo.json"`), not a relative or absolute path. Strip the directory prefix when writing this field.
+
 After writing, output a single line:
 
 ```
 docs created here: docs/tasks/<filename>
 ```
 
-Then output the handoff block:
+Run `python3 ~/.dotfiles/claude-code-shared/scripts/print-skill-next-steps.py to-tasks` and print the output as the closing suggestion. Output text like:
 
 ```
+docs created here: docs/tasks/<filename>
+
 Next steps:
-  /run-tasks docs/tasks/<filename>   — implement tasks with TDD
-  /to-e2e-tasks                      — add e2e coverage after run-tasks (optional)
+<script output>
 ```
 
 <!-- learning-capture:start -->
@@ -231,5 +258,5 @@ session transcript). The agent builds the full schema-valid entry, runs groundin
 verification, and writes if grounded.
 **What's next:**
 <!-- skill-done: to-tasks -->
-  - `/run-tasks` — tasks are ready to execute
+  - `/dispatch-tasks` — tasks are ready to execute
 <!-- learning-capture:end -->

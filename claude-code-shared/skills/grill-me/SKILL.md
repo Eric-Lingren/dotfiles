@@ -43,18 +43,14 @@ When all major branches are resolved, signal the end explicitly:
 
 > "Grill session complete. All branches resolved."
 
-Then ask the user ONE question using `AskUserQuestion`:
+Then print a text recommendation — do NOT use `AskUserQuestion` or any blocking UI element:
 
-> "What would you like to do with this?"
-
-Options:
-- **Create a seed** - capture decisions and context as a JSON IR (runs `/to-seed`). From there you can render a PRD, generate tasks, or prototype.
-- **Nothing yet** - session was just for thinking it through
+> "Next: `/to-seed` to capture these decisions as a JSON IR, then `/to-tasks` or `/to-prd-html` from there."
 
 **CRITICAL RULES:**
-- Do NOT implement any code, create any files, or make any changes after the grill session ends without explicit user authorization from this question.
-- Answering "yes" or "yep" to a specific scoped question during the session ("do I have permission to delete X?") does NOT authorize broader implementation. Specific questions have specific scope.
-- Wait for the user's answer before doing anything.
+- Do NOT implement any code, create any files, or make any changes after the grill session ends unless the user explicitly asks.
+- Answering "yes" or "yep" to a specific scoped question during the session does NOT authorize broader implementation. Specific questions have specific scope.
+- Do not block. Print the suggestion and stop.
 
 <!-- learning-capture:start -->
 ## Learning Capture

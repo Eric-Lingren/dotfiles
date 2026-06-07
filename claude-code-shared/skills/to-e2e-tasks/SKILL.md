@@ -1,6 +1,6 @@
 ---
 name: to-e2e-tasks
-description: Analyze branch changes, discover critical user-facing workflows, grill the test plan, and generate a Playwright e2e tasks JSON file for run-tasks. Output is a tasks JSON plan, not implemented tests. Use when user wants to plan e2e coverage after implementing a feature.
+description: Analyze branch changes, discover critical user-facing workflows, grill the test plan, and generate a Playwright e2e tasks JSON file for build-code. Output is a tasks JSON plan, not implemented tests. Use when user wants to plan e2e coverage after implementing a feature.
 model: sonnet
 effort: high
 ---
@@ -21,7 +21,7 @@ the current model. Delegate only the menial searching.
 
 # To E2E Tasks
 
-Analyze the current branch's changes, discover which critical user-facing workflows are affected, stress-test the test plan with the user, and output a Playwright e2e tasks JSON file to `docs/tasks/` that `/run-tasks` can execute. This skill is a planner — it produces a task list, not implemented test code.
+Analyze the current branch's changes, discover which critical user-facing workflows are affected, stress-test the test plan with the user, and output a Playwright e2e tasks JSON file to `docs/tasks/` that `/build-code` can execute. This skill is a planner — it produces a task list, not implemented test code.
 
 ## Contract
 
@@ -217,7 +217,7 @@ Output the handoff block:
 
 ```
 Next steps:
-  /run-tasks docs/tasks/<filename>   — implement the e2e tests with TDD
+  /build-code docs/tasks/<filename>   — implement the e2e tests with TDD
 ```
 
 <!-- learning-capture:start -->

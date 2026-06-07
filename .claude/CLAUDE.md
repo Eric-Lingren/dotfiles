@@ -15,6 +15,10 @@ Key shared paths:
 
 **Exception — gx git toolkit:** Skills may invoke `~/.dotfiles/.scripts/gx*` verbs (`gxcheck`, `gxpush`, `gxmove`, `gxclean`, `gxsync`) via absolute path `~/.dotfiles/.scripts/<verb>`. These are intentionally outside `claude-code-shared/` and the path restriction above does not apply to them.
 
+## Scriptable-code rule
+
+If something is mechanical and scriptable, it lives in code. Bash operations, API calls, token checks, and external writes must be implemented as scripts in `claude-code-shared/scripts/` with real argument handling. Do not leave these as inline prose, template comments, or copy-paste blocks inside skill or agent files.
+
 ## Delegate menial work to Haiku
 
 Push pure read-only lookups (multi-file grep/glob, "where is X", mapping a dir, reading many files to locate something, fetching a URL) to the `caveman:cavecrew-investigator` subagent (Haiku) instead of running them on the session model. Keep reasoning and edits on the session model. Skills that do heavy searching restate this; this is the default everywhere else.

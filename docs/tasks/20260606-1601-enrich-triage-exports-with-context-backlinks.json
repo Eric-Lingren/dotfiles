@@ -1,0 +1,90 @@
+{
+  "schema_version": "2",
+  "producer": "to-tasks",
+  "source": { "type": "seed", "ref": "20260606-1550-enrich-triage-exports-with-context-backlinks.json" },
+  "generated_at": "2026-06-06T16:01:00Z",
+  "branching": {
+    "strategy": "single",
+    "branch": "feat/dispatch-tasks-pipeline"
+  },
+  "tasks": [
+    {
+      "id": "T-0059",
+      "title": "Add seed_ref, task_ref, and condensed_from to JSON schemas",
+      "type": "AFK",
+      "description": "Update task-schema.json to add two optional string fields (seed_ref, task_ref) to task item properties. Update seed-schema.json to add an optional condensed_from field (array of strings). Both changes are backward-compatible — existing files without these fields still pass validation.",
+      "acceptance_criteria": [
+        "task-schema.json defines seed_ref and task_ref as optional string properties in the task items block",
+        "seed-schema.json defines condensed_from as an optional array of strings",
+        "validate-schema.sh passes with exit 0 on all existing files in docs/tasks/",
+        "validate-schema.sh passes with exit 0 on all existing files in docs/seeds/"
+      ],
+      "blocked_by": [],
+      "status": "done",
+      "branch": null,
+      "pr": null
+    },
+    {
+      "id": "T-0060",
+      "title": "Update to-tasks to enrich triage emission with context and backlinks",
+      "type": "AFK",
+      "description": "Update to-tasks SKILL.md step 3a to enrich triage task items emitted from deferred[] entries: set description = deferred.text + newline + deferred.context (if present); set seed_ref = seed filename basename only (no directory prefix); set task_ref = output task file filename basename only. Also update step 6: source.ref is written as basename only (e.g. '20260606-1550-foo.json'), not a relative path.",
+      "acceptance_criteria": [
+        "SKILL.md step 3a instructs: description = deferred.text + deferred.context (if present, separated by newline), seed_ref = seed basename, task_ref = output task file basename",
+        "SKILL.md step 6 instructs: source.ref is the seed filename basename only",
+        "A triage task emitted from a deferred[] item that has a context field carries that context appended to its description"
+      ],
+      "blocked_by": ["T-0059"],
+      "status": "done",
+      "branch": null,
+      "pr": null
+    },
+    {
+      "id": "T-0061",
+      "title": "Render backlink footer in export-tasks for non-corporate wall items",
+      "type": "AFK",
+      "description": "Update export-tasks (agent and/or adapter scripts) to append a backlink footer to the issue/page body for triage items where the destination wall is not 'corporate'. After resolving the adapter for a triage item, read the wall value from task-routing.json using the item's domain. If wall != 'corporate', append the following after the description body: '---\\nseed: <seed_ref>\\ntask: <task_ref>\\ntask_id: <id>'. Corporate-wall items (standard-metrics) receive no backlinks — suppressed entirely.",
+      "acceptance_criteria": [
+        "export-tasks appends the backlink footer for personal-wall and project-wall items",
+        "export-tasks omits the backlink footer for corporate-wall items",
+        "Footer format is exactly: '---\\nseed: <seed_ref>\\ntask: <task_ref>\\ntask_id: <id>'",
+        "wall value is read from task-routing.json destinations[domain].wall, not hardcoded"
+      ],
+      "blocked_by": ["T-0059"],
+      "status": "done",
+      "branch": null,
+      "pr": null
+    },
+    {
+      "id": "T-0062",
+      "title": "Corporate triage item enrichment and backlink strategy",
+      "type": "AFK",
+      "description": "Corporate triage item enrichment and backlink strategy.\n\nPersonal-wall items now carry seed_ref + task_ref backlinks and per-item context. Corporate-wall items are stripped of backlinks at export time. The open question is whether corporate items should receive any enrichment at all, or whether a separate enrichment path exists (e.g. Linear description fields populated differently).",
+      "acceptance_criteria": ["Item has been exported to its destination by export-tasks"],
+      "blocked_by": [],
+      "status": "done",
+      "branch": null,
+      "pr": null,
+      "task_type": "triage",
+      "domain": "personal",
+      "deliverable": "code",
+      "export_url": "https://github.com/Eric-Lingren/dotfiles/issues/24"
+    },
+    {
+      "id": "T-0063",
+      "title": "clean-scaffolding archival structure",
+      "type": "AFK",
+      "description": "clean-scaffolding archival structure.\n\nCurrently clean-scaffolding deletes seeds, tasks, handoffs. With backlinks now pointing to filenames, archival moves are safe (filename-only refs resolve via find). The user is considering a Django-migration-style condensation approach but has not settled the structure. condensed_from field in seed schema is a prerequisite for this.",
+      "acceptance_criteria": ["Item has been exported to its destination by export-tasks"],
+      "blocked_by": [],
+      "status": "done",
+      "branch": null,
+      "pr": null,
+      "task_type": "triage",
+      "domain": "personal",
+      "deliverable": "code",
+      "export_url": "https://github.com/Eric-Lingren/dotfiles/issues/25"
+    }
+  ],
+  "follow_ups": []
+}

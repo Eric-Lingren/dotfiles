@@ -1,0 +1,154 @@
+{
+  "schema_version": "4",
+  "producer": "to-seed",
+  "source": { "type": "session", "ref": null },
+  "title": "Dispatch-tasks pipeline: capture deferred items and route via typed executors and termini",
+  "slug": "dispatch-tasks-pipeline",
+  "created": "2026-06-06T07:00:25Z",
+  "status": "draft",
+  "iteration": 1,
+  "summary": "A grill session on the seed->task pipeline. Diagnosis: to-tasks silently drops seed deferred[] items (out_of_scope[] is correctly kept as a negative filter, disposed_threads correctly dropped). Decision: capture deferred items into the task file and build a general execution layer. to-tasks emits one cohesive task file of mixed items, each tagged with task_type/domain/deliverable. A new re-entrant dispatch-tasks routes items via a two-mode executor registry (inline-skill vs spawn-agent), running one task_type branch per invocation with the JSON as the durable state machine. run-tasks is renamed build-code (inline code executor); a new export-tasks (spawn-agent, absorbing tasks-to-linear) ships captured items to termini chosen by (deliverable, domain). Termini: code->GitHub Issues, three zones for non-code (corporate Linear hard wall, Spawned Sapien Notion, personal Notion). v1 builds build-code + export-tasks through the registry seam. Two open threads remain (where configs live; which adapters ship first), so status is draft.",
+  "decisions": [
+    "The deferred[] drop at the to-tasks boundary is a defect: to-tasks must capture deferred items into the task file rather than silently discarding them. out_of_scope[] (negative filter) and disposed_threads[] (settled/rejected) remain correctly handled and are not changed.",
+    "Captured deferred items are encapsulated directly into the task file as items with task_type 'triage' — they are not surfaced to the user for manual routing and are not auto-promoted into new draft seeds.",
+    "The task file is a single cohesive artifact per conversation (cohesion by provenance) holding mixed items; each item carries task_type, domain, and deliverable, and is routed per-item.",
+    "Build a general two-mode executor registry: task_type maps to {executor, mode} where mode is 'inline-skill' (interactive, runs in the main thread) or 'spawn-agent' (isolated own thread). A task type that needs its own thread is registered as spawn-agent.",
+    "Routing has two axes: task_type selects the executor; the pair (deliverable, domain) selects the terminus.",
+    "Skill topology: to-tasks is modified to emit build items plus captured items; dispatch-tasks is a new thin orchestrator that routes; build-code is run-tasks renamed (the inline code executor running TDD); export-tasks is new (the spawn-agent terminus writer that absorbs tasks-to-linear).",
+    "Names are verb-style, chosen over the <task_type>-tasks convention: dispatch-tasks (dispatcher), build-code (code executor), export-tasks (terminus writer).",
+    "Skills do not call skills directly; composition happens through the orchestrating agent via the Skill and Agent tools. dispatch-tasks runs build-code inline (TDD needs HITL interactivity) and spawns export-tasks as an agent (mechanical external writes).",
+    "The task JSON is the durable state machine. dispatch-tasks is re-entrant and runs exactly one task_type branch per invocation; executors mark each item done in the JSON as they complete, then dispatch reports remaining types and prompts a re-run. This allows breaking context and running branches in separate context windows.",
+    "Multi-type ordering: dispatch-tasks announces the full plan up front, auto-orders by a deterministic default, and lets the user override at the announcement (not a forced per-run prompt, not silent). blocked_by dependencies always override the default order.",
+    "Default execution order is mechanical-and-cheap first, long-and-interactive last (export-tasks before build-code) so captured deferred items are parked first and can never be stranded behind an unfinished code build. This is a tunable default, not a law.",
+    "Terminus is classified by deliverable, not topic: an item whose output is a PR/code change goes to GitHub Issues in its repo; any other deliverable goes to Notion (or Linear for corporate). The same topic can split across termini.",
+    "Three terminus zones: corporate Quaestor work -> Linear (hard wall); Spawned Sapien -> its own Notion DB; everything else -> personal Notion DB. Code deliverables in any non-corporate domain -> that repo's GitHub Issues.",
+    "Hard segregation walls are corporate and personal; other boundaries are soft. A domain earns its own dedicated terminus exactly when another human or a contract enters the picture.",
+    "Architectural principle: structure-at-write only earns its place where a mistake is unrecoverable; everywhere else, dump raw and let AI segregate/filter at read time.",
+    "Per-item domain assignment: each repo declares a home domain (default by repo); the model reclassifies an item to another domain only on a clear signal (personal is the floater); the task file is the human review gate before any external write; hard-wall crossings (into corporate or personal) are flagged visually for eyeball review with no per-item prompt.",
+    "Spawned Sapien gets its own terminus now rather than living in a shared pool, because it already exists as a separate Notion DB whose schema matches the personal task list; documenting the existing substrate beats forcing a future migration.",
+    "The personal Notion zone needs an area/project sub-tag; the round-trip pull is always project/area-scoped, never a global personal-priority sort.",
+    "tasks-to-linear converts from a skill to an agent and becomes the first terminus adapter under export-tasks.",
+    "v1 scope: build build-code (inline) and export-tasks (agent) through the registry seam; investigate, write-pr-desc, and the Spawned Sapien sub-pipelines are future registrations, not v1."
+  ],
+  "open_threads": [
+    {
+      "id": "ot-001",
+      "text": "Where should the executor registry, terminus registry, and per-repo domain binding configs live? Recommended: a manifest in claude-code-shared/ modeled on model-tiers.json, but not confirmed.",
+      "first_seen_iteration": 1
+    },
+    {
+      "id": "ot-002",
+      "text": "Which terminus adapters ship in v1 — GitHub Issues + Notion to dogfood this dotfiles repo, or Linear first via the tasks-to-linear conversion?",
+      "first_seen_iteration": 1
+    }
+  ],
+  "disposed_threads": [
+    {
+      "id": "ot-003",
+      "text": "Should deferred items be surfaced to the user / auto-promoted into new seeds, or encapsulated in the task file?",
+      "disposition": "decided",
+      "iteration": 1
+    },
+    {
+      "id": "ot-004",
+      "text": "Use GitHub Issues as the general terminus for all triage items?",
+      "disposition": "rejected",
+      "iteration": 1
+    },
+    {
+      "id": "ot-005",
+      "text": "Collapse termini to two zones (corporate wall + one consolidated AI-filtered pool) vs three explicit zones?",
+      "disposition": "decided",
+      "iteration": 1
+    },
+    {
+      "id": "ot-006",
+      "text": "Executor naming: verb-style vs <task_type>-tasks convention?",
+      "disposition": "decided",
+      "iteration": 1
+    },
+    {
+      "id": "ot-007",
+      "text": "Multi-type dispatch ordering: forced user prompt vs silent auto vs announce-plan + auto-order + override?",
+      "disposition": "decided",
+      "iteration": 1
+    },
+    {
+      "id": "ot-008",
+      "text": "Name for the terminus-writer executor (create-tickets / file-tickets / queue-tasks / create-tasks / save-tasks / push-tasks)?",
+      "disposition": "decided",
+      "iteration": 1
+    }
+  ],
+  "verification": {
+    "iteration": 1,
+    "personas": ["grounding", "accuracy", "completeness", "coherence"],
+    "refutations_upheld": 0,
+    "refutations_screened": 7,
+    "clean": true,
+    "status": "verified"
+  },
+  "deferred": [
+    {
+      "text": "Round-trip read side: pull highest-priority items back out of a terminus (project/area-scoped) and feed them into /grill-me, closing the ingestion loop.",
+      "rationale": "Explicit future phase; v1 covers only the write side (capture + export). The loop closes once the write side is proven.",
+      "context": "Termini are both sink and source. A query like `gh issue list --label triage` sorted by priority, or a Notion query scoped to an area, feeds back into grill-me -> to-seed -> the same pipeline. Round-trip pulls must be project/area-scoped, never global.",
+      "source_seed": null
+    },
+    {
+      "text": "Additional executors: investigate, write-pr-desc, and Spawned Sapien business sub-pipelines (video editing, content creation, customer service, sales outreach).",
+      "rationale": "Out of v1 scope; each is a future registry row + agent. The two-mode registry seam is designed to accept them without redesign.",
+      "context": "These are the executors the general registry exists to hold. investigate already exists as a stub skill. SS sub-pipelines arrive when the business launches and needs non-dev work streams.",
+      "source_seed": null
+    },
+    {
+      "text": "Build out the full set of terminus adapters beyond v1 (Notion adapter for SS + personal, GitHub adapter for code repos, Linear adapter).",
+      "rationale": "v1 dogfoods a subset; the remaining adapters follow once the seam is proven.",
+      "context": "export-tasks resolves (deliverable, domain) to an adapter. Adapters: GitHub Issues (code), Notion (SS + personal, parameterized by DB id), Linear (corporate, from the tasks-to-linear conversion).",
+      "source_seed": null
+    }
+  ],
+  "next_action": "Resolve the two open threads (config location, v1 adapter scope) via /grill-me, then run /to-tasks to break this into a build plan.",
+  "problem_statement": "When to-tasks decomposes a seed into a task file, it reads only gate/filter fields (status, open_threads, schema_version, verification, out_of_scope) and never references the seed's deferred[] section. Deferred items — real work consciously set aside for later — are silently dropped. They survive today only because the user personally remembers and re-seeds them, so the backlog effectively lives in his head.",
+  "solution": "Stop dropping deferred items. to-tasks captures them into the task file as triage-typed items alongside build items. A general, re-entrant dispatch layer (dispatch-tasks) routes each item by a two-mode executor registry and ships captured items, via export-tasks, to per-domain termini chosen by deliverable. This turns the lost backlog into durable, queryable triage queues that can later be pulled back into the pipeline.",
+  "implementation_decisions": [
+    "task-schema.json gains fields on each item: task_type (executor selector), domain (terminus zone), deliverable (code | non-code, classified by output), and an area/project sub-tag for personal-zone items. Each item carries a status the executors update in place.",
+    "The executor registry maps task_type -> {executor, mode: inline-skill | spawn-agent}. v1 rows: code -> build-code (inline-skill), triage -> export-tasks (spawn-agent).",
+    "The terminus registry maps domain -> {adapter, location, segregation_class: corporate | project | personal}; export-tasks resolves (deliverable, domain) against it and enforces the class-based hard walls.",
+    "dispatch-tasks reads the task file, partitions items by task_type, runs one branch per invocation (build-code inline, export-tasks via the Agent tool), and re-enters until all items are done.",
+    "build-code is run-tasks renamed; export-tasks generalizes tasks-to-linear, which becomes the Linear terminus adapter (skill -> agent)."
+  ],
+  "out_of_scope": [
+    {
+      "text": "Surfacing deferred items to the user for manual routing, or auto-promoting them into new draft seeds.",
+      "rationale": "Surfacing scatters work across the user's memory; auto-seeding floods docs/seeds with ungrilled, unverified stubs. Chosen approach is to encapsulate captured items in the task file instead."
+    },
+    {
+      "text": "GitHub Issues as the general terminus for all triage items.",
+      "rationale": "GitHub Issues are code-shaped and choke on non-code items (reading lists, research), and a per-repo issue bucket multiplies termini. Kept only for code deliverables."
+    },
+    {
+      "text": "A single consolidated flat pool for all non-corporate triage, segregated only by AI at read time (the two-zone model).",
+      "rationale": "Corporate is an unrecoverable hard wall (IP/contract), and Spawned Sapien already exists as a separate store; three explicit zones chosen over one pool."
+    },
+    {
+      "text": "Naming the terminus-writer create-tickets/file-tickets/queue-tasks/create-tasks, and naming executors with the <task_type>-tasks convention.",
+      "rationale": "'ticket' is foreign vocabulary in this repo (only used for external systems); 'create-tasks' collides with to-tasks; 'queue-tasks' implies waiting-in-line; the verb convention was preferred for intention clarity. Settled on export-tasks."
+    },
+    {
+      "text": "Changing the handling of out_of_scope[] and disposed_threads[] in to-tasks.",
+      "rationale": "out_of_scope is correctly consumed as a negative filter and disposed_threads is correctly dropped; only deferred[] is the leak being fixed."
+    }
+  ],
+  "risks_and_tradeoffs": [
+    "A solo project's backlog fragments across two systems (code in GitHub Issues, non-code in Notion); reconciling priority across them at round-trip time relies on AI-merge and consistent tagging.",
+    "Per-item domain classification is probabilistic; a misclassification could breach a hard wall (personal item into corporate, or vice versa). Mitigated by flagging hard-wall crossings in the task file for human review before any external write.",
+    "Running one task_type branch per dispatch invocation trades fewer mega-runs for more re-invocations, but buys context-window resilience and resumable state in the JSON.",
+    "export-tasks performs outward, semi-irreversible writes (Notion rows, GitHub issues, Linear tickets); the cross-wall confirm gate is the only guard against an erroneous external publish."
+  ],
+  "further_notes": [
+    "Two of the user's own deferred items already graduated into seeds by hand: the gx-toolkit 'PR review-comment to tasks skill' became revise-pr, and pipeline-hardening's 'Judge escalation ladder' became its own seed — evidence the deferred lifecycle is real and currently depends on the user's memory.",
+    "The fix for the deferred-drop is itself a previously-deferred item: revise-pr's 'Typed-task / pluggable-executor generalization of to-tasks and run-tasks' specs this exact dispatcher.",
+    "Naming intent: dispatch-tasks does no work (routes only); build-code goes left and writes code; export-tasks goes right and ships the rest to its terminus."
+  ]
+}

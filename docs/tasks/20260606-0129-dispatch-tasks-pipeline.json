@@ -1,0 +1,173 @@
+{
+  "schema_version": "2",
+  "producer": "to-tasks",
+  "source": { "type": "seed", "ref": "docs/seeds/20260606-0118-dispatch-tasks-pipeline.json" },
+  "generated_at": "2026-06-06T20:00:00Z",
+  "branching": {
+    "strategy": "single",
+    "branch": "feat/dispatch-tasks-pipeline"
+  },
+  "tasks": [
+    {
+      "id": "T-0048",
+      "title": "Extend task-schema.json, create task-routing.json, add domain to repo-policy.json",
+      "type": "AFK",
+      "description": "Add four optional fields to task items in task-schema.json: task_type (enum: code|triage, the runner selector), domain (string, the destination zone), deliverable (enum: code|non-code, classifies output), and export_url (string|null, written back by export-tasks after an external write). Create resources/task-routing.json with two top-level keys — runners (task_type -> {runner, mode: inline-skill|spawn-agent}) and destinations (domain -> {adapter, location, wall: corporate|project|personal}) — modeled on resources/model-tiers.json. v1 runners: code -> {runner: build-code, mode: inline-skill}, triage -> {runner: export-tasks, mode: spawn-agent}. v1 destinations: personal -> {adapter: notion, location: personal-notion-db, wall: personal}, spawned-sapien -> {adapter: linear, location: ss-linear, wall: project}, corporate -> {adapter: linear, location: quaestor-linear, wall: corporate}. Add a domain field to each entry in resources/repo-policy.json: Eric-Lingren/dotfiles -> personal, Quaestor-Technologies/Quaestor-Web -> corporate, Eric-Lingren/SpawnedSapien -> spawned-sapien, Eric-Lingren/ericlingren -> personal.",
+      "acceptance_criteria": [
+        "validate-schema.sh passes on a task file whose items carry task_type, domain, deliverable, and export_url fields",
+        "validate-schema.sh still passes on a task file whose items omit all four new fields (backward compatibility)",
+        "task-routing.json exists at ~/.dotfiles/claude-code-shared/resources/task-routing.json and is valid JSON",
+        "jq '.runners.code.mode' task-routing.json returns 'inline-skill'",
+        "jq '.runners.triage.mode' task-routing.json returns 'spawn-agent'",
+        "jq '.destinations.personal.wall' task-routing.json returns 'personal'",
+        "All four entries in repo-policy.json have a domain field"
+      ],
+      "blocked_by": [],
+      "status": "done",
+      "branch": null,
+      "pr": null
+    },
+    {
+      "id": "T-0049",
+      "title": "Rename run-tasks skill to build-code",
+      "type": "AFK",
+      "description": "Rename the run-tasks skill directory from skills/run-tasks/ to skills/build-code/ and update its SKILL.md name and any internal self-references. Update every skill that outputs a handoff block referencing /run-tasks (to-tasks, debug, tdd, improve-component, run-task-followups, and any other skill with a 'Next steps: /run-tasks' line) to reference /build-code instead. Update the skill-directory-conventions.md and the skills list in any agent registry or model-tiers-derived file that enumerates skill names. The skill behavior is unchanged — this is a name-only migration.",
+      "acceptance_criteria": [
+        "skills/build-code/ exists and contains the SKILL.md formerly at skills/run-tasks/",
+        "skills/run-tasks/ no longer exists",
+        "grep -r '/run-tasks' ~/.dotfiles/claude-code-shared/skills/ returns no matches in skill instruction files",
+        "grep -r 'build-code' ~/.dotfiles/claude-code-shared/skills/to-tasks/ shows the updated handoff block"
+      ],
+      "blocked_by": [],
+      "status": "done",
+      "branch": null,
+      "pr": null
+    },
+    {
+      "id": "T-0050",
+      "title": "to-tasks captures deferred[] items as triage tasks",
+      "type": "AFK",
+      "description": "Modify the to-tasks skill to read the seed's deferred[] array and emit each item as a task appended after the build tasks. Each triage task gets: task_type=triage, domain=home-domain (read from repo-policy.json via gx_load_policy for the current git remote, defaulting to 'personal' if the repo is not found), deliverable=non-code by default (reclassify to 'code' only when the deferred item's text explicitly describes producing a PR or a code change), area_project omitted unless the item text clearly identifies a project or area. Set title from the first sentence of deferred.text. Set description from the full deferred.text plus deferred.context if present. Set type=AFK (triage tasks require no keyboard action — they are routed mechanically). Set blocked_by=[] unless the deferred item's context names a dependency on a code task in the same file. Add a note in the to-tasks skill instructions after the 'Draft vertical slices' section: 'After emitting build tasks, scan deferred[] and emit each as a triage task using the rules above.'",
+      "acceptance_criteria": [
+        "Running /to-tasks on a seed with a non-empty deferred[] produces a task file containing one triage task per deferred item",
+        "Each triage task has task_type=triage, domain set to the repo's home domain from repo-policy.json, and deliverable=non-code by default",
+        "A deferred item whose text contains 'PR' or 'code change' gets deliverable=code",
+        "Running /to-tasks on a seed with an empty deferred[] produces no triage tasks and passes validate-schema.sh"
+      ],
+      "blocked_by": ["T-0048"],
+      "status": "done",
+      "branch": null,
+      "pr": null
+    },
+    {
+      "id": "T-0051",
+      "title": "dispatch-tasks orchestrator skill",
+      "type": "AFK",
+      "description": "Create dispatch-tasks as a new inline skill at skills/dispatch-tasks/SKILL.md. It accepts a task file path, loads it, and partitions items by task_type using the runners map in task-routing.json. On each invocation it runs exactly one task_type branch. Before running, announce the full plan: list each task_type branch, the runner it maps to, and the item count; show the default execution order (triage/export-tasks branch first — mechanical-and-cheap; code/build-code branch last — long-and-interactive); let the user override the order at this announcement only (no forced per-branch prompt). Run the selected branch: code branch -> call the build-code skill inline (the Skill tool, inline-skill mode, HITL-interactive); triage branch -> spawn export-tasks as an Agent tool call (spawn-agent mode, isolated). After the branch completes, update each completed item's status to 'done' in the task file JSON by reading and rewriting the file. Report remaining branches with their item counts and prompt the user to re-run /dispatch-tasks <path> for the next branch. If all branches are done, print a summary and exit. blocked_by dependencies always override the default order — a task blocked by a not-yet-done task is skipped in this run and flagged.",
+      "acceptance_criteria": [
+        "dispatch-tasks SKILL.md exists at skills/dispatch-tasks/SKILL.md",
+        "Given a task file with both code and triage items, dispatch-tasks announces the plan listing both branches before running",
+        "Given only triage items, dispatch-tasks spawns export-tasks as an agent",
+        "Given only code items, dispatch-tasks calls build-code inline",
+        "After a branch runs, items in that branch have status=done in the task file on disk",
+        "After one branch, dispatch-tasks reports remaining branches and prompts re-run"
+      ],
+      "blocked_by": ["T-0048", "T-0049"],
+      "status": "done",
+      "branch": null,
+      "pr": null
+    },
+    {
+      "id": "T-0052",
+      "title": "export-tasks v1 skill (GitHub Issues + Notion adapters)",
+      "type": "AFK",
+      "description": "Create export-tasks as a spawn-agent skill at skills/export-tasks/SKILL.md. It reads the task file path passed by dispatch-tasks, filters to triage items with status=not_started, resolves each item's (deliverable, domain) pair against the destinations map in task-routing.json, and writes to the matched adapter. v1 adapters: GitHub Issues via `gh issue create --title '<title>' --body '<description>' --label triage --repo <git-remote-repo>` for code deliverables; personal Notion via the Notion MCP (mcp__claude_ai_Notion__ tools) for non-code deliverables, filing to the Notion DB ID in destinations.personal.location. Before any external write, display a dry-run table showing all planned writes with their destination adapter and URL/DB target; flag any item crossing a hard wall (corporate or spawned-sapien domain item being sent to personal Notion, or vice versa) with a visible WARNING line. Pause for user eyeball review before proceeding. After a successful write, set item.status=done and item.export_url=<external URL or issue URL> in the task file JSON. If the Notion DB ID is a placeholder value ('personal-notion-db'), abort and print instructions to populate FU-001.",
+      "acceptance_criteria": [
+        "export-tasks SKILL.md exists at skills/export-tasks/SKILL.md",
+        "A triage item with deliverable=code and domain=personal routes to gh issue create",
+        "A triage item with deliverable=non-code and domain=personal routes to Notion MCP",
+        "A hard-wall crossing (e.g. corporate item routed to personal Notion) triggers a WARNING line in the dry-run table",
+        "After a successful write, the item's status=done and export_url is set in the task file",
+        "If destinations.personal.location equals 'personal-notion-db' (placeholder), export-tasks aborts with instructions to run FU-001"
+      ],
+      "blocked_by": ["T-0048", "T-0051"],
+      "status": "done",
+      "branch": null,
+      "pr": null
+    },
+    {
+      "id": "T-0056",
+      "title": "Round-trip read side: pull highest-priority items back out of a destination",
+      "type": "AFK",
+      "task_type": "triage",
+      "domain": "personal",
+      "deliverable": "code",
+      "description": "Round-trip read side: pull highest-priority items back out of a destination (project/area-scoped) and feed them into /grill-me, closing the ingestion loop.\n\nDestinations are both sink and source. A query like `gh issue list --label triage` sorted by priority, or a Notion query scoped to an area, feeds back into grill-me -> to-seed -> the same pipeline. Round-trip pulls must be project/area-scoped, never global.",
+      "acceptance_criteria": [
+        "Item has been exported to its destination by export-tasks"
+      ],
+      "blocked_by": [],
+      "status": "done",
+      "branch": null,
+      "pr": null,
+      "export_url": "https://github.com/Eric-Lingren/dotfiles/issues/21"
+    },
+    {
+      "id": "T-0057",
+      "title": "Additional runners: investigate, write-pr-desc, and Spawned Sapien business sub-pipelines",
+      "type": "AFK",
+      "task_type": "triage",
+      "domain": "personal",
+      "deliverable": "code",
+      "description": "Additional runners: investigate, write-pr-desc, and Spawned Sapien business sub-pipelines (video editing, content creation, customer service, sales outreach).\n\nThese are the runners the general map exists to hold. investigate already exists as a stub skill. SS sub-pipelines arrive when the business launches and needs non-dev work streams.",
+      "acceptance_criteria": [
+        "Item has been exported to its destination by export-tasks"
+      ],
+      "blocked_by": [],
+      "status": "done",
+      "branch": null,
+      "pr": null,
+      "export_url": "https://github.com/Eric-Lingren/dotfiles/issues/22"
+    },
+    {
+      "id": "T-0058",
+      "title": "Build out the remaining destination adapters beyond v1",
+      "type": "AFK",
+      "task_type": "triage",
+      "domain": "personal",
+      "deliverable": "code",
+      "description": "Build out the remaining destination adapters beyond v1: SS Linear adapter (first Linear workspace, from the tasks-to-linear conversion), then corporate Quaestor Linear and a personal secondary Linear, plus the Spawned Sapien work routing.\n\nexport-tasks resolves (deliverable, domain) to an adapter. v1 adapters: GitHub Issues (code) + personal Notion (non-code). Deferred adapters: Linear (parameterized by workspace) for SS first, then corporate Quaestor and personal secondary.",
+      "acceptance_criteria": [
+        "Item has been exported to its destination by export-tasks"
+      ],
+      "blocked_by": [],
+      "status": "done",
+      "branch": null,
+      "pr": null,
+      "export_url": "https://github.com/Eric-Lingren/dotfiles/issues/23"
+    }
+  ],
+  "follow_ups": [
+    {
+      "id": "FU-001",
+      "title": "Populate all Notion DB IDs in task-routing.json",
+      "steps": [
+        "DONE: personal DB ID set to 5b429f8f74d249d48e837717e3ae5403",
+        "DONE: Spawned Sapien DB ID set to 31981a8e067e8021aaf2d55893f55ba4",
+        "Verify: jq '.destinations.personal[\"non-code\"].location' ~/.dotfiles/claude-code-shared/resources/task-routing.json"
+      ],
+      "trigger_task": "T-0052",
+      "source": "planned"
+    },
+    {
+      "id": "FU-002",
+      "title": "Re-run to-tasks on this seed to capture its 3 deferred items as triage tasks",
+      "steps": [
+        "DONE: /to-tasks run on 2026-06-06, merged T-0056, T-0057, T-0058 into this file",
+        "Run: /dispatch-tasks docs/tasks/20260606-0129-dispatch-tasks-pipeline.json to export the 3 triage items to personal Notion"
+      ],
+      "trigger_task": "T-0052",
+      "source": "planned"
+    }
+  ]
+}

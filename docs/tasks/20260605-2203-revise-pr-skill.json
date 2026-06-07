@@ -1,0 +1,124 @@
+{
+  "schema_version": "2",
+  "producer": "to-tasks",
+  "source": {"type": "seed", "ref": "docs/seeds/20260605-2146-revise-pr-skill.json"},
+  "generated_at": "2026-06-05T22:03:00Z",
+  "branching": {
+    "strategy": "single",
+    "branch": "feat/revise-pr-skill"
+  },
+  "tasks": [
+    {
+      "id": "T-0042",
+      "title": "Scaffold revise-pr SKILL.md with harvest stage",
+      "type": "AFK",
+      "description": "Create ~/.dotfiles/claude-code-shared/skills/revise-pr/SKILL.md with frontmatter (name, description, slug, model, effort) and the full harvest stage. Step 1 — input: accept a PR URL argument; when no URL given, fallback to `gh pr list --author @me --state open` in cwd and prompt user to pick. Step 2 — repo assertion: resolve the PR's repo from `gh pr view <url> --json headRepository` and compare to the cwd repo from `git remote get-url origin`; bail immediately with a clear error message if they differ. Step 3 — GraphQL harvest: call `gh api graphql` to fetch all review threads via `reviewThreads(first:100)` (capturing `isResolved`, `comments.nodes[].{body,author.login,url,databaseId}`), all review summary bodies (APPROVE/REQUEST_CHANGES/COMMENT), and top-level pull request comments. Apply harvest filter: keep only threads where `isResolved === false`, exclude comments where `author.login` matches the authenticated user (from `gh api user`), and include bugbot comments by known bot login as a first-class source regardless of other filters. Detect `Resource not accessible by integration` error on GraphQL response and print the exact recovery command `gh auth refresh -h <hostname>` before stopping. All behavior is via inline skill instructions; no separate helper scripts needed for this slice.",
+      "acceptance_criteria": [
+        "SKILL.md exists at the correct path with valid frontmatter (name, description, slug, model, effort fields present)",
+        "Skill instructions describe the fallback `gh pr list --author @me --state open` flow when no PR URL argument is given",
+        "Skill instructions describe the repo assertion check and state that a mismatch prints a clear error and stops immediately",
+        "Skill instructions include the complete GraphQL query structure for reviewThreads, review bodies, and PR comments",
+        "Harvest filter logic is stated explicitly: isResolved===false, exclude self-authored, include bugbot by login",
+        "SSO 403 handling is described: detect 'Resource not accessible by integration' and print `gh auth refresh -h <hostname>` recovery command",
+        "A synthetic dry-run instruction set (run skill on a real or test PR) produces a harvested item list with correct structure"
+      ],
+      "blocked_by": [],
+      "status": "done",
+      "branch": null,
+      "pr": null
+    },
+    {
+      "id": "T-0043",
+      "title": "Add provisional triage stage to revise-pr SKILL.md",
+      "type": "AFK",
+      "description": "Extend SKILL.md with the provisional triage stage (pipeline step 2). After harvest output is displayed, the skill auto-classifies each item using a two-axis model. Axis 1 — class: one of `bug` / `change` / `question` / `diligence` / `discuss` / `nit`. Axis 2 — escape-disposition (bug class only): `confirmed_escape` / `false_flag` / `not_an_escape` / `unverified` (skeptical default; always start here). Present a triage table to the user with columns: item number, thread/comment excerpt, proposed class, proposed disposition (bug class only). Instruct the skill to accept user overrides for any row before proceeding to diligence. State that the table is a proposal only and that no action is taken until the HITL gate.",
+      "acceptance_criteria": [
+        "Skill instructions describe the two-axis classification model with all valid class values and all valid disposition values",
+        "Triage table format is described with at minimum: item number, excerpt, proposed class, proposed disposition columns",
+        "Escape-disposition column appears only for bug-class items",
+        "Instructions state that `unverified` is the skeptical default for escape-disposition (not `confirmed_escape`)",
+        "Instructions state the triage table is a proposal and user may override any row before diligence runs",
+        "Instructions state that no action fires until the HITL gate in a later step"
+      ],
+      "blocked_by": ["T-0042"],
+      "status": "done",
+      "branch": null,
+      "pr": null
+    },
+    {
+      "id": "T-0044",
+      "title": "Add diligence gate to revise-pr SKILL.md",
+      "type": "AFK",
+      "description": "Extend SKILL.md with the mandatory universal diligence gate (pipeline step 3). The gate is non-optional: every harvested item must pass through it with no bypass path. For each item, surface three pieces of context side by side: (1) the flagged claim text verbatim, (2) the originating comment URL, (3) the relevant code context from the PR diff or referenced files. The user renders a verdict for each item in v1 (manual diligence). Valid verdicts: `confirmed_escape`, `false_flag`, `not_an_escape`, or `unverified`. Reconcile: diligence may promote an item (e.g. a `question` that turns out to be a real bug) or demote it (e.g. a `bug` that is a false flag). Instructions must state that no item may exit the gate without an explicit verdict — partial completion is not allowed. Note that the `vet` skill slots into this gate in a future version.",
+      "acceptance_criteria": [
+        "Instructions state explicitly that the gate is mandatory and every item must pass through it — no bypass path",
+        "Instructions describe the three context surfaces per item: claim text, comment URL, relevant code context",
+        "All four valid diligence verdicts are listed: confirmed_escape, false_flag, not_an_escape, unverified",
+        "Instructions state that a promoted or demoted classification after diligence is valid and should update the triage table",
+        "Instructions state that partial completion (some items not reviewed) is not allowed before proceeding to the HITL gate",
+        "Instructions note that `vet` skill slots into the same gate when built"
+      ],
+      "blocked_by": ["T-0043"],
+      "status": "done",
+      "branch": null,
+      "pr": null
+    },
+    {
+      "id": "T-0045",
+      "title": "Add HITL confirmation gate + attribution-tracer invocation to revise-pr SKILL.md",
+      "type": "AFK",
+      "description": "Extend SKILL.md with pipeline steps 5 and 6. Step 5 — HITL confirmation gate: present the evidence-backed final categorization (post-diligence) as a confirmation table. User confirms or overrides each item's final class and disposition before any action proceeds. This is the last human checkpoint before actions fire. Step 6 — attribution-tracer invocation: after the HITL gate, for each item whose final disposition is `confirmed_escape`, spawn one `attribution-tracer` subagent with inputs: `issue_description` (the confirmed defect claim text), `pr_url` (the PR URL from Step 1), `branch` (the PR head branch from `gh pr view --json headRefName`), `transcript_path` (absolute path to current session transcript). Attribution fires once per `confirmed_escape` item, not once per session. Items with disposition `false_flag`, `not_an_escape`, or `unverified` must never trigger attribution-tracer. The `fix` field in attribution records will be empty/TBD since no fix exists yet; this is intentional. Attribution demotes to candidate/improves:null when the escape is ambiguous. Include the invariant explicitly: skill never makes outward HTTP writes (no GitHub comment posting, no thread resolution) during its own run.",
+      "acceptance_criteria": [
+        "Instructions describe the HITL confirmation table and state it is the last checkpoint before any action fires",
+        "Instructions state attribution-tracer fires once per confirmed_escape item, not once per session",
+        "Instructions list the exact subagent inputs: issue_description, pr_url, branch, transcript_path",
+        "Instructions explicitly state that false_flag, not_an_escape, and unverified items never trigger attribution-tracer",
+        "Instructions note that the fix field will be empty/TBD and that this is intentional",
+        "Instructions state the skill never makes outward HTTP writes during its own run"
+      ],
+      "blocked_by": ["T-0044"],
+      "status": "done",
+      "branch": null,
+      "pr": null
+    },
+    {
+      "id": "T-0046",
+      "title": "Add seed stop + provenance block + relay behavior + learning-capture tail to revise-pr SKILL.md",
+      "type": "AFK",
+      "description": "Extend SKILL.md with pipeline step 7 and the closing blocks. Step 7 — seed stop: after attribution-tracer runs for all confirmed_escape items, invoke `/to-seed` passing the session context including a structured provenance block. Build the provenance block as: `{pr_url: string, head_branch: string, items: Array<{thread_node_id: string, final_class: string, disposition: string}>}`. Skill stops at the seed — it does not invoke /to-tasks, /run-tasks, branch checkout, or push. State this boundary explicitly. Relay stub behavior (inline v1): after /to-seed completes, read `seed.provenance.items[]`, filter to non-code classes (question, discuss, nit), and print a formatted list to the user. No external calls or GitHub posting from this step. Add the standard managed learning-capture tail block (matching the pattern used in other SKILL.md files) with skill slug `revise-pr` and supported triggers. The final closing section of the skill should list next-step suggestions: /to-tasks when the seed is ready for implementation.",
+      "acceptance_criteria": [
+        "Provenance block shape is specified exactly: {pr_url, head_branch, items[{thread_node_id, final_class, disposition}]}",
+        "Instructions state explicitly that the skill stops after /to-seed and does not invoke /to-tasks, /run-tasks, branch checkout, or push",
+        "Relay stub section filters to question/discuss/nit classes only and states no external calls are made",
+        "Learning-capture tail block is present with correct skill slug 'revise-pr'",
+        "Next-step suggestion '/to-tasks' appears in the closing section",
+        "Full SKILL.md is reviewed end-to-end and all seven pipeline steps are present in correct order"
+      ],
+      "blocked_by": ["T-0045"],
+      "status": "done",
+      "branch": null,
+      "pr": null
+    },
+    {
+      "id": "T-0047",
+      "title": "Wire revise-pr into schema, pipeline, and skill registry",
+      "type": "AFK",
+      "description": "Three infrastructure changes plus skill registration. (1) Schema: add `revise-pr` to the `producer` enum in ~/.dotfiles/claude-code-shared/contracts/provenance-schema.json. (2) Pipeline: add a `revise-pr` node to ~/.dotfiles/claude-code-shared/skill-pipeline.json with edges `{skill:'to-tasks', when:'seed is verified and ready for implementation'}` and `{skill:'relay', when:'non-code items need user notification'}`. Also add stub nodes for `vet` (next:[]), `relay` (next:[]), and `investigate` (next:[]) — these are wiring anchors; none are functionally implemented. (3) Stub skill directories: create minimal SKILL.md stub files at skills/vet/SKILL.md, skills/relay/SKILL.md, and skills/investigate/SKILL.md — each with a frontmatter header and a one-line description stating it is a stub. These are required because inject-learning-tail.py validates that every slug referenced in pipeline 'next' edges has a corresponding directory under claude-code-shared/skills/. (4) Run: `python ~/.dotfiles/claude-code-shared/scripts/inject-learning-tail.py revise-pr` (or equivalent invocation) to bake the closing next-step suggestion into SKILL.md from the pipeline graph. (5) Run `/register-skill` to add revise-pr to the skill registry (settings.json). Validate each change: run `bash ~/.dotfiles/claude-code-shared/scripts/validate-schema.sh --instance ~/.dotfiles/claude-code-shared/contracts/provenance-schema.json /dev/null` to verify the schema still parses; confirm skill-pipeline.json is valid JSON with `python3 -c 'import json,sys; json.load(open(sys.argv[1]))' skill-pipeline.json`.",
+      "acceptance_criteria": [
+        "'revise-pr' appears in the producer enum of provenance-schema.json",
+        "validate-schema.sh exits 0 after the schema change",
+        "skill-pipeline.json is valid JSON after additions (python3 json.load check passes)",
+        "revise-pr node exists in skill-pipeline.json with edges to to-tasks and relay",
+        "vet, relay, and investigate stub nodes exist in skill-pipeline.json with next:[]",
+        "Stub SKILL.md files exist for vet, relay, and investigate under claude-code-shared/skills/",
+        "inject-learning-tail.py completes without error on revise-pr SKILL.md",
+        "revise-pr appears in the skill registry after /register-skill runs"
+      ],
+      "blocked_by": ["T-0046"],
+      "status": "done",
+      "branch": null,
+      "pr": "gh pr create --title 'feat: add revise-pr skill with full ingestion pipeline' --body '...'"
+    }
+  ],
+  "follow_ups": []
+}
