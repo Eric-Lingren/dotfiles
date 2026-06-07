@@ -1,0 +1,210 @@
+{
+  "kind": "condensed",
+  "producer": "clean-scaffolding",
+  "slug": "judge-escalation-ladder",
+  "title": "Judge escalation ladder for to-seed verification",
+  "condensed_at": "2026-06-07T07:06:28Z",
+  "condensed_from": [
+    "20260604-2052-judge-escalation-ladder.json",
+    "20260604-2054-judge-escalation-ladder.json"
+  ],
+  "artifacts": [
+    {
+      "filename": "20260604-2052-judge-escalation-ladder.json",
+      "type": "seed",
+      "content": {
+        "schema_version": "4",
+        "producer": "to-seed",
+        "source": {
+          "type": "session",
+          "ref": null
+        },
+        "title": "Judge escalation ladder for to-seed verification",
+        "slug": "judge-escalation-ladder",
+        "created": "2026-06-04T20:52:00Z",
+        "status": "ready",
+        "iteration": 1,
+        "summary": "Grill session to design the judge escalation ladder optimization for the to-seed verification pipeline. Currently 3 Sonnet judges fire flat per refutation regardless of evidence clarity, with 2-of-3 majority binding. The escalation ladder fires 1 Sonnet judge first (round 1); a lone 'upheld' escalates to 3 fresh Sonnet judges in parallel (round 2, 2-of-3 majority); a lone 'rejected' terminates the refutation immediately. All five judgment calls resolved: binary trigger with no 'uncertain' state and no verdict contract change; failure mode (confidently-wrong lone reject) accepted as-is because the evidence-bound constraint is the guardrail; Sonnet for both rounds to prioritize quality; fresh 3 judges on escalation with round-1 verdict not reused to avoid asymmetry; and a refutations_screened counter added to the verification stamp for observability. Status: ready.",
+        "decisions": [
+          "The escalation ladder uses a binary trigger: a lone round-1 'upheld' escalates to the full 3-judge panel; a lone 'rejected' terminates that refutation immediately with no second opinion.",
+          "No 'uncertain' verdict state is added. The verdict contract (verdict-contract.md, verdict-schema.json) remains unchanged with only 'upheld' and 'rejected' as valid values.",
+          "The risk of a confidently-wrong lone reject terminating a valid refutation is accepted as-is. The evidence-bound constraint \u2014 the judge can only uphold if a real span exists and clearly supports the claim \u2014 is the guardrail.",
+          "Both round-1 and round-2 judges use Sonnet. Quality is prioritized over micro-optimization on the screener.",
+          "When round-1 returns 'upheld', the orchestrator spawns 3 fresh Sonnet judges in parallel. The round-1 verdict is not reused as a pre-vote in the escalated panel.",
+          "The verification stamp gains a 'refutations_screened' integer field tracking how many refutations terminated at round-1 via lone reject. This provides observability data for future calibration of the escalation threshold."
+        ],
+        "open_threads": [],
+        "disposed_threads": [
+          {
+            "id": "ot-001",
+            "text": "Add 'uncertain' as a third verdict state to create a ternary escalation trigger (upheld or uncertain escalates, rejected terminates)",
+            "disposition": "rejected",
+            "iteration": 1
+          },
+          {
+            "id": "ot-002",
+            "text": "Use Haiku for the round-1 screener judge to reduce compute cost",
+            "disposition": "rejected",
+            "iteration": 1
+          },
+          {
+            "id": "ot-003",
+            "text": "Reuse the round-1 judge verdict as vote 1 in the escalated panel to save one Sonnet call per escalated refutation",
+            "disposition": "rejected",
+            "iteration": 1
+          },
+          {
+            "id": "ot-004",
+            "text": "Add uphold-bias to round-1 judge instructions (return upheld when evidence is weak) to protect against wrong rejects",
+            "disposition": "rejected",
+            "iteration": 1
+          }
+        ],
+        "verification": {
+          "iteration": 1,
+          "personas": [
+            "grounding",
+            "accuracy",
+            "completeness",
+            "coherence"
+          ],
+          "refutations_upheld": 1,
+          "clean": false,
+          "status": "verified"
+        },
+        "next_action": "Update to-seed SKILL.md step 3c to implement the escalation ladder, and update seed-schema.json to add refutations_screened to the verification object definition.",
+        "problem_statement": "The to-seed verification stage fires 3 Sonnet judges per refutation unconditionally. When evidence is clear-cut, 2 of those 3 calls are wasted compute. Judges were 72% of the original verification token cost (~62.8k of ~88k tokens).",
+        "solution": "A two-round escalation ladder: round 1 fires 1 Sonnet judge; lone 'upheld' escalates to 3 fresh Sonnet judges in parallel (2-of-3 majority binding); lone 'rejected' terminates immediately. The verification stamp gains a refutations_screened counter for observability.",
+        "evidence": "The pipeline-hardening seed identified judges as 72% of original verification cost (~62.8k of ~88k tokens across 16 agents). The escalation ladder could eliminate 2 of 3 Sonnet judge calls per refutation that terminates at round 1.",
+        "implementation_decisions": [
+          "to-seed SKILL.md step 3c is rewritten: for each refutation, spawn 1 round-1 Sonnet judge; if 'upheld', spawn 3 fresh Sonnet judges in parallel and apply 2-of-3 majority; if 'rejected', record to refutations_screened and move to next refutation.",
+          "The verdict contract (verdict-contract.md, verdict-schema.json) is NOT changed. Binary upheld/rejected stays.",
+          "seed-schema.json: add 'refutations_screened' as an optional integer field inside the verification object definition. The current additionalProperties: false on that object requires an explicit schema update.",
+          "persona-judge.md agent instructions are NOT changed. The judge continues to return upheld or rejected only."
+        ],
+        "testing_decisions": [
+          "Run to-seed on a session that produces at least one refutation to confirm round-1 fires and escalation triggers on upheld.",
+          "Verify refutations_screened increments for each lone-reject termination.",
+          "Confirm short-circuit (all 4 personas return []) still skips the judge stage entirely \u2014 the escalation ladder only activates when refutations exist."
+        ],
+        "out_of_scope": [
+          {
+            "text": "Ternary escalation trigger with an 'uncertain' verdict state",
+            "rationale": "User chose binary after expressing uncertainty about calibrating the 'uncertain' definition precisely enough to trust a Sonnet judge to apply it consistently. The calibration risk \u2014 LLM over-use of 'uncertain' as a hedge defeating the cost savings \u2014 outweighed the benefit."
+          },
+          {
+            "text": "Haiku for round-1 screener judge",
+            "rationale": "Judges make binding decisions. Quality over micro-optimization. Both rounds use Sonnet."
+          },
+          {
+            "text": "Reusing round-1 verdict as pre-vote in the escalated panel",
+            "rationale": "Introduces asymmetry: round-1 judge has no panel context, round-2 judges do. Cost savings (one Sonnet call) are negligible. Fresh 3-judge panel chosen."
+          },
+          {
+            "text": "Uphold-bias in round-1 judge instructions",
+            "rationale": "Undermines the judge's purpose. Evidence-bound constraint is the correct guardrail, not instruction bias."
+          }
+        ],
+        "risks_and_tradeoffs": [
+          "A confidently-wrong lone reject terminates a valid refutation with no second opinion. Accepted: the evidence-bound constraint (span must exist and clearly support the claim) makes this rare.",
+          "If the lone-reject rate is very low (most refutations escalate), cost savings are minimal or nil. The refutations_screened counter surfaces this after a few real runs.",
+          "When refutations do escalate, the total cost is 1 + 3 = 4 Sonnet judge calls vs the current flat 3. Escalated refutations are slightly more expensive than today."
+        ],
+        "further_notes": [
+          "The seed-schema.json change (adding refutations_screened to verification) is a non-breaking additive change \u2014 existing seeds without the field remain valid since the field is optional.",
+          "The short-circuit (skip judges when all personas return []) is unchanged and takes priority over the escalation ladder. The ladder only fires when at least one persona returns a refutation.",
+          "Verification note: accuracy persona raised 1 refutation (out_of_scope[0] rationale mischaracterized user's stated reason); upheld 3-0 by judges and corrected. Coherence failed on first run due to unexpanded env var in transcript path; rerun clean."
+        ]
+      }
+    },
+    {
+      "filename": "20260604-2054-judge-escalation-ladder.json",
+      "type": "task",
+      "content": {
+        "schema_version": "2",
+        "producer": "to-tasks",
+        "source": {
+          "type": "seed",
+          "ref": "docs/seeds/20260604-2052-judge-escalation-ladder.json"
+        },
+        "generated_at": "2026-06-04T20:54:00Z",
+        "branching": {
+          "strategy": "single",
+          "branch": "feat/judge-escalation-ladder"
+        },
+        "tasks": [
+          {
+            "id": "T-0007",
+            "title": "Add refutations_screened to seed-schema.json verification object",
+            "type": "AFK",
+            "description": "Add an optional integer field `refutations_screened` to the verification object definition in `~/.dotfiles/claude-code-shared/contracts/seed-schema.json`. The verification object currently has `additionalProperties: false`, so the field must be added explicitly to the properties block. The change is additive and non-breaking: existing seeds without the field must continue to validate. After editing, run validate-schema.sh against at least one existing seed file to confirm backward compatibility.",
+            "acceptance_criteria": [
+              "seed-schema.json verification object includes refutations_screened as an optional integer property",
+              "Running validate-schema.sh against docs/seeds/20260604-2052-judge-escalation-ladder.json (which lacks the field) returns exit 0",
+              "A synthetic seed JSON with verification.refutations_screened set to an integer passes validate-schema.sh",
+              "A synthetic seed with verification.refutations_screened set to a string fails validate-schema.sh"
+            ],
+            "blocked_by": [],
+            "status": "done",
+            "branch": null,
+            "pr": null
+          },
+          {
+            "id": "T-0008",
+            "title": "Implement escalation ladder in to-seed SKILL.md step 3c",
+            "type": "AFK",
+            "description": "Rewrite step 3c in `~/.dotfiles/claude-code-shared/skills/to-seed/SKILL.md` to implement the two-round judge escalation ladder. For each refutation returned by the persona agents: (1) spawn one Sonnet judge (round 1); (2) if round-1 returns `upheld`, spawn 3 fresh Sonnet judges in parallel and apply 2-of-3 majority to determine the final verdict \u2014 the round-1 verdict is NOT reused as a vote; (3) if round-1 returns `rejected`, increment the local refutations_screened counter and move to the next refutation. After processing all refutations, write the final refutations_screened count into the verification stamp alongside the existing fields. The short-circuit rule (all personas return empty refutations \u2192 skip judge stage entirely) must remain in place and take priority over the escalation ladder.",
+            "acceptance_criteria": [
+              "Step 3c text describes the round-1 single-judge spawn with explicit Sonnet model",
+              "Step 3c text describes the lone-upheld \u2192 3 fresh Sonnet judges parallel path with 2-of-3 majority",
+              "Step 3c text describes the lone-rejected \u2192 refutations_screened increment \u2192 next refutation path",
+              "Step 3c text states the round-1 verdict is not reused in the escalated panel",
+              "Step 3c text states the short-circuit (all personas return []) still skips judge stage entirely",
+              "The verification stamp section includes refutations_screened as an output field"
+            ],
+            "blocked_by": [
+              "T-0007"
+            ],
+            "status": "done",
+            "branch": null,
+            "pr": null
+          },
+          {
+            "id": "T-0009",
+            "title": "Smoke test escalation ladder on a live to-seed run (HITL)",
+            "type": "HITL",
+            "description": "Run /to-seed on a real grill session or handoff file that is expected to produce at least one persona refutation. Observe the verification stage to confirm: round-1 fires one judge per refutation; a lone upheld triggers the 3-judge parallel panel; a lone rejected increments refutations_screened without spawning additional judges; the output seed's verification stamp contains the refutations_screened field with the correct count. Also run /to-seed on a session where all personas return empty refutations to confirm the short-circuit still skips the judge stage entirely.",
+            "acceptance_criteria": [
+              "A live to-seed run with at least one refutation completes without errors",
+              "Workflow logs show a single round-1 judge agent firing per refutation",
+              "At least one lone-upheld escalation triggers 3 parallel judge agents (visible in workflow progress)",
+              "Output seed verification stamp contains refutations_screened integer matching the number of lone-reject terminations",
+              "A to-seed run where all personas return [] completes and the verification stamp shows 0 judge agents fired"
+            ],
+            "blocked_by": [
+              "T-0008"
+            ],
+            "status": "done",
+            "branch": null,
+            "pr": null
+          }
+        ],
+        "follow_ups": [
+          {
+            "id": "FU-001",
+            "title": "Calibrate escalation threshold using refutations_screened data",
+            "steps": [
+              "After 5+ real to-seed runs, collect refutations_screened values from output seeds: `grep -r 'refutations_screened' ~/.dotfiles/docs/seeds/ | grep -o '[0-9]\\+$'`",
+              "Calculate the ratio: refutations_screened / total refutations across those runs. If most refutations escalate (ratio < 0.3), the round-1 screener is saving minimal compute.",
+              "If ratio < 0.3: consider opening a new grill to evaluate whether the evidence-bound constraint is too permissive (lone rejects rarely fire \u2192 round-1 judge rarely terminates early).",
+              "If ratio > 0.7: the screener is working well; no changes needed.",
+              "Record findings as a further_notes entry in the next to-seed session that touches the verification pipeline."
+            ],
+            "trigger_task": "T-0009",
+            "source": "planned"
+          }
+        ]
+      }
+    }
+  ]
+}

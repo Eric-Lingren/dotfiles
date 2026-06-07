@@ -1,0 +1,145 @@
+{
+  "kind": "condensed",
+  "producer": "clean-scaffolding",
+  "slug": "fix-attribution-pipeline-review-gaps",
+  "title": "Fix attribution pipeline hardening PR review gaps",
+  "condensed_at": "2026-06-07T07:03:33Z",
+  "condensed_from": [
+    "20260605-2136-fix-attribution-pipeline-review-gaps.json",
+    "20260605-2139-fix-attribution-pipeline-review-gaps.json"
+  ],
+  "artifacts": [
+    {
+      "filename": "20260605-2136-fix-attribution-pipeline-review-gaps.json",
+      "type": "seed",
+      "content": {
+        "schema_version": "4",
+        "producer": "to-seed",
+        "source": {
+          "type": "session",
+          "ref": null
+        },
+        "title": "Fix attribution pipeline hardening PR review gaps",
+        "slug": "fix-attribution-pipeline-review-gaps",
+        "created": "2026-06-05T21:36:00Z",
+        "status": "ready",
+        "iteration": 1,
+        "summary": "Code review of PR #18 (fix/attribution-pipeline-hardening) found two functional gaps and two nits. The PR correctly added a Step 0 validation gate and WROTE/NOT WRITTEN terminal lines to attribution-tracer.md, and correctly updated the bash path derivation in debug/SKILL.md. However, the same attribution-capture transcript_path fix was not applied to code-review/SKILL.md (leaving that skill broken), and the WROTE: <id> instruction in the Terminal output rule references the judge verdict JSON which does not contain an id field (the id comes from log-learning.py stdout). Two minor phrasing issues also need cleanup. Verdict: request changes. All findings are actionable and require no further judgment.",
+        "decisions": [
+          "code-review/SKILL.md:226 must be updated: replace 'transcript_path: absolute path to the session transcript (always available)' with the same bash derivation block from debug/SKILL.md:298-303",
+          "code-review/SKILL.md:235 must be updated: replace 'transcript_path: from above' with 'transcript_path: the resolved absolute path from above (required \u2014 attribution-tracer will fail-fast if absent or unreadable)'",
+          "attribution-tracer.md:35 WROTE: <id> instruction must be corrected: the id is not in the judge's verdict JSON ({verdict, confidence, reason}); it is in the log-learning.py stdout line 'OK: appended learning entry (type=..., id=<uuid>) to ...' \u2014 instruction must direct the tracer to parse this stdout line",
+          "attribution-tracer.md:38 terminal output rule 'echo judge raw verdict JSON' must be scoped to cases 1 and 2 only (Step 0 failures never spawn a judge so there is no verdict JSON to echo)",
+          "attribution-tracer.md:57 Step 0 phrasing contradiction must be resolved: 'your entire response' conflicts with 'end your summary with NOT WRITTEN:' \u2014 unify to a single instruction that specifies the exact output",
+          "PR #18 core mechanisms (Step 0 fail-fast gate and WROTE/NOT WRITTEN terminal-line pattern) are well-designed as machine-parseable signals; the issue is the id source pointer in the WROTE instruction, not the pattern itself",
+          "bash derivation block in debug/SKILL.md:298-303 is correct and matches the actual path encoding used in the project (confirmed by memory directory layout)"
+        ],
+        "open_threads": [],
+        "disposed_threads": [],
+        "verification": {
+          "iteration": 1,
+          "personas": [
+            "grounding",
+            "accuracy",
+            "completeness",
+            "coherence"
+          ],
+          "refutations_upheld": 1,
+          "refutations_screened": 1,
+          "clean": false,
+          "status": "verified"
+        },
+        "next_action": "Run /to-tasks to generate fix tasks for the four changes needed before PR #18 can be approved",
+        "problem_statement": "PR #18 fixed the attribution pipeline for the debug skill but left the same broken assumption in code-review/SKILL.md. It also introduced a WROTE: <id> terminal line pattern where the id source instruction references the judge verdict JSON, which does not contain the id field.",
+        "solution": "Apply the bash transcript_path derivation to code-review/SKILL.md, correct the WROTE: <id> source to reference log-learning.py stdout in the Terminal output rule section (line ~35), and fix two phrasing contradictions in attribution-tracer.md.",
+        "implementation_decisions": [
+          "code-review/SKILL.md bash derivation block must be copied verbatim from debug/SKILL.md:298-303 (CLAUDE_CONFIG_DIR + encoded_cwd + CLAUDE_CODE_SESSION_ID)",
+          "attribution-tracer.md Terminal output rule (line ~35) WROTE: <id> instruction must reference: parse the 'OK: appended learning entry ...' stdout line from log-learning.py to extract the id, not the verdict JSON",
+          "attribution-tracer.md terminal output rule must add explicit scope: '(For cases 1 and 2 only \u2014 Step 0 failures have no judge verdict to echo)'",
+          "attribution-tracer.md Step 0 must unify to: 'Emit {\"error\": \"transcript_path missing or unreadable: <path>\"} as your only output. End with NOT WRITTEN: transcript_path missing or unreadable'"
+        ],
+        "out_of_scope": [
+          {
+            "text": "Fix artifact-grounding-judge.md contradiction ('Do not return anything other than the single JSON object' vs 'Print the output from log-learning.py')",
+            "rationale": "Pre-existing inconsistency not introduced by PR #18; separate cleanup task."
+          },
+          {
+            "text": "Audit other skills beyond debug and code-review for stale attribution-capture blocks",
+            "rationale": "Only two skills were found to have attribution-capture blocks; broader audit is a separate concern."
+          }
+        ],
+        "risks_and_tradeoffs": [
+          "CLAUDE_CODE_SESSION_ID may not be set in all execution contexts; if unset, Step 0 in attribution-tracer handles the resulting invalid path gracefully, so the risk is contained"
+        ]
+      }
+    },
+    {
+      "filename": "20260605-2139-fix-attribution-pipeline-review-gaps.json",
+      "type": "task",
+      "content": {
+        "schema_version": "2",
+        "producer": "to-tasks",
+        "source": {
+          "type": "seed",
+          "ref": "docs/seeds/20260605-2136-fix-attribution-pipeline-review-gaps.json"
+        },
+        "generated_at": "2026-06-05T21:39:00Z",
+        "branching": {
+          "strategy": "single",
+          "branch": "fix/attribution-pipeline-hardening"
+        },
+        "tasks": [
+          {
+            "id": "T-0040",
+            "title": "Fix code-review attribution-capture block: derive transcript_path via bash",
+            "type": "AFK",
+            "description": "The attribution-capture block in claude-code-shared/skills/code-review/SKILL.md still uses the old 'always available' assumption for transcript_path (line 226) and passes it as 'from above' (line 235). Any code-review run that spawns attribution-tracer will pass an unresolved path and hit NOT WRITTEN: transcript_path missing or unreadable.\n\nFix: Replace lines 226-235 with the same bash derivation block used in debug/SKILL.md:298-304:\n- Line 226: Replace 'transcript_path: absolute path to the session transcript (always available)' with the CLAUDE_CONFIG_DIR + encoded_cwd + CLAUDE_CODE_SESSION_ID derivation block.\n- Line 235: Replace 'transcript_path: from above' with 'transcript_path: the resolved absolute path from above (required \u2014 attribution-tracer will fail-fast if absent or unreadable)'.",
+            "acceptance_criteria": [
+              "grep -n 'always available' claude-code-shared/skills/code-review/SKILL.md returns no matches",
+              "grep -n 'CLAUDE_CODE_SESSION_ID' claude-code-shared/skills/code-review/SKILL.md returns at least one match in the attribution-capture block",
+              "grep -n 'encoded_cwd' claude-code-shared/skills/code-review/SKILL.md returns at least one match",
+              "grep -n 'transcript_path.*from above' claude-code-shared/skills/code-review/SKILL.md returns no matches in the attribution-capture block",
+              "The bash derivation block in code-review/SKILL.md is textually identical to the one in debug/SKILL.md lines 298-304"
+            ],
+            "blocked_by": [],
+            "status": "done",
+            "branch": null,
+            "pr": "gh pr create --base main --head fix/attribution-pipeline-hardening --title \"Fix attribution-capture block in code-review skill\" --body \"Replaces transcript_path derivation in code-review/SKILL.md attribution block to match debug/SKILL.md bash derivation pattern.\""
+          },
+          {
+            "id": "T-0041",
+            "title": "Fix attribution-tracer.md: id source, echo scope, and Step 0 phrasing",
+            "type": "AFK",
+            "description": "Three phrasing issues in claude-code-shared/agents/attribution-tracer.md need fixing:\n\n1. WROTE: <id> source (Terminal output rule, line ~35): The instruction says 'the record id from the judge's verdict' but the judge's verdict JSON ({verdict, confidence, reason}) has no id field. The id is in the log-learning.py stdout line 'OK: appended learning entry (type=..., id=<uuid>) to ...'. Fix: change the instruction to direct the tracer to parse the OK: line from log-learning.py stdout to extract the id.\n\n2. Echo scope (line ~38): 'Before the terminal line, echo the judge's raw verdict JSON verbatim' is ambiguous \u2014 Step 0 failures never spawn a judge, so there is no verdict JSON to echo. Fix: add explicit scope note '(For cases 1 and 2 only \u2014 Step 0 failures have no judge verdict to echo)'.\n\n3. Step 0 phrasing contradiction (line ~57): 'Return immediately with {\"error\": \"...\"} as your entire response' conflicts with 'End your summary with NOT WRITTEN: ...'. Fix: unify to a single instruction: 'Emit {\"error\": \"transcript_path missing or unreadable: <path>\"} as your only output. End with NOT WRITTEN: transcript_path missing or unreadable'.",
+            "acceptance_criteria": [
+              "grep -n 'from the judge.s verdict' claude-code-shared/agents/attribution-tracer.md returns no matches (old id-source instruction removed)",
+              "grep -n 'OK: appended\\|log-learning.py stdout\\|OK: line' claude-code-shared/agents/attribution-tracer.md returns at least one match in the Terminal output rule section confirming the id source was updated",
+              "grep -n 'cases 1 and 2\\|For cases 1' claude-code-shared/agents/attribution-tracer.md returns at least one match confirming the echo scope was added",
+              "grep -n 'your entire response' claude-code-shared/agents/attribution-tracer.md returns no matches (contradictory phrasing removed)",
+              "grep -n 'as your only output\\|only output' claude-code-shared/agents/attribution-tracer.md returns at least one match in Step 0 confirming unified phrasing"
+            ],
+            "blocked_by": [],
+            "status": "done",
+            "branch": null,
+            "pr": "gh pr create --base main --head fix/attribution-pipeline-hardening --title \"Fix attribution-tracer id source, echo scope, and Step 0 phrasing\" --body \"Fixes three phrasing issues: id parsed from log-learning.py stdout OK: line, echo scope limited to cases 1/2, Step 0 output unified to single instruction.\""
+          }
+        ],
+        "follow_ups": [
+          {
+            "id": "FU-001",
+            "title": "Re-run /code-review on PR #18 after fixes to confirm review is clean",
+            "steps": [
+              "Ensure both T-0040 and T-0041 are merged or staged on fix/attribution-pipeline-hardening",
+              "Run: /code-review (auto-detects PR #18 on the current branch)",
+              "Verify the two \ud83d\udfe1 risk findings are no longer present: code-review/SKILL.md:226 and attribution-tracer.md:35",
+              "Verify the two \ud83d\udd35 nit findings are resolved: attribution-tracer.md:38 and :57",
+              "If all findings are resolved, approve and merge PR #18"
+            ],
+            "trigger_task": "T-0041",
+            "source": "planned"
+          }
+        ]
+      }
+    }
+  ]
+}

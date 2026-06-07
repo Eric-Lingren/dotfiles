@@ -1,0 +1,340 @@
+{
+  "kind": "condensed",
+  "producer": "clean-scaffolding",
+  "slug": "skill-learning-capture",
+  "title": "Self-learning memory system for Claude Code skills",
+  "condensed_at": "2026-06-07T07:03:33Z",
+  "condensed_from": [
+    "20260605-0238-skill-learning-capture.json",
+    "20260605-0244-skill-learning-capture.json"
+  ],
+  "artifacts": [
+    {
+      "filename": "20260605-0238-skill-learning-capture.json",
+      "type": "seed",
+      "content": {
+        "schema_version": "4",
+        "producer": "to-seed",
+        "source": {
+          "type": "session",
+          "ref": null
+        },
+        "title": "Self-learning memory system for Claude Code skills",
+        "slug": "skill-learning-capture",
+        "created": "2026-06-05T02:38:00Z",
+        "status": "ready",
+        "iteration": 1,
+        "summary": "Add a self-learning capture system to the 24 shared Claude Code skills. At the end of a run a skill records a genuine learning (an observed fact from that run), not a subjective self-improvement musing. Recording is gated by grounding: an observable artifact must exist in the session transcript proving a correction-event happened, so most runs record nothing. Entries are evidence-anchored, validated by a new haiku grounding-judge agent at write-time, then appended via a shared validating Python writer to per-skill JSONL files in a central learnings/ dir committed to the repo. trigger is an open vocabulary (named values plus an uncategorized+label escape hatch) where grounding, not enum-match, is the gate. Evals, hooks, dedup, and consumption are explicitly deferred. All design branches are resolved.",
+        "decisions": [
+          "Capture genuine learnings (observed facts from a run), not subjective self-improvement suggestions.",
+          "The membership gate for recording is grounding: an observable artifact must exist in the session transcript proving a correction-event happened. Default is write-nothing; most runs record nothing.",
+          "Each learning entry is evidence-anchored. evidence = WHAT happened this run (observable, run-specific). learning = WHY / the general reusable rule that must hold beyond this run. suggested_fix = the concrete skill/script edit (nullable). Guardrail: if a sentence only describes this run it is evidence, not learning.",
+          "Entries are stored as per-skill JSONL append: one JSON object per line, one file per skill.",
+          "Learnings live in a central directory claude-code-shared/learnings/<skill>.jsonl, not co-located in each skill dir. This keeps the skills/ code tree clean and gives one sync toggle.",
+          "All 24 shared skills get a uniform managed tail block. Plugin skills (caveman, chrome-devtools) are excluded.",
+          "Skill frontmatter is left untouched; no core_objective field is added now.",
+          "Firing is via a hard final-step block in each SKILL.md, framed as a gate with an explicit default of write-nothing. Phrasing-only; no enforcement hook in v1.",
+          "All writes go through a shared validating script (scripts/log-learning.py) that validates against the schema, injects timestamp and schema_version server-side, and does an atomic append. Skills never write the JSONL directly.",
+          "Learnings are committed to the dotfiles repo like everything else, not gitignored.",
+          "Grounding is verified at write-time by a dedicated subagent that reads the proposed entry plus the live session transcript. Grounded entries are written; ungrounded ones are dropped. Write-time is correct because the live session is the source of truth and disappears after the run.",
+          "The grounding verifier is a new dedicated agent (learning-grounding-judge), not a generalization of the to-seed personas, which are welded to seed-IR machinery.",
+          "The judge runs on the haiku model, framed as anchor-verification not free discovery: the producer enumerates discrete transcript anchors and the judge confirms each exists. The model is one frontmatter line, trivially bumped to sonnet later if evals show missed groundings.",
+          "trigger is an open vocabulary: named values (tool_failure, backtrack, user_correction, instruction_gap, redundant_effort) plus uncategorized, which requires a free-text snake_case trigger_label. Grounding, not enum-match, is the membership gate, so legitimate learnings outside the named set are still captured.",
+          "A trigger is only admissible if it maps to a distinct observable transcript artifact the judge can verify. Recurring uncategorized labels are promoted to named triggers via the contract, so the taxonomy grows from real data. No ungrounded other/misc dumping ground is allowed.",
+          "The enumerate-discrete-anchors rule applies to any entry whose evidence aggregates or counts repeated events (e.g. redundant_effort, backtrack, or an uncategorized 'tried N times' observation): evidence must list the discrete transcript anchors, not assert a bare count, and the count is derived as len(anchors). This keeps the haiku judge in verification (not free counting) range.",
+          "The contract slots into the existing contracts/ convention: learning-contract.md plus learning-schema.json, schema_version '1', producers = the 24 skills, consumer = future improve-skill. register-skill stamps the managed tail block and producer entry into new skills."
+        ],
+        "open_threads": [],
+        "disposed_threads": [
+          {
+            "id": "ot-001",
+            "text": "Capture self-improvement suggestions or genuine learnings?",
+            "disposition": "decided",
+            "iteration": 1
+          },
+          {
+            "id": "ot-002",
+            "text": "How to make the recording trigger a definitive Boolean rather than a subjective musing?",
+            "disposition": "decided",
+            "iteration": 1
+          },
+          {
+            "id": "ot-003",
+            "text": "How rich is each entry: minimal vs evidence-anchored schema?",
+            "disposition": "decided",
+            "iteration": 1
+          },
+          {
+            "id": "ot-004",
+            "text": "Storage structure: global log vs per-skill vs one-file-per-entry?",
+            "disposition": "decided",
+            "iteration": 1
+          },
+          {
+            "id": "ot-005",
+            "text": "Storage location: central learnings dir vs co-located in each skill dir?",
+            "disposition": "decided",
+            "iteration": 1
+          },
+          {
+            "id": "ot-006",
+            "text": "Scope: all 24 skills uniform vs a hand-picked subset?",
+            "disposition": "decided",
+            "iteration": 1
+          },
+          {
+            "id": "ot-007",
+            "text": "Add a core_objective field to skill frontmatter?",
+            "disposition": "rejected",
+            "iteration": 1
+          },
+          {
+            "id": "ot-008",
+            "text": "Firing reliability: phrasing-only block vs build an enforcement hook now?",
+            "disposition": "decided",
+            "iteration": 1
+          },
+          {
+            "id": "ot-009",
+            "text": "Write mechanism: direct prompt write vs shared validating writer script?",
+            "disposition": "decided",
+            "iteration": 1
+          },
+          {
+            "id": "ot-010",
+            "text": "Sync: gitignore local-only vs commit to repo?",
+            "disposition": "decided",
+            "iteration": 1
+          },
+          {
+            "id": "ot-011",
+            "text": "Grounding enforcement strength: convention-only vs script vs write-time subagent?",
+            "disposition": "decided",
+            "iteration": 1
+          },
+          {
+            "id": "ot-012",
+            "text": "Grounding judge: new dedicated agent vs generalize the to-seed personas?",
+            "disposition": "decided",
+            "iteration": 1
+          },
+          {
+            "id": "ot-013",
+            "text": "Is haiku strong enough for the grounding judge, or does it need sonnet?",
+            "disposition": "decided",
+            "iteration": 1
+          },
+          {
+            "id": "ot-014",
+            "text": "Is the fixed 5-value trigger enum too narrow to capture legitimate learnings?",
+            "disposition": "decided",
+            "iteration": 1
+          }
+        ],
+        "verification": {
+          "iteration": 1,
+          "personas": [
+            "grounding",
+            "accuracy",
+            "completeness",
+            "coherence"
+          ],
+          "refutations_upheld": 0,
+          "refutations_screened": 1,
+          "clean": true,
+          "status": "verified"
+        },
+        "deferred": [
+          {
+            "text": "SessionEnd conditional-nag hook",
+            "rationale": "Phrasing-only firing was chosen for v1; a hook can only nag (it cannot judge grounding) and depends on the learnings format already existing and on observing a real skip problem.",
+            "context": "A SessionEnd hook could grep the session transcript JSONL (via filter-session-transcript.sh) for mechanical correction footprints like tool failures and nag conditionally when entries are missing. Build it only if v1 data shows the hard-step block is being skipped.",
+            "source_seed": null
+          },
+          {
+            "text": "Consume-time utility verification of learnings",
+            "rationale": "v1 only verifies grounding (did this happen) at write-time. Whether a learning is worth acting on is a separate question that has no consumer yet.",
+            "context": "When improve-skill starts reading learnings, run a utility/quality judge (possibly a generalized persona) over candidate learnings at consume-time, lazily, over only the entries actually used.",
+            "source_seed": null
+          },
+          {
+            "text": "improve-skill consumption of learnings and promotion of recurring labels",
+            "rationale": "Nothing consumes learnings in v1; the consumer shape is not yet known.",
+            "context": "Future improve-skill reads claude-code-shared/learnings/<skill>.jsonl, applies suggested_fix candidates, and owns promoting recurring uncategorized trigger_labels into named triggers in learning-contract.md / learning-schema.json.",
+            "source_seed": null
+          },
+          {
+            "text": "Dedup, rotation, and growth caps for learning files",
+            "rationale": "Append-forever is fine for v1; nothing reads these yet so volume is not a concern.",
+            "context": "Per-skill JSONL grows unbounded. Revisit compaction/dedup once volume or a consumer makes it matter.",
+            "source_seed": null
+          },
+          {
+            "text": "Eval / grading system for skill output",
+            "rationale": "User explicitly chose not to introduce evals now; this is the part of the source video that is deliberately out of v1.",
+            "context": "An eval system would grade a skill's output against criteria during the run. If added later it would also justify the core_objective frontmatter field that was rejected for now.",
+            "source_seed": null
+          }
+        ],
+        "next_action": "Run /to-tasks to break this into tasks: the learning-contract.md + learning-schema.json, the log-learning.py writer, the learning-grounding-judge agent, the uniform managed tail block plus a sync-model-tiers-style injector, and register-skill integration.",
+        "problem_statement": "The 24 shared Claude Code skills run blind: nothing is captured when a run reveals a genuine, factual lesson (a tool quirk, a wrong instruction, a redundant search pattern). There is no consistent, low-noise way to record what skills learn, and naive self-evaluation prompts produce subjective, unquantifiable mush that an LLM always manufactures.",
+        "solution": "Append a uniform managed tail block to every shared skill that runs a grounding gate at end-of-run. When an observable correction-event occurred, the skill builds an evidence-anchored entry, a dedicated haiku grounding-judge confirms the cited anchors exist in the live transcript, and a shared validating Python writer appends the entry to a per-skill JSONL file in a central, repo-committed learnings/ dir. trigger is an open vocabulary gated by grounding rather than a closed enum, so legitimate learnings are never dropped, and recurring uncategorized labels get promoted.",
+        "evidence": "Motivated by a YouTube video where an engineer self-teaches his Claude Code skills by keeping per-skill memories of what each run learned. The user wants to start observing what their skills learn before building anything that consumes the data.",
+        "implementation_decisions": [
+          "Entry schema fields: schema_version, skill, timestamp, trigger, trigger_label (required iff trigger == uncategorized, else null), evidence, learning, suggested_fix (nullable).",
+          "trigger enum: tool_failure | backtrack | user_correction | instruction_gap | redundant_effort | uncategorized.",
+          "log-learning.py reuses the repo's existing validate-schema.py and jsonschema dependency; it creates claude-code-shared/learnings/<skill>.jsonl on first write and injects timestamp + schema_version server-side.",
+          "End-of-run flow: skill builds candidate entry -> spawns learning-grounding-judge with the entry plus live transcript -> if grounded, pipe entry as JSON on stdin to log-learning.py -> validate against learning-schema.json + atomic append; if not grounded, write nothing.",
+          "A deterministic whitespace-normalized substring check against the transcript is an optional cheap pre-filter; the subagent judge is the authoritative gate.",
+          "learning-grounding-judge agent: model haiku, single responsibility (given entry + transcript, return grounded/not + reason), modeled on the persona-grounding concept but not coupled to to-seed.",
+          "Contract files: learning-contract.md + learning-schema.json under claude-code-shared/contracts/, schema_version '1', producers list = 24 skills, consumer = future improve-skill.",
+          "The managed tail block is injected/maintained by a script following the existing sync-model-tiers.py pattern, keeping all 24 copies identical; register-skill adds it to new skills."
+        ],
+        "testing_decisions": [
+          "No unit tests for this infra work, per standing preference for claude-code-shared skills/agents/scripts."
+        ],
+        "out_of_scope": [
+          {
+            "text": "Plugin skills (caveman, chrome-devtools) receiving the tail block",
+            "rationale": "They live outside the dotfiles tree and update on their own cadence; a plugin update would clobber any injected block."
+          },
+          {
+            "text": "An ungrounded other/misc trigger value",
+            "rationale": "Grounding is the gate; an escape hatch that bypasses grounding reintroduces the subjective dumping ground the design exists to prevent. uncategorized entries still require a verified anchor."
+          },
+          {
+            "text": "Co-locating learnings inside each skill directory",
+            "rationale": "Mixes runtime data into the code tree, dirties skills/ on every run, and causes cross-machine merge friction next to source. Central dir chosen instead."
+          },
+          {
+            "text": "Adding a core_objective field to skill frontmatter now",
+            "rationale": "The grounding gate is transcript-anchored, not objective-anchored, so the field earns its place only when the deferred eval/grading system arrives."
+          }
+        ],
+        "risks_and_tradeoffs": [
+          "Phrasing-only firing is not 100% reliable; skip rate cannot be measured until learning files exist, so a nag hook is deferred until data justifies it.",
+          "Haiku may miscount or miss groundings; mitigated by the enumerate-discrete-anchors rule and a one-line reversible bump to sonnet.",
+          "Committing learnings means two machines appending to the same <skill>.jsonl between syncs can produce trivial git conflicts.",
+          "A deterministic substring check rejects paraphrased evidence; aggregated-observation learnings are why the semantic subagent judge is required over substring-only."
+        ],
+        "further_notes": [
+          "The trigger enum was originally serving two jobs (gate and label); decoupling grounding (gate) from trigger (label) was the key late correction.",
+          "improve-skill already keeps a per-skill learnings.md + scores.json as adjacent prior art for the future consumer."
+        ]
+      }
+    },
+    {
+      "filename": "20260605-0244-skill-learning-capture.json",
+      "type": "task",
+      "content": {
+        "schema_version": "2",
+        "producer": "to-tasks",
+        "source": {
+          "type": "seed",
+          "ref": "docs/seeds/20260605-0238-skill-learning-capture.json"
+        },
+        "generated_at": "2026-06-05T03:00:00Z",
+        "branching": {
+          "strategy": "single",
+          "branch": "feat/skill-learning-capture"
+        },
+        "tasks": [
+          {
+            "id": "T-0021",
+            "title": "Learning contract: learning-contract.md + learning-schema.json",
+            "type": "AFK",
+            "description": "Create the two contract files that anchor the learning capture system. learning-schema.json (schema_version '1', jsonschema draft-07) declares entry fields: schema_version (const '1'), skill (string), timestamp (ISO 8601 string), trigger (enum: tool_failure | backtrack | user_correction | instruction_gap | redundant_effort | uncategorized), trigger_label (string|null \u2014 required non-null only when trigger == uncategorized, must be null for all other trigger values; enforce with if/then/else), evidence (string), learning (string), suggested_fix (string|null). timestamp and schema_version are injected server-side by log-learning.py, so they are required in the output schema but NOT required fields that the skill must supply in its candidate input. learning-contract.md documents the schema, the full producers list (all 24 shared skills by name), consumer (future improve-skill), the open-vocabulary trigger rule (grounding not enum-match is the gate; recurring uncategorized labels get promoted to named triggers), and the enumerate-discrete-anchors rule (for aggregated observations, evidence must list discrete quoted transcript anchors rather than asserting a bare count). Place both files under claude-code-shared/contracts/.",
+            "acceptance_criteria": [
+              "learning-schema.json validates sample entries using `python -m jsonschema`; valid entries pass, entries missing required fields or with invalid trigger values fail",
+              "trigger_label constraint: an entry with trigger='uncategorized' and trigger_label=null fails validation; an entry with trigger='tool_failure' and trigger_label='something' fails validation; an entry with trigger='uncategorized' and trigger_label='repeated_glob_search' passes",
+              "learning-contract.md names all 24 shared skill producers explicitly",
+              "learning-contract.md states the enumerate-discrete-anchors rule",
+              "learning-contract.md lists future improve-skill as the consumer"
+            ],
+            "blocked_by": [],
+            "status": "done",
+            "branch": null,
+            "pr": null
+          },
+          {
+            "id": "T-0022",
+            "title": "log-learning.py: shared validating JSONL writer",
+            "type": "AFK",
+            "description": "Create claude-code-shared/scripts/log-learning.py. The script reads a candidate learning entry as JSON from stdin (the skill supplies trigger, trigger_label, evidence, learning, suggested_fix, and skill name). The script injects timestamp (ISO 8601 UTC now) and schema_version '1' server-side, validates the resulting object against learning-schema.json using the existing validate-schema.py machinery (jsonschema dependency already in the repo), then appends it atomically to claude-code-shared/learnings/<skill>.jsonl. On first write, create the learnings/ directory and the per-skill file. Atomic append strategy: acquire an exclusive lock (fcntl.flock or equivalent), append the JSON line, flush and release. Exit 0 on success. Exit non-zero and print a descriptive message to stderr on schema validation failure, missing skill field, or write error. Never write a partial or invalid entry. A deterministic whitespace-normalized substring pre-filter is optional (cheap sanity check before spawning the judge) but the schema validation is the hard gate.",
+            "acceptance_criteria": [
+              "Script exits 0 and appends a valid JSONL line when given a well-formed entry (minus timestamp/schema_version) on stdin",
+              "Script exits non-zero and prints to stderr when given an entry that fails learning-schema.json validation (e.g. missing evidence field)",
+              "Script creates the learnings/ directory and <skill>.jsonl file on first call for a new skill",
+              "The appended entry contains an injected ISO 8601 timestamp and schema_version '1'",
+              "Running the script twice with the same input appends two lines (idempotency is the caller's concern)"
+            ],
+            "blocked_by": [
+              "T-0021"
+            ],
+            "status": "done",
+            "branch": null,
+            "pr": null
+          },
+          {
+            "id": "T-0023",
+            "title": "learning-grounding-judge agent",
+            "type": "AFK",
+            "description": "Create claude-code-shared/agents/learning-grounding-judge.md. A dedicated single-purpose haiku agent (set `model: haiku` in frontmatter). Given a candidate learning entry (JSON, included in the prompt) and the path to the live session transcript, the agent verifies that each anchor quoted in the entry's evidence field actually appears (verbatim or near-verbatim) in the transcript. The agent does NOT free-discover learnings: the skill enumerates discrete transcript anchors in the evidence field, and the judge confirms each exists. The agent returns a JSON object only: {\"grounded\": true|false, \"reason\": \"<explanation>\"}. grounded=true only when every cited anchor is confirmed present in the transcript. Missing or unconfirmed anchors \u2192 grounded=false with a reason that names the specific missing anchor. Include the enumerate-discrete-anchors rule in the agent's instructions: evidence must list quoted anchors, not bare counts; len(anchors) is the count. Model the file structure on existing agents in claude-code-shared/agents/ (frontmatter + description + instructions sections). Add an entry to claude-code-shared/agents/registry.json.",
+            "acceptance_criteria": [
+              "Agent file has `model: haiku` in its YAML frontmatter",
+              "Agent instructions define the input contract: candidate entry JSON (inlined in prompt) + transcript file path",
+              "Agent instructions define the output contract: JSON {grounded: bool, reason: string} with no surrounding prose",
+              "Agent instructions include the enumerate-discrete-anchors rule",
+              "An entry is added to claude-code-shared/agents/registry.json for learning-grounding-judge"
+            ],
+            "blocked_by": [
+              "T-0021"
+            ],
+            "status": "done",
+            "branch": null,
+            "pr": null
+          },
+          {
+            "id": "T-0024",
+            "title": "Managed tail block + inject-learning-tail.py, applied to all 24 shared skills",
+            "type": "AFK",
+            "description": "Write the canonical managed tail block and the inject-learning-tail.py script that installs or replaces it in every shared SKILL.md, following the sync-model-tiers.py pattern.\n\nThe tail block is a Markdown section delimited by sentinel comments (<!-- learning-capture:start --> and <!-- learning-capture:end -->) appended at the end of each SKILL.md. The block instructs the skill to run the grounding gate as the final step of every run:\n1. Assess whether an observable correction-event occurred this run. Default: write nothing. Most runs record nothing.\n2. If yes, build a candidate entry: trigger (from the open enum), trigger_label (if trigger == uncategorized), evidence (discrete quoted transcript anchors \u2014 no bare counts), learning (the general reusable rule), optional suggested_fix.\n3. Spawn learning-grounding-judge with the entry JSON and the live session transcript path.\n4. If grounded=true: echo the entry JSON to stdin of `python ~/.dotfiles/claude-code-shared/scripts/log-learning.py`.\n5. If grounded=false or no correction-event: write nothing.\n\ninject-learning-tail.py reads the sentinel block from a canonical source string in the script itself, iterates over all SKILL.md files under claude-code-shared/skills/*/, finds the sentinel block (or end of file), replaces or appends it, and writes back. Exclude plugin skill directories (any directory not directly under claude-code-shared/skills/). Run the script after writing it to apply the block to all 24 skills.",
+            "acceptance_criteria": [
+              "inject-learning-tail.py exists under claude-code-shared/scripts/ and exits 0 when run against the skills directory",
+              "All 24 shared SKILL.md files contain the sentinel-delimited tail block at end of file after running the script",
+              "Re-running the script is idempotent: a second run makes no changes to any file",
+              "The tail block references log-learning.py and learning-grounding-judge by their correct absolute paths",
+              "Plugin skill directories (caveman, chrome-devtools) are not modified"
+            ],
+            "blocked_by": [
+              "T-0021",
+              "T-0022",
+              "T-0023"
+            ],
+            "status": "done",
+            "branch": null,
+            "pr": null
+          },
+          {
+            "id": "T-0025",
+            "title": "register-skill: stamp tail block and producer entry into new skills",
+            "type": "AFK",
+            "description": "Update claude-code-shared/skills/register-skill/SKILL.md so that when a new shared skill is registered it automatically receives: (1) the learning capture tail block \u2014 run `python ~/.dotfiles/claude-code-shared/scripts/inject-learning-tail.py` on the new skill's directory or copy the sentinel-delimited block directly; (2) the new skill name added to the producers list in claude-code-shared/contracts/learning-contract.md. The register-skill flow already stamps other boilerplate into new skills; these two steps extend that existing pattern. No changes to log-learning.py or learning-schema.json are needed.",
+            "acceptance_criteria": [
+              "register-skill SKILL.md includes a step to append the sentinel-delimited tail block to a new skill's SKILL.md (by running the injector or copying the block)",
+              "register-skill SKILL.md includes a step to add the new skill name to the producers list in learning-contract.md",
+              "Both steps reference the correct file paths"
+            ],
+            "blocked_by": [
+              "T-0024"
+            ],
+            "status": "done",
+            "branch": null,
+            "pr": null
+          }
+        ],
+        "follow_ups": []
+      }
+    }
+  ]
+}
