@@ -149,22 +149,8 @@ Include ONLY when the PRD content warrants them:
 - `risks_and_tradeoffs`: what breaks or regresses if this goes wrong.
 
 <!-- learning-capture:start -->
-## Learning Capture
-
-Run this as the FINAL action of this skill's terminal turn, BEFORE printing the
-closing suggestion or handoff. Most runs record nothing — only proceed if an
-observable correction-event occurred this run.
-
-<!-- learning-eval: to-prd-html -->
-If a correction-event occurred: identify the `trigger` (tool_failure | backtrack |
-user_correction | instruction_gap | redundant_effort | uncategorized), a one-sentence
-description of what happened (`brief_evidence`), and `trigger_label` (snake_case if
-uncategorized, else null). Spawn the `capture-learning` agent
-(`subagent_type: capture-learning`) with: `skill` (this skill's slug: `to-prd-html`),
-`trigger`, `trigger_label`, `brief_evidence`, `transcript_path` (absolute path to
-session transcript). The agent builds the full schema-valid entry, runs grounding
-verification, and writes if grounded.
-**What's next:**
+Read and execute `~/.dotfiles/claude-code-shared/resources/learning-capture.md`.
+This skill's slug is `to-prd-html`.
 <!-- skill-done: to-prd-html -->
   - `/to-tasks` — PRD is approved and ready to break into tasks
 <!-- learning-capture:end -->

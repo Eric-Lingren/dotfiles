@@ -34,7 +34,11 @@ compute_staged_list() {
 }
 
 compute_will_add() {
-  { git diff --name-only; git ls-files --others --exclude-standard; } | sort -u
+  { git diff --name-only --diff-filter=ACMRT; git ls-files --others --exclude-standard; } | sort -u
+}
+
+compute_will_delete() {
+  git diff --name-only --diff-filter=D | sort -u
 }
 
 # Returns newline-separated list of files matching any exclude pattern
@@ -94,6 +98,7 @@ secret_scan() {
 # --- Compute preview data ---
 STAGED=$(compute_staged_list)
 WILL_ADD=$(compute_will_add)
+WILL_DELETE=$(compute_will_delete)
 EXCLUDED=$(compute_excluded)
 
 # Compute UNSTAGED: modified tracked files not being committed and not in will-add
@@ -139,9 +144,17 @@ else
 fi
 echo ""
 
-echo "WILL ADD:"
+echo "WILL ADD / MODIFY:"
 if [[ -n "$WILL_ADD_FILTERED" ]]; then
   while IFS= read -r f; do [[ -n "$f" ]] && echo "  $f"; done <<< "$WILL_ADD_FILTERED"
+else
+  echo "  (none)"
+fi
+echo ""
+
+echo "WILL DELETE:"
+if [[ -n "$WILL_DELETE" ]]; then
+  while IFS= read -r f; do [[ -n "$f" ]] && echo "  $f"; done <<< "$WILL_DELETE"
 else
   echo "  (none)"
 fi
@@ -227,7 +240,12 @@ if ! $MODE_PUSH_ONLY; then
   fi
 
   if ! $MODE_AUTO; then
-    read -e -r -p "Commit message (edit or enter to accept): " -i "$COMMIT_MSG" OVERRIDE
+    if [[ "${BASH_VERSINFO[0]}" -ge 4 ]]; then
+      read -e -r -p "Commit message (edit or enter to accept): " -i "$COMMIT_MSG" OVERRIDE
+    else
+      printf "Commit message (enter to accept, or type replacement):\n  %s\n> " "$COMMIT_MSG"
+      read -r OVERRIDE
+    fi
     if [[ -n "$OVERRIDE" ]]; then
       COMMIT_MSG="$OVERRIDE"
     fi
