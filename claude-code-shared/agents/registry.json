@@ -108,7 +108,7 @@
       "name": "persona-judge",
       "file": "agents/personas/persona-judge.md",
       "model": "sonnet",
-      "description": "Evidence-bound adjudicator spawned 3x per refutation for a 2-of-3 majority vote. Checks whether a persona refutation's cited transcript span supports the refutation. Spawned by to-seed verification stage.",
+      "description": "Evidence-bound adjudicator over a batch of refutations. Returns one verdict per ref_id against a windowed evidence pack. Spawned by to-seed verification stage as 1 round-1 screener, then 3 round-2 panelists over the upheld subset for a 2-of-3 majority.",
       "consumers": [
         "to-seed"
       ]

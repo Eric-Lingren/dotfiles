@@ -33,29 +33,29 @@ The following thread ids are disposed and must never be re-raised under any name
 - **Transcript**: a file path only. The persona uses Grep and Read to locate relevant spans. The path must point to the output of `filter-session-transcript.sh`, not the raw session JSONL.
 - **Disposed-id lock list**: the `id` values from all entries in `seed.disposed_threads`. A persona that raises a refutation with a disposed id is producing an invalid result — the orchestrator discards it without judging.
 
-## Judge input (per refutation)
+## Judge input (batched)
 
-The orchestrator spawns 3 judge instances per refutation. Each receives:
+The judge is no longer spawned per refutation. It receives the whole batch plus a windowed evidence pack — the round-1 screener over all refutations, then each of the 3 round-2 panelists over the upheld subset. Each judge call receives:
 
 ```
-## Refutation
+## Refutations
 
-<single refutation object as JSON>
+<JSON array of refutation objects, each carrying a stable ref_id>
+
+## Evidence pack
+
+evidence_pack_path: <absolute path to the windowed pack produced by window-transcript-spans.sh>
 
 ## Seed (read-only context)
 
 seed_path: <absolute path to the seed JSON file produced in step 3a>
-
-## Transcript
-
-transcript_path: <absolute path to the cleaned transcript file>
 ```
 
 ### Requirements
 
-- **Refutation**: a single refutation object (normal form), not an array.
+- **Refutations**: a JSON array. Each object carries a `ref_id` minted by the orchestrator before the judge stage. The judge returns exactly one verdict per `ref_id`.
+- **Evidence pack**: a file path only. One `## <ref_id>` section per refutation holding the windowed transcript context around its span (or an `ABSENCE CLAIM` / `SPAN NOT FOUND IN TRANSCRIPT` marker). The judge must not request or read the full transcript — the pack is its evidence. This is the windowing optimization: judges read a small pack instead of re-ingesting the full transcript once per refutation.
 - **Seed**: a file path only. Read-only — the judge reads the file and must not propose changes to the seed.
-- **Transcript**: same cleaned transcript path used by personas.
 
 ## Cleaned transcript path
 

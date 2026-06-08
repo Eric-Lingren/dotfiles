@@ -1,53 +1,48 @@
 ---
 name: verdict-contract
-description: Contract for judge agent output. Each judge returns a single verdict object. Single source of truth for orchestrator parsing and judge instructions.
+description: Contract for judge agent output. The judge returns a JSON array of verdicts, one per refutation in the batch it received. Single source of truth for orchestrator parsing and judge instructions.
 ---
 
 # Verdict Contract
 
 **Schema:** `verdict-schema.json`
-**Producer:** persona-judge agent (spawned 3x per refutation)
+**Producer:** persona-judge agent (batched — 1 round-1 screener call, then 3 round-2 panel calls over the upheld subset)
 **Consumer:** to-seed verification stage orchestrator
 
 ## Output rule
 
-**Judges output only JSON, never prose or questions.** The entire response must be a single valid JSON object. No preamble, no explanation, no markdown fences.
+**Judges output only JSON, never prose or questions.** The entire response must be a single valid JSON array. No preamble, no explanation, no markdown fences.
+
+## Batched adjudication
+
+The judge no longer adjudicates one refutation per invocation. It receives the full batch of refutations (each with a stable `ref_id`) plus a windowed evidence pack, and returns one verdict per `ref_id`. This collapses what was previously `N + 3·upheld` judge spawns into at most `1 + 3` spawns per run.
 
 ## Normal form
 
 ```json
-{
-  "verdict": "upheld",
-  "reason": "The transcript span cited by the persona directly contradicts the seed's claim at decisions[2]."
-}
+[
+  {"ref_id": "r0", "verdict": "upheld", "reason": "The cited span at the r0 pack section contradicts decisions[2]."},
+  {"ref_id": "r1", "verdict": "rejected", "reason": "Pack section r1 is SPAN NOT FOUND; the claim is unsupported."}
+]
 ```
 
-or
-
-```json
-{
-  "verdict": "rejected",
-  "reason": "No span in the transcript supports the refutation; the claim is consistent with the discussion at line 47."
-}
-```
-
-`verdict` must be exactly `"upheld"` or `"rejected"`. No other values are valid.
+`verdict` must be exactly `"upheld"` or `"rejected"`. No other values are valid. The array must contain exactly one object per `ref_id` the judge received, preserving the ids.
 
 ## Error form
 
-On unrecoverable failure, the judge returns a single error object:
+On unrecoverable failure, the judge returns a single-element array carrying an error object:
 
 ```json
-{
-  "error": "could not read transcript file",
-  "details": "path /Users/eric/.claude/projects/... does not exist"
-}
+[
+  {"error": "could not read evidence pack", "details": "path /tmp/evidence-pack-... does not exist"}
+]
 ```
 
 ## Fields
 
 | Field | Type | Required | Description |
 |---|---|---|---|
+| `ref_id` | string | yes (normal) | Stable id of the refutation being judged, echoed from input |
 | `verdict` | string | yes (normal) | `"upheld"` or `"rejected"` |
 | `reason` | string | yes (normal) | One sentence citing the specific span or its absence |
 | `error` | string | yes (error) | Short description of the failure |
@@ -55,9 +50,12 @@ On unrecoverable failure, the judge returns a single error object:
 
 ## Adjudication
 
-Three judge instances run per refutation. The orchestrator collects all three verdicts and applies a flat 2-of-3 majority:
-- 2 or 3 `upheld` → refutation is upheld; apply it to the draft seed
-- 2 or 3 `rejected` → refutation is rejected; no change to the seed
-- If 2 or more judge instances return error-form objects for the same refutation, skip that refutation and record the failure
+The escalation ladder is unchanged in spirit, only batched:
 
-The orchestrator validates each verdict against this schema. On a parse mismatch, it retries the judge once.
+- **Round 1 (screener):** one judge call over all refutations. Each refutation with verdict `rejected` is terminated (counted in `refutations_screened`). Each `upheld` escalates.
+- **Round 2 (panel):** three fresh judge calls, each over the upheld subset. Apply a flat 2-of-3 majority per `ref_id`:
+  - 2 or 3 `upheld` → refutation upheld; apply it to the draft seed
+  - 2 or 3 `rejected` → refutation rejected; no change
+  - If 2 or more judge calls return error-form arrays, the whole round is degraded; record the failure
+
+The orchestrator validates each verdict against this schema. On a parse mismatch, it retries that judge call once.
