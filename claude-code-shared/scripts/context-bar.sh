@@ -150,7 +150,26 @@ for ((i=0; i<bar_width; i++)); do
     fi
 done
 
-ctx="${bar} ${C_GRAY}${pct}% ${pct_label}"
+# Seven-day (weekly) rate-limit flag. Some plans expose a seven_day window on top
+# of the five_hour one; when the weekly budget is the binding constraint the 5h bar
+# can read ~0% while you're actually throttled. Surface it as a compact graded badge
+# next to the 5h bar. Absent on plans that don't return the window (e.g. home/CCH).
+sevenday_flag=""
+sd_pct=$(echo "$input" | jq -r '.rate_limits.seven_day.used_percentage // empty')
+if [[ -n "$sd_pct" && "$sd_pct" != "null" ]]; then
+    sd_pct=$(printf '%.0f' "$sd_pct")
+    sd_pct=$(( sd_pct > 100 ? 100 : sd_pct ))
+    if [[ $sd_pct -ge 80 ]]; then
+        sd_color="$C_WARN"
+    elif [[ $sd_pct -ge 50 ]]; then
+        sd_color="$C_NUDGE"
+    else
+        sd_color="$C_GRAY"
+    fi
+    sevenday_flag=" ${sd_color}⚠7d:${sd_pct}%${C_RESET}"
+fi
+
+ctx="${bar} ${C_GRAY}${pct}% ${pct_label}${sevenday_flag}"
 
 # Current conversation context window usage (compact/restart signal).
 # Only show when the bar is tracking the 5h session — otherwise the bar
