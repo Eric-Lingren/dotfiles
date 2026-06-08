@@ -289,8 +289,6 @@ Delta: <must be clean — no new failures>
 
 If new failures appear: your cleanup caused a regression. Fix before proceeding.
 
-**Then ask: what would have prevented this bug?** If the answer involves architectural change (no correct test seam, tangled callers, hidden coupling), hand off to `/improve-codebase-architecture` with the specifics. Make the recommendation after the fix is in, not before.
-
 <!-- attribution-capture:start -->
 Read and execute `~/.dotfiles/claude-code-shared/resources/attribution-capture.md`.
 <!-- attribution-capture:end -->
