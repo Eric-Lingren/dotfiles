@@ -10,6 +10,7 @@ MODE_ALL=false
 MODE_PICK=false
 MODE_PR=false
 MODE_PUSH_ONLY=false
+MODE_AUTO=false
 
 for arg in "$@"; do
   case "$arg" in
@@ -17,6 +18,7 @@ for arg in "$@"; do
     --pick)       MODE_PICK=true ;;
     --pr)         MODE_PR=true ;;
     --push-only)  MODE_PUSH_ONLY=true ;;
+    --auto)       MODE_AUTO=true ;;
   esac
 done
 
@@ -170,6 +172,14 @@ fi
 
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
+# Non-interactive guard: require --auto when stdin is not a terminal
+if [ ! -t 0 ] && ! $MODE_AUTO; then
+  echo ""
+  echo "ERROR: non-interactive terminal detected. Pass --auto to proceed without prompts."
+  echo "Aborting."
+  exit 1
+fi
+
 # In push-only mode, skip staging/commit gate
 if ! $MODE_PUSH_ONLY; then
   # Hard stop if nothing to commit
@@ -182,14 +192,14 @@ fi
 # Confirm
 if [[ "$BRANCH" == "$BASE" ]]; then
   echo -e "\033[1;33m⚠️  WARNING: pushing directly to $BASE\033[0m"
-  printf "Proceed? [Y/n] "
-else
-  printf "Proceed? [Y/n] "
 fi
-read -r CONFIRM
-if [[ "$CONFIRM" == "n" || "$CONFIRM" == "N" ]]; then
-  echo "Aborted."
-  exit 0
+if ! $MODE_AUTO; then
+  printf "Proceed? [Y/n] "
+  read -r CONFIRM
+  if [[ "$CONFIRM" == "n" || "$CONFIRM" == "N" ]]; then
+    echo "Aborted."
+    exit 0
+  fi
 fi
 
 # --- Execute ---
@@ -216,10 +226,11 @@ if ! $MODE_PUSH_ONLY; then
     COMMIT_MSG="update files"
   fi
 
-  printf "Commit message [enter to accept]: %s\n> " "$COMMIT_MSG"
-  read -r OVERRIDE
-  if [[ -n "$OVERRIDE" ]]; then
-    COMMIT_MSG="$OVERRIDE"
+  if ! $MODE_AUTO; then
+    read -e -r -p "Commit message (edit or enter to accept): " -i "$COMMIT_MSG" OVERRIDE
+    if [[ -n "$OVERRIDE" ]]; then
+      COMMIT_MSG="$OVERRIDE"
+    fi
   fi
 
   git commit -m "$COMMIT_MSG"

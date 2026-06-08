@@ -1,13 +1,13 @@
 ---
 name: to-tasks
-description: Break a PRD into independently-grabbable tasks using tracer-bullet vertical slices, then write a JSON task file to docs/tasks/. Use when user wants to convert a PRD into AI-ready tasks.
+description: Break a seed or PRD into independently-grabbable tasks using tracer-bullet vertical slices, then write a JSON task file to docs/tasks/. Use when user wants to convert a seed file or PRD into AI-ready tasks.
 model: sonnet
 effort: high
 ---
 
 # To Tasks
 
-Break a PRD into independently-grabbable tasks using vertical slices (tracer bullets) and write the result as a JSON file to `docs/tasks/`.
+Break a seed file or PRD into independently-grabbable tasks using vertical slices (tracer bullets) and write the result as a JSON file to `docs/tasks/`.
 
 ## Contract
 
@@ -185,7 +185,9 @@ Append triage tasks after all build tasks in the `tasks[]` array.
 
 ### 3b. Infer follow-ups from the source artifact
 
-Scan the source artifact for manual actions outside the task graph: env var provisioning, DNS config, external service setup, database migrations, manual testing, deployment steps, credential rotation, etc.
+Scan the source artifact for manual actions outside the task graph that require human hands on a keyboard: env var provisioning, DNS config, external service setup, database migrations, credential rotation, third-party dashboard configuration, etc.
+
+**Follow-ups are for irreducible human-in-the-loop actions only.** Do NOT add follow-ups for: manual testing, verification, QA checks, "confirm it works", or reviewing output. Those are part of the natural workflow and happen inside task execution. Only include a follow-up when the action cannot be performed by the AI at all — e.g. a secret must be entered into a secrets manager, a DNS record must be clicked in a registrar UI, a production migration must be manually triggered.
 
 Draft a `follow_ups` list. Each item has:
 - **title**: what needs doing

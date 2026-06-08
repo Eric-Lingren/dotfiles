@@ -141,16 +141,14 @@ After the summary, always output:
 
 ```
 Next steps:
-  /dispatch-tasks docs/tasks/<filename>   — run the next branch
-  /run-task-followups docs/tasks/<filename>   — walk through manual follow-ups
 ```
 
-If all branches are done:
+Then run:
+```bash
+python3 ~/.dotfiles/claude-code-shared/scripts/print-skill-next-steps.py dispatch-tasks
+```
 
-```
-Next steps:
-  /run-task-followups docs/tasks/<filename>   — walk through manual follow-ups
-```
+Append that output under the Next steps header. If more branches remain, prepend a note: "Re-run `/dispatch-tasks <file>` to process the next branch." Do not hardcode skill names.
 
 <!-- learning-capture:start -->
 ## Learning Capture

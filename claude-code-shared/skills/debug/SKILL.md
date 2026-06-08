@@ -236,7 +236,7 @@ Write to `docs/tasks/<filename>`.
 
 See `~/.dotfiles/claude-code-shared/resources/branching-strategy.md` for JSON recording format.
 
-HITL tasks from debug (rare — e.g. "enable the feature flag to expose the buggy code path") must be hands-only: a keyboard action the AI cannot perform. Never emit a decision-review HITL task.
+HITL tasks from debug (rare — e.g. "enable the feature flag to expose the buggy code path") must be hands-only: a keyboard action the AI cannot perform. Never emit a decision-review HITL task. Never emit a follow-up for manual testing, verification, or confirming the fix looks right — that is part of the natural workflow, not a follow-up.
 
 Set `"producer": "debug"` on the root object. Set `"source": {"type": "session", "ref": null}`. Follow all field rules from the schema above.
 
@@ -253,10 +253,14 @@ Tasks written: docs/tasks/<filename>
 Tasks: <T-XXXX list>
 
 Next steps:
-  /build-code docs/tasks/<filename>   — apply fixes with TDD
-  /run-task-followups                — walk through FU-001 cleanup after build-code completes
-  /to-e2e-tasks                      — add e2e coverage (optional)
 ```
+
+Then run:
+```bash
+python3 ~/.dotfiles/claude-code-shared/scripts/print-skill-next-steps.py debug
+```
+
+Append that output (one `/skill — when` line per edge) under the Next steps header. Do not hardcode skill names.
 
 **Phase 4 is complete. Do not open any source file. Do not write any fix code. The debug skill is done.**
 

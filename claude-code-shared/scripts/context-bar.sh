@@ -150,6 +150,24 @@ for ((i=0; i<bar_width; i++)); do
     fi
 done
 
+# Seven-day (weekly) rate-limit. Some plans expose a seven_day window on top of the
+# five_hour one; when the weekly budget is the binding constraint the 5h bar can read
+# ~0% while you're actually throttled. Computed here, rendered as its own block (pct +
+# its own reset countdown) later. Absent on plans without the window (e.g. home/CCH).
+sd_pct=$(echo "$input" | jq -r '.rate_limits.seven_day.used_percentage // empty')
+sd_color=""
+if [[ -n "$sd_pct" && "$sd_pct" != "null" ]]; then
+    sd_pct=$(printf '%.0f' "$sd_pct")
+    sd_pct=$(( sd_pct > 100 ? 100 : sd_pct ))
+    if [[ $sd_pct -ge 80 ]]; then
+        sd_color="$C_WARN"
+    elif [[ $sd_pct -ge 50 ]]; then
+        sd_color="$C_NUDGE"
+    else
+        sd_color="$C_GRAY"
+    fi
+fi
+
 ctx="${bar} ${C_GRAY}${pct}% ${pct_label}"
 
 # Current conversation context window usage (compact/restart signal).
@@ -183,16 +201,43 @@ if [[ -n "$resets_at" && "$resets_at" != "null" ]]; then
     now=$(date +%s)
     secs_until_reset=$((resets_at - now))
     if [[ $secs_until_reset -le 0 ]]; then
-        token_refresh="  |  ${C_GRAY}🔄 now"
+        token_refresh=" ${C_GRAY}🔄 now"
     else
         refresh_hrs=$((secs_until_reset / 3600))
         refresh_min=$(( (secs_until_reset % 3600) / 60 ))
         if [[ $refresh_hrs -gt 0 ]]; then
-            token_refresh="  |  ${C_GRAY}🔄 ${refresh_hrs}h ${refresh_min}m"
+            token_refresh=" ${C_GRAY}🔄 ${refresh_hrs}h ${refresh_min}m"
         else
-            token_refresh="  |  ${C_GRAY}🔄 ${refresh_min}m"
+            token_refresh=" ${C_GRAY}🔄 ${refresh_min}m"
         fi
     fi
+fi
+
+# Seven-day block: its own section with weekly pct + a separate reset countdown,
+# kept distinct from the 5h bar/refresh. Only rendered when the window is present.
+sevenday=""
+if [[ -n "$sd_pct" && "$sd_pct" != "null" ]]; then
+    sd_resets_at=$(echo "$input" | jq -r '.rate_limits.seven_day.resets_at // empty')
+    sd_refresh=""
+    if [[ -n "$sd_resets_at" && "$sd_resets_at" != "null" ]]; then
+        now=$(date +%s)
+        sd_until=$((sd_resets_at - now))
+        if [[ $sd_until -le 0 ]]; then
+            sd_refresh=" 🔄 now"
+        else
+            sd_days=$((sd_until / 86400))
+            sd_hrs=$(( (sd_until % 86400) / 3600 ))
+            sd_min=$(( (sd_until % 3600) / 60 ))
+            if [[ $sd_days -gt 0 ]]; then
+                sd_refresh=" 🔄 ${sd_days}d ${sd_hrs}h"
+            elif [[ $sd_hrs -gt 0 ]]; then
+                sd_refresh=" 🔄 ${sd_hrs}h ${sd_min}m"
+            else
+                sd_refresh=" 🔄 ${sd_min}m"
+            fi
+        fi
+    fi
+    sevenday="  |  ${sd_color}⚠7d:${sd_pct}%${sd_refresh}${C_RESET}"
 fi
 
 # Get caveman mode badge
@@ -215,12 +260,12 @@ else
     caveman_badge="  |  \033[38;5;196m[CAVEMAN:DISABLED]\033[0m"
 fi
 
-# Line 1: [CCO|CCH] Model [effort] | 5h usage | Context window | Token refresh
+# Line 1: [CCO|CCH] Model [effort] | ctx window | 5h bar + refresh | 7d block
 line1=""
 [[ -n "$profile" ]] && line1+="${profile_color}${profile} ${C_RESET}"
 line1+="${C_ACCENT}${model}"
 [[ -n "$effort" ]] && line1+=" ${C_EFFORT}[${effort}]"
-line1+="${C_GRAY}  |  ${ctx}${ctxwin}${token_refresh}${C_RESET}"
+line1+="${C_GRAY}${ctxwin}  |  ${ctx}${token_refresh}${sevenday}${C_RESET}"
 
 # Line 2: Dir | Branch | Caveman badge
 line2="${C_GRAY}📁 ${dir}"

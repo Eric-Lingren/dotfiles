@@ -217,8 +217,14 @@ Output the handoff block:
 
 ```
 Next steps:
-  /build-code docs/tasks/<filename>   — implement the e2e tests with TDD
 ```
+
+Then run:
+```bash
+python3 ~/.dotfiles/claude-code-shared/scripts/print-skill-next-steps.py to-e2e-tasks
+```
+
+Append that output under the Next steps header. Do not hardcode skill names.
 
 <!-- learning-capture:start -->
 ## Learning Capture

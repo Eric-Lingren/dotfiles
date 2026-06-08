@@ -179,6 +179,7 @@
       }
     },
     "follow_ups": {
+      "description": "Irreducible human-in-the-loop actions that the AI cannot perform: entering secrets, clicking third-party dashboards, running production migrations, configuring DNS, etc. NOT for manual testing, verification, QA, or reviewing output — those are inherent to the workflow and must not appear here.",
       "type": "array",
       "items": {
         "type": "object",

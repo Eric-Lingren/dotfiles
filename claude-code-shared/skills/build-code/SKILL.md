@@ -255,17 +255,14 @@ After the summary, always output:
 
 ```
 Next steps:
-  /run-task-followups docs/tasks/<filename>   — walk through manual follow-ups interactively
-  /to-e2e-tasks                               — add e2e coverage (optional, ~10-20% of changes)
 ```
 
-If `follow_ups` is empty, note that in the handoff block:
+Then run:
+```bash
+python3 ~/.dotfiles/claude-code-shared/scripts/print-skill-next-steps.py build-code
+```
 
-```
-Next steps:
-  /run-task-followups   — no follow-ups found, but run to confirm
-  /to-e2e-tasks         — add e2e coverage (optional)
-```
+Append that output under the Next steps header. Do not hardcode skill names.
 
 ### 7. Offer to push and open a PR
 

@@ -312,10 +312,14 @@ Tell the user:
 
 ```
 Next steps:
-  /build-code docs/tasks/<filename>   -- execute approved changes with TDD and status tracking
 ```
 
-Do not invoke `/tdd` directly. Do not make any code changes. All execution happens in `/build-code`.
+Then run:
+```bash
+python3 ~/.dotfiles/claude-code-shared/scripts/print-skill-next-steps.py improve-component
+```
+
+Append that output under the Next steps header. Do not hardcode skill names. Do not invoke `/tdd` directly. Do not make any code changes. All execution happens in `/dispatch-tasks`.
 
 <!-- learning-capture:start -->
 ## Learning Capture
