@@ -330,17 +330,17 @@ root causes are confirmed in one run, spawn attribution-tracer once per root cau
 ## Learning Capture
 
 Run this as the FINAL action of this skill's terminal turn, BEFORE printing the
-closing suggestion or handoff. Most runs record nothing — only proceed if an
-observable correction-event occurred this run.
+closing suggestion or handoff. Always spawn the agent — it determines whether
+anything is worth recording. Do not self-assess and skip.
 
 <!-- learning-eval: debug -->
-If a correction-event occurred: identify the `trigger` (tool_failure | backtrack |
-user_correction | instruction_gap | redundant_effort | uncategorized), a one-sentence
-description of what happened (`brief_evidence`), and `trigger_label` (snake_case if
-uncategorized, else null). Spawn the `capture-learning` agent
-(`subagent_type: capture-learning`) with: `skill` (this skill's slug: `debug`),
-`trigger`, `trigger_label`, `brief_evidence`, `transcript_path` (absolute path to
-session transcript). The agent builds the full schema-valid entry, runs grounding
-verification, and writes if grounded.
+Always spawn the `capture-learning` agent (`subagent_type: capture-learning`).
+Pass: `skill` (this skill's slug: `debug`), `transcript_path` (absolute path to
+session transcript), and a `brief_evidence` summary of what happened this run
+(what was diagnosed, any backtracks, tool failures, or user corrections). The
+agent identifies the `trigger` (tool_failure | backtrack | user_correction |
+instruction_gap | redundant_effort | uncategorized), builds a schema-valid entry,
+runs grounding verification, and writes if grounded. If nothing is worth recording,
+the agent exits cleanly — but the spawn must always happen.
 <!-- skill-done: debug -->
 <!-- learning-capture:end -->
