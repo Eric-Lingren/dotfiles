@@ -28,13 +28,22 @@
         {"skill": "dispatch-tasks", "when": "tasks are ready to execute"}
       ]
     },
+    "build-code": {
+      "next": [
+        {"skill": "run-task-followups", "when": "all tasks are done and FU-001 cleanup is ready"},
+        {"skill": "to-e2e-tasks", "when": "want e2e coverage for the completed changes (optional)"}
+      ]
+    },
     "dispatch-tasks": {
       "next": [
-        {"skill": "to-e2e-tasks", "when": "want e2e coverage for the completed changes"}
+        {"skill": "run-task-followups", "when": "all branches are done and FU-001 cleanup is ready"},
+        {"skill": "to-e2e-tasks", "when": "want e2e coverage for the completed changes (optional)"}
       ]
     },
     "to-e2e-tasks": {
-      "next": []
+      "next": [
+        {"skill": "dispatch-tasks", "when": "e2e tasks file is written and ready to implement"}
+      ]
     },
     "prototype": {
       "next": [
@@ -57,7 +66,11 @@
       "next": []
     },
     "debug": {
-      "next": []
+      "next": [
+        {"skill": "dispatch-tasks", "when": "tasks file is written and ready to execute fixes"},
+        {"skill": "run-task-followups", "when": "build-code is done and FU-001 cleanup is ready"},
+        {"skill": "to-e2e-tasks", "when": "want e2e coverage after fixes land (optional)"}
+      ]
     },
     "code-review": {
       "next": []
@@ -90,7 +103,9 @@
       "next": []
     },
     "improve-component": {
-      "next": []
+      "next": [
+        {"skill": "dispatch-tasks", "when": "tasks file is written and ready to execute"}
+      ]
     },
     "register-skill": {
       "next": []

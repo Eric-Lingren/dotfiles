@@ -29,7 +29,7 @@ Then read the file and check for `open_threads`:
 
 **(b) open_threads is empty (status: ready):** stop immediately.
 - Tell the user: "This seed is already solidified — all threads are resolved. No grilling needed."
-- Suggest next steps: `/to-tasks <path>` to generate tasks, or `/to-prd-html <path>` to render a PRD.
+- Show next steps by running: `python3 ~/.dotfiles/claude-code-shared/scripts/print-skill-next-steps.py grill-with-docs` and printing the output.
 - Do not start a grill session.
 
 **(c) path is unreadable or missing:** say so plainly and ask what the user wants.
