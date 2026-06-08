@@ -42,7 +42,15 @@ This is the **only** interactive prompt before the pipeline gate. Do not ask abo
 
 ### 2. Synthesize the seed JSON
 
-Read the full conversation. Distill it into the shape defined in `contracts/seed-schema.json` in the dotfiles repo. Read the schema for field definitions, types, and required/optional classification. Required fields are always present. Optional fields are omitted when the conversation contains no relevant content.
+Read the full conversation. Distill it into a seed object. The field set is inlined below so you do **not** need to open `contracts/seed-schema.json` on a normal run — deep-read that file only if you are unsure about a specific field's nested shape or an enum's allowed values.
+
+**Required (always present):** `schema_version` (`"4"`), `producer`, `source`, `title`, `slug` (kebab, ≤40 chars), `created` (ISO 8601), `summary` (one paragraph), `decisions` (string[]), `open_threads` (object[] `{id, text, first_seen_iteration}`), `next_action` (single string), `status` (`ready`|`draft`).
+
+**Written later in the pipeline:** `iteration` (int), `disposed_threads` (object[] `{id, text, disposition, iteration}`), `verification` (stamp — step 3d).
+
+**Optional (omit when the conversation has no relevant content):** `deferred` (object[] `{text, rationale, context, source_seed}`), `out_of_scope` (object[] `{text, rationale}`), `problem_statement`, `solution`, `evidence`, `success_metrics` (string[]), `user_stories` (object[] `{actor, feature, benefit}`, min 5 if present), `implementation_decisions` (string[]), `testing_decisions` (string[]), `risks_and_tradeoffs` (string[]), `further_notes` (string[]), `condensed_from` (string[]).
+
+Required fields are always present. Optional fields are omitted when the conversation contains no relevant content.
 
 **Synthesis rules:**
 - Never fabricate content. Only include what the conversation explicitly contains or implies.
@@ -131,7 +139,7 @@ Store the output path as `SEED_PATH`. Pass this path to all personas and judges.
 
 #### 3b. Spawn all 4 adversary persona agents in parallel
 
-In a single message, spawn all four adversary personas simultaneously. Each persona receives (per `~/.dotfiles/claude-code-shared/contracts/persona-input-contract.md`):
+In a single message, spawn all four adversary personas simultaneously. The input shape is inlined here — open `~/.dotfiles/claude-code-shared/contracts/persona-input-contract.md` only if you suspect drift. Each persona prompt carries:
 - `seed_path: <SEED_PATH>` — a file path, not inline JSON
 - `transcript_path: <CLEANED_TRANSCRIPT_PATH>` — a file path, not inline transcript text
 - The disposed-id lock list (hard constraint: do not raise threads with these ids)
@@ -142,33 +150,50 @@ Agents to spawn (by registered agent name, not file path):
 - `personas:persona-completeness` — hunts missed branches, premature closure, dropped dependencies, merge-loss
 - `personas:persona-coherence` — hunts contradiction, misclassification, dropped human dispositions, relabel-resurrection
 
-Each persona returns a JSON array of refutation objects (`[]` if nothing found). Validate each returned result against the shape defined in `~/.dotfiles/claude-code-shared/contracts/refutation-contract.md`. On a parse mismatch or non-JSON response, retry that persona once. If the retry also fails, note the failure (agent name + error) and continue to 3c.
+Each persona returns a JSON array of refutation objects (`[]` if nothing found). Normal-form object shape (inlined — no need to open the contract): `{persona, field, claim, problem, transcript_span}` where `transcript_span` is a verbatim quote or `null`. Error-form: an array whose objects carry an `error` key — detect these by the presence of `error` and never forward them to the judge stage. On a parse mismatch or non-JSON response, retry that persona once. If the retry also fails, note the failure (agent name + error) and continue to 3c.
 
 **Adversarial framing:** the panel's job is to disprove, not to improve. Additions and new open_threads the panel surfaces auto-apply. Removals (claiming a decision is wrong and should be removed) require a cited transcript span as evidence — no span, no removal.
 
-#### 3c. Short-circuit or adjudicate
+#### 3c. Short-circuit or adjudicate (batched)
 
 **If all four personas return empty arrays (`[]`):** skip the judge stage entirely. There are no refutations to adjudicate. Proceed directly to step 3d with `refutations_upheld: 0` and `refutations_screened: 0`.
 
-**Otherwise:** maintain a `refutations_screened` counter (starts at 0). For each refutation returned by any persona, apply the two-round escalation ladder:
+**Otherwise:** the judge stage is batched — at most `1 + 3` Sonnet spawns total, regardless of how many refutations there are. Judges read a small windowed evidence pack, not the full transcript.
 
-**Round 1 — screener:** spawn 1 `personas:persona-judge` instance using the Sonnet model. The judge receives (per `~/.dotfiles/claude-code-shared/contracts/persona-input-contract.md`): the single refutation object, `seed_path: <SEED_PATH>`, and `transcript_path: <CLEANED_TRANSCRIPT_PATH>`. Validate the returned result against `~/.dotfiles/claude-code-shared/contracts/verdict-contract.md`. On a parse mismatch or non-JSON response, retry that judge once.
+**Prep — mint ids and build the evidence pack (do this once):**
 
-- **Round-1 returns `rejected`:** increment `refutations_screened`. Move to the next refutation. Do not escalate.
-- **Round-1 returns `upheld`:** escalate to round 2.
-- **Round-1 judge fails after retry:** record the failure (same degraded-path accounting as 3b) and skip the refutation.
+1. Merge all normal-form refutations from the four personas into one list. Assign each a stable `ref_id` (`r0`, `r1`, …) in list order. Drop error-form objects (the `error`-key ones) — they never reach the judge.
+2. Write the merged list (each object including its `ref_id`) to `/tmp/refutations-${CLAUDE_CODE_SESSION_ID}.json`. Store as `REFUTATIONS_PATH`.
+3. Build the windowed evidence pack:
+   ```bash
+   bash ~/.dotfiles/claude-code-shared/scripts/window-transcript-spans.sh \
+     "${CLEANED_TRANSCRIPT_PATH}" "${REFUTATIONS_PATH}" \
+     "/tmp/evidence-pack-${CLAUDE_CODE_SESSION_ID}.txt"
+   ```
+   Store the output path as `EVIDENCE_PACK_PATH`. If the script exits non-zero, treat it as a stage failure: record the error, skip the judge stage, and go to 3d on the degraded path.
 
-**Round 2 — panel:** spawn 3 fresh `personas:persona-judge` instances simultaneously, each using the Sonnet model. The round-1 verdict is not reused as a pre-vote — all 3 instances receive the refutation fresh. Validate each returned result against `~/.dotfiles/claude-code-shared/contracts/verdict-contract.md`. On a parse mismatch or non-JSON response, retry that judge instance once. Collect non-failed verdicts. Apply a 2-of-3 majority — if fewer than 2 non-failed verdicts are available, fall through to the failure handler below. If the refutation is upheld: apply it to the draft seed in memory (see adversarial framing above).
+**Round 1 — screener (1 Sonnet judge over the whole batch):** spawn one `personas:persona-judge` instance (Sonnet). Its prompt carries: the full `REFUTATIONS_PATH` array (inline the JSON or pass the path and have it Read — passing inline is fine since it is small), `evidence_pack_path: <EVIDENCE_PACK_PATH>`, `transcript_path: <CLEANED_TRANSCRIPT_PATH>` (escape hatch — the judge defaults to the pack and only greps the full transcript when far-context settles a verdict), and `seed_path: <SEED_PATH>`. It returns a verdict array — one `{ref_id, verdict, reason}` per refutation. Validate against the inlined verdict shape below (open `~/.dotfiles/claude-code-shared/contracts/verdict-contract.md` only on suspected drift). On a parse mismatch or non-JSON response, retry that judge once.
 
-**Failure handling (round-2 judges):** if 2 or more judge instances fail for the same refutation, skip that refutation, record the failure, and continue.
+- For each `ref_id` the screener marks `rejected`: increment `refutations_screened`. It is terminated — it does not escalate.
+- The set of `ref_id`s marked `upheld` is the **escalation set**.
+- **Screener fails after retry:** record the failure (degraded-path accounting as in 3b) and go to 3d on the degraded path — do not run round 2 on an unscreened batch.
+
+**Round 2 — panel (3 Sonnet judges over the escalation set):** if the escalation set is empty, skip round 2. Otherwise spawn 3 fresh `personas:persona-judge` instances simultaneously (Sonnet), each receiving only the **upheld subset** of refutations (with their `ref_id`s), the same `EVIDENCE_PACK_PATH`, `transcript_path: <CLEANED_TRANSCRIPT_PATH>` (same escape hatch), and `seed_path`. The round-1 verdicts are not reused as a pre-vote — all 3 panelists judge the subset fresh. Each returns a verdict array. Retry any panelist once on a parse mismatch.
+
+Apply a flat 2-of-3 majority **per `ref_id`**: a refutation is upheld only if ≥2 non-failed panelists return `upheld` for that id. Apply every upheld refutation to the draft seed in memory (see adversarial framing above). Refutations that fall to a `rejected` majority are dropped.
+
+**Verdict shape (inlined):** the judge response is a JSON array; each element is `{ref_id, verdict, reason}` with `verdict` ∈ `{upheld, rejected}`, or an error-form array `[{error, details?}]` on failure.
+
+**Failure handling (round-2 panel):** if 2 or more of the 3 panelists fail (error-form or unparseable after retry), the panel is unusable — record the failure, leave the escalation set's refutations unapplied, and take the degraded path at 3d.
 
 #### 3d. Build the verification stamp and clean up
 
 After all refutations are adjudicated:
 
-1. Delete both temp files:
+1. Delete the verification temp files (some may not exist if the judge stage was skipped — `rm -f` tolerates that):
    ```bash
-   rm -f "${CLEANED_TRANSCRIPT_PATH}" "${SEED_PATH}"
+   rm -f "${CLEANED_TRANSCRIPT_PATH}" "${SEED_PATH}" \
+         "${REFUTATIONS_PATH}" "${EVIDENCE_PACK_PATH}"
    ```
 
 2. Write the `verification` field onto the draft seed:
@@ -178,7 +203,7 @@ After all refutations are adjudicated:
   "iteration": <current iteration integer>,
   "personas": ["grounding", "accuracy", "completeness", "coherence"],
   "refutations_upheld": <count of upheld refutations>,
-  "refutations_screened": <count of refutations terminated at round-1 via lone reject>,
+  "refutations_screened": <count of refutations the round-1 screener marked rejected (never escalated)>,
   "clean": <true if refutations_upheld === 0>,
   "status": "verified"
 }
