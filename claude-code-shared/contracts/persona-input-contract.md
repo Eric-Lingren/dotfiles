@@ -46,6 +46,10 @@ The judge is no longer spawned per refutation. It receives the whole batch plus 
 
 evidence_pack_path: <absolute path to the windowed pack produced by window-transcript-spans.sh>
 
+## Transcript (escape hatch)
+
+transcript_path: <absolute path to the cleaned transcript — judge greps this only when far-context is needed>
+
 ## Seed (read-only context)
 
 seed_path: <absolute path to the seed JSON file produced in step 3a>
@@ -54,7 +58,8 @@ seed_path: <absolute path to the seed JSON file produced in step 3a>
 ### Requirements
 
 - **Refutations**: a JSON array. Each object carries a `ref_id` minted by the orchestrator before the judge stage. The judge returns exactly one verdict per `ref_id`.
-- **Evidence pack**: a file path only. One `## <ref_id>` section per refutation holding the windowed transcript context around its span (or an `ABSENCE CLAIM` / `SPAN NOT FOUND IN TRANSCRIPT` marker). The judge must not request or read the full transcript — the pack is its evidence. This is the windowing optimization: judges read a small pack instead of re-ingesting the full transcript once per refutation.
+- **Evidence pack**: a file path only. One `## <ref_id>` section per refutation holding the windowed transcript context around its span (or an `ABSENCE CLAIM` / `SPAN NOT FOUND IN TRANSCRIPT` marker). This is the judge's default evidence and the windowing optimization: judges rule from the small pack instead of re-ingesting the full transcript once per refutation.
+- **Transcript**: a file path only, the same cleaned transcript the personas used. It is an escape hatch, not the default. The window only shows context immediately around the span. When a verdict turns on far-context (stale-resolution, out-of-context), the judge greps the full transcript before ruling. Greps are targeted; the judge does not read the whole file top-to-bottom. This closes the windowing blind spot while keeping the common-case cost low.
 - **Seed**: a file path only. Read-only — the judge reads the file and must not propose changes to the seed.
 
 ## Cleaned transcript path

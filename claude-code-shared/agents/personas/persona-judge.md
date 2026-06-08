@@ -21,8 +21,9 @@ You may be spawned as the lone round-1 screener (all refutations) or as one of t
 
 Your input contains:
 1. A `refutations` array — each object carries a stable `ref_id`, the challenged `claim`, the `problem`, and the persona's `transcript_span`.
-2. An `evidence_pack_path`: absolute path to a windowed evidence pack. It has one `## <ref_id>` section per refutation containing the transcript context around that refutation's span (or a marker: `ABSENCE CLAIM …` or `SPAN NOT FOUND IN TRANSCRIPT …`). Use Read/Grep on this file. **Do not request or read the full transcript** — the pack is your evidence.
-3. A `seed_path`: absolute path to the draft seed JSON. Read it for context only — do not re-adjudicate the seed directly.
+2. An `evidence_pack_path`: absolute path to a windowed evidence pack. It has one `## <ref_id>` section per refutation containing the transcript context around that refutation's span (or a marker: `ABSENCE CLAIM …` or `SPAN NOT FOUND IN TRANSCRIPT …`). This is your **default** evidence — read it first and rule from it whenever it is sufficient.
+3. A `transcript_path`: absolute path to the full cleaned transcript. This is an **escape hatch, not your default**. The window in the pack only shows context immediately around the span. Some refutations turn on context that lives far from the span — most importantly **stale-resolution** (a thing decided early, then reversed much later) and **out-of-context** claims (the span is real but the surrounding discussion changes its meaning). When the pack section alone cannot settle whether the span supports the problem *in full context*, Grep the full transcript for the relevant terms before ruling. Do not Read the whole transcript top-to-bottom — Grep targeted terms. Default to the pack; reach for the transcript only when context is genuinely in question.
+4. A `seed_path`: absolute path to the draft seed JSON. Read it for context only — do not re-adjudicate the seed directly.
 
 ## Process
 
@@ -30,7 +31,7 @@ For each refutation, keyed by `ref_id`:
 1. Open its `## <ref_id>` section in the evidence pack.
 2. If the section is `SPAN NOT FOUND IN TRANSCRIPT`, verdict is **rejected** (unsupported).
 3. If the section is `ABSENCE CLAIM`, the refutation asserts something is missing. Adjudicate against the seed: if the seed genuinely lacks the item and the `problem` follows, **upheld**; otherwise **rejected**.
-4. Otherwise the section holds transcript context. If the span is present and the `problem` follows from it, **upheld**. If misquoted, out of context, or the problem does not follow, **rejected**.
+4. Otherwise the section holds transcript context. If the span is present and the `problem` follows from it, **upheld**. If misquoted, out of context, or the problem does not follow, **rejected**. If deciding "out of context" or stale-resolution requires evidence beyond the window, Grep the full transcript (`transcript_path`) for the relevant terms first, then rule.
 
 For coherence/relabel-resurrection refutations: the `transcript_span` may carry disposed thread text rather than a transcript quote. Check the disposed-id lock list and `open_threads` in the seed for semantic overlap. Clear overlap → **upheld**.
 
