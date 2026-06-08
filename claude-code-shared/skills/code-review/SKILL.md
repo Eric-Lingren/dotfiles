@@ -215,57 +215,11 @@ Then list findings grouped by file starting with with **FILE :** : <FILE_PATH> a
 Write nothing that doesn't belong in a comment thread. No preamble, no "Overall this looks great."
 
 <!-- attribution-capture:start -->
-## Attribution Capture
-
-For each confirmed issue found and verified this run (not false positives): run
-this block BEFORE printing the closing suggestion or handoff.
-
-For each real, confirmed issue:
-
-Collect available repo pointers from context:
-- `transcript_path`: resolve via bash before spawning the agent:
-  ```bash
-  CLAUDE_CONFIG_DIR="${CLAUDE_CONFIG_DIR:-$HOME/.claude}"
-  encoded_cwd=$(pwd | sed 's|[./]|-|g')
-  transcript_path="${CLAUDE_CONFIG_DIR}/projects/${encoded_cwd}/${CLAUDE_CODE_SESSION_ID}.jsonl"
-  echo "$transcript_path"
-  ```
-  Run this command and capture the output. Pass the resulting absolute path explicitly in the agent prompt under the `transcript_path` key. Do not assume the path — derive it.
-- `seed_path`: path to the seed file if referenced in this session
-- `tasks_path`: path to the tasks file if referenced in this session
-- `branch`: current git branch name (run `git rev-parse --abbrev-ref HEAD` if needed)
-- `pr_url`: PR URL being reviewed (if available from the review context)
-
-Spawn the `attribution-tracer` agent (`subagent_type: attribution-tracer`) with:
-- `issue_description`: the confirmed issue description
-- `fix`: the recommended fix for this issue
-- `transcript_path`: the resolved absolute path from above (required — attribution-tracer will fail-fast if absent or unreadable)
-- Any optional pointers available (seed_path, tasks_path, branch, pr_url)
-
-The attribution-tracer walks the provenance chain backward to find the earliest
-escape point, drafts a v2 attribution record, and passes it to the
-`artifact-grounding-judge` agent for verification. The judge writes to
-`learnings/unified-learnings.jsonl` if grounded.
-
-This block iterates once per confirmed real issue — skip issues dismissed as false
-positives. If three issues are confirmed, spawn attribution-tracer three times.
+Read and execute `~/.dotfiles/claude-code-shared/resources/attribution-capture.md`.
 <!-- attribution-capture:end -->
 
 <!-- learning-capture:start -->
-## Learning Capture
-
-Run this as the FINAL action of this skill's terminal turn, BEFORE printing the
-closing suggestion or handoff. Most runs record nothing — only proceed if an
-observable correction-event occurred this run.
-
-<!-- learning-eval: code-review -->
-If a correction-event occurred: identify the `trigger` (tool_failure | backtrack |
-user_correction | instruction_gap | redundant_effort | uncategorized), a one-sentence
-description of what happened (`brief_evidence`), and `trigger_label` (snake_case if
-uncategorized, else null). Spawn the `capture-learning` agent
-(`subagent_type: capture-learning`) with: `skill` (this skill's slug: `code-review`),
-`trigger`, `trigger_label`, `brief_evidence`, `transcript_path` (absolute path to
-session transcript). The agent builds the full schema-valid entry, runs grounding
-verification, and writes if grounded.
+Read and execute `~/.dotfiles/claude-code-shared/resources/learning-capture.md`.
+This skill's slug is `code-review`.
 <!-- skill-done: code-review -->
 <!-- learning-capture:end -->
