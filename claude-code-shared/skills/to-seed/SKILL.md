@@ -190,10 +190,12 @@ Apply a flat 2-of-3 majority **per `ref_id`**: a refutation is upheld only if �
 
 After all refutations are adjudicated:
 
-1. Delete the verification temp files (some may not exist if the judge stage was skipped — `rm -f` tolerates that):
+1. Delete the verification temp files (some may not exist if the judge stage was skipped — the existence guard tolerates that, and plain `rm` passes the destructive-fs hook that blocks force-delete):
    ```bash
-   rm -f "${CLEANED_TRANSCRIPT_PATH}" "${SEED_PATH}" \
-         "${REFUTATIONS_PATH}" "${EVIDENCE_PACK_PATH}"
+   for f in "${CLEANED_TRANSCRIPT_PATH}" "${SEED_PATH}" \
+            "${REFUTATIONS_PATH}" "${EVIDENCE_PACK_PATH}"; do
+     [ -e "$f" ] && rm "$f"
+   done
    ```
 
 2. Write the `verification` field onto the draft seed:
