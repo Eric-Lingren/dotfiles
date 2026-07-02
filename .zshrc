@@ -120,8 +120,11 @@ alias cco-update="npm install -g --prefix $HOME/.cco-npm @anthropic-ai/claude-co
 alias cch-doctor="CLAUDE_CONFIG_DIR=$HOME/.cch $HOME/.cch-npm/bin/claude doctor"
 alias cco-doctor="CLAUDE_CONFIG_DIR=$HOME/.cco $HOME/.cco-npm/bin/claude doctor"
 
+# Update both instances at once (auto-updater disabled; update is manual by design)
+alias cc-update="npm install -g --prefix $HOME/.cco-npm @anthropic-ai/claude-code@latest && npm install -g --prefix $HOME/.cch-npm @anthropic-ai/claude-code@latest && echo \"cco: \$($HOME/.cco-npm/bin/claude --version) | cch: \$($HOME/.cch-npm/bin/claude --version)\""
+
 # Disable bare `claude` to avoid accidentally using the wrong account
-alias claude="echo 'Use cco (office) or cch (home). Update: cch-update / cco-update'"
+alias claude="echo 'Use cco (office) or cch (home). Update both: cc-update'"
 
 
 

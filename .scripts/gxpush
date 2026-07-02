@@ -6,6 +6,9 @@ source "$SCRIPT_DIR/gx-lib.sh"
 
 gx_load_policy
 
+# Always operate from repo root so git ls-files finds all files regardless of CWD
+cd "$(git rev-parse --show-toplevel)"
+
 MODE_ALL=false
 MODE_PICK=false
 MODE_PR=false

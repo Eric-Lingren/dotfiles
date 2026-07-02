@@ -185,9 +185,21 @@ Append triage tasks after all build tasks in the `tasks[]` array.
 
 ### 3b. Infer follow-ups from the source artifact
 
-Scan the source artifact for manual actions outside the task graph that require human hands on a keyboard: env var provisioning, DNS config, external service setup, database migrations, credential rotation, third-party dashboard configuration, etc.
+A follow-up is a piece of **irreducible human-in-the-loop work that finalizes the built scope and that the AI cannot perform at all**. At to-tasks time (before any task runs) this means exactly one category:
 
-**Follow-ups are for irreducible human-in-the-loop actions only.** Do NOT add follow-ups for: manual testing, verification, QA checks, "confirm it works", or reviewing output. Those are part of the natural workflow and happen inside task execution. Only include a follow-up when the action cannot be performed by the AI at all — e.g. a secret must be entered into a secrets manager, a DNS record must be clicked in a registrar UI, a production migration must be manually triggered.
+- **Known HITL actions** surfaced in the source artifact that must happen for the built scope to ship — e.g. run a production database migration, add an env key in the Cloudflare dashboard, provision a secret in a secrets manager, click a DNS record in a registrar UI, flip a third-party dashboard toggle, seed production data.
+
+That is the only follow-up category to-tasks emits. A second category — **discovered** AFK/HITL work uncovered as a real limitation while tasks execute (an unknown that needs additional work) — is appended later by build-code/debug with `source: "discovered"`. Do NOT try to predict discovered work here.
+
+**Hard exclusions — never emit a follow-up for any of these**, even if the source artifact mentions them. They are part of the natural workflow and happen inside task execution or normal review:
+- testing, running the test suite, manual testing, QA, verification, "confirm it works", smoke checks
+- code review, cleanup, removing instrumentation, post-mortems, "finalize", "wrap up"
+- anything the AI can do itself AFK
+- anything already covered by a task's own acceptance criteria
+
+Gut check before adding an item: *if a human did not physically do this on a keyboard, would the shipped scope be broken or incomplete?* If no, it is not a follow-up. If it is just prudent hygiene that should be done anyway, it is not a follow-up.
+
+If the source artifact surfaces no known HITL action, emit an empty `follow_ups: []`. An empty list is the correct and common result — do not manufacture busywork to fill it.
 
 Draft a `follow_ups` list. Each item has:
 - **title**: what needs doing

@@ -1,6 +1,5 @@
-theme = dark:Dracula,light:Catppuccin Latte
+theme = dark:dracula-green,light:Catppuccin Latte
 cursor-style = block
 cursor-style-blink = true
 font-family = JetBrains Mono
 font-size = 13
-foreground = #9ccc9c

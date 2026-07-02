@@ -12,7 +12,7 @@
     "base_branch": "main",
     "pr_draft": true,
     "domain": "standard-metrics",
-    "exclude": ["docs/adr/", "docs/prototype/", "docs/browser-checks/", "docs/seeds/", "docs/tasks/", "docs/handoffs/", "docs/prd/", "docs/archive/"]
+    "exclude": ["docs", "docs/adr/", "docs/prototype/", "docs/browser-checks/", "docs/seeds/", "docs/tasks/", "docs/handoffs/", "docs/prd/", "docs/archive/", ".gitignore"]
   },
   "Eric-Lingren/SpawnedSapien": {
     "label": "spawnedsapien",

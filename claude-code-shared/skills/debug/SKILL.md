@@ -240,7 +240,7 @@ HITL tasks from debug (rare — e.g. "enable the feature flag to expose the bugg
 
 Set `"producer": "debug"` on the root object. Set `"source": {"type": "session", "ref": null}`. Follow all field rules from the schema above.
 
-The `follow_ups` array must include one entry for debug cleanup. Use the "Debug cleanup and post-mortem" runbook from `~/.dotfiles/claude-code-shared/resources/hitl-steps-runbooks.md`. Set `id` to `"FU-001"`, `trigger_task` to the first task ID, and `source` to `"planned"`.
+Set `follow_ups` to `[]` unless the diagnosis surfaced a genuine irreducible HITL action needed to ship the fix (rare — e.g. a production migration that must be manually triggered, a secret that must be rotated). **Do NOT emit a follow-up for debug cleanup, instrumentation removal, the post-mortem, or re-running tests.** That work is AFK and is run automatically by build-code's end-of-run cleanup step when it sees `producer: "debug"` (see Phase 5). Follow-ups are reserved for real human-on-a-keyboard work, not for cleanup the AI performs itself.
 
 **browser_verify note:** Populate `browser_verify` on each fix task for any bug that manifested as a user-visible UI issue. The URL and assertions come directly from the Phase 1 headless browser feedback loop. Omit `browser_verify` for pure backend or non-UI bugs.
 
@@ -266,7 +266,7 @@ Append that output (one `/skill — when` line per edge) under the Next steps he
 
 ## Phase 5 — Cleanup + post-mortem
 
-Run this after `/build-code` completes and all tasks are `done`. Triggered by the FU-001 follow-up in the tasks file.
+Run this after `/build-code` completes and all tasks are `done`. build-code auto-invokes this cleanup at end-of-run whenever the tasks file has `producer: "debug"` — there is no cleanup follow-up entry to trigger it. If the run was executed some other way, invoke this phase manually.
 
 **Run full test suite before cleanup.** Capture:
 

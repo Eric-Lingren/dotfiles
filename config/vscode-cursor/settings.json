@@ -1,5 +1,4 @@
 {
-    "workbench.colorTheme": "Bearded Theme Arc Reversed",
     "workbench.preferredDarkColorTheme": "Monokai",
     "workbench.preferredLightColorTheme": "Light Modern",
     "workbench.preferredHighContrastLightColorTheme": "Bearded Theme Stained Purple",
@@ -14,9 +13,16 @@
     "workbench.colorCustomizations": {
         "editor.selectionBackground": "#135564",
         "editor.selectionHighlightBackground": "#135564",
-        "terminal.foreground": "#9ccc9c",
         "terminal.selectionBackground": "#135564",
-        "terminal.selectionHighlightBackground": "#135564"
+        "terminal.selectionHighlightBackground": "#135564",
+        "[Monokai]": {
+            "terminal.foreground": "#9ccc9c"
+        },
+        "[Light Modern]": {
+            "terminal.foreground": "#1f2328",
+            "terminal.ansiGreen": "#1a7f37",
+            "terminal.ansiBrightGreen": "#116329"
+        }
     },
     "window.systemColorTheme": "auto",
     "window.autoDetectColorScheme": true,

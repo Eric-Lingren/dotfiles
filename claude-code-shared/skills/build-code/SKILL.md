@@ -199,7 +199,8 @@ A task is not done until tests exist that verify the behavior described in the a
 
 5. **Discover follow-ups** after each successful task:
    - Review the diff produced by this task (`git diff` of changes).
-   - Infer any manual follow-up actions: new env vars referenced but not provisioned, migration files created, external service configuration needed, manual testing required, etc.
+   - A follow-up is **irreducible human-on-a-keyboard work the AI cannot do at all**, uncovered by this task's diff — e.g. a new env var referenced but not provisioned (add it in the platform dashboard), a migration file created (run it against production), external service configuration, a DNS/registrar change, a secret to rotate.
+   - **Never emit a follow-up for:** manual testing, verification, QA, "confirm it works", code review, cleanup, removing instrumentation, post-mortems, or anything the AI can do itself AFK, or anything already covered by a task's acceptance criteria. Those are part of the normal workflow, not follow-ups. Gut check: *if a human did not physically do this, would the shipped scope be broken or incomplete?* If no, it is not a follow-up.
    - Check `~/.dotfiles/claude-code-shared/resources/hitl-steps-runbooks.md` for matching runbooks. Use runbook steps when available. Run the runbook's `Enrichment:` instructions to gather specifics from the diff and codebase. Fill placeholders with concrete values.
    - Each follow-up step must include the exact command, exact SQL, exact config key, or exact dashboard click path. Never write a step that says "update X" or "add Y" without specifying where and how.
    - Before appending, deduplicate: compare the inferred follow-up title against existing `follow_ups` in the JSON. Skip if a similar title already exists.
@@ -211,6 +212,15 @@ A task is not done until tests exist that verify the behavior described in the a
    - Determine if any other `not_started` task depends on this one.
      - **If yes (blocker):** update status to `blocked`, halt the run, report the failure.
      - **If no (standalone):** update status to `blocked`, continue to next task, add to end-of-run summary.
+
+### 4b. Debug cleanup (only when `producer: "debug"`)
+
+Read the root `producer` field of the tasks file. If it is `"debug"` and all fix tasks reached `done`, run the debug end-of-run cleanup automatically — this is AFK work, not a follow-up:
+
+- Execute the "Debug cleanup and post-mortem" runbook from `~/.dotfiles/claude-code-shared/resources/hitl-steps-runbooks.md` (this is debug Phase 5): capture a pre-cleanup test baseline, remove all `[DEBUG-...]` instrumentation, delete throwaway harness files and stale `docs/browser-checks/` run dirs, re-run the suite and confirm no new failures, and state the winning hypothesis in the PR description.
+- If cleanup introduces new test failures, treat it as a regression and fix before proceeding.
+
+If `producer` is anything other than `"debug"`, skip this step.
 
 ### 5. End-of-run summary
 
