@@ -97,7 +97,7 @@ query($owner: String!, $repo: String!, $number: Int!) {
               databaseId
               body
               url
-              author { login }
+              author { login __typename }
             }
           }
         }
@@ -106,7 +106,7 @@ query($owner: String!, $repo: String!, $number: Int!) {
         nodes {
           state
           body
-          author { login }
+          author { login __typename }
           url
         }
       }
@@ -115,7 +115,7 @@ query($owner: String!, $repo: String!, $number: Int!) {
           databaseId
           body
           url
-          author { login }
+          author { login __typename }
         }
       }
     }
@@ -140,25 +140,37 @@ Do not attempt to continue with partial data.
 
 ### 3e. Harvest filter
 
-From the GraphQL response, collect items as follows:
+From the GraphQL response, collect items as follows.
+
+**Bot-source rule (the noise filter).** A bot's only first-class channel is the inline review
+thread. That is where line-level feedback (bugbot, etc.) lands. Bots also emit high-volume
+administrative traffic through top-level PR comments and review summaries: CI status
+(chromatic), coverage reports (codecov), ticket linkbacks (linear), and "I reviewed your
+changes and found N issues" meta-notices that merely restate their own inline threads. None of
+that is actionable feedback. So bot-authored top-level comments and bot-authored review
+summaries are **dropped silently** — they never reach harvest display or triage, and they are
+not counted or surfaced.
+
+An author is a bot when `author.__typename === "Bot"`. This is the deterministic GitHub signal
+and it does not depend on the `[bot]` login suffix (integrations like `chromatic-com`,
+`linear-code`, and `codecov` lack it but still resolve to `__typename: "Bot"`).
 
 **Review threads** (`reviewThreads.nodes`):
 - Keep only threads where `isResolved === false`.
 - From each kept thread, take all `comments.nodes`.
 - Exclude comments where `author.login === $me`.
-- Known bugbot logins (e.g. `github-actions[bot]`, `dependabot[bot]`, `linear[bot]`, any
-  login matching `*[bot]`) are included **regardless** of the self-author filter. Bugbot is
-  a first-class source.
+- Bot-authored comments are kept here (inline threads are a first-class bot channel).
 - After filtering, drop any thread that has zero remaining comments (a thread where every
   comment was self-authored). Such threads never reach the harvest display or triage.
 
 **Review summary bodies** (`reviews.nodes`):
-- Include all reviews where `body` is non-empty and `author.login !== $me`.
+- Include reviews where `body` is non-empty, `author.login !== $me`, and
+  `author.__typename !== "Bot"`. Drop all bot-authored summaries.
 - Capture `state` (APPROVE / REQUEST_CHANGES / COMMENT) alongside the body.
 
 **Top-level PR comments** (`comments.nodes`):
-- Include all where `author.login !== $me`.
-- Bot logins included as first-class sources.
+- Include only where `author.login !== $me` and `author.__typename !== "Bot"`. Drop all
+  bot-authored top-level comments.
 
 ### 3f. Display harvest output
 
@@ -291,14 +303,15 @@ Present the post-diligence classification as a confirmation table:
 
 | # | Excerpt | Final Class | Disposition | Action |
 |---|---------|-------------|-------------|--------|
-| 1 | "The nil check..." | bug | confirmed_escape | attribution-tracer |
-| 2 | "Consider extracting..." | change | | none |
-| 3 | "What does fn return..." | question | | relay (notify) |
+| 1 | "The nil check..." | bug | confirmed_escape | attribution-tracer + reply draft |
+| 2 | "Consider extracting..." | change | | reply draft |
+| 3 | "What does fn return..." | question | | reply draft |
 
 The **Action** column shows what will fire for each item after the user confirms:
-- `confirmed_escape` bugs: attribution-tracer will be spawned
-- `false_flag`, `not_an_escape`, `unverified` bugs: no action
-- Non-bug items: noted in provenance for relay
+- `confirmed_escape` bugs: attribution-tracer spawned, plus a reply draft in Step 9
+- `false_flag`, `not_an_escape`, `unverified` bugs: reply draft in Step 9, no attribution
+- Non-bug items: reply draft in Step 9
+- Every substantive item gets a copy-only reply draft (Step 9); nothing is posted
 
 Prompt the user: "Confirm this categorization and proceed, or override any row before actions fire."
 
@@ -367,25 +380,90 @@ Include one entry per harvested item.
 
 ---
 
-## Step 9 — Relay stub (v1, inline)
+## Step 9 — Reply-copy drafting (v1, inline, copy-only)
 
-After `/to-seed` completes, read `seed.provenance.items[]` from the written seed file. Resolve
-the seed path from `/to-seed`'s terminal output (it prints the absolute path it wrote, under
-`docs/seeds/`). Do not guess the filename. Filter to items with `final_class` in
-`["question", "discuss", "nit"]`.
+**This step drafts ready-to-paste reply copy. It makes ZERO external calls.** No GitHub comments
+are posted, no threads are resolved, nothing is written to disk. The user pastes the copy manually.
+External write-back (posting, resolving) is deferred to the `/relay` skill and is explicitly out of
+scope here.
 
-Print a formatted list to the user:
+### 9a. Assemble the source data
+
+Draft copy from the **in-session** harvest + diligence results, not from the seed file. The seed's
+`provenance.items[]` carries only `thread_id` / `final_class` / `disposition` — it lacks the comment
+body and URL needed to write a grounded reply. Use the data already held in session:
+- the reviewer/bugbot comment text (from Step 3 harvest)
+- the final class + disposition (from Step 5 diligence + Step 6 HITL gate)
+- the resolved decision or open thread (from the seed synthesis)
+
+### 9b. Scope
+
+Draft copy for **every substantive harvested item**, all classes (`bug`, `change`, `question`,
+`discuss`, `diligence`, `nit`). Exclude only the CI/admin bot noise dropped during triage
+(e.g. chromatic, codecov, linear linkback, bugbot review-summary meta-notices). Confirmed bugs get
+copy too — an acknowledgement reply is still owed on the thread.
+
+### 9c. Copy guidelines per class/disposition
+
+Write a full, ready-to-paste reply per thread, grounded in the actual code finding. One reply per
+thread (if multiple harvested comments share a thread, write one reply addressing them together).
+
+- **bug / `confirmed_escape`**: acknowledge, confirm it's real, state the fix approach concisely.
+- **bug / `not_an_escape`**: confirm real but note it's the same root cause / a known facet; point to the fix.
+- **bug / `false_flag`**: explain, with evidence, why the code is correct as written. Stay collegial.
+- **change**: address the design point, state the decision made, offer the alternative if the reviewer feels strongly.
+- **question**: answer directly from the code.
+- **discuss**: engage the tradeoff, state your lean, name the follow-up. If the thread was disposed
+  as `deferred` in the seed, say so plainly and point at the deferred item so the reviewer knows it
+  is tracked, not dropped.
+- **nit**: brief acknowledgement (accepting or declining with a one-line reason).
+
+**Copy quality bar (applies to every draft):**
+- Match the reviewer's register — terse for a one-line nit, fuller for a design thread. Do not pad.
+- Ground claims in the code: cite `file:line` or the symbol when it sharpens the reply. Do not invent
+  file paths or line numbers; use only what diligence actually surfaced.
+- Reply as the PR author in first person. No hedging, no "as an AI", no meta-commentary about drafting.
+- Address the reviewer's actual point. Do not restate their comment back at them before answering.
+- Never claim work is done that is not done. A fix that is planned but unwritten reads as "fixing by…",
+  not "fixed".
+- Keep the reviewer's handle out of the body unless a direct @-mention adds something; the thread
+  already targets them.
+
+### 9d. Output format (terminal only)
+
+Print each draft grouped by thread, marked clearly as a draft:
 
 ```
-Non-code items for your attention:
+Reply drafts (copy-only — nothing sent):
 
-1. [question] "What does this fn return when input is empty?"
-   URL: https://github.com/...
-2. [nit] "Rename `x` to something more descriptive"
-   URL: https://github.com/...
+── Thread 1 · [change] · user1 ──
+URL: https://github.com/...
+DRAFT:
+<full ready-to-paste reply>
+
+── Thread 2 · [bug/confirmed_escape] · cursor ──
+URL: https://github.com/...
+DRAFT:
+<full ready-to-paste reply>
 ```
 
-No external calls are made from this step. No GitHub comments are posted. This is a notify-only print.
+### 9e. Mandatory no-external-calls banner
+
+After all drafts, print this verification banner verbatim so the user can confirm nothing was sent:
+
+```
+────────────────────────────────────────────────────────────
+NO EXTERNAL CALLS MADE.
+  - 0 GitHub comments posted
+  - 0 threads resolved
+  - 0 files written
+Copy above is DRAFT only. Review, edit, and paste manually.
+────────────────────────────────────────────────────────────
+```
+
+The counts are literal invariants of this step, not a report of variable state — this step never
+posts, resolves, or writes, so the numbers are always zero. If any future change makes them
+non-zero, that logic belongs in `/relay`, not here.
 
 ---
 
@@ -394,5 +472,5 @@ Read and execute `~/.dotfiles/claude-code-shared/resources/learning-capture.md`.
 This skill's slug is `revise-pr`.
 <!-- skill-done: revise-pr -->
   - `/to-tasks` — seed is verified and ready for implementation
-  - `/relay` — non-code items need user notification
+  - `/relay` — post the Step 9 reply drafts and resolve threads (external write-back, deferred)
 <!-- learning-capture:end -->

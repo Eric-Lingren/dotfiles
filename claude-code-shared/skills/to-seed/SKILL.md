@@ -48,7 +48,13 @@ Read the full conversation. Distill it into a seed object. The field set is inli
 
 **Written later in the pipeline:** `iteration` (int), `disposed_threads` (object[] `{id, text, disposition, iteration}`), `verification` (stamp — step 3d).
 
-**Optional (omit when the conversation has no relevant content):** `deferred` (object[] `{text, rationale, context, source_seed}`), `out_of_scope` (object[] `{text, rationale}`), `problem_statement`, `solution`, `evidence`, `success_metrics` (string[]), `user_stories` (object[] `{actor, feature, benefit}`, min 5 if present), `implementation_decisions` (string[]), `testing_decisions` (string[]), `risks_and_tradeoffs` (string[]), `further_notes` (string[]), `condensed_from` (string[]).
+**Optional (omit when the conversation has no relevant content):** `deferred` (object[] `{text, rationale, context, source_seed}`), `out_of_scope` (object[] `{text, rationale}`), `problem_statement`, `solution`, `evidence`, `success_metrics` (string[]), `user_stories` (object[] `{actor, feature, benefit}`, min 5 if present), `implementation_decisions` (string[]), `testing_decisions` (string[]), `risks_and_tradeoffs` (string[]), `further_notes` (string[]), `condensed_from` (string[]), `provenance` (object `{pr_url, head_branch, items[]}`).
+
+**Pass-through: `provenance` block.** When the invoking context (e.g. the `revise-pr` skill) hands you a
+`provenance` block in ARGUMENTS, copy it verbatim onto the seed under the `provenance` key. Do NOT
+synthesize, reshape, or drop it — it carries PR thread ids that downstream skills (`relay`) key on, and
+its shape is fixed by `seed-schema.json` (`pr_url`, `head_branch`, `items[]` with `thread_id`,
+`thread_id_type`, `final_class`, `disposition`). Omit the key entirely when no provenance block was passed.
 
 Required fields are always present. Optional fields are omitted when the conversation contains no relevant content.
 

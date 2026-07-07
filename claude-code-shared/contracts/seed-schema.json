@@ -254,6 +254,52 @@
       "type": "array",
       "items": {"type": "string"},
       "description": "List of original seed filenames (basenames only) that were merged to produce this condensed seed. Used by tools that resolve backlinks when the original file is no longer present. Optional — omit for non-condensed seeds."
+    },
+    "provenance": {
+      "type": "object",
+      "required": ["pr_url", "head_branch", "items"],
+      "additionalProperties": false,
+      "properties": {
+        "pr_url": {
+          "type": "string",
+          "description": "URL of the pull request this seed was distilled from."
+        },
+        "head_branch": {
+          "type": "string",
+          "description": "Head branch of the PR (the branch carrying the changes under review)."
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["thread_id", "thread_id_type", "final_class"],
+            "additionalProperties": false,
+            "properties": {
+              "thread_id": {
+                "type": "string",
+                "description": "Identifier of the review thread or comment. GraphQL global node id for inline threads, numeric databaseId string for top-level PR comments."
+              },
+              "thread_id_type": {
+                "type": "string",
+                "enum": ["graphql_node_id", "database_id"],
+                "description": "Which id kind thread_id holds, so downstream consumers (e.g. relay) key resolution correctly."
+              },
+              "final_class": {
+                "type": "string",
+                "enum": ["bug", "change", "question", "diligence", "discuss", "nit"],
+                "description": "Final class after diligence and the HITL gate."
+              },
+              "disposition": {
+                "type": ["string", "null"],
+                "enum": ["unverified", "confirmed_escape", "false_flag", "not_an_escape", null],
+                "description": "Final disposition for bug-class items, or null for non-bug items."
+              }
+            }
+          },
+          "description": "One entry per harvested feedback item, in harvest order."
+        }
+      },
+      "description": "PR-feedback provenance written by the revise-pr pipeline (Step 8). Present only on seeds distilled from PR review threads. Downstream skills (e.g. relay) read items[] to resolve threads. Omit for seeds not produced by revise-pr."
     }
   },
   "examples": [
