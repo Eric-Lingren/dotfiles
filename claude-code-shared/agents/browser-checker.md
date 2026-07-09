@@ -1,6 +1,6 @@
 ---
 name: browser-checker
-description: Stateless single-run agent. Navigates to a URL, evaluates observable assertions via inline Playwright, and returns a JSON result per browser-check-result.md. Spawned by run-tasks and debug after TDD passes. The caller owns the retry loop and server lifecycle.
+description: Stateless single-run agent. Navigates to a URL, evaluates observable assertions via inline Playwright, and returns a JSON result per browser-check-result.md. Spawned by build-runner and debug after TDD passes. The caller owns the retry loop and server lifecycle.
 tools: Bash, Write, Read
 model: sonnet
 ---

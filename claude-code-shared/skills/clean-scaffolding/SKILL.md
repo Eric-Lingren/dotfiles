@@ -1,6 +1,6 @@
 ---
 name: clean-scaffolding
-description: Archive consumed doc scaffolding (seeds, PRDs, tasks, handoffs) in the current working tree. Bundles each fully-consumed lineage chain verbatim into docs/archive/. Leaves docs/adr/ and docs/prototype/ untouched. Deletes browser-checks without archiving. Use when done with a workflow and ready to clear the clutter. Pass --force or -y to skip the confirmation prompt.
+description: Archive consumed doc scaffolding (seeds, PRDs, tasks, handoffs) in the current working tree. Bundles each fully-consumed lineage chain verbatim into docs/archive/. Leaves docs/adr/ and docs/prototype/ untouched. Deletes browser-checks and task trace logs without archiving. Use when done with a workflow and ready to clear the clutter. Pass --force or -y to skip the confirmation prompt.
 argument-hint: "--force or -y to skip confirmation"
 model: haiku
 effort: low
@@ -12,7 +12,7 @@ This skill is **lineage-aware**: it groups artifacts by their provenance chain a
 
 **Three-way disposition:**
 - **Archive set** (bundle then remove originals): `docs/seeds/`, `docs/prd/`, `docs/tasks/`, `docs/handoffs/`
-- **Delete set** (remove without archiving): `docs/browser-checks/`
+- **Delete set** (remove without archiving): `docs/browser-checks/`, `docs/tasks/.logs/`
 - **Untouched**: `docs/adr/`, `docs/prototype/`
 
 ## Process
@@ -82,7 +82,7 @@ bash ~/.dotfiles/claude-code-shared/skills/clean-scaffolding/scripts/clean-scaff
   archive-files <file1> <file2> ...
 ```
 
-**Delete-set files** (browser-checks): delete without archiving using `delete-files` mode:
+**Delete-set files** (browser-checks, task trace logs): delete without archiving using `delete-files` mode:
 
 ```bash
 bash ~/.dotfiles/claude-code-shared/skills/clean-scaffolding/scripts/clean-scaffolding.sh \

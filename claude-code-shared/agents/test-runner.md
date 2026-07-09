@@ -253,9 +253,9 @@ Combine test results and typecheck violations:
 Status rules (from `contracts/runner-result-contract.md`):
 - `"pass"` — `counts.failed == 0` AND `violations` is empty.
 - `"fail"` — `counts.failed > 0` OR `violations` is non-empty (typecheck errors).
-- `"warn"` — 0 tests ran (0 affected, or no command configured). run-tasks proceeds.
+- `"warn"` — 0 tests ran (0 affected, or no command configured). build-runner proceeds.
 - `"timeout"` — run exceeded 180s wall-clock limit and was killed.
-- `"deps-missing"` — binary or node_modules absent. run-tasks blocks.
+- `"deps-missing"` — binary or node_modules absent. build-runner blocks.
 
 `command` field: use the actual command that was run (with {files} already substituted). If only typecheck was run, use the typecheck command.
 

@@ -1,6 +1,6 @@
 ---
 name: lint-runner
-description: Read-only linting agent. Runs a resolved lint/format command in a workspace, parses tool JSON output, and returns a contract-shaped verdict per runner-result-contract.md. Spawned by run-tasks for each touched workspace. Model haiku. Tools Bash and Read only — never writes to source files.
+description: Read-only linting agent. Runs a resolved lint/format command in a workspace, parses tool JSON output, and returns a contract-shaped verdict per runner-result-contract.md. Spawned by build-runner for each touched workspace. Model haiku. Tools Bash and Read only — never writes to source files.
 tools: Bash, Read
 model: haiku
 ---
