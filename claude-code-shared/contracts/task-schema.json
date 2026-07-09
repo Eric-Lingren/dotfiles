@@ -90,8 +90,8 @@
           },
           "status": {
             "type": "string",
-            "enum": ["not_started", "in_progress", "done", "merged", "blocked"],
-            "description": "Current execution state managed by run-tasks."
+            "enum": ["not_started", "in_progress", "done", "merged", "blocked", "failed", "deferred_hitl"],
+            "description": "Current execution state managed by run-tasks. 'failed': a build-runner task that did not pass. 'deferred_hitl': a HITL task skipped for a later interactive pass."
           },
           "branch": {
             "type": ["string", "null"],
@@ -148,6 +148,28 @@
           "task_ref": {
             "type": "string",
             "description": "Task file filename (basename only, no directory prefix) in which this triage task lives. Written by to-tasks for triage items. Optional — omit for code tasks and legacy files."
+          },
+          "summary": {
+            "type": "string",
+            "description": "One-line execution summary written by build-runner on completion. Optional."
+          },
+          "files_touched": {
+            "type": "array",
+            "items": {"type": "string"},
+            "description": "File paths touched by build-runner while executing this task. Optional."
+          },
+          "tests": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "passed": {"type": "integer"},
+              "failed": {"type": "integer"}
+            },
+            "description": "Test pass/fail counts from build-runner's execution. Optional."
+          },
+          "log_path": {
+            "type": "string",
+            "description": "Path to the full execution trace log written by build-runner. Optional."
           }
         }
       },

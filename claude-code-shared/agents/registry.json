@@ -114,6 +114,15 @@
       ]
     },
     {
+      "name": "build-runner",
+      "file": "agents/build-runner.md",
+      "model": "sonnet",
+      "description": "Executes exactly ONE task end-to-end: seeds and runs the /tdd red-green-refactor cycle, spawns lint-runner/test-runner and browser-checker (when browser_verify is present), writes the full trace to docs/tasks/.logs/, and returns a compact receipt. Spawned by build-code's per-task orchestrator loop.",
+      "consumers": [
+        "build-code"
+      ]
+    },
+    {
       "name": "export-tasks",
       "file": "agents/task-exporters/export-tasks.md",
       "model": "sonnet",

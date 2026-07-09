@@ -154,6 +154,35 @@ else
   assert_fail "Case 6: archive bundle wrongly created for browser-checks"
 fi
 
+# Case 6b: docs/tasks/.logs trace files deleted via delete-files (not archived), leaving docs/archive untouched
+CASE6B=$(new_case_dir 6b)
+mkdir -p "$CASE6B/docs/tasks/.logs/my-taskfile" "$CASE6B/docs/archive"
+echo '{"kept":"marker"}' > "$CASE6B/docs/archive/keep-me.json"
+LOG_FILE="$CASE6B/docs/tasks/.logs/my-taskfile/T-0001.md"
+echo '# trace' > "$LOG_FILE"
+(cd "$CASE6B" && bash "$SKILL_SCRIPT" delete-files docs/tasks/.logs/my-taskfile/T-0001.md) > "$TMP/out6b" 2>&1
+if [ ! -f "$LOG_FILE" ]; then
+  assert_pass "Case 6b: .logs trace file deleted by delete-files"
+else
+  assert_fail "Case 6b: .logs trace file not deleted"
+fi
+if [ -f "$CASE6B/docs/archive/keep-me.json" ]; then
+  assert_pass "Case 6b: docs/archive contents left intact"
+else
+  assert_fail "Case 6b: docs/archive contents were wrongly removed"
+fi
+
+# Case 6c: preview enumerates docs/tasks/.logs alongside browser-checks as delete set
+CASE6C=$(new_case_dir 6c)
+mkdir -p "$CASE6C/docs/tasks/.logs/my-taskfile"
+echo '# trace' > "$CASE6C/docs/tasks/.logs/my-taskfile/T-0002.md"
+PREVIEW_OUT=$(cd "$CASE6C" && bash "$SKILL_SCRIPT" preview 2>&1 || true)
+if echo "$PREVIEW_OUT" | grep -q "T-0002.md"; then
+  assert_pass "Case 6c: preview lists docs/tasks/.logs trace files"
+else
+  assert_fail "Case 6c: preview did not list .logs trace file. Output: $PREVIEW_OUT"
+fi
+
 # Case 7: archive-files requires at least one file argument
 set +e
 ERR_OUT=$(bash "$SKILL_SCRIPT" archive-files 2>&1 || true)

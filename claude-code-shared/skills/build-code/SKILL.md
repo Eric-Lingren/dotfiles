@@ -1,6 +1,6 @@
 ---
 name: build-code
-description: Execute tasks from a tasks JSON file sequentially using TDD. Handles branching, status updates, blocker detection, and HITL pausing. Use when user wants to run AI tasks from a docs/tasks/ file.
+description: Execute tasks from a tasks JSON file sequentially, one build-runner spawn per task. Handles branching, status updates, blocker detection, leaf/blocker failure policy, and deferred HITL tasks without halting independent work. Use when user wants to run AI tasks from a docs/tasks/ file.
 model: sonnet
 effort: high
 ---
@@ -21,7 +21,7 @@ the current model. Delegate only the menial searching.
 
 # Run Tasks
 
-Execute tasks from a `docs/tasks/` JSON file sequentially, using `/tdd` for each AFK task. Updates task status in the JSON as work progresses.
+Execute tasks from a `docs/tasks/` JSON file sequentially. Each AFK task is executed in isolation by the `build-runner` agent — build-code itself never runs `/tdd` inline and never holds a task's full execution trace, only the compact receipt `build-runner` returns. Updates task status in the JSON as work progresses.
 
 ## Contract
 
@@ -51,7 +51,7 @@ Always ask explicitly. Do not infer from context:
 
 Route the chosen path through resolve-ref.sh before reading (see `resources/resolve-ref-pattern.md`): Run `bash ~/.dotfiles/claude-code-shared/scripts/resolve-ref.sh $(basename <path>)`. On archive hit (output starts with `ARCHIVE:`), use the extracted content. On not-found (exit non-zero), surface the diagnostic and ask "Continue anyway?" — bypass rebuilds context from conversation.
 
-Read the chosen JSON file and the PRD it references (`prd` field).
+Read the chosen JSON file.
 
 ### 2. Determine the run queue
 
@@ -60,8 +60,8 @@ If a specific task ID was given:
 - Still check its `blocked_by` dependencies (see step 4).
 
 If no task ID was given, build the queue:
-- Include all tasks with status `not_started`, in `id` order.
-- Skip tasks with status `in_progress`, `done`, `merged`, or `blocked`.
+- Include all tasks with status `not_started` or `failed`, in `id` order. Resumption is free: a `failed` task from a prior run is retried exactly like a fresh `not_started` task.
+- Skip tasks with status `in_progress`, `done`, `merged`, `blocked`, or `deferred_hitl`.
 
 ### 3. Set up branching
 
@@ -69,6 +69,18 @@ Read `branching.strategy` from the JSON:
 
 - **`"single"`** — check out or create `branching.branch` once before starting the queue. All tasks run on this branch.
 - **`"per-task"`** — create each task's `branch` field value immediately before that task runs.
+
+### 3b. Build the shared context brief (once)
+
+Before the loop starts, if the queue is non-empty, spawn the `context-loader` agent once for the whole run:
+
+```
+Agent(subagent_type="context-loader", prompt="<project root>")
+```
+
+Capture its JSON payload as `context_brief`. Reuse this same brief for every `build-runner` spawn in this run — never re-spawn `context-loader` per task.
+
+Initialize `breadcrumb = []` (an empty list of compact receipts from tasks completed so far this run).
 
 ### 4. For each task in the queue
 
@@ -84,134 +96,47 @@ Look up each ID in `blocked_by`. If any blocking task has a status other than `d
 
 HITL means **hands-only**: a keyboard action the AI cannot perform AFK (e.g. enable a feature flag, add a credential to a secrets manager, configure DNS, seed production data). Decision and design-review tasks are NOT valid HITL tasks — they should never appear in the queue. If they do, treat them as a bug in the task file.
 
-If `type` is `"HITL"`:
-- Determine if any other `not_started` task in the queue depends on this task.
-  - **If yes (it is a blocker):** update status to `in_progress` in the JSON, print the task's title, description, and acceptance criteria, tell the user this task requires a hands-on human action before the pipeline can continue, and halt the run.
-  - **If no (standalone):** skip it, continue to the next task, add to the end-of-run summary.
+If `type` is `"HITL"`: set status to `deferred_hitl` in the JSON, print the task's title, description, and acceptance criteria so the user knows a hands-on action is waiting, and continue to the next task in the queue — independent AFK work never halts for a HITL task, blocker or not. Add it to the end-of-run report's `deferred_hitl` list. If another queued task's `blocked_by` names this HITL task, that dependent task will correctly report `blocked` in step 4a until a human completes the action and flips this task's status to `done`/`merged` by hand; that is expected, not a run halt.
 
 #### c. Execute AFK tasks
 
 1. Update task status to `in_progress` in the JSON.
 2. If `branching.strategy` is `"per-task"`, create and check out the task's branch now.
-3. Seed `/tdd` with the following context, then invoke it:
+3. Spawn exactly one `build-runner` agent for this task:
 
 ```
-## Task context for TDD
-
-**Task:** {id} — {title}
-**Type:** AFK
-
-**Description:**
-{description}
-
-**Acceptance criteria:**
-{acceptance_criteria as a checklist}
-
-## Test requirements
-
-Tests are mandatory for every task. This applies to new code, refactors, and moves equally.
-
-For refactoring or restructuring tasks: check if the code being changed has existing test coverage. If not, write characterization tests for the current behavior BEFORE making any changes. Then refactor while keeping tests green.
-
-For new code: follow the standard RED-GREEN-REFACTOR loop.
-
-**If `acceptance_criteria[0]` says "Visual regression verified manually — no automated test seam exists":** this is a claim to verify, not a directive to skip tests. Read the code first. The following are always testable: conditional renders, query `enabled` flags, auth state branches, prop threading. The only valid skip is a CSS property difference (e.g. `blur(3px)` vs `background`) the DOM cannot reflect. If you find a seam, write the test. State why no seam exists before proceeding without one.
-
-A task is not done until tests exist that verify the behavior described in the acceptance criteria. "Verified manually" does not satisfy this requirement.
-
-## PRD context
-
-{full contents of the PRD file}
+Agent(subagent_type="build-runner", prompt="<task object JSON, context_brief, breadcrumb, taskfile_basename, project_root>")
 ```
 
-4. If TDD completes successfully, run a runner-based validation gate before marking done:
+Pass:
+- `task` — this task's full object (`id`, `title`, `type`, `description`, `acceptance_criteria`, `browser_verify` if present).
+- `context_brief` — the brief built once in step 3b.
+- `breadcrumb` — the current `breadcrumb` list (receipts from tasks already completed this run).
+- `taskfile_basename` — basename of the task file.
+- `project_root` — absolute project root path.
 
-   **a-d. Runner-based validation gate**
+build-runner runs the full `/tdd` cycle, the runner-based validation gate, and browser verification (if applicable) internally, and writes the full trace to `docs/tasks/.logs/<taskfile-basename>/<task.id>.md`. build-code never sees that trace — only the receipt below.
 
-   1. **Detect tooling.** Run:
-      ```bash
-      python3 ~/.dotfiles/claude-code-shared/scripts/tooling-detection/detect_tooling.py <project_root>
-      ```
-      Capture the JSON manifest (one entry per workspace with resolved lint/format/typecheck/test commands).
+4. **Collect the receipt.** Parse build-runner's returned JSON: `status`, `summary`, `files_touched`, `tests`, `pr`, `log_path`, `follow_ups`.
 
-   2. **Map touched workspaces.** Run `git diff --name-only HEAD~1` (or `git diff --name-only` for uncommitted changes). For each changed file path, find the workspace entry whose `workspace` field is a prefix of that path. Collect the unique set of touched workspaces.
+5. **Write the receipt back into the task JSON item:**
+   - Set `summary`, `files_touched`, `tests`, `log_path` directly from the receipt.
+   - If `receipt.status == "done"`: set task `status` to `done` and `pr` to a suggested `gh pr create` command the user can run (do not run it).
+   - If `receipt.status == "failed"`: set task `status` to `failed` and go to step 6 below — do not append to the breadcrumb.
+   - Write the updated JSON immediately.
 
-   3. **Spawn runners.** Lint-runners run in parallel; test-runners run serially (one vitest/jest/pytest process at a time to avoid CPU contention):
+6. **Merge follow-ups.** For each item in `receipt.follow_ups`:
+   - Deduplicate against existing `follow_ups` in the JSON (skip if a similar title already exists).
+   - Assign `"id"` by counting existing `follow_ups` and using the next sequential `FU-XXX` (zero-padded to 3 digits).
+   - Append with `"source": "discovered"` and `"trigger_task"` set to this task's ID.
+   - Write the updated JSON immediately (same write as step 5).
 
-      **Lint pass (parallel):** In a single message, spawn one `lint-runner` Agent call per touched workspace:
-      - `lint-runner` prompt: `command: <manifest.lint>, workspace: <absolute_workspace_path>, check_type: lint`
-      - If the manifest has no lint command for a workspace, still spawn `lint-runner` with `command: null` (it will return warn).
+7. **Thread the breadcrumb forward.** On success (`receipt.status == "done"`), append a compact entry — `{id, title, summary, files_touched}` — to `breadcrumb` for the caller to pass into every subsequent `build-runner` spawn this run. Never append the full trace; `breadcrumb` stays small for the life of the run.
 
-      **Test pass (serial):** For each touched workspace ONE AT A TIME (do not start the next until the current completes):
-      - Collect the touched files for this workspace: the subset of changed files whose paths are under this workspace's root.
-      - `test-runner` prompt: `test_command: <manifest.test>, test_affected_command: <manifest.test_affected>, touched_files: <space-separated touched file paths for this workspace>, typecheck_command: <manifest.typecheck>, workspace: <absolute_workspace_path>, check_type: test`
-      - `manifest.test_affected` is the `test_affected` field from the tooling manifest — a command template with a `{files}` placeholder and `--maxWorkers=75%` baked in. May be `null` (e.g. pytest).
-
-   4. **Auto-fix pass.** After the lint pass, check each lint-runner verdict:
-      - If `counts.fixable > 0`, run the fix variant of the lint command for that workspace:
-        - eslint: append `--fix` to the command
-        - biome: replace `check` with `check --write`
-        - ruff: replace `check` with `check --fix`
-      - After auto-fix, re-spawn `lint-runner` for that workspace only (one retry).
-
-   5. **Gate decision.** Evaluate all collected verdicts against the status enum from `contracts/runner-result-contract.md`:
-      - `status: "pass"`: OK.
-      - `status: "warn"`: record a coverage-deferred note in the end-of-run summary ("0 affected tests or no test command — coverage deferred to CI"). Do NOT block. Proceed.
-      - `status: "fail"`: print a **Validation errors** block listing all `violations` and `failures` with `file:line` format, update task status to `blocked` in the JSON, and halt the run (same blocker logic as a TDD failure in step 6 below).
-      - `status: "timeout"`: treat as a gate failure — block (same as `fail`). Note the timeout in the summary.
-      - `status: "deps-missing"`: treat as a gate failure — block. Note which deps are missing.
-      - When all verdicts are `pass` or `warn`: continue to browser check (if applicable) or mark done.
-
-   **e. Browser verify (when task has `browser_verify`)**
-
-   Only run this step if the task has a non-null `browser_verify` field. If `browser_verify` is absent or `null`, skip to step f.
-
-   See `~/.dotfiles/claude-code-shared/resources/app-launch-detection.md` for full discovery rules.
-
-   1. **Discover launch context** from `app-launch-detection.md`: resolve `start_command`, `base_url`, `storageState` path, and Playwright module location.
-
-   2. **Health-check the server.** Run:
-      ```bash
-      curl -s -o /dev/null -w "%{http_code}" <base_url>
-      ```
-      - If the server responds (any 2xx or 3xx): reuse it. Record that build-code did NOT start it.
-      - If no response: start the server via `start_command` using `run_in_background: true`. Poll `base_url` every 2 s until it responds, with a 60 s hard timeout. If the server never comes up, mark the task `blocked` and halt.
-      - Track whether build-code started the server (boolean `server_started_by_build_code`).
-
-   3. **Iterate (cap 3):** Maintain an iteration log. For each attempt (max 3 total):
-      a. Spawn the `browser-checker` agent with: `base_url`, `url_path` (from `browser_verify.url_path`), `assertions` (from `browser_verify.assertions`), `storageState`, Playwright module location, `run_slug` (derived from task id + iteration index, e.g. `t-0023-check-1`), `cwd` (project root).
-      b. Parse the JSON result per `~/.dotfiles/claude-code-shared/resources/browser-check-result.md`.
-      c. **`status: "pass"`**: proceed to step f (mark done). Clean the run dir (agent already did this on success).
-      d. **`status: "skipped"`**: do not block. Log `skipped_reason` in the run summary. Proceed to step f.
-      e. **`status: "fail"`**: append the failing assertions and screenshot path to the iteration log. If this is not the last attempt: attempt to fix the source. If two consecutive runs produced identical failing assertions (no-progress): bail early.
-
-   4. **On cap or no-progress bail:**
-      - Tear down the server if `server_started_by_build_code` is true.
-      - Print a **Browser check failed** block with: failing assertions from the final run, the iteration log, and absolute screenshot paths from `docs/browser-checks/`.
-      - Update task status to `blocked` in the JSON.
-      - Halt the run (same blocker logic as a TDD failure in step 6 below).
-
-   5. **Tear down.** After a pass or skipped result: if `server_started_by_build_code` is true, kill the dev server process. Never kill a server that was already running before this task.
-
-   **f. Mark done**
-   - Update task status to `done` in the JSON.
-   - Set `pr` to a suggested `gh pr create` command the user can run (do not run it).
-
-5. **Discover follow-ups** after each successful task:
-   - Review the diff produced by this task (`git diff` of changes).
-   - A follow-up is **irreducible human-on-a-keyboard work the AI cannot do at all**, uncovered by this task's diff — e.g. a new env var referenced but not provisioned (add it in the platform dashboard), a migration file created (run it against production), external service configuration, a DNS/registrar change, a secret to rotate.
-   - **Never emit a follow-up for:** manual testing, verification, QA, "confirm it works", code review, cleanup, removing instrumentation, post-mortems, or anything the AI can do itself AFK, or anything already covered by a task's acceptance criteria. Those are part of the normal workflow, not follow-ups. Gut check: *if a human did not physically do this, would the shipped scope be broken or incomplete?* If no, it is not a follow-up.
-   - Check `~/.dotfiles/claude-code-shared/resources/hitl-steps-runbooks.md` for matching runbooks. Use runbook steps when available. Run the runbook's `Enrichment:` instructions to gather specifics from the diff and codebase. Fill placeholders with concrete values.
-   - Each follow-up step must include the exact command, exact SQL, exact config key, or exact dashboard click path. Never write a step that says "update X" or "add Y" without specifying where and how.
-   - Before appending, deduplicate: compare the inferred follow-up title against existing `follow_ups` in the JSON. Skip if a similar title already exists.
-   - Assign `"id"` by counting existing `follow_ups` in the file and using the next sequential `FU-XXX` (zero-padded to 3 digits).
-   - Append new follow-ups to the `follow_ups` array in the JSON with `"source": "discovered"` and `"trigger_task"` set to the current task ID.
-   - Write the updated JSON immediately (same write as the status update).
-
-6. If TDD fails or gets stuck:
-   - Determine if any other `not_started` task depends on this one.
-     - **If yes (blocker):** update status to `blocked`, halt the run, report the failure.
-     - **If no (standalone):** update status to `blocked`, continue to next task, add to end-of-run summary.
+8. If `receipt.status == "failed"`, apply the AFK obstacle policy:
+   - Determine if any other `not_started` task depends on this one (a **blocker** task) or not (a **leaf** task).
+   - **Leaf task failure:** status is already `failed` from step 5. Skip it, continue to the next task, add it to the end-of-run report's `failed` list (with `log_path`). Do not halt.
+   - **Blocker task failure:** halt the entire run immediately. Do not process further tasks. The failure report must frame this as a **scoping signal, not a retry target**: something about this task's acceptance criteria, description, or dependency graph doesn't match reality (an unstated dependency, wrong assumption, or oversized slice), and the recommended next step is to re-grill or re-seed this part of the plan, not to blindly re-run build-code hoping for a different result. Include `log_path` so the user can inspect the full trace before deciding how to re-scope.
 
 ### 4b. Debug cleanup (only when `producer: "debug"`)
 
@@ -224,24 +149,30 @@ If `producer` is anything other than `"debug"`, skip this step.
 
 ### 5. End-of-run summary
 
-Print a status table in the conversation:
+Print a consolidated status table in the conversation. Every row that reached `done`, `failed`, `deferred_hitl`, or `blocked` gets a `Log` column pointing at its trace (blank for tasks that never reached build-runner, e.g. `blocked` from a dependency check):
 
 ```
 Run complete — docs/tasks/20260512-1423-user-auth-flow.json
 
- ID      Title                        Result
- ──────  ───────────────────────────  ──────────────
- T-0023  Bootstrap auth schema        done
- T-0024  Login endpoint               done
- T-0025  Design review (HITL)         parked (HITL — not blocking)
- T-0026  Token refresh flow           blocked (TDD failed)
- T-0027  Logout endpoint              skipped (blocked by T-0026)
+ ID      Title                        Result           Log
+ ──────  ───────────────────────────  ──────────────  ─────────────────────────────────
+ T-0023  Bootstrap auth schema        done             docs/tasks/.logs/.../T-0023.md
+ T-0024  Login endpoint               done             docs/tasks/.logs/.../T-0024.md
+ T-0025  Design review (HITL)         deferred_hitl    —
+ T-0026  Token refresh flow           failed           docs/tasks/.logs/.../T-0026.md
+ T-0027  Logout endpoint              blocked          —
 
-Parked HITL tasks requiring human action:
+Deferred HITL tasks requiring human action:
   T-0025 — Design review: confirm token storage approach
 
-Blocked tasks requiring investigation:
-  T-0026 — Token refresh flow: TDD could not pass acceptance criteria
+Failed / blocked tasks:
+  T-0026 — Token refresh flow: leaf failure, skipped. Inspect docs/tasks/.logs/.../T-0026.md.
+  T-0027 — Logout endpoint: blocked by T-0026.
+
+If a blocker task failed (halted the run): frame it as a scoping signal, not a retry target.
+Re-grill or re-seed the affected slice before re-running — see docs/tasks/.logs/.../<task>.md for the full trace.
+
+Resumption: re-invoking build-code on this file picks up every `not_started` and `failed` task automatically.
 
 Manual follow-ups (2):
   1. Add STRIPE_KEY to Cloudflare [T-0024, discovered]
