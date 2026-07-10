@@ -1,0 +1,9 @@
+================================================================
+CC USAGE DIGEST -- 2026-W27 (vs 2026-W26, last complete weeks)
+================================================================
+  spend    $    862   ^111%
+  opus%        48%   ^24pt
+  adher.        0%   n/a   (0/1)
+
+  DRIFT (minor / watch):
+  tdd                        exp sonnet -> opus:1        1/1  1wk  -> re-tier up or add model override

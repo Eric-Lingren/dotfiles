@@ -227,7 +227,22 @@ python3 ~/.dotfiles/claude-code-shared/scripts/print-skill-next-steps.py to-e2e-
 Append that output under the Next steps header. Do not hardcode skill names.
 
 <!-- learning-capture:start -->
-Read and execute `~/.dotfiles/claude-code-shared/resources/learning-capture.md`.
-This skill's slug is `to-e2e-tasks`.
+## Learning Capture
+
+Run this as the FINAL action of this skill's terminal turn, BEFORE printing the
+closing suggestion or handoff. Most runs record nothing — only proceed if an
+observable correction-event occurred this run.
+
+<!-- learning-eval: to-e2e-tasks -->
+If a correction-event occurred: identify the `trigger` (tool_failure | backtrack |
+user_correction | instruction_gap | redundant_effort | uncategorized), a one-sentence
+description of what happened (`brief_evidence`), and `trigger_label` (snake_case if
+uncategorized, else null). Spawn the `capture-learning` agent
+(`subagent_type: capture-learning`) with: `skill` (this skill's slug: `to-e2e-tasks`),
+`trigger`, `trigger_label`, `brief_evidence`, `transcript_path` (absolute path to
+session transcript). The agent builds the full schema-valid entry, runs grounding
+verification, and writes if grounded.
+**What's next:**
 <!-- skill-done: to-e2e-tasks -->
+  - `/dispatch-tasks` — e2e tasks file is written and ready to implement
 <!-- learning-capture:end -->

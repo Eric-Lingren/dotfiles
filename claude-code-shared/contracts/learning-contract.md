@@ -6,12 +6,14 @@
 
 ## Producers
 
-All 28 shared skills. Plugin skills (caveman, chrome-devtools) are excluded.
+All 30 shared skills. Plugin skills (caveman, chrome-devtools) are excluded.
 
+- `skills/build-code/`
 - `skills/cc-usage-analytics/`
 - `skills/clean-scaffolding/`
 - `skills/code-review/`
 - `skills/debug/`
+- `skills/dispatch-tasks/`
 - `skills/fact-check/`
 - `skills/find-work/`
 - `skills/grill-me/`
@@ -20,6 +22,7 @@ All 28 shared skills. Plugin skills (caveman, chrome-devtools) are excluded.
 - `skills/how-to/`
 - `skills/improve-codebase-architecture/`
 - `skills/improve-component/`
+- `skills/improve-directory-structure/`
 - `skills/improve-skill/`
 - `skills/investigate/`
 - `skills/prototype/`
@@ -27,7 +30,6 @@ All 28 shared skills. Plugin skills (caveman, chrome-devtools) are excluded.
 - `skills/relay/`
 - `skills/revise-pr/`
 - `skills/run-task-followups/`
-- `skills/run-tasks/`
 - `skills/tasks-to-linear/`
 - `skills/tdd/`
 - `skills/vet/`

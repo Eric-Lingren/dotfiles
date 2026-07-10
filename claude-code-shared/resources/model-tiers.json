@@ -1,10 +1,26 @@
 {
   "_doc": "Single source of truth for per-skill and per-agent model+effort tiering. Edit this, then run scripts/sync-model-tiers.py --apply (or just commit; the pre-commit hook applies it). Full docs: resources/model-tiers.md",
   "tiers": {
-    "T1": { "model": "haiku",  "effort": "low",    "_meaning": "Lookup. No reasoning. File search, status, how-to." },
-    "T2": { "model": "sonnet", "effort": "medium", "_meaning": "Mechanical. Narrow, well-defined scope." },
-    "T3": { "model": "sonnet", "effort": "high",   "_meaning": "Standard build. Context-aware. THIS IS THE SESSION DEFAULT." },
-    "T4": { "model": "opus",   "effort": "xhigh",  "_meaning": "Deep reasoning. Architecture, complex debug, planning." }
+    "T1": {
+      "model": "haiku",
+      "effort": "low",
+      "_meaning": "Lookup. No reasoning. File search, status, how-to."
+    },
+    "T2": {
+      "model": "sonnet",
+      "effort": "medium",
+      "_meaning": "Mechanical. Narrow, well-defined scope."
+    },
+    "T3": {
+      "model": "sonnet",
+      "effort": "high",
+      "_meaning": "Standard build. Context-aware. THIS IS THE SESSION DEFAULT."
+    },
+    "T4": {
+      "model": "opus",
+      "effort": "xhigh",
+      "_meaning": "Deep reasoning. Architecture, complex debug, planning."
+    }
   },
   "default": "T3",
   "skills": {
@@ -36,7 +52,8 @@
     "revise-pr": "T3",
     "vet": "T3",
     "relay": "T2",
-    "investigate": "T3"
+    "investigate": "T3",
+    "improve-directory-structure": "T4"
   },
   "agents": {
     "fact-checker": "T3",
@@ -63,6 +80,7 @@
     "to-e2e-tasks",
     "debug",
     "improve-codebase-architecture",
-    "revise-pr"
+    "revise-pr",
+    "improve-directory-structure"
   ]
 }

@@ -96,7 +96,20 @@ Both operations are atomic per chain sweep.
 Relay the script's `archived … to …`, `removed …`, and summary lines. Note any chains that were refused (not consumed or dangling ref) and what the user must do before those chains can be archived.
 
 <!-- learning-capture:start -->
-Read and execute `~/.dotfiles/claude-code-shared/resources/learning-capture.md`.
-This skill's slug is `clean-scaffolding`.
+## Learning Capture
+
+Run this as the FINAL action of this skill's terminal turn, BEFORE printing the
+closing suggestion or handoff. Most runs record nothing — only proceed if an
+observable correction-event occurred this run.
+
+<!-- learning-eval: clean-scaffolding -->
+If a correction-event occurred: identify the `trigger` (tool_failure | backtrack |
+user_correction | instruction_gap | redundant_effort | uncategorized), a one-sentence
+description of what happened (`brief_evidence`), and `trigger_label` (snake_case if
+uncategorized, else null). Spawn the `capture-learning` agent
+(`subagent_type: capture-learning`) with: `skill` (this skill's slug: `clean-scaffolding`),
+`trigger`, `trigger_label`, `brief_evidence`, `transcript_path` (absolute path to
+session transcript). The agent builds the full schema-valid entry, runs grounding
+verification, and writes if grounded.
 <!-- skill-done: clean-scaffolding -->
 <!-- learning-capture:end -->

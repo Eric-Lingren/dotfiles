@@ -468,9 +468,23 @@ non-zero, that logic belongs in `/relay`, not here.
 ---
 
 <!-- learning-capture:start -->
-Read and execute `~/.dotfiles/claude-code-shared/resources/learning-capture.md`.
-This skill's slug is `revise-pr`.
+## Learning Capture
+
+Run this as the FINAL action of this skill's terminal turn, BEFORE printing the
+closing suggestion or handoff. Most runs record nothing — only proceed if an
+observable correction-event occurred this run.
+
+<!-- learning-eval: revise-pr -->
+If a correction-event occurred: identify the `trigger` (tool_failure | backtrack |
+user_correction | instruction_gap | redundant_effort | uncategorized), a one-sentence
+description of what happened (`brief_evidence`), and `trigger_label` (snake_case if
+uncategorized, else null). Spawn the `capture-learning` agent
+(`subagent_type: capture-learning`) with: `skill` (this skill's slug: `revise-pr`),
+`trigger`, `trigger_label`, `brief_evidence`, `transcript_path` (absolute path to
+session transcript). The agent builds the full schema-valid entry, runs grounding
+verification, and writes if grounded.
+**What's next:**
 <!-- skill-done: revise-pr -->
   - `/to-tasks` — seed is verified and ready for implementation
-  - `/relay` — post the Step 9 reply drafts and resolve threads (external write-back, deferred)
+  - `/relay` — non-code items need user notification
 <!-- learning-capture:end -->

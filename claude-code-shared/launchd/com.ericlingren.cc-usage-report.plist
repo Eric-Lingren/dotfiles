@@ -9,6 +9,11 @@
     <string>/bin/bash</string>
     <string>/Users/eric/.dotfiles/claude-code-shared/scripts/weekly-usage-report.sh</string>
   </array>
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>CC_USAGE_REPORT_DIR</key>
+    <string>/Users/eric/.dotfiles/claude-code-shared/usage-reports</string>
+  </dict>
   <!-- Mondays at 09:00 local time -->
   <key>StartCalendarInterval</key>
   <dict>

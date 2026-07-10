@@ -71,7 +71,20 @@ Always present findings as advisory. Never block the user's next action. The ver
 If any claims are FALSE or MOSTLY_FALSE, surface them explicitly in the inline summary so they are not buried in a file the user may not immediately open.
 
 <!-- learning-capture:start -->
-Read and execute `~/.dotfiles/claude-code-shared/resources/learning-capture.md`.
-This skill's slug is `fact-check`.
+## Learning Capture
+
+Run this as the FINAL action of this skill's terminal turn, BEFORE printing the
+closing suggestion or handoff. Most runs record nothing — only proceed if an
+observable correction-event occurred this run.
+
+<!-- learning-eval: fact-check -->
+If a correction-event occurred: identify the `trigger` (tool_failure | backtrack |
+user_correction | instruction_gap | redundant_effort | uncategorized), a one-sentence
+description of what happened (`brief_evidence`), and `trigger_label` (snake_case if
+uncategorized, else null). Spawn the `capture-learning` agent
+(`subagent_type: capture-learning`) with: `skill` (this skill's slug: `fact-check`),
+`trigger`, `trigger_label`, `brief_evidence`, `transcript_path` (absolute path to
+session transcript). The agent builds the full schema-valid entry, runs grounding
+verification, and writes if grounded.
 <!-- skill-done: fact-check -->
 <!-- learning-capture:end -->

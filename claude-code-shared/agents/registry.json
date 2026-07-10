@@ -24,9 +24,9 @@
       "name": "browser-checker",
       "file": "agents/browser-checker.md",
       "model": "sonnet",
-      "description": "Stateless single-run agent. Navigates to a URL, evaluates observable assertions via inline Playwright, and returns a JSON result per browser-check-result.md. Spawned by run-tasks and debug after TDD passes. The caller owns the retry loop and server lifecycle.",
+      "description": "Stateless single-run agent. Navigates to a URL, evaluates observable assertions via inline Playwright, and returns a JSON result per browser-check-result.md. Spawned by build-runner and debug after TDD passes. The caller owns the retry loop and server lifecycle.",
       "consumers": [
-        "run-tasks",
+        "build-runner",
         "debug"
       ]
     },
@@ -47,9 +47,9 @@
       "name": "lint-runner",
       "file": "agents/lint-runner.md",
       "model": "haiku",
-      "description": "Read-only linting agent. Runs a resolved lint/format command in a workspace, parses tool JSON output, and returns a contract-shaped verdict per runner-result-contract.md. Spawned by run-tasks for each touched workspace.",
+      "description": "Read-only linting agent. Runs a resolved lint/format command in a workspace, parses tool JSON output, and returns a contract-shaped verdict per runner-result-contract.md. Spawned by build-runner for each touched workspace.",
       "consumers": [
-        "run-tasks"
+        "build-runner"
       ]
     },
     {
@@ -58,7 +58,7 @@
       "model": "haiku",
       "description": "Read-only test agent. Runs a workspace's unit/integration test suite and project-wide typecheck using resolved commands from the tooling manifest. Returns a contract-shaped verdict with counts and compressed failures.",
       "consumers": [
-        "run-tasks"
+        "build-runner"
       ]
     },
     {
@@ -171,7 +171,7 @@
         "prototype",
         "register-skill",
         "run-task-followups",
-        "run-tasks",
+        "build-code",
         "tasks-to-linear",
         "tdd",
         "tldr-tech",
@@ -203,7 +203,7 @@
         "prototype",
         "register-skill",
         "run-task-followups",
-        "run-tasks",
+        "build-code",
         "tasks-to-linear",
         "tdd",
         "tldr-tech",
