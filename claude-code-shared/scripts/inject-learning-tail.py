@@ -49,37 +49,23 @@ BLOCK_RE = re.compile(
 def build_tail_block(slug, next_edges):
     """Build the per-skill learning-capture tail block.
 
+    Single source of truth lives in resources/learning-capture.md — this block
+    only references it, so instruction changes never need a 30-file fan-out.
+
     slug: the skill slug (e.g. 'debug')
     next_edges: list of {skill, when} dicts from skill-pipeline.json
     """
-    if next_edges:
-        next_lines = "\n".join(
-            f"  - `/{e['skill']}` — {e['when']}" for e in next_edges
-        )
-        next_section = f"\n**What's next:**\n<!-- skill-done: {slug} -->\n{next_lines}\n"
-    else:
-        next_section = f"\n<!-- skill-done: {slug} -->\n"
+    lines = [
+        SENTINEL_START,
+        "Read and execute `~/.dotfiles/claude-code-shared/resources/learning-capture.md`.",
+        f"This skill's slug is `{slug}`.",
+        f"<!-- skill-done: {slug} -->",
+    ]
+    for e in next_edges:
+        lines.append(f"  - `/{e['skill']}` — {e['when']}")
+    lines.append(SENTINEL_END)
 
-    return (
-        f"<!-- learning-capture:start -->\n"
-        f"## Learning Capture\n"
-        f"\n"
-        f"Run this as the FINAL action of this skill's terminal turn, BEFORE printing the\n"
-        f"closing suggestion or handoff. Most runs record nothing — only proceed if an\n"
-        f"observable correction-event occurred this run.\n"
-        f"\n"
-        f"<!-- learning-eval: {slug} -->\n"
-        f"If a correction-event occurred: identify the `trigger` (tool_failure | backtrack |\n"
-        f"user_correction | instruction_gap | redundant_effort | uncategorized), a one-sentence\n"
-        f"description of what happened (`brief_evidence`), and `trigger_label` (snake_case if\n"
-        f"uncategorized, else null). Spawn the `capture-learning` agent\n"
-        f"(`subagent_type: capture-learning`) with: `skill` (this skill's slug: `{slug}`),\n"
-        f"`trigger`, `trigger_label`, `brief_evidence`, `transcript_path` (absolute path to\n"
-        f"session transcript). The agent builds the full schema-valid entry, runs grounding\n"
-        f"verification, and writes if grounded."
-        f"{next_section}"
-        f"<!-- learning-capture:end -->"
-    )
+    return "\n".join(lines)
 
 
 def validate_pipeline_slugs(pipeline, skills_dir):

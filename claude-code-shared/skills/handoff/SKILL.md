@@ -33,20 +33,7 @@ Redact any sensitive information, such as API keys, passwords, or personally ide
 If the user passed arguments, treat them as a description of what the next session will focus on and tailor the doc accordingly.
 
 <!-- learning-capture:start -->
-## Learning Capture
-
-Run this as the FINAL action of this skill's terminal turn, BEFORE printing the
-closing suggestion or handoff. Most runs record nothing — only proceed if an
-observable correction-event occurred this run.
-
-<!-- learning-eval: handoff -->
-If a correction-event occurred: identify the `trigger` (tool_failure | backtrack |
-user_correction | instruction_gap | redundant_effort | uncategorized), a one-sentence
-description of what happened (`brief_evidence`), and `trigger_label` (snake_case if
-uncategorized, else null). Spawn the `capture-learning` agent
-(`subagent_type: capture-learning`) with: `skill` (this skill's slug: `handoff`),
-`trigger`, `trigger_label`, `brief_evidence`, `transcript_path` (absolute path to
-session transcript). The agent builds the full schema-valid entry, runs grounding
-verification, and writes if grounded.
+Read and execute `~/.dotfiles/claude-code-shared/resources/learning-capture.md`.
+This skill's slug is `handoff`.
 <!-- skill-done: handoff -->
 <!-- learning-capture:end -->
