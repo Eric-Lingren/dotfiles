@@ -45,11 +45,30 @@ skill-pipeline.json, and literal absolute-path references) are claude-tooling
 concepts; generic-code has no check_integrity and --check against it will
 only run cycle detection.
 
+## --consistency mode
+
+  python3 scanner.py --consistency [root]
+  python3 scanner.py --consistency --extractor claude-tooling [root]
+
+Filesystem-shape mode. Emits SHAPE findings -- organizational inconsistencies
+that live in on-disk naming/layout rather than in the edge graph, so the
+graph-based analysis core (dependency-graph-findings.py) is structurally blind
+to them. Delegates to an extractor's optional consistency_findings(base_dir)
+function, then sorts + assigns F-ids and wraps the result in the SAME findings
+envelope dependency-graph-findings.py produces, so SHAPE findings compose with
+the litmus findings. Defaults to the claude-tooling extractor when --extractor
+is omitted (its consistency rules -- agent wrapping style, stray fixtures --
+are claude-tooling conventions); an extractor with no consistency_findings()
+hook yields an empty finding set. Unlike --check this is advisory: it always
+exits 0 and just reports. Honors --out.
+
 ## Usage
 
   python3 scanner.py --extractor claude-tooling [root]
   python3 scanner.py --extractor claude-tooling --out graph.json
   python3 scanner.py --extractor generic-code [root]
+  python3 scanner.py --check [root]
+  python3 scanner.py --consistency [root]
   python3 scanner.py --list-extractors
 """
 
@@ -58,6 +77,7 @@ import json
 import os
 import subprocess
 import sys
+from datetime import datetime, timezone
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
@@ -153,6 +173,47 @@ def run_check(extractor_name, root):
     return 0
 
 
+def run_consistency(extractor_name, root):
+    """--consistency entrypoint: collect SHAPE findings from the extractor's
+    optional consistency_findings(base_dir) hook, sort them deterministically,
+    assign F-ids, and return the standard findings envelope (the same shape
+    dependency-graph-findings.py emits, so SHAPE findings compose with the
+    litmus findings the analysis core produces).
+
+    SHAPE is a companion finding class to the edge-graph litmus set, not part
+    of it: it is derived from on-disk layout/naming, which the graph-based core
+    cannot see. An extractor without a consistency_findings() hook yields an
+    empty finding set with an explanatory note."""
+    module = EXTRACTOR_MODULES[extractor_name]
+    generated_at = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    if not hasattr(module, "consistency_findings"):
+        return {
+            "schema_version": "1",
+            "generated_at": generated_at,
+            "summary": {"findings": 0},
+            "findings": [],
+            "note": f"extractor '{extractor_name}' defines no consistency_findings()",
+        }
+    raw = list(module.consistency_findings(root))
+    raw.sort(key=lambda f: (f["principle"], tuple(f["nodes"]), f["title"]))
+    findings = []
+    for i, f in enumerate(raw, start=1):
+        findings.append({
+            "id": f"F{i:04d}",
+            "principle": f["principle"],
+            "title": f["title"],
+            "nodes": f["nodes"],
+            "evidence": f["evidence"],
+            "detail": f["detail"],
+        })
+    return {
+        "schema_version": "1",
+        "generated_at": generated_at,
+        "summary": {"findings": len(findings)},
+        "findings": findings,
+    }
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(
         description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -176,6 +237,12 @@ def main(argv=None):
         help="reference-integrity mode: report dangling edges/cycles and "
              "exit non-zero if any are found (see module docstring)",
     )
+    parser.add_argument(
+        "--consistency", action="store_true",
+        help="filesystem-shape mode: emit SHAPE findings (organizational "
+             "inconsistencies the edge graph can't see) as a findings-JSON "
+             "envelope (see module docstring)",
+    )
     args = parser.parse_args(argv if argv is not None else sys.argv[1:])
 
     if args.list_extractors:
@@ -184,7 +251,7 @@ def main(argv=None):
         return
 
     if not args.extractor:
-        if args.check:
+        if args.check or args.consistency:
             args.extractor = "claude-tooling"
         else:
             parser.error("--extractor is required (see --list-extractors)")
@@ -196,6 +263,16 @@ def main(argv=None):
 
     if args.check:
         sys.exit(run_check(args.extractor, root))
+
+    if args.consistency:
+        result = run_consistency(args.extractor, root)
+        out_text = json.dumps(result, indent=2) + "\n"
+        if args.out:
+            with open(args.out, "w") as f:
+                f.write(out_text)
+        else:
+            sys.stdout.write(out_text)
+        return
 
     build_graph = EXTRACTORS[args.extractor]
     graph = build_graph(root)

@@ -59,3 +59,34 @@ candidates even if the raw scripts emit them:
   bucket's job, not a defect. Only surface a MODULARITY finding when the cross-cluster
   edges cluster around a *subset* of the bucket that could split off with its own
   owner, not when the whole bucket is uniformly fan-out by design.
+
+## SHAPE findings
+
+The seven litmus principles above are all computed from the edge graph. They cannot see
+organizational smells that live in on-disk *naming and layout* rather than in references.
+`scanner.py --consistency` (claude-tooling extractor only) surfaces those separately as a
+companion `SHAPE` finding class, emitted in the same findings envelope so they slot into
+the same candidate list. It is advisory: it always exits 0 and never gates a task the way
+`--check` does.
+
+```bash
+python3 ~/.dotfiles/claude-code-shared/scripts/scanner.py --consistency [root]
+```
+
+Current SHAPE rules:
+
+- **SHAPE-1 — mixed sibling wrapping.** A logical agent group mixes wrapping styles: some
+  members are a bare `<name>.md`, others are a `<name>/agent.md` subdirectory. Evidence
+  names each member and its shape. The fix is to pick one shape for the whole group. A
+  `SHAPE` finding cites `nodes` (the agent ids) and `fact` evidence, so it clears the
+  "no principle + no evidence" bar the same way a litmus finding does.
+- **SHAPE-2 — stray fixture.** A `*.example.*` fixture/example file sits directly among
+  executables under `scripts/` instead of in `scripts/tests/` or a `fixtures/` directory.
+
+**What SHAPE deliberately does NOT flag.** A flat, heterogeneous *shared bucket* is a
+design choice, not a defect — the same reasoning as the shared-bucket MODULARITY
+non-finding above, and recorded for this repo in
+`docs/adr/0001-agents-and-scripts-are-a-flat-shared-pool.md`. `resources/` mixing `.md`
+docs and `.json` config is intentional, so "mixed file types in a bucket" is not a rule.
+Only genuine *within-group* inconsistency is. When you add a SHAPE rule, hold it to the
+same near-zero-false-positive bar: it must not fire on a deliberately flat pool.

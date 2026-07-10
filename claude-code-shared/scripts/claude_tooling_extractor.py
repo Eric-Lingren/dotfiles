@@ -569,6 +569,134 @@ def check_integrity(base_dir):
 
 
 # --------------------------------------------------------------------------
+# --consistency -- filesystem-shape / organizational-consistency pass
+# --------------------------------------------------------------------------
+
+# Basename that marks an agent as "wrapped" in its own subdirectory
+# (<group>/<name>/agent.md) rather than a bare <group>/<name>.md file.
+WRAPPED_AGENT_BASENAME = "agent.md"
+
+# Substring marking a fixture/example data file (e.g. foo.example.json).
+FIXTURE_MARKER = ".example."
+
+# Directory names where fixtures/examples are expected to live and are
+# therefore NOT flagged when found among executables.
+FIXTURE_HOME_DIRS = ("tests", "fixtures", "examples")
+
+
+def _consistency_agent_wrapping(base_dir):
+    """SHAPE-1: within one logical agent group, siblings must share a wrapping
+    style. A group mixing bare `<name>.md` files with `<name>/agent.md`
+    subdirectory-wrapped agents is flagged.
+
+    'Group' is the directory that logically contains an agent: for a bare
+    agent it is the file's parent dir; for a wrapped agent (basename
+    `agent.md`) it is the parent of its wrapping subdir. This means a mixed
+    group like agents/task-exporters/ (bare export-tasks.md alongside
+    export-tasks-gh/agent.md) is flagged, while a uniformly-bare group
+    (agents/personas/) and the top-level agents/ bucket (bare agents plus
+    group *subdirectories*, which contribute their own groups, not agents at
+    the agents/ level) are not."""
+    registry_agents = load_registry(base_dir)
+    groups = defaultdict(list)  # group_dir -> [(name, relpath, shape)]
+    for entry in registry_agents:
+        name = entry.get("name")
+        file_ = entry.get("file")
+        if not name or not file_:
+            continue
+        parts = file_.split("/")
+        if os.path.basename(file_) == WRAPPED_AGENT_BASENAME and len(parts) >= 3:
+            group_dir = "/".join(parts[:-2])
+            shape = "wrapped"
+        else:
+            group_dir = "/".join(parts[:-1])
+            shape = "bare"
+        groups[group_dir].append((name, file_, shape))
+
+    findings = []
+    for group_dir in sorted(groups):
+        members = sorted(groups[group_dir])
+        if len({shape for _, _, shape in members}) < 2:
+            continue  # uniform group -- fine
+        member_desc = ", ".join(f"{name} ({shape}: {rel})" for name, rel, shape in members)
+        findings.append({
+            "principle": "SHAPE",
+            "title": f"Agent group '{group_dir}' mixes wrapping styles (bare file vs agent.md subdir)",
+            "nodes": sorted(f"agent:{name}" for name, _, _ in members),
+            "evidence": [
+                {"fact": f"agent '{name}' is {shape} at '{rel}'"}
+                for name, rel, shape in members
+            ],
+            "detail": (
+                f"Agents under '{group_dir}' use inconsistent shapes: {member_desc}. "
+                f"Pick one shape for the whole group -- either every agent is a bare "
+                f"'<name>.md' or every agent is a '<name>/agent.md' subdirectory -- so "
+                f"siblings in the same group look the same on disk."
+            ),
+        })
+    return findings
+
+
+def _consistency_stray_fixtures(base_dir):
+    """SHAPE-2: a fixture/example data file (`*.example.*`) sitting directly
+    among executables under scripts/ instead of in scripts/tests/ or a
+    dedicated fixtures/ directory."""
+    findings = []
+    for rel in sorted(discover_scripts(base_dir)):
+        if FIXTURE_MARKER not in os.path.basename(rel):
+            continue
+        if any(part in FIXTURE_HOME_DIRS for part in rel.split("/")[:-1]):
+            continue  # already beside tests/fixtures -- fine
+        findings.append({
+            "principle": "SHAPE",
+            "title": f"Fixture '{rel}' sits among executables in scripts/",
+            "nodes": [f"script:{rel}"],
+            "evidence": [{
+                "fact": (
+                    f"'{rel}' matches the '*{FIXTURE_MARKER}*' fixture pattern and sits "
+                    f"outside any {'/'.join(FIXTURE_HOME_DIRS)} directory"
+                )
+            }],
+            "detail": (
+                f"'{rel}' is a fixture/example data file sitting directly among "
+                f"executable scripts. Move it into scripts/tests/ (or a dedicated "
+                f"fixtures/ directory) so scripts/ holds executables and its fixtures "
+                f"live beside the tests that use them."
+            ),
+        })
+    return findings
+
+
+def consistency_findings(base_dir):
+    """Filesystem-shape ("SHAPE") findings: organizational inconsistencies the
+    edge-graph litmus set (dependency-graph-findings.py) is structurally blind
+    to, because they live in on-disk naming/layout, not in references.
+
+    Where check_integrity mirrors build_graph's edge signals, this reasons
+    about *shape*: how sibling artifacts are wrapped, and whether non-code
+    fixtures are loose among executables. Each returned dict is a partial
+    finding (no id) shaped like dependency-graph-findings.py output --
+    {"principle": "SHAPE", "title", "nodes", "evidence", "detail"}. scanner.py's
+    --consistency mode sorts these, assigns F-ids, and wraps them in the
+    standard findings envelope.
+
+    Deliberately NOT flagged (same philosophy as
+    docs/adr/0001-agents-and-scripts-are-a-flat-shared-pool.md): a flat,
+    heterogeneous shared bucket is a design choice, not a defect. resources/
+    mixing .md docs and .json config is intentional, so 'mixed file types in a
+    bucket' is not a rule here -- only genuine within-group inconsistency is.
+
+    Rules:
+      SHAPE-1  A logical agent group mixes wrapping styles (bare <name>.md vs
+               <name>/agent.md subdir). See _consistency_agent_wrapping.
+      SHAPE-2  A `*.example.*` fixture lives among executables under scripts/.
+               See _consistency_stray_fixtures.
+    """
+    base_dir = os.path.abspath(base_dir)
+    return _consistency_agent_wrapping(base_dir) + _consistency_stray_fixtures(base_dir)
+
+
+# --------------------------------------------------------------------------
 # CLI
 # --------------------------------------------------------------------------
 

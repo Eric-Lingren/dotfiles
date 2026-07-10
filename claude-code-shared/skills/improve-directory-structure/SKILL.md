@@ -70,6 +70,15 @@ directory-structure smells even though the raw scripts can emit them.
 A candidate with no cited principle and no cited node/edge evidence is not a finding —
 don't present it.
 
+**SHAPE — a companion finding class.** The seven litmus principles are all derived from
+the *edge graph*, so they are structurally blind to on-disk organizational smells that
+live in naming/layout rather than references (inconsistent sibling wrapping, a fixture
+loose among executables). Those are surfaced separately by `scanner.py --consistency`,
+which emits `SHAPE` findings in the same envelope. SHAPE is not part of the litmus set and
+is only available for the `claude-tooling` extractor. See
+[resources/LITMUS.md](resources/LITMUS.md)'s "SHAPE findings" section for what it detects
+and what it deliberately does not.
+
 ## Process
 
 ### 1. Scope check
@@ -123,6 +132,18 @@ trusting the raw output — filter `pipeline_next`-only ADP cycles and uniformly
 shared-bucket MODULARITY findings, the same way `scanner.py --check`'s own
 `detect_cycles` filters `pipeline_next` edges.
 
+For a `claude-tooling` repo, also collect the companion SHAPE findings — organizational
+inconsistencies the edge graph can't see (see the "SHAPE — a companion finding class"
+note above):
+
+```bash
+python3 ~/.dotfiles/claude-code-shared/scripts/scanner.py --consistency [root] --out /tmp/shape-<slug>.json
+```
+
+This is advisory (always exits 0). Its `findings[]` share the same shape as the litmus
+findings, so they merge into the same candidate list in step 5. Skip this for the
+`generic-code` extractor, which defines no consistency rules.
+
 ### 5. Present candidates
 
 Present a numbered list of reorg candidates. For each one:
@@ -135,6 +156,11 @@ Present a numbered list of reorg candidates. For each one:
   [resources/LITMUS.md](resources/LITMUS.md)'s "Reading a finding" section
 - **Why** — the litmus principle's placement question, answered in one sentence using
   the project's own vocabulary
+
+For a `SHAPE` finding the shape is the same, but "current -> proposed" reads as a
+normalization rather than an owner-move: e.g. "pick one wrapping style for the group" or
+"move the fixture into `scripts/tests/`". Its `detail` already states the fix; cite the
+finding `id` + `SHAPE` and the node(s)/fact(s) verbatim like any other candidate.
 
 Do not propose file contents or reference rewrites yet. Ask the user: "Which of these
 would you like to pursue?"
