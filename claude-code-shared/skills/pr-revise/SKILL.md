@@ -362,6 +362,8 @@ A non-null `fix` becomes a `code` task plus a `reply` task blocked by it (so the
 
 ### 8b. Reply-body quality bar
 
+Before drafting, resolve this skill's voice profile: look up `pr-revise` in `claude-code-shared/resources/voice-routing.json`'s `skills` map to get the mapped profile name(s), then resolve each name in the `profiles` map to its `file` path (relative to `claude-code-shared/resources/voice-profiles/`) and read that file. Write every `reply_body` in that voice, not generic AI prose. Do not hardcode a profile filename — always resolve it through `voice-routing.json` at run time.
+
 Write each `reply_body` now, grounded in the diligence finding:
 - Match the reviewer's register — terse for a nit, fuller for a design thread. Do not pad.
 - Ground claims in the code: cite `file:line` or the symbol when it sharpens the reply. Never invent paths or line numbers; use only what diligence surfaced.

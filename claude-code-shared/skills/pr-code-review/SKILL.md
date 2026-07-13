@@ -69,6 +69,10 @@ git diff $(git merge-base HEAD origin/main)..HEAD
 
 Read CLAUDE.md if present — it defines the project's conventions you must enforce.
 
+## Step 1a: Resolve voice profile
+
+Before drafting review comments, resolve this skill's voice profile: look up `pr-code-review` in `claude-code-shared/resources/voice-routing.json`'s `skills` map to get the mapped profile name(s), then resolve each name in the `profiles` map to its `file` path (relative to `claude-code-shared/resources/voice-profiles/`) and read that file. Write review comments in that voice. Do not hardcode a profile filename — always resolve it through `voice-routing.json` at run time.
+
 ## Step 2: Understand context
 
 Before writing a single comment, read the files surrounding each changed section. A line that looks wrong in isolation may be correct in context. Likewise, a line that looks fine may conflict with a neighboring invariant.
@@ -117,6 +121,8 @@ Genuine praise belongs in the review. If you see a well-designed abstraction, a 
 - Exact symbol names in backticks
 - Concrete fix, not "refactor this"
 - The *why* only when the fix isn't obvious
+
+Note: Tone (below) governs posture — when and how to raise something. The resolved voice profile (Step 1a) governs prose style — how the sentences sound. They compose, not compete.
 
 ## Tone
 

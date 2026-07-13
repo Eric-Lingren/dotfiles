@@ -181,6 +181,25 @@ If adding to `delegate`, also add to that array:
 ]
 ```
 
+### 2d2. Skill path — assign voice-routing.json entry
+
+Some skills (writing/review-style skills that produce prose output — e.g. PR review or revision text) benefit from a consistent voice. These are tracked separately from `model-tiers.json`, in `claude-code-shared/resources/voice-routing.json`.
+
+Read `claude-code-shared/resources/voice-routing.json` and look at its `profiles` map to see the currently available voice profiles.
+
+Ask the user: "Should this skill be assigned a voice profile? Available profiles: `<list the keys of the profiles map>`." Default to the single available profile (e.g. `dev-office`) when there is exactly one profile defined and the skill being registered is a writing/review-style skill. If the skill is not writing/review-style (e.g. a lookup, navigation, or orchestration skill), skip this step — not every skill needs a voice profile.
+
+If a profile is assigned, add (or overwrite) the skill's entry in the `skills` map:
+
+```json
+"skills": {
+  ...
+  "<skill-name>": "<profile-name>"
+}
+```
+
+This mirrors how step 2d writes into `model-tiers.json`'s `skills` map, but targets `voice-routing.json` instead. **Unlike 2d, this step has no analog to 2e** — there is no sync script for `voice-routing.json`. It is not synced into the skill's `SKILL.md` frontmatter; the consuming skill reads `voice-routing.json` directly at run time to resolve its own voice profile.
+
 ### 2e. Skill path — run sync
 
 ```bash
@@ -209,6 +228,25 @@ python3 claude-code-shared/scripts/sync-model-tiers.py --check
 Confirm `tier-advisor.sh` emits the advisory block with the correct tier. If it prints nothing for the skill name, the name in `model-tiers.json` does not match the slash-command name — fix the mismatch.
 
 To confirm the weekly usage report will count it: the benchmark uses `SKILL_BODY_RE = re.compile(r"skills/([a-z0-9-]+)/SKILL\.md", re.I)` to extract skill names from transcript paths. The skill name in `model-tiers.json` must match the directory name under `skills/` exactly.
+
+If step 2d2 assigned a voice profile, also run this fourth check:
+
+```bash
+# 4. voice-routing.json entry resolves to a real profile file
+python3 -c "
+import json, os
+cfg = json.load(open('claude-code-shared/resources/voice-routing.json'))
+skill = '<skill-name>'
+profile = cfg['skills'].get(skill)
+assert profile is not None, f'{skill} has no voice-routing.json entry'
+assert profile in cfg['profiles'], f'{profile} is not a key in profiles'
+path = os.path.join('claude-code-shared/resources/voice-profiles', cfg['profiles'][profile]['file'])
+assert os.path.isfile(path), f'{path} does not exist'
+print(f'OK: {skill} -> {profile} -> {path}')
+"
+```
+
+Confirm the skill's entry exists in `voice-routing.json`'s `skills` map, that the profile name it points to exists as a key in `profiles`, and that `profiles.<name>.file` resolves to an existing file under `claude-code-shared/resources/voice-profiles/`. If any assertion fails, fix the `voice-routing.json` entry (typo'd profile name or missing profile file) before proceeding.
 
 ### 2g. Skill path — learning capture integration
 

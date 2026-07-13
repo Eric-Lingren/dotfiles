@@ -1,0 +1,48 @@
+{
+  "schema_version": "4",
+  "producer": "to-seed",
+  "source": {"type": "session", "ref": null},
+  "title": "Voice-profile routing architecture",
+  "slug": "voice-profile-routing",
+  "created": "2026-07-13T22:39:53Z",
+  "iteration": 1,
+  "summary": "Following the Linear pull that extended docs/voice-profile.md (renamed and relocated to claude-code-shared/resources/voice-profiles/dev-office.md, wired directly into pr-revise), Eric wanted to explore a router rather than hand-wiring a profile path into each skill. A grill session worked through whether a router is warranted, what axis it should route on, what shape it should take, and how pr-code-review's existing hand-authored Tone section relates to the evidence-based dev-office voice profile. Landed on: skill-level routing, built now via a new voice-routing.json mirroring model-tiers.json's shape, one shared voice profile (dev-office) for both pr-code-review and pr-revise, and task-specific posture rules (pr-code-review's Tone section, pr-revise's reply quality bar) staying inline per-skill rather than extracted into shared infrastructure, since neither currently has a second consumer.",
+  "problem_statement": "dev-office.md (Eric's evidence-based writing-voice profile) was wired into pr-revise via a single hardcoded file path added directly to its SKILL.md. This does not scale: Eric anticipates more than one voice profile (e.g. a future marketing profile) and more skills wanting voice guidance, and pr-code-review already has its own separate, hand-authored 'Tone' section that was never grounded in Eric's actual writing and risked being treated as a second, competing voice definition.",
+  "solution": "Introduce a dedicated router config, claude-code-shared/resources/voice-routing.json, structured like model-tiers.json (a profiles map of name -> {file, description}, and a skills map of skill name -> profile name, with room for an array of profile names for future composability). Route on skill identity, not repo, since voice tracks the kind of writing being produced rather than where the work happens. Both pr-code-review and pr-revise route to the single dev-office profile. Extend register-skill's existing registration chain (the same chain that maintains model-tiers.json's skills/agents maps) to also assign/verify each newly registered skill's voice-routing.json entry, so future skills get wired automatically instead of via a one-off manual edit. Task-specific posture logic (how to behave given the voice, e.g. hedge-and-ask vs assert-directly, mandatory praise, confidence gating) is explicitly distinguished from voice (how words sound) and is left inline in each skill's own SKILL.md rather than extracted into shared posture infrastructure, because neither pr-code-review's nor pr-revise's posture rules currently have a second consumer to justify the extraction.",
+  "decisions": [
+    "Voice-profile routing axis is skill-level, not repo-level: voice tracks what kind of writing is being produced, not which repo the work happens in. Eric confirmed he has other repos with different tones, but those are still driven by which skill/task is running, not by repo location.",
+    "Build the voice-routing router now rather than waiting for a second profile or skill to justify it, because register-skill already provides an enforcement mechanism (it keeps model-tiers.json's skill/agent maps in sync on registration) that a voice map can piggyback on for near-zero added cost, avoiding a bespoke manual SKILL.md edit for every future skill.",
+    "The router lives in its own file, claude-code-shared/resources/voice-routing.json, not as a new section inside model-tiers.json, matching the existing one-file-per-concern convention (task-routing.json, repo-policy.json, model-tiers.json each own a single concern) and keeping it independent of sync-model-tiers.py, which is scoped to model/effort tiers only.",
+    "voice-routing.json mirrors model-tiers.json's two-level shape: a profiles map (profile name -> file path + short description) and a skills map (skill name -> profile name, with a name-or-array shape to allow future composability without a schema change).",
+    "register-skill's registration chain is extended to also assign/verify a new skill's voice-routing.json entry, the same way it already handles model-tiers.json's skills/agents maps, so voice wiring happens automatically at registration time rather than as a separate manual step.",
+    "pr-code-review and pr-revise share a single voice profile (dev-office), rather than each getting its own voice file, because both are the same domain of writing (technical dev/office comments to colleagues) and the dev-office.md corpus already includes Eric's own inline PR review comments, not only his replies as a PR author, so there is no evidence gap that would justify a second voice profile.",
+    "pr-code-review's existing hand-authored 'Tone' section (ask-vs-assert when unsure, mandatory praise, confidence-gating strong labels) and pr-revise's 'Reply-body quality bar' section are posture, not voice: task-specific behavioral policy for what to do before speaking, as opposed to voice, which is how the words sound once you've decided to say them. This is the conceptual line that resolves whether they compete with dev-office.md: they don't, they operate on a different axis and layer on top of the same voice.",
+    "Posture stays inline in each skill's own SKILL.md for now, not extracted into a shared file or into voice-routing.json, because neither pr-code-review's posture nor pr-revise's posture currently has a second consumer; extraction should happen if/when a future skill genuinely wants to reuse one of them (e.g. a future 'review this PRD'-style skill reusing pr-code-review's critique posture).",
+    "Renaming pr-code-review's 'Tone' section header (e.g. to 'Review posture') is optional and purely cosmetic/documentation clarity; it has no functional effect on its own and is not required by any of the above decisions.",
+    "pr-revise's current voice wiring (a hardcoded reference to claude-code-shared/resources/voice-profiles/dev-office.md added directly in Step 8b during the Linear-pull session) is provisional and should be replaced with a lookup through voice-routing.json once that config exists, rather than remaining a hand-written path, so both pr-revise and pr-code-review go through the same mechanism."
+  ],
+  "implementation_decisions": [
+    "voice-routing.json profiles map entries carry at least {file, description}; file is a path relative to claude-code-shared/resources/voice-profiles/.",
+    "voice-routing.json skills map entries accept either a single profile name (string) or an array of profile names, to support future blended/composable voice use without a later schema migration, even though no current skill needs more than one.",
+    "register-skill's registration chain gains a step that prompts for (or defaults) a voice profile assignment for the skill being registered, writing it into voice-routing.json's skills map, mirroring how it already writes into model-tiers.json's skills/agents maps."
+  ],
+  "risks_and_tradeoffs": [
+    "If posture is extracted into shared infrastructure before a second real consumer exists, it repeats the exact anti-pattern this session avoided (reviewer-tone was invented, ungrounded content); the agreed trigger is a genuine second consumer, not anticipated reuse.",
+    "The skills-map name-or-array shape provisions for composability (a skill blending more than one voice profile) that is currently untested — no skill exercises it yet, so its exact blending semantics (how conflicts between two profiles resolve) are unproven until a real case arrives."
+  ],
+  "further_notes": [
+    "dev-office.md itself (the voice profile content) was already extended with Linear-derived signal and relocated from docs/voice-profile.md to claude-code-shared/resources/voice-profiles/dev-office.md in the session immediately prior to this one; that work is not re-litigated here.",
+    "pr-code-review's Tone section content is unchanged by this seed's decisions; only its relationship to dev-office.md (not competing, operating on a different axis) and its optional header label are addressed."
+  ],
+  "open_threads": [],
+  "next_action": "Run /to-tasks to build voice-routing.json, wire pr-code-review and pr-revise to look up their voice profile from it (replacing pr-revise's hardcoded path), and extend register-skill's registration chain to assign each newly registered skill's voice-routing.json entry.",
+  "status": "ready",
+  "verification": {
+    "iteration": 1,
+    "personas": ["grounding", "accuracy", "completeness", "coherence"],
+    "refutations_upheld": 0,
+    "refutations_screened": 1,
+    "clean": true,
+    "status": "verified"
+  }
+}
