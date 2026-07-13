@@ -187,7 +187,13 @@ Some skills (writing/review-style skills that produce prose output — e.g. PR r
 
 Read `claude-code-shared/resources/voice-routing.json` and look at its `profiles` map to see the currently available voice profiles.
 
-Ask the user: "Should this skill be assigned a voice profile? Available profiles: `<list the keys of the profiles map>`." Default to the single available profile (e.g. `dev-office`) when there is exactly one profile defined and the skill being registered is a writing/review-style skill. If the skill is not writing/review-style (e.g. a lookup, navigation, or orchestration skill), skip this step — not every skill needs a voice profile.
+Before asking the user, form a recommendation:
+
+- **Does this skill produce prose a person reads** (review comments, replies, docs, messages)? If not (a lookup, navigation, or orchestration skill), recommend skipping this step — not every skill needs a voice profile.
+- **If it does produce prose**, check whether an existing profile's description already matches this skill's writing domain (audience, register, medium). If one fits, recommend assigning it.
+- **If no existing profile fits** the skill's writing domain, do not force an ill-fitting profile onto it. Recommend instead that a new voice profile be built for this domain (a new profile needs a real evidence corpus, e.g. following the pattern used to build `dev-office.md` — out of scope for registration itself to author). Leave the skill unassigned until that profile exists.
+
+Present the recommendation to the user and let them confirm or override: "Should this skill be assigned a voice profile? Available profiles: `<list the keys of the profiles map>`. Recommendation: `<skip | assign <profile-name> | none fit — consider building a new profile for <domain>>`, because `<reasoning>`."
 
 If a profile is assigned, add (or overwrite) the skill's entry in the `skills` map:
 
