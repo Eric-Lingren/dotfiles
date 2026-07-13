@@ -230,4 +230,5 @@ Append that output under the Next steps header. Do not hardcode skill names.
 Read and execute `~/.dotfiles/claude-code-shared/resources/learning-capture.md`.
 This skill's slug is `to-e2e-tasks`.
 <!-- skill-done: to-e2e-tasks -->
+  - `/dispatch-tasks` — e2e tasks file is written and ready to implement
 <!-- learning-capture:end -->

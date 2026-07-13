@@ -1,0 +1,86 @@
+{
+  "2026-W24": {
+    "adherence": {
+      "match": 1,
+      "n": 2,
+      "overall_pct": 50.0,
+      "skills": {
+        "build-code": {
+          "exp": "sonnet",
+          "mix": {
+            "sonnet": 1
+          }
+        },
+        "debug": {
+          "exp": "opus",
+          "mix": {
+            "sonnet": 1
+          }
+        }
+      }
+    }
+  },
+  "2026-W25": {
+    "adherence": {
+      "match": 2,
+      "n": 2,
+      "overall_pct": 100.0,
+      "skills": {
+        "build-code": {
+          "exp": "sonnet",
+          "mix": {
+            "sonnet": 1
+          }
+        },
+        "grill-me": {
+          "exp": "opus",
+          "mix": {
+            "opus": 1
+          }
+        }
+      }
+    }
+  },
+  "2026-W27": {
+    "adherence": {
+      "match": 0,
+      "n": 1,
+      "overall_pct": 0.0,
+      "skills": {
+        "tdd": {
+          "exp": "sonnet",
+          "mix": {
+            "opus": 1
+          }
+        }
+      }
+    }
+  },
+  "2026-W28": {
+    "adherence": {
+      "match": 1,
+      "n": 3,
+      "overall_pct": 33.3,
+      "skills": {
+        "build-code": {
+          "exp": "sonnet",
+          "mix": {
+            "sonnet": 1
+          }
+        },
+        "improve-directory-structure": {
+          "exp": "opus",
+          "mix": {
+            "sonnet": 1
+          }
+        },
+        "to-tasks": {
+          "exp": "sonnet",
+          "mix": {
+            "opus": 1
+          }
+        }
+      }
+    }
+  }
+}

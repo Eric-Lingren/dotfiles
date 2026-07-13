@@ -3,12 +3,12 @@
 # (cco + cch) and writes a timestamped report. Designed to run via launchd
 # (see launchd/com.ericlingren.cc-usage-report.plist), but is safe to run by hand.
 #
-# Output dir override: CC_USAGE_REPORT_DIR (default ~/.cache/cc-usage-reports)
+# Output dir override: CC_USAGE_REPORT_DIR (default ~/.dotfiles/claude-code-shared/usage-reports)
 set -uo pipefail
 
 PY=/usr/bin/python3
 SCRIPT="$HOME/.dotfiles/claude-code-shared/scripts/cc-usage-benchmark.py"
-OUTDIR="${CC_USAGE_REPORT_DIR:-$HOME/.cache/cc-usage-reports}"
+OUTDIR="${CC_USAGE_REPORT_DIR:-$HOME/.dotfiles/claude-code-shared/usage-reports}"
 mkdir -p "$OUTDIR"
 
 STAMP=$(date +%Y-%m-%d)

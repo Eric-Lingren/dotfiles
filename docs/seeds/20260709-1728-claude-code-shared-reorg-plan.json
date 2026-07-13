@@ -1,0 +1,61 @@
+{
+  "schema_version": "4",
+  "producer": "to-seed",
+  "source": {
+    "type": "session",
+    "ref": null
+  },
+  "title": "improve-directory-structure reorg plan for claude-code-shared",
+  "slug": "claude-code-shared-reorg-plan",
+  "created": "2026-07-09T00:00:00Z",
+  "iteration": 1,
+  "summary": "Ran the newly-authored improve-directory-structure skill end-to-end, for real, against claude-code-shared itself as a non-interactive build-runner verification pass for task T-0081. Scope check confirmed claude-code-shared matches the claude-tooling-repo shape; the context-loader agent returned CONTEXT.md's 8-term vocabulary with no ADRs; scanner.py --extractor claude-tooling built a 101-node/209-edge graph; scanner.py --check found 1 pre-existing dangling reference (unrelated to this run) and 0 cycles; dependency-graph-findings.py produced 139 findings. Of those, exactly one was accepted as a well-evidenced, well-scoped reorg candidate (a shared script with a single real consumer, matching the skill's own scripts/ co-location convention); the rest were declined across several categories, including a repo-wide policy question (agents/ is an intentionally centralized registry, not a co-location candidate regardless of single-consumer signals) that surfaced during grilling and is significant enough to warrant a future ADR. No file was moved and no reference was rewritten during this run -- the skill stopped at a verified plan, per its own critical-rules boundary.",
+  "decisions": [
+    "Scope check: claude-code-shared matches the claude-tooling-repo shape (skills/*/SKILL.md, agents/registry.json, resources/model-tiers.json, skill-pipeline.json all present). Extractor used: claude-tooling.",
+    "context-loader confirmed: CONTEXT.md found, 8 vocabulary terms (Skill, Agent, Contract, Hook, Resource, Registry, Pipeline stage, Tier), no ADRs (docs/adr/ absent), 5 extra sources.",
+    "scanner.py --extractor claude-tooling produced a 101-node, 209-edge graph. scanner.py --check found 1 pre-existing dangling reference (agents/registry.json's browser-checker entry lists stale consumer 'run-tasks', which does not exist as a skill or registered agent -- likely a stale rename artifact, plausibly should read 'build-code' given build-runner's own description says it spawns browser-checker) and 0 cycles. This is pre-existing debt, not introduced by this run, and out of scope to fix here.",
+    "dependency-graph-findings.py produced 139 findings over the graph.",
+    "ACCEPTED candidate F0006 (CCP): script:scripts/filter-session-transcript.sh is shared but its only real reference is skill:to-seed, confirmed independently by grep across every skills/*/SKILL.md. Proposed move: claude-code-shared/scripts/filter-session-transcript.sh -> claude-code-shared/skills/to-seed/scripts/filter-session-transcript.sh, matching skill-directory-conventions.md's canonical scripts/ subdir pattern for skill-owned helpers. Blast radius: only to-seed/SKILL.md's script-path reference needs updating. scanner.py --check --extractor claude-tooling is the acceptance gate for the downstream move-and-verify task.",
+    "DECLINED F0003/F0004/F0005 (CCP, agents co-location): agent:build-runner, agent:export-tasks, and agent:fact-checker are each shared-bucket agents whose edges all trace to one owning skill cluster (build-code, dispatch-tasks, fact-check respectively). Declined as a category with a load-bearing, repo-wide reason: CONTEXT.md's own vocabulary defines Registry (agents/registry.json) as 'the authoritative list of every agent' -- agents are intentionally centralized there regardless of consumer count, unlike scripts, which have a documented skill-local scripts/ convention. Physically relocating an agent .md file into a skill directory would fragment that centralized registry pattern the repo deliberately maintains. This same reasoning also covers F0007 (script:scripts/log-learning.py under cluster 'agents' -- a shared cross-cutting utility used by the agent registry pattern itself, not a sole-owned file despite the graph's single-edge signal).",
+    "DECLINED F0008 (CCP): script:scripts/scanner.py shared but sole consumer skill:improve-directory-structure. This is an artifact of the skill being brand new (built in this same task chain) -- scanner.py is general-purpose infrastructure by design, already built with pluggable extractors for future consumers, not a genuine single-owner signal.",
+    "DECLINED F0009 (CRP): agent:browser-checker's 'single consumer' claim is unreliable -- it rests on agents/registry.json's consumer list, which includes the already-flagged dangling entry 'run-tasks' alongside 'debug'. Until that dangling reference is resolved to its real name, the true consumer count cannot be trusted (plausibly 2 real consumers -- build-code and debug -- not 1). Declined pending that prerequisite fix rather than treated as a real single-consumer signal.",
+    "DECLINED F0104 and 17 other MODULARITY findings on shared-bucket clusters (agents, resources, scripts, and several per-skill dirs): known non-finding per this skill's own LITMUS.md -- deliberately-shared buckets always show a low internal-edge ratio by design, and none of the 18 showed cross-cluster edges clustering around a splittable subset.",
+    "DECLINED F0001/F0002 (ADP): both cycles are pipeline_next workflow loops (dispatch-tasks<->to-e2e-tasks, prototype<->to-seed) -- known non-finding per LITMUS.md, intentional workflow suggestion loops, not structural defects.",
+    "Confirmed via `git status --short` at the end of the run that zero files were moved or renamed -- only pre-existing untracked files from earlier tasks in this build chain were present. The skill performed no direct file moves or reference rewrites, consistent with its verified-plan-only boundary."
+  ],
+  "deferred": [
+    {
+      "text": "Fix the pre-existing dangling registry reference: agents/registry.json's browser-checker entry lists consumer 'run-tasks', which does not resolve to any skill or agent. Likely should read 'build-code'.",
+      "rationale": "Pre-existing debt discovered as a side effect of this run's scanner --check baseline, unrelated to the reorg candidates evaluated here. Fixing it would also resolve F0009's ambiguity (whether browser-checker truly has a single consumer).",
+      "context": "Confirmed via `python3 claude-code-shared/scripts/scanner.py --check --extractor claude-tooling`, and independently cross-checked against agents/registry.json and build-runner.md's own description, which states it spawns browser-checker.",
+      "source_seed": null
+    }
+  ],
+  "open_threads": [
+    {
+      "id": "ot-001",
+      "text": "Should the repo record an ADR (or a CONTEXT.md invariant) stating that agents/registry.json is an intentionally centralized registry, so single-consumer CCP findings on agent: nodes stop being re-flagged as directory-reorg candidates by future improve-directory-structure runs? This is a genuine repo-wide policy judgment that a human should confirm before it's treated as settled -- this run reasoned it through as the most coherent explanation given CONTEXT.md's existing Registry vocabulary, but did not write the ADR itself since no live user was present to confirm the decision.",
+      "first_seen_iteration": 1
+    },
+    {
+      "id": "ot-002",
+      "text": "Are the 76 DRY findings (F0028-F0103) genuine non-findings? This run declined them as a category on first-principles reasoning (zero/near-zero-outdegree nodes trivially register as '100% similar' under an edge-target-similarity metric, which measures absence of edges rather than real content duplication), but that reasoning is not one of LITMUS.md's two documented 'Known non-findings' patterns (pipeline_next ADP, shared-cluster MODULARITY) and none of the 76 were individually reviewed. A verification panel upheld this as a genuine grounding gap. Resolve by either (a) extending LITMUS.md with a documented third non-finding pattern for zero-outdegree DRY noise if the reasoning holds up under scrutiny, or (b) spot-checking a sample of the 76 for real duplicates before declining the rest.",
+      "first_seen_iteration": 1
+    },
+    {
+      "id": "ot-003",
+      "text": "Are the 18 SRP findings (F0122-F0139) genuine non-findings? This run declined them as a category on first-principles reasoning (fan-out across clusters is expected for orchestrator skills like build-code, debug, dispatch-tasks, to-seed), but that reasoning is not one of LITMUS.md's two documented 'Known non-findings' patterns and none of the 18 were individually reviewed. A verification panel upheld this as a genuine grounding gap. Resolve by either (a) extending LITMUS.md with a documented 'expected orchestrator fan-out' non-finding pattern if the reasoning holds up, or (b) spot-checking a sample of the 18 for real accidental scope creep before declining the rest.",
+      "first_seen_iteration": 1
+    }
+  ],
+  "next_action": "Run /to-tasks on this seed to generate a single discrete move-and-verify task for the accepted candidate (F0006: relocate scripts/filter-session-transcript.sh into skills/to-seed/scripts/ and update to-seed/SKILL.md's reference), gated on `python3 ~/.dotfiles/claude-code-shared/scripts/scanner.py --check --extractor claude-tooling` as its acceptance criterion. Separately, resolve open threads ot-001 (agents/ centralization ADR), ot-002 (DRY bulk-decline grounding), and ot-003 (SRP bulk-decline grounding) with a human before running improve-directory-structure again on this repo, since unresolved they will keep re-surfacing the same declined findings without a documented basis.",
+  "status": "draft",
+  "verification": {
+    "iteration": 1,
+    "personas": ["grounding", "accuracy", "completeness", "coherence"],
+    "refutations_upheld": 2,
+    "refutations_screened": 5,
+    "clean": false,
+    "status": "verified"
+  }
+}

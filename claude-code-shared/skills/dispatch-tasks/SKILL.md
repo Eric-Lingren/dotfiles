@@ -154,5 +154,6 @@ Append that output under the Next steps header. If more branches remain, prepend
 Read and execute `~/.dotfiles/claude-code-shared/resources/learning-capture.md`.
 This skill's slug is `dispatch-tasks`.
 <!-- skill-done: dispatch-tasks -->
-  - `/to-e2e-tasks` — want e2e coverage for the completed changes
+  - `/run-task-followups` — all branches are done and FU-001 cleanup is ready
+  - `/to-e2e-tasks` — want e2e coverage for the completed changes (optional)
 <!-- learning-capture:end -->

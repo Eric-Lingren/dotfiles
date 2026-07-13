@@ -143,6 +143,8 @@ Write the draft seed JSON to:
 ```
 Store the output path as `SEED_PATH`. Pass this path to all personas and judges. Do not inline the seed JSON in any agent prompt — passing a file path prevents generation drift when spawning multiple agents simultaneously.
 
+**Timeout policy (applies to every persona/judge spawn in 3b and 3c):** this fan-out has no natural completion signal if a spawn stalls, and it has hung indefinitely in practice. Spawn every persona and judge agent with `run_in_background: true`, then collect each with `TaskOutput` using `timeout: 600000` (10 min) and `block: true`. If `TaskOutput` does not return a completed result within the timeout, call `TaskStop` on that task_id and treat it exactly like a failed spawn: it gets the same one retry as a parse mismatch (same 10-min budget), and if the retry also times out, record the failure as `<agent name>: timed out after 10m` and fall through to that stage's existing failure handling. Never wait past this budget — a stalled spawn must surface as a recorded failure, not a silent hang.
+
 #### 3b. Spawn all 4 adversary persona agents in parallel
 
 In a single message, spawn all four adversary personas simultaneously. The input shape is inlined here — open `~/.dotfiles/claude-code-shared/contracts/persona-input-contract.md` only if you suspect drift. Each persona prompt carries:
@@ -156,7 +158,7 @@ Agents to spawn (by registered agent name, not file path):
 - `personas:persona-completeness` — hunts missed branches, premature closure, dropped dependencies, merge-loss
 - `personas:persona-coherence` — hunts contradiction, misclassification, dropped human dispositions, relabel-resurrection
 
-Each persona returns a JSON array of refutation objects (`[]` if nothing found). Normal-form object shape (inlined — no need to open the contract): `{persona, field, claim, problem, transcript_span}` where `transcript_span` is a verbatim quote or `null`. Error-form: an array whose objects carry an `error` key — detect these by the presence of `error` and never forward them to the judge stage. On a parse mismatch or non-JSON response, retry that persona once. If the retry also fails, note the failure (agent name + error) and continue to 3c.
+Each persona returns a JSON array of refutation objects (`[]` if nothing found). Normal-form object shape (inlined — no need to open the contract): `{persona, field, claim, problem, transcript_span}` where `transcript_span` is a verbatim quote or `null`. Error-form: an array whose objects carry an `error` key — detect these by the presence of `error` and never forward them to the judge stage. On a parse mismatch, non-JSON response, or timeout (see timeout policy above), retry that persona once. If the retry also fails, note the failure (agent name + error) and continue to 3c.
 
 **Adversarial framing:** the panel's job is to disprove, not to improve. Additions and new open_threads the panel surfaces auto-apply. Removals (claiming a decision is wrong and should be removed) require a cited transcript span as evidence — no span, no removal.
 
@@ -178,19 +180,19 @@ Each persona returns a JSON array of refutation objects (`[]` if nothing found).
    ```
    Store the output path as `EVIDENCE_PACK_PATH`. If the script exits non-zero, treat it as a stage failure: record the error, skip the judge stage, and go to 3d on the degraded path.
 
-**Round 1 — screener (1 Sonnet judge over the whole batch):** spawn one `personas:persona-judge` instance (Sonnet). Its prompt carries: the full `REFUTATIONS_PATH` array (inline the JSON or pass the path and have it Read — passing inline is fine since it is small), `evidence_pack_path: <EVIDENCE_PACK_PATH>`, `transcript_path: <CLEANED_TRANSCRIPT_PATH>` (escape hatch — the judge defaults to the pack and only greps the full transcript when far-context settles a verdict), and `seed_path: <SEED_PATH>`. It returns a verdict array — one `{ref_id, verdict, reason}` per refutation. Validate against the inlined verdict shape below (open `~/.dotfiles/claude-code-shared/contracts/verdict-contract.md` only on suspected drift). On a parse mismatch or non-JSON response, retry that judge once.
+**Round 1 — screener (1 Sonnet judge over the whole batch):** spawn one `personas:persona-judge` instance (Sonnet). Its prompt carries: the full `REFUTATIONS_PATH` array (inline the JSON or pass the path and have it Read — passing inline is fine since it is small), `evidence_pack_path: <EVIDENCE_PACK_PATH>`, `transcript_path: <CLEANED_TRANSCRIPT_PATH>` (escape hatch — the judge defaults to the pack and only greps the full transcript when far-context settles a verdict), and `seed_path: <SEED_PATH>`. It returns a verdict array — one `{ref_id, verdict, reason}` per refutation. Validate against the inlined verdict shape below (open `~/.dotfiles/claude-code-shared/contracts/verdict-contract.md` only on suspected drift). On a parse mismatch, non-JSON response, or timeout (see timeout policy above), retry that judge once.
 
 - For each `ref_id` the screener marks `rejected`: increment `refutations_screened`. It is terminated — it does not escalate.
 - The set of `ref_id`s marked `upheld` is the **escalation set**.
 - **Screener fails after retry:** record the failure (degraded-path accounting as in 3b) and go to 3d on the degraded path — do not run round 2 on an unscreened batch.
 
-**Round 2 — panel (3 Sonnet judges over the escalation set):** if the escalation set is empty, skip round 2. Otherwise spawn 3 fresh `personas:persona-judge` instances simultaneously (Sonnet), each receiving only the **upheld subset** of refutations (with their `ref_id`s), the same `EVIDENCE_PACK_PATH`, `transcript_path: <CLEANED_TRANSCRIPT_PATH>` (same escape hatch), and `seed_path`. The round-1 verdicts are not reused as a pre-vote — all 3 panelists judge the subset fresh. Each returns a verdict array. Retry any panelist once on a parse mismatch.
+**Round 2 — panel (3 Sonnet judges over the escalation set):** if the escalation set is empty, skip round 2. Otherwise spawn 3 fresh `personas:persona-judge` instances simultaneously (Sonnet), each receiving only the **upheld subset** of refutations (with their `ref_id`s), the same `EVIDENCE_PACK_PATH`, `transcript_path: <CLEANED_TRANSCRIPT_PATH>` (same escape hatch), and `seed_path`. The round-1 verdicts are not reused as a pre-vote — all 3 panelists judge the subset fresh. Each returns a verdict array. Retry any panelist once on a parse mismatch or timeout (see timeout policy above).
 
 Apply a flat 2-of-3 majority **per `ref_id`**: a refutation is upheld only if ≥2 non-failed panelists return `upheld` for that id. Apply every upheld refutation to the draft seed in memory (see adversarial framing above). Refutations that fall to a `rejected` majority are dropped.
 
 **Verdict shape (inlined):** the judge response is a JSON array; each element is `{ref_id, verdict, reason}` with `verdict` ∈ `{upheld, rejected}`, or an error-form array `[{error, details?}]` on failure.
 
-**Failure handling (round-2 panel):** if 2 or more of the 3 panelists fail (error-form or unparseable after retry), the panel is unusable — record the failure, leave the escalation set's refutations unapplied, and take the degraded path at 3d.
+**Failure handling (round-2 panel):** if 2 or more of the 3 panelists fail (error-form, unparseable, or timed out after retry), the panel is unusable — record the failure, leave the escalation set's refutations unapplied, and take the degraded path at 3d.
 
 #### 3d. Build the verification stamp and clean up
 

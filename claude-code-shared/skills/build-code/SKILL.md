@@ -247,4 +247,6 @@ Rules for the description:
 Read and execute `~/.dotfiles/claude-code-shared/resources/learning-capture.md`.
 This skill's slug is `build-code`.
 <!-- skill-done: build-code -->
+  - `/run-task-followups` — all tasks are done and FU-001 cleanup is ready
+  - `/to-e2e-tasks` — want e2e coverage for the completed changes (optional)
 <!-- learning-capture:end -->

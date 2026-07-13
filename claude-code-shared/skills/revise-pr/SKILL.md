@@ -472,5 +472,5 @@ Read and execute `~/.dotfiles/claude-code-shared/resources/learning-capture.md`.
 This skill's slug is `revise-pr`.
 <!-- skill-done: revise-pr -->
   - `/to-tasks` — seed is verified and ready for implementation
-  - `/relay` — post the Step 9 reply drafts and resolve threads (external write-back, deferred)
+  - `/relay` — non-code items need user notification
 <!-- learning-capture:end -->

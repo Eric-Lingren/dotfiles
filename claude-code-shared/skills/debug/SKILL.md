@@ -297,4 +297,7 @@ Read and execute `~/.dotfiles/claude-code-shared/resources/attribution-capture.m
 Read and execute `~/.dotfiles/claude-code-shared/resources/learning-capture.md`.
 This skill's slug is `debug`.
 <!-- skill-done: debug -->
+  - `/dispatch-tasks` — tasks file is written and ready to execute fixes
+  - `/run-task-followups` — build-code is done and FU-001 cleanup is ready
+  - `/to-e2e-tasks` — want e2e coverage after fixes land (optional)
 <!-- learning-capture:end -->

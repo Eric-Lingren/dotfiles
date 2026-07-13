@@ -325,4 +325,5 @@ Append that output under the Next steps header. Do not hardcode skill names. Do 
 Read and execute `~/.dotfiles/claude-code-shared/resources/learning-capture.md`.
 This skill's slug is `improve-component`.
 <!-- skill-done: improve-component -->
+  - `/dispatch-tasks` — tasks file is written and ready to execute
 <!-- learning-capture:end -->
