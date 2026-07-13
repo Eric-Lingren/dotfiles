@@ -123,7 +123,7 @@ def branch_prefix(b):
 # ---- intent classification ----
 PLAN_CMDS   = {"to-prd-html", "to-prd", "grill-me", "grill-with-docs", "to-tasks", "prototype", "plan"}
 TEST_CMDS   = {"tdd", "to-e2e-tests"}
-REVIEW_CMDS = {"review", "code-review", "security-review", "caveman-review"}
+REVIEW_CMDS = {"review", "code-review", "pr-code-review", "security-review", "caveman-review"}
 REFAC_CMDS  = {"improve-component", "improve-codebase-architecture", "simplify"}
 RESEARCH_CMDS = {"how-to", "deep-research", "tldr-tech"}
 RUNTASK_CMDS = {"run-tasks", "run-task-followups", "tasks-to-linear"}

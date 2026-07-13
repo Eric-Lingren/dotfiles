@@ -50,10 +50,9 @@
         {"skill": "to-seed", "when": "prototype confirmed the approach and ready to capture decisions"}
       ]
     },
-    "revise-pr": {
+    "pr-revise": {
       "next": [
-        {"skill": "to-tasks", "when": "seed is verified and ready for implementation"},
-        {"skill": "relay", "when": "non-code items need user notification"}
+        {"skill": "to-tasks", "when": "the seed is written and ready to break into code + reply tasks"}
       ]
     },
     "vet": {
@@ -72,7 +71,7 @@
         {"skill": "to-e2e-tasks", "when": "want e2e coverage after fixes land (optional)"}
       ]
     },
-    "code-review": {
+    "pr-code-review": {
       "next": []
     },
     "improve-skill": {

@@ -243,6 +243,16 @@ Rules for the description:
 2. After the Bash tool returns, print the full gxpush output verbatim to the user. This includes the STAGED, WILL ADD, EXCLUDED, and SECRETS sections so they can see exactly what was committed.
 3. Return the PR URL to the user (gxpush prints it after `gh pr create` completes).
 
+#### c. Record the fixing commit on completed code tasks
+
+After the push returns, capture the branch HEAD and write it (plus the PR URL) onto every `code` task this run marked `done`. This is what lets a downstream `reply` task (produced by `/pr-revise`) cite the exact commit that fixed its thread, so the reviewer gets one combined comment instead of a plan-then-commit pair.
+
+```bash
+git rev-parse HEAD
+```
+
+For each `code` task now `done`: set `commit` to that SHA and `pr` to the PR URL from gxpush, then write the task file. All tasks landed in this single push share the branch HEAD — that is the honest reference under the one-PR-per-run model. If the user declined the push, leave `commit`/`pr` null; the reply branch will fall back to a PR link or omit the reference.
+
 <!-- learning-capture:start -->
 Read and execute `~/.dotfiles/claude-code-shared/resources/learning-capture.md`.
 This skill's slug is `build-code`.

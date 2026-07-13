@@ -12,7 +12,7 @@ Break a seed file or PRD into independently-grabbable tasks using vertical slice
 ## Contract
 
 **Consumes:** seed file OR HTML PRD — see `contracts/seed-contract.md` (schema_version: `"4"`)
-**Produces:** task file — see `contracts/task-contract.md` (schema_version: `"1"`)
+**Produces:** task file — see `contracts/task-contract.md` (schema_version: `"2"`)
 
 When input is a seed file (`.json`), apply Step-0a directly. When input is an HTML PRD (`.html` or `.md`), run `scripts/extract-prd-json.sh <path>` first to extract the embedded seed JSON, then apply Step-0a on the extracted JSON.
 
@@ -183,6 +183,38 @@ Omit `browser_verify` and `linear_url` for triage tasks. Do not emit triage task
 
 Append triage tasks after all build tasks in the `tasks[]` array.
 
+### 3c. PR-feedback provenance → code + reply tasks
+
+This section applies **only to PR-feedback seeds** — seeds that carry a `provenance` block (written by `/pr-revise`, schema in `contracts/seed-schema.json`). If the seed has no `provenance` field, skip this section entirely.
+
+The provenance items already hold both halves of each thread's outcome: `fix` (the code scope) and `reply_body` (the drafted response). Do not re-derive or re-draft them. Copy them through.
+
+For each entry in `provenance.items[]`, in order:
+
+**If `fix` is non-null**, emit a paired `code` task and `reply` task:
+
+- **code task**:
+  - `task_type: "code"`, `type: "AFK"` (or `"HITL"` only if the fix needs a keyboard-only action)
+  - `title`: short imperative derived from the fix scope
+  - `description`: the item's `fix` framed as end-to-end behavior. For a refactor, state that characterization tests are written before restructuring.
+  - `acceptance_criteria`: at least one test-related, derived from the fix
+  - `blocked_by: []`, `status: "not_started"`, `branch: null`, `pr: null`, `commit: null`
+  - `browser_verify`: include only if the fix changes a user-facing route (same rules as build slices); omit otherwise
+- **reply task**:
+  - `task_type: "reply"`, `type: "AFK"`
+  - `title`: `Reply: <short thread descriptor>`
+  - `description`: one line on what the reply conveys
+  - `acceptance_criteria`: `["Reply posted under the originating thread", "Thread resolved"]`
+  - `blocked_by`: `[<the paired code task id>]` — this is what lets relay cite the fixing commit
+  - `status: "not_started"`, `branch: null`, `pr: null`
+  - `reply_body`: the item's `reply_body`, **verbatim**
+  - `reply_url`: the item's `reply_url`
+  - `thread_id` + `thread_id_type`: the item's values, copied through
+
+**If `fix` is null**, emit a `reply` task only (no code task), with `blocked_by: []` and the reply fields above.
+
+Assign IDs from `next-task-id.sh` (step 4). Append these tasks to `tasks[]` after the build slices. Never put `browser_verify` on a reply task.
+
 ### 3b. Infer follow-ups from the source artifact
 
 A follow-up is a piece of **irreducible human-in-the-loop work that finalizes the built scope and that the AI cannot perform at all**. At to-tasks time (before any task runs) this means exactly one category:
@@ -218,6 +250,8 @@ Run `~/.dotfiles/claude-code-shared/scripts/next-task-id.sh docs/tasks/` to get 
 Always use `strategy: "single"`. Never ask the user to choose between single and per-task.
 
 Ask only: "Branch name?" — use the naming conventions in `~/.dotfiles/claude-code-shared/resources/branching-strategy.md` to suggest a default (derive from current branch prefix + slug). User can accept or override.
+
+**PR-feedback seeds:** default the branch to the seed's `provenance.head_branch` — the fixes land on the existing PR branch so build-code's push updates that PR (and its commit is what relay cites). Suggest it as the default; the user can still override.
 
 Record in the JSON: `{"strategy": "single", "branch": "{confirmed-name}"}`.
 

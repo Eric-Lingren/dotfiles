@@ -1,6 +1,6 @@
 ---
 name: attribution-tracer
-description: Attribution tracing agent. Receives a confirmed issue description and fix, walks the provenance chain backward to find the earliest escape point, classifies the cause, and drafts a v2 attribution learning record. Passes the draft to the artifact-grounding-judge for verification before writing. Spawned by skills (debug, code-review) after confirming a root cause.
+description: Attribution tracing agent. Receives a confirmed issue description and fix, walks the provenance chain backward to find the earliest escape point, classifies the cause, and drafts a v2 attribution learning record. Passes the draft to the artifact-grounding-judge for verification before writing. Spawned by skills (debug, pr-code-review) after confirming a root cause.
 tools: Read, Bash, Agent
 model: sonnet
 ---

@@ -10,9 +10,9 @@ PIPELINE_FILE = SHARED / "skill-pipeline.json"
 SKILLS_DIR = SHARED / "skills"
 
 REQUIRED_SKILLS = {
-    "to-seed", "to-tasks", "run-tasks", "debug", "code-review",
+    "to-seed", "to-tasks", "build-code", "debug", "pr-code-review",
     "grill-me", "grill-with-docs", "improve-skill", "prototype",
-    "to-prd-html", "to-e2e-tasks",
+    "to-prd-html", "to-e2e-tasks", "dispatch-tasks", "pr-revise",
 }
 
 
@@ -101,16 +101,20 @@ class TestKnownEdges:
         targets = [e["skill"] for e in pipeline["skills"]["to-prd-html"]["next"]]
         assert "to-tasks" in targets
 
-    def test_to_tasks_leads_to_run_tasks(self, pipeline):
+    def test_to_tasks_leads_to_dispatch_tasks(self, pipeline):
         targets = [e["skill"] for e in pipeline["skills"]["to-tasks"]["next"]]
-        assert "run-tasks" in targets
+        assert "dispatch-tasks" in targets
 
-    def test_run_tasks_leads_to_to_e2e_tasks(self, pipeline):
-        targets = [e["skill"] for e in pipeline["skills"]["run-tasks"]["next"]]
+    def test_build_code_leads_to_to_e2e_tasks(self, pipeline):
+        targets = [e["skill"] for e in pipeline["skills"]["build-code"]["next"]]
         assert "to-e2e-tasks" in targets
 
+    def test_pr_revise_leads_to_to_tasks(self, pipeline):
+        targets = [e["skill"] for e in pipeline["skills"]["pr-revise"]["next"]]
+        assert "to-tasks" in targets
+
     def test_terminal_skills_have_empty_next(self, pipeline):
-        terminal = ["to-e2e-tasks", "debug", "code-review", "improve-skill"]
+        terminal = ["pr-code-review", "improve-skill", "tdd", "handoff"]
         for slug in terminal:
             entry = pipeline["skills"][slug]
             assert entry["next"] == [], f"{slug}: expected empty next, got {entry['next']}"

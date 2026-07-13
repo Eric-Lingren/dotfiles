@@ -11,7 +11,7 @@ All 30 shared skills. Plugin skills (caveman, chrome-devtools) are excluded.
 - `skills/build-code/`
 - `skills/cc-usage-analytics/`
 - `skills/clean-scaffolding/`
-- `skills/code-review/`
+- `skills/pr-code-review/`
 - `skills/debug/`
 - `skills/dispatch-tasks/`
 - `skills/fact-check/`
@@ -28,7 +28,7 @@ All 30 shared skills. Plugin skills (caveman, chrome-devtools) are excluded.
 - `skills/prototype/`
 - `skills/register-skill/`
 - `skills/relay/`
-- `skills/revise-pr/`
+- `skills/pr-revise/`
 - `skills/run-task-followups/`
 - `skills/tasks-to-linear/`
 - `skills/tdd/`
@@ -97,7 +97,7 @@ skill tail block (trigger, brief_evidence)
 **Attribution records** (`type: "attribution"`) — produced after a root cause is confirmed:
 
 ```
-skill (debug, code-review) confirms root cause + fix
+skill (debug, pr-code-review) confirms root cause + fix
   → spawns attribution-tracer agent with issue_description, fix, transcript_path
   → attribution-tracer walks provenance chain, drafts record
   → attribution-tracer spawns artifact-grounding-judge with draft

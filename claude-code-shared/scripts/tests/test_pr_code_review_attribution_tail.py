@@ -1,10 +1,10 @@
-"""Tests for attribution capture tail block in code-review SKILL.md."""
+"""Tests for attribution capture tail block in pr-code-review SKILL.md."""
 
 import pathlib
 import pytest
 
 SHARED = pathlib.Path(__file__).resolve().parents[3] / "claude-code-shared"
-SKILL_FILE = SHARED / "skills" / "code-review" / "SKILL.md"
+SKILL_FILE = SHARED / "skills" / "pr-code-review" / "SKILL.md"
 
 
 @pytest.fixture(scope="module")
@@ -44,12 +44,12 @@ class TestAttributionBlockContent:
 
 class TestNoMarkerDuplication:
     def test_skill_done_marker_appears_exactly_once(self, content):
-        count = content.count("<!-- skill-done: code-review -->")
-        assert count == 1, f"skill-done: code-review appears {count} times (expected 1)"
+        count = content.count("<!-- skill-done: pr-code-review -->")
+        assert count == 1, f"skill-done: pr-code-review appears {count} times (expected 1)"
 
     def test_learning_eval_marker_appears_exactly_once(self, content):
-        count = content.count("<!-- learning-eval: code-review -->")
-        assert count == 1, f"learning-eval: code-review appears {count} times (expected 1)"
+        count = content.count("<!-- learning-eval: pr-code-review -->")
+        assert count == 1, f"learning-eval: pr-code-review appears {count} times (expected 1)"
 
 
 class TestBlockIsAdditive:

@@ -13,11 +13,11 @@
         "to-tasks",
         "to-prd-html",
         "debug",
-        "code-review",
+        "pr-code-review",
         "improve-component",
         "to-e2e-tasks",
         "prototype",
-        "revise-pr",
+        "pr-revise",
         "manual"
       ]
     },

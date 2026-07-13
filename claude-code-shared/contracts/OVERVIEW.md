@@ -34,7 +34,7 @@ SEED (seed-schema.json v2)          TASK (task-schema.json v1)         RUNNER-RE
   improve-component ──────────────────────────┤
   to-e2e-tasks ───────────────────────────────┤──► task.json ──► run-tasks ──► [TDD loop]
   to-tasks ───────────────────────────────────┤   (docs/tasks/)    |               |
-  code-review ─── (HITL vetting first) ───────┘                    |          lint-runner
+  pr-code-review ─ (HITL vetting first) ───────┘                    |          lint-runner
                                                                     |          test-runner
                                                                     |          e2e-runner
                                                                     |               |

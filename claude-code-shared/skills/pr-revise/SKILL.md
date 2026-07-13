@@ -1,12 +1,12 @@
 ---
-name: revise-pr
+name: pr-revise
 description: >
   Post-publish PR feedback ingestion skill. Harvests reviewer and bugbot comments from an
   already-published PR, runs provisional triage, applies mandatory diligence, presents an
-  HITL confirmation gate, fires attribution-tracer for confirmed escapes, and stops at a
-  verified seed. Use when the user says "revise PR", "process PR feedback", "review my PR
-  comments", or invokes /revise-pr.
-slug: revise-pr
+  HITL confirmation gate, fires attribution-tracer for confirmed escapes, and stops at a seed
+  (via /to-seed) whose provenance captures both the code fixes and the PR replies to post. Use when
+  the user says "revise PR", "process PR feedback", "review my PR comments", or invokes /pr-revise.
+slug: pr-revise
 model: sonnet
 effort: high
 ---
@@ -28,8 +28,8 @@ the current model. Delegate only the menial searching.
 ## Scope
 
 This skill processes feedback on PRs the **user already published** (post-review ingestion).
-It is not for pre-vetting your own code before publishing (use `/code-review` for that) and
-not for reviewing someone else's PR (use `/code-review` for that too). It does not post
+It is not for pre-vetting your own code before publishing (use `/pr-code-review` for that) and
+not for reviewing someone else's PR (use `/pr-code-review` for that too). It does not post
 GitHub comments, resolve threads, or push code during its own run. All outward writes are
 deferred to downstream skills.
 
@@ -133,7 +133,7 @@ Inspect the GraphQL response for `errors[].message` containing `Resource not acc
 ```
 Error: SSO authorization required for this organization.
 Run: gh auth refresh -h <hostname>
-Then re-run /revise-pr.
+Then re-run /pr-revise.
 ```
 
 Do not attempt to continue with partial data.
@@ -303,15 +303,15 @@ Present the post-diligence classification as a confirmation table:
 
 | # | Excerpt | Final Class | Disposition | Action |
 |---|---------|-------------|-------------|--------|
-| 1 | "The nil check..." | bug | confirmed_escape | attribution-tracer + reply draft |
-| 2 | "Consider extracting..." | change | | reply draft |
-| 3 | "What does fn return..." | question | | reply draft |
+| 1 | "The nil check..." | bug | confirmed_escape | attribution-tracer + fix task + reply task |
+| 2 | "Consider extracting..." | change | | fix task + reply task |
+| 3 | "What does fn return..." | question | | reply task only |
 
-The **Action** column shows what will fire for each item after the user confirms:
-- `confirmed_escape` bugs: attribution-tracer spawned, plus a reply draft in Step 9
-- `false_flag`, `not_an_escape`, `unverified` bugs: reply draft in Step 9, no attribution
-- Non-bug items: reply draft in Step 9
-- Every substantive item gets a copy-only reply draft (Step 9); nothing is posted
+The **Action** column shows what Step 8 will capture in the seed for each item after the user confirms (`to-tasks` later turns these into tasks):
+- `confirmed_escape` bugs: attribution-tracer spawned (Step 7), plus a non-null `fix` (→ code task) and a `reply_body` (→ reply task blocked by it)
+- `false_flag`, `not_an_escape`, `unverified` bugs: a `reply_body` (plus a `fix` when a change is still warranted), no attribution
+- Non-bug items: a `reply_body`, plus a `fix` only when the item needs a change on this PR
+- Every substantive item gets a `reply_body`; nothing is posted during this skill's run
 
 Prompt the user: "Confirm this categorization and proceed, or override any row before actions fire."
 
@@ -343,13 +343,38 @@ The `fix` field in the generated attribution record will be empty or TBD. This i
 
 ---
 
-## Step 8 — Seed stop
+## Step 8 — Draft the response and scope, then seed stop
 
-After attribution-tracer has run for all `confirmed_escape` items, invoke `/to-seed`. Pass the full session context plus the structured provenance block below.
+pr-revise does **not** write tasks directly. It stays on the canonical pipeline tree: it captures the outcome into a **seed** via `/to-seed`, and `/to-tasks` later turns that seed into the `code` fix tasks and `reply` tasks. This keeps lineage intact (seed → tasks → dispatch) exactly like every other planning skill.
 
-### Provenance block
+The seed must carry **both** halves of the outcome per thread: the code scope to change (`fix`) **and** the reply to post (`reply_body`). You have the harvest, diligence, and session context to write both now; `to-tasks` will not have it later.
 
-Build and include this provenance block in the seed:
+### 8a. Per item, decide the fix scope and draft the reply
+
+Walk every substantive item (post-diligence, post-HITL). For each, set two things:
+
+- **`fix`** — the code change to make on THIS PR, or `null` when no code change is warranted:
+  - Non-null for: bug `confirmed_escape`; bug `not_an_escape` that still warrants a change; `change` accepted for this PR; `diligence` that adds a test or doc.
+  - `null` for: `question`; `nit` accepted-trivial or declined; bug `false_flag`; `discuss`; any `change`/fix deferred to a later PR.
+- **`reply_body`** — the ready-to-post draft reply (quality bar below). Every substantive item gets one.
+
+A non-null `fix` becomes a `code` task plus a `reply` task blocked by it (so the reply can cite the fixing commit). A null `fix` becomes a reply-only task. `to-tasks` does this wiring; here you only set `fix` and `reply_body`.
+
+### 8b. Reply-body quality bar
+
+Write each `reply_body` now, grounded in the diligence finding:
+- Match the reviewer's register — terse for a nit, fuller for a design thread. Do not pad.
+- Ground claims in the code: cite `file:line` or the symbol when it sharpens the reply. Never invent paths or line numbers; use only what diligence surfaced.
+- Reply as the PR author in first person. No hedging, no "as an AI", no meta-commentary about drafting.
+- Address the reviewer's actual point; do not restate their comment back at them before answering.
+- Never claim work is done that is not done. A planned-but-unwritten fix reads as "fixing by…", not "fixed". **Do not hand-write a commit SHA** into `reply_body`; relay stitches the fixing commit in at post time once the code task lands.
+- Keep the reviewer's handle out of the body; the thread already targets them.
+
+Per-class framing: **bug/confirmed_escape** — acknowledge, confirm real, state the fix approach. **bug/not_an_escape** — confirm real, note it's a known facet, point to the fix. **bug/false_flag** — explain with evidence why the code is correct; stay collegial. **change** — state the decision; offer the alternative if they feel strongly. **question** — answer directly from the code. **discuss** — engage the tradeoff, state your lean, name the follow-up; if deferred, say so and point at the tracking item. **nit** — brief accept/decline with a one-line reason.
+
+### 8c. Assemble the enriched provenance block
+
+Build this block and hand it to `/to-seed` (it becomes the seed's `provenance`, per `contracts/seed-schema.json`). One entry per harvested item, in harvest order:
 
 ```json
 {
@@ -360,117 +385,32 @@ Build and include this provenance block in the seed:
       "thread_id": "<the id value>",
       "thread_id_type": "graphql_node_id | database_id",
       "final_class": "<final class after diligence and HITL gate>",
-      "disposition": "<final disposition for bug items, or null>"
+      "disposition": "<final disposition for bug items, or null>",
+      "reply_body": "<the drafted reply for this thread>",
+      "reply_url": "<the originating comment URL from Step 3 harvest>",
+      "fix": "<the code scope to change on this PR, or null>"
     }
   ]
 }
 ```
 
-**ID type discipline:** the two GraphQL sources return different id kinds and they must not be
-conflated. Inline review threads (`reviewThreads.nodes[].id`) yield an opaque GraphQL global
-node ID string — set `thread_id_type` to `"graphql_node_id"`. Top-level PR comments and
-thread comments expose a numeric `databaseId` — set `thread_id_type` to `"database_id"`.
-A downstream consumer (e.g. `relay` resolving threads) keys its lookup on `thread_id_type`,
-so the field is mandatory on every item. Prefer the thread `id` (graphql_node_id) for inline
-threads since thread resolution operates on the thread, not an individual comment.
+**ID type discipline:** inline review threads (`reviewThreads.nodes[].id`) yield an opaque GraphQL global node ID → `thread_id_type: "graphql_node_id"`. Top-level PR comments expose a numeric `databaseId` → `"database_id"`. Prefer the thread `id` for inline threads since resolution operates on the thread, not an individual comment. A downstream consumer (relay) keys thread resolution on `thread_id_type`, so it is mandatory on every item.
 
-Include one entry per harvested item.
+### 8d. Seed stop
 
-**Skill boundary:** This skill stops after `/to-seed` completes. It does not invoke `/to-tasks`, `/build-code`, branch checkout, or push. What the downstream pipeline does with the seed is outside this skill's concern.
+Invoke `/to-seed`, passing the full session context plus the provenance block from 8c. `to-seed` writes and validates the seed under `docs/seeds/`.
 
----
+**Skill boundary:** pr-revise stops after `/to-seed` completes. It does **not** write tasks, invoke `/to-tasks`, `/dispatch-tasks`, `/build-code`, `/relay`, check out a branch, or push. It makes **zero** outward HTTP writes during its own run. The seed is its only output; the downstream tree (`/to-tasks` → `/dispatch-tasks` → build-code + relay) does the rest.
 
-## Step 9 — Reply-copy drafting (v1, inline, copy-only)
+### 8e. Handoff
 
-**This step drafts ready-to-paste reply copy. It makes ZERO external calls.** No GitHub comments
-are posted, no threads are resolved, nothing is written to disk. The user pastes the copy manually.
-External write-back (posting, resolving) is deferred to the `/relay` skill and is explicitly out of
-scope here.
-
-### 9a. Assemble the source data
-
-Draft copy from the **in-session** harvest + diligence results, not from the seed file. The seed's
-`provenance.items[]` carries only `thread_id` / `final_class` / `disposition` — it lacks the comment
-body and URL needed to write a grounded reply. Use the data already held in session:
-- the reviewer/bugbot comment text (from Step 3 harvest)
-- the final class + disposition (from Step 5 diligence + Step 6 HITL gate)
-- the resolved decision or open thread (from the seed synthesis)
-
-### 9b. Scope
-
-Draft copy for **every substantive harvested item**, all classes (`bug`, `change`, `question`,
-`discuss`, `diligence`, `nit`). Exclude only the CI/admin bot noise dropped during triage
-(e.g. chromatic, codecov, linear linkback, bugbot review-summary meta-notices). Confirmed bugs get
-copy too — an acknowledgement reply is still owed on the thread.
-
-### 9c. Copy guidelines per class/disposition
-
-Write a full, ready-to-paste reply per thread, grounded in the actual code finding. One reply per
-thread (if multiple harvested comments share a thread, write one reply addressing them together).
-
-- **bug / `confirmed_escape`**: acknowledge, confirm it's real, state the fix approach concisely.
-- **bug / `not_an_escape`**: confirm real but note it's the same root cause / a known facet; point to the fix.
-- **bug / `false_flag`**: explain, with evidence, why the code is correct as written. Stay collegial.
-- **change**: address the design point, state the decision made, offer the alternative if the reviewer feels strongly.
-- **question**: answer directly from the code.
-- **discuss**: engage the tradeoff, state your lean, name the follow-up. If the thread was disposed
-  as `deferred` in the seed, say so plainly and point at the deferred item so the reviewer knows it
-  is tracked, not dropped.
-- **nit**: brief acknowledgement (accepting or declining with a one-line reason).
-
-**Copy quality bar (applies to every draft):**
-- Match the reviewer's register — terse for a one-line nit, fuller for a design thread. Do not pad.
-- Ground claims in the code: cite `file:line` or the symbol when it sharpens the reply. Do not invent
-  file paths or line numbers; use only what diligence actually surfaced.
-- Reply as the PR author in first person. No hedging, no "as an AI", no meta-commentary about drafting.
-- Address the reviewer's actual point. Do not restate their comment back at them before answering.
-- Never claim work is done that is not done. A fix that is planned but unwritten reads as "fixing by…",
-  not "fixed".
-- Keep the reviewer's handle out of the body unless a direct @-mention adds something; the thread
-  already targets them.
-
-### 9d. Output format (terminal only)
-
-Print each draft grouped by thread, marked clearly as a draft:
-
-```
-Reply drafts (copy-only — nothing sent):
-
-── Thread 1 · [change] · user1 ──
-URL: https://github.com/...
-DRAFT:
-<full ready-to-paste reply>
-
-── Thread 2 · [bug/confirmed_escape] · cursor ──
-URL: https://github.com/...
-DRAFT:
-<full ready-to-paste reply>
-```
-
-### 9e. Mandatory no-external-calls banner
-
-After all drafts, print this verification banner verbatim so the user can confirm nothing was sent:
-
-```
-────────────────────────────────────────────────────────────
-NO EXTERNAL CALLS MADE.
-  - 0 GitHub comments posted
-  - 0 threads resolved
-  - 0 files written
-Copy above is DRAFT only. Review, edit, and paste manually.
-────────────────────────────────────────────────────────────
-```
-
-The counts are literal invariants of this step, not a report of variable state — this step never
-posts, resolves, or writes, so the numbers are always zero. If any future change makes them
-non-zero, that logic belongs in `/relay`, not here.
+Then run the managed next-step block below.
 
 ---
 
 <!-- learning-capture:start -->
 Read and execute `~/.dotfiles/claude-code-shared/resources/learning-capture.md`.
-This skill's slug is `revise-pr`.
-<!-- skill-done: revise-pr -->
-  - `/to-tasks` — seed is verified and ready for implementation
-  - `/relay` — non-code items need user notification
+This skill's slug is `pr-revise`.
+<!-- skill-done: pr-revise -->
+  - `/to-tasks` — the seed is written and ready to break into code + reply tasks
 <!-- learning-capture:end -->

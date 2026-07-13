@@ -1,6 +1,6 @@
 ---
 name: dispatch-tasks
-description: Orchestrate a task file by partitioning items by task_type and running one branch per invocation. Routes code items to build-code (inline) and triage items to export-tasks (agent). Re-entrant — run once per branch until all items are done. Use when user wants to dispatch a mixed task file, route deferred triage items to destinations, or run one pass of the pipeline.
+description: Orchestrate a task file by partitioning items by task_type and running one branch per invocation. Routes code items to build-code (inline), reply items to relay (inline), and triage items to export-tasks (agent). Re-entrant — run once per branch until all items are done. Use when user wants to dispatch a mixed task file, route deferred triage items to destinations, or run one pass of the pipeline.
 model: sonnet
 effort: medium
 ---
@@ -57,14 +57,18 @@ Dispatch plan — docs/tasks/<filename>
 
  Branch   Runner         Mode           Items
  ───────  ─────────────  ─────────────  ─────
- triage   export-tasks   spawn-agent    3
  code     build-code     inline-skill   5
+ reply    relay          inline-skill   4
+ triage   export-tasks   spawn-agent    3
 
-Default execution order: triage first (mechanical), code last (interactive).
+Default execution order: code first (lands fixes + commits), then reply
+(posts responses citing the fixing commit), then triage (mechanical export).
 Override this order now, or press Enter to accept.
 ```
 
 Read the `mode` and `runner` from `task-routing.json` for each branch. Show only branches that have eligible items.
+
+**Reply-after-code ordering is load-bearing.** `reply` items are `blocked_by` their `code` fix task, so relay can cite the commit that landed the fix. If the reply branch is run before the code branch completes, those reply items report `blocked` (per step 2) and auto-defer to a later invocation — no reply is posted ahead of its fix. Keep `code` before `reply` unless the user has a specific reason to override.
 
 Let the user override the execution order at this prompt only. Record their choice. Do not prompt again per-run.
 
@@ -87,6 +91,20 @@ build-code handles branching, TDD loop, blocker detection, HITL pausing, and sta
 After build-code returns:
 - Read the task file and collect all items in the `code` branch now marked `done`.
 - If build-code halted early (any item still `not_started` or `in_progress`): note which items are pending and include them in the end-of-run summary.
+
+#### reply branch (inline-skill mode)
+
+Call the `relay` skill using the Skill tool:
+
+```
+Skill("relay", args="<task-file-path>")
+```
+
+relay reads every eligible `reply` task, stitches the blocking code task's `commit` into each draft as a permalink, presents the combined drafts for final HITL approval, and (once built) posts the threaded replies and resolves threads. relay is currently a **copy-only stub** — it prints the drafts for manual paste and marks nothing done until it is built out. It is interactive; it may pause for user approval.
+
+After relay returns:
+- Read the task file and collect all `reply` items now marked `done`.
+- Reply items still `blocked` (their code fix not yet `done`/`merged`) or `not_started` (copy-only stub): note them in the end-of-run summary. Re-run once the code branch has landed.
 
 #### triage branch (spawn-agent mode)
 

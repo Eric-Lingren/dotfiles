@@ -1,5 +1,5 @@
 ---
-name: code-review
+name: pr-code-review
 description: >
   Comprehensive code review of staged changes or a PR. Checks for bugs, security issues,
   performance, and adherence to project conventions. Use when user says "review my changes",
@@ -204,7 +204,7 @@ Run this checklist against **every changed file**, not just files that appear se
 
 ## Provenance
 
-code-review does not write task files. If a future variant writes a task JSON, stamp it with `"producer": "code-review"` and `"source": {"type": "session", "ref": null}` per `contracts/task-schema.json`.
+pr-code-review does not write task files. If a future variant writes a task JSON, stamp it with `"producer": "pr-code-review"` and `"source": {"type": "session", "ref": null}` per `contracts/task-schema.json`.
 
 ## Output format
 
@@ -220,6 +220,6 @@ Read and execute `~/.dotfiles/claude-code-shared/resources/attribution-capture.m
 
 <!-- learning-capture:start -->
 Read and execute `~/.dotfiles/claude-code-shared/resources/learning-capture.md`.
-This skill's slug is `code-review`.
-<!-- skill-done: code-review -->
+This skill's slug is `pr-code-review`.
+<!-- skill-done: pr-code-review -->
 <!-- learning-capture:end -->

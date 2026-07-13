@@ -11,6 +11,11 @@
       "runner": "export-tasks",
       "mode": "spawn-agent",
       "_meaning": "Triage tasks spawn export-tasks as an isolated agent (mechanical external writes, no interactivity needed)."
+    },
+    "reply": {
+      "runner": "relay",
+      "mode": "inline-skill",
+      "_meaning": "PR-reply tasks run relay inline (the reply drafts need main-thread HITL approval before any post; relay is currently copy-only). Ordered after the code branch so replies can cite the fixing commit."
     }
   },
   "destinations": {
