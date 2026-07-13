@@ -125,8 +125,8 @@
           },
           "task_type": {
             "type": "string",
-            "enum": ["code", "triage"],
-            "description": "Runner selector. 'code': routed to build-code (inline-skill). 'triage': routed to export-tasks (spawn-agent). Optional — omit for legacy files."
+            "enum": ["code", "triage", "reply"],
+            "description": "Runner selector. 'code': routed to build-code (inline-skill). 'triage': routed to export-tasks (spawn-agent). 'reply': routed to relay (inline-skill) — a PR-reply item that posts a threaded response after its blocking code fix lands. Optional — omit for legacy files."
           },
           "domain": {
             "type": "string",
@@ -170,6 +170,27 @@
           "log_path": {
             "type": "string",
             "description": "Path to the full execution trace log written by build-runner. Optional."
+          },
+          "commit": {
+            "type": ["string", "null"],
+            "description": "Fixing commit SHA recorded by build-code at end-of-run push (the branch HEAD after gxpush). Written onto code tasks so a downstream reply task can cite it as a permalink. null until the fix is pushed. Optional — omit for legacy files."
+          },
+          "reply_body": {
+            "type": "string",
+            "description": "Reply-task only. The ready-to-post draft reply body for a PR review thread, written by pr-revise. The reviewer's handle is omitted from the body — the thread already targets them. Present only when task_type is 'reply'."
+          },
+          "reply_url": {
+            "type": "string",
+            "description": "Reply-task only. The originating review-comment URL this reply answers (from pr-revise harvest). Present only when task_type is 'reply'."
+          },
+          "thread_id": {
+            "type": "string",
+            "description": "Reply-task only. The GraphQL thread node id (inline threads) or numeric databaseId (top-level comments) the reply resolves. Present only when task_type is 'reply'."
+          },
+          "thread_id_type": {
+            "type": "string",
+            "enum": ["graphql_node_id", "database_id"],
+            "description": "Reply-task only. Disambiguates thread_id. Inline review threads use 'graphql_node_id'; top-level PR comments use 'database_id'. Present only when task_type is 'reply'."
           }
         }
       },

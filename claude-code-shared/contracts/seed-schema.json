@@ -293,13 +293,25 @@
                 "type": ["string", "null"],
                 "enum": ["unverified", "confirmed_escape", "false_flag", "not_an_escape", null],
                 "description": "Final disposition for bug-class items, or null for non-bug items."
+              },
+              "reply_body": {
+                "type": "string",
+                "description": "PR-feedback only. Draft reply for this thread, written by pr-revise, grounded in the diligence finding. The reviewer's handle is omitted (the thread already targets them), and no commit SHA is hand-written (relay stitches the fixing commit in at post time). to-tasks copies this verbatim onto the generated reply task's reply_body."
+              },
+              "reply_url": {
+                "type": "string",
+                "description": "PR-feedback only. The originating review-comment URL this reply answers (from pr-revise harvest). to-tasks copies it onto the reply task's reply_url."
+              },
+              "fix": {
+                "type": ["string", "null"],
+                "description": "PR-feedback only. The code change to make on THIS PR to satisfy this item, or null when no code change is warranted (question, declined nit, false_flag, or a change deferred to a later PR). When non-null, to-tasks emits a `code` task from this scope plus a `reply` task blocked_by it, so the reply can cite the fixing commit. When null, to-tasks emits a reply task only."
               }
             }
           },
-          "description": "One entry per harvested feedback item, in harvest order."
+          "description": "One entry per harvested feedback item, in harvest order. Carries both the code scope (fix) and the PR response (reply_body) so to-tasks can generate paired code + reply tasks without re-reading the session."
         }
       },
-      "description": "PR-feedback provenance written by the revise-pr pipeline (Step 8). Present only on seeds distilled from PR review threads. Downstream skills (e.g. relay) read items[] to resolve threads. Omit for seeds not produced by revise-pr."
+      "description": "PR-feedback provenance written by the pr-revise pipeline (Step 8). Present only on seeds distilled from PR review threads. Downstream skills (e.g. relay) read items[] to resolve threads. Omit for seeds not produced by revise-pr."
     }
   },
   "examples": [

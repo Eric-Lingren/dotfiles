@@ -33,7 +33,7 @@
     "dispatch-tasks": "T2",
     "tdd": "T3",
     "improve-component": "T3",
-    "code-review": "T3",
+    "pr-code-review": "T3",
     "to-e2e-tasks": "T3",
     "prototype": "T3",
     "tldr-tech": "T3",
@@ -49,7 +49,7 @@
     "register-skill": "T2",
     "handoff": "T2",
     "clean-scaffolding": "T1",
-    "revise-pr": "T3",
+    "pr-revise": "T3",
     "vet": "T3",
     "relay": "T2",
     "investigate": "T3",
@@ -76,11 +76,11 @@
   "delegate": [
     "build-code",
     "improve-component",
-    "code-review",
+    "pr-code-review",
     "to-e2e-tasks",
     "debug",
     "improve-codebase-architecture",
-    "revise-pr",
+    "pr-revise",
     "improve-directory-structure"
   ]
 }

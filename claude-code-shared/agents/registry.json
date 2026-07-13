@@ -157,7 +157,7 @@
       "consumers": [
         "cc-usage-analytics",
         "clean-scaffolding",
-        "code-review",
+        "pr-code-review",
         "debug",
         "fact-check",
         "find-work",
@@ -189,7 +189,7 @@
       "consumers": [
         "cc-usage-analytics",
         "clean-scaffolding",
-        "code-review",
+        "pr-code-review",
         "debug",
         "fact-check",
         "find-work",
