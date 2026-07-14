@@ -1,0 +1,204 @@
+{
+  "kind": "condensed",
+  "producer": "clean-scaffolding",
+  "slug": "voiceprint-voice-corpus",
+  "title": "Voiceprint: personal voice corpus and tone profile",
+  "condensed_at": "2026-07-14T02:42:49Z",
+  "condensed_from": [
+    "20260713-1413-voiceprint-voice-corpus.json",
+    "20260713-1427-voiceprint-voice-corpus.json",
+    "20260713-1458-voiceprint-linear-pull.md"
+  ],
+  "artifacts": [
+    {
+      "filename": "20260713-1413-voiceprint-voice-corpus.json",
+      "type": "seed",
+      "content": {
+        "schema_version": "4",
+        "producer": "to-seed",
+        "source": {
+          "type": "session",
+          "ref": null
+        },
+        "title": "Voiceprint: personal voice corpus and tone profile",
+        "slug": "voiceprint-voice-corpus",
+        "created": "2026-07-13T21:07:11Z",
+        "iteration": 1,
+        "summary": "Eric wants to gather his own GitHub and Linear comments into a raw corpus, then distill that corpus into a tone/voice profile he can hand to writing agents so their output sounds like him (personable, direct) instead of generic AI prose (formal, hedgy). The corpus and the distilled profile both persist in a new private repo, voiceprint, cloned at ~/.voiceprint/, kept separate from the public claude-code-shared dotfiles repo because the raw comments contain other people's words and can't live in a public repo. Commit messages and PR descriptions are excluded from the corpus because those are the first surfaces Eric started using AI tooling on 18+ months ago and are considered contaminated; PR comments, PR review comments, and Linear comments are kept in full with no time ceiling because he still writes those by hand. Ingestion is a one-off, no-cap pull across all of standardmetrics (GitHub login Eric-Lingren) and Linear, with zero content filtering (code blocks, quoted replies, and emoji-only acknowledgements are all treated as genuine voice signal). Distillation output is a two-layer markdown file: a paste-ready imperative rule block for agents, backed by an evidenced dimension-by-dimension voice profile.",
+        "decisions": [
+          "Corpus sources: GitHub PR conversation comments, GitHub PR review (inline) comments, GitHub PR review summary bodies, and Linear issue comments.",
+          "Excluded from the corpus: git commit messages and PR descriptions, because those are the first surfaces where Eric started using AI assistant tooling and are considered voice-contaminated.",
+          "No time ceiling applies to the kept surfaces (PR comments, PR review comments, Linear comments) \u2014 full history, since those are still hand-written and have not seen AI-tooling influence. The 18-month AI-contamination cutoff applies only to the already-excluded commits and PR descriptions.",
+          "GitHub identity confirmed via `gh api user`: login `Eric-Lingren` (display name \"Eric L\", id 44101756). Scope the GitHub pull to author-scoped search across the standardmetrics org; exclude personal/non-work repos.",
+          "Linear comments scope: all comments authored by Eric across all teams/issues he has access to.",
+          "Zero filtering of comment content during ingestion: preserve code blocks, quoted reply text, and emoji-only or one-word acknowledgements verbatim. All of these are considered genuine voice signal, not noise to strip.",
+          "The tone evaluation's centerpiece failure mode to fix: AI-generated writing that reads as too formal and too hedgy. The eval should capture Eric's actual tone, voice, and personality as the corrective baseline.",
+          "Voice profile must cover these dimensions, each backed by real quoted examples from the corpus: register/formality (and how it shifts by audience), sentence shape (length, fragments, punctuation habits), directness (how criticism/disagreement/requests are delivered), warmth markers (greetings, thanks, humor, emoji), hedging vs. assertion, structural tics (bullets, mentions, open/close patterns), and lexical fingerprint (recurring words/phrases, contractions, slang).",
+          "Output artifact is a single markdown file with two layers: (1) a tight, paste-ready imperative rule block (~15-25 rules) meant to be dropped into an agent system prompt, and (2) a fuller evidenced profile below it with the dimensions above, each backed by quotes, for human auditing and future re-tuning.",
+          "Markdown chosen over JSON for the profile: the consumer is an LLM reading a system prompt (markdown ingests natively, no bracket/key scaffolding tax), the content is inherently prose-shaped rules rather than machine-queried fields, and raw evidence includes messy multi-line text (code blocks, emoji, line breaks) that would require ugly escaping in JSON. JSON would only be justified if a script needed to programmatically select/validate individual rules, which is not a need here.",
+          "Storage: a new private GitHub repo named `voiceprint`, cloned locally at `~/.voiceprint/` (a standalone private repo, not a submodule under the public claude-code-shared dotfiles path). Chosen over a submodule because the voice profile is inherently personal and, unlike skills, is never meant to be shared \u2014 so it doesn't need to live on the discoverable shared-resources path.",
+          "Rationale for a separate private repo instead of committing to claude-code-shared: the dotfiles repo is and will remain public (Eric shares skills from it), and the raw corpus contains other people's words/names plus potentially sensitive work content that must not be committed to a public repo, even transiently, since git history is durable.",
+          "Repo layout inside voiceprint: `voice-profile.md` (the distilled, agent-facing artifact) plus a `corpus/` directory holding raw pulls by source (`corpus/github.md`, `corpus/linear.md`, extensible later for `corpus/texts.md`, `corpus/slack.md`, etc.), plus a `README.md` documenting how to add a new source and how to re-run the distillation pass.",
+          "Both the raw corpus and the distilled voice-profile.md are persisted and committed to the voiceprint repo (not just the distilled output) so the corpus can be re-distilled or re-tuned later without re-scraping GitHub/Linear, and so additional sources (text messages, Slack, etc.) can be folded in over time.",
+          "Volume: pull the full available history from GitHub and Linear for the kept surfaces, no cap or ceiling. Diminishing-returns filtering, if any, happens at distillation time, not at ingestion time.",
+          "Process shape: this is a one-off manual gather-and-write, not a repeatable/idempotent ingestion pipeline. Because the raw corpus is persisted to the voiceprint repo, there's no need to re-fetch the same GitHub/Linear data later; future sources (texts, Slack) get their own separate one-off pulls when Eric gets to them, rather than a unified re-runnable script today."
+        ],
+        "open_threads": [],
+        "disposed_threads": [],
+        "risks_and_tradeoffs": [
+          "Raw comment corpus contains other people's words and names, plus potentially sensitive work content \u2014 committing it to a public repo (the existing public claude-code-shared dotfiles repo) was ruled out for this reason; resolved by using a separate private repo (voiceprint) instead."
+        ],
+        "next_action": "Pull the full GitHub (Eric-Lingren, standardmetrics org, PR conversation/review comments and review summaries, excluding commits and PR descriptions) and Linear (Eric's issue comments) corpora into a new private `voiceprint` repo at ~/.voiceprint/corpus/, then write the first pass of voice-profile.md.",
+        "status": "ready",
+        "verification": {
+          "iteration": 1,
+          "personas": [
+            "grounding",
+            "accuracy",
+            "completeness",
+            "coherence"
+          ],
+          "refutations_upheld": 0,
+          "refutations_screened": 2,
+          "clean": true,
+          "status": "verified"
+        }
+      }
+    },
+    {
+      "filename": "20260713-1427-voiceprint-voice-corpus.json",
+      "type": "task",
+      "content": {
+        "schema_version": "2",
+        "producer": "to-tasks",
+        "source": {
+          "type": "seed",
+          "ref": "20260713-1413-voiceprint-voice-corpus.json"
+        },
+        "generated_at": "2026-07-13T21:27:00Z",
+        "branching": {
+          "strategy": "single",
+          "branch": "main"
+        },
+        "tasks": [
+          {
+            "id": "T-0083",
+            "title": "Bootstrap voiceprint repo scaffold",
+            "type": "AFK",
+            "description": "Create a new private GitHub repo named `voiceprint`, clone it locally at ~/.voiceprint/, and lay down the repo structure: an empty `corpus/` directory (to hold per-source raw pulls, e.g. `corpus/github.md`, `corpus/linear.md`), a placeholder `voice-profile.md`, and a `README.md` documenting how to add a new corpus source and how to re-run the distillation pass. Commit and push the initial scaffold to main.",
+            "acceptance_criteria": [
+              "GitHub repo `voiceprint` exists under Eric's account and is private",
+              "Repo is cloned locally at ~/.voiceprint/",
+              "~/.voiceprint/corpus/ directory exists (empty or with a .gitkeep)",
+              "~/.voiceprint/voice-profile.md exists as a placeholder",
+              "~/.voiceprint/README.md documents: (1) how to add a new corpus source, (2) how to re-run the distillation pass",
+              "Initial commit is pushed to main"
+            ],
+            "blocked_by": [],
+            "status": "done",
+            "branch": null,
+            "pr": null,
+            "summary": "SUPERSEDED. Created private repo Eric-Lingren/voiceprint, cloned to ~/.voiceprint/, scaffolded corpus/, voice-profile.md placeholder, README.md, committed and pushed to main. Abandoned mid-run: Claude Code's auto-mode classifier flagged the plan (bulk verbatim company PR/review comments, including code blocks, leaving the org boundary into a personal repo) as a data-exfiltration pattern. Pivoted to a paraphrased-only, no-raw-storage approach with output moved into the public dotfiles repo instead. Local ~/.voiceprint deleted; remote repo needs manual deletion (see FU-001).",
+            "files_touched": [
+              "README.md",
+              "voice-profile.md",
+              "corpus/.gitkeep"
+            ]
+          },
+          {
+            "id": "T-0084",
+            "title": "Pull GitHub comment corpus into corpus/github.md",
+            "type": "AFK",
+            "description": "SUPERSEDED \u2014 see summary. Original scope: using the `gh` CLI (authenticated as Eric-Lingren), pull the full available history of GitHub PR conversation comments, PR review (inline) comments, and PR review summary bodies authored by Eric-Lingren across repos in the standardmetrics org, excluding personal/non-work repos. Apply zero content filtering: keep code blocks, quoted reply text, and emoji-only or one-word acknowledgements verbatim. Do NOT pull commit messages or PR descriptions \u2014 those are explicitly excluded as voice-contaminated. Write the raw corpus to ~/.voiceprint/corpus/github.md, grouped by repo/PR, each entry preserving its source URL. Commit and push to main.",
+            "acceptance_criteria": [
+              "corpus/github.md contains only comments authored by Eric-Lingren",
+              "corpus/github.md contains no commit messages and no PR description bodies",
+              "Entries include PR conversation comments, inline review comments, and review summary bodies",
+              "Each entry links back to its source GitHub URL",
+              "Comment text is verbatim (code blocks, quoted replies, emoji/one-word acks preserved, no filtering)",
+              "Commit is pushed to main"
+            ],
+            "blocked_by": [
+              "T-0083"
+            ],
+            "status": "done",
+            "branch": null,
+            "pr": null,
+            "summary": "SUPERSEDED (partial). Correct org identified as Quaestor-Technologies (not 'standardmetrics', which isn't a real GitHub org login). Pulled comments across all 40 org repos (Quaestor-Web bucketed by year to work around the search API's 1000-result cap; ~1036 PR threads total) into a transient scratchpad file, never committed to any repo. Killed partway through (432 lines / ~53 PRs collected) when the auto-mode classifier flagged the pattern. That partial pull was used directly as distillation input for T-0086, then deleted. No raw corpus file persists anywhere."
+          },
+          {
+            "id": "T-0085",
+            "title": "Pull Linear comment corpus into corpus/linear.md",
+            "type": "AFK",
+            "description": "SUPERSEDED \u2014 see summary. Original scope: pull the full available history of Linear issue comments authored by Eric across all teams and issues he has access to, with no time ceiling and zero content filtering (verbatim, including code blocks, quoted replies, and emoji/one-word acknowledgements). Write the raw corpus to ~/.voiceprint/corpus/linear.md, grouped by issue, each entry preserving its source Linear issue/comment link. Commit and push to main.",
+            "acceptance_criteria": [
+              "corpus/linear.md contains only comments authored by Eric",
+              "Comments span all teams/issues Eric has access to, no time ceiling applied",
+              "Each entry links back to its source Linear issue/comment",
+              "Comment text is verbatim, no filtering applied",
+              "Commit is pushed to main"
+            ],
+            "blocked_by": [
+              "T-0083"
+            ],
+            "status": "done",
+            "branch": null,
+            "pr": null,
+            "summary": "SUPERSEDED (partial, paraphrased-only). Linear MCP access confirmed working this session (no key/CLI setup needed, see FU-002 resolution). Sampled ~40 Eric-authored comments across 4 of his 6 teams, ~28 issues, roughly Aug 2025-Jul 2026, excluding descriptions and bot/sync stub comments. Never persisted verbatim: read transiently via MCP tool calls inside a subagent's context, no raw corpus file written anywhere. Findings paraphrased directly into docs/voice-profile.md (4 new paste-ready rules, all 7 Layer 2 dimensions extended with Linear-derived signal, invented illustrative examples only, no real quotes/links/coworker or team names)."
+          },
+          {
+            "id": "T-0086",
+            "title": "Distill first-pass voice-profile.md from the corpus",
+            "type": "AFK",
+            "description": "SUPERSEDED \u2014 see summary. Original scope: analyze corpus/github.md and corpus/linear.md end-to-end and write the two-layer voice-profile.md into ~/.voiceprint/, backed by verbatim quoted examples from both sources. Committed and pushed to main.",
+            "acceptance_criteria": [
+              "voice-profile.md has two clearly separated layers: paste-ready rule block, then evidenced profile",
+              "Layer 1 contains between 15 and 25 imperative rules",
+              "Layer 2 covers all seven dimensions: register/formality, sentence shape, directness, warmth markers, hedging vs. assertion, structural tics, lexical fingerprint",
+              "Each dimension in layer 2 is backed by at least one quoted example sourced from corpus/github.md or corpus/linear.md",
+              "Commit is pushed to main"
+            ],
+            "blocked_by": [
+              "T-0084",
+              "T-0085"
+            ],
+            "status": "done",
+            "branch": null,
+            "pr": null,
+            "summary": "Wrote docs/voice-profile.md in the public ~/.dotfiles repo (not ~/.voiceprint, which was abandoned). Now covers both GitHub and Linear signal (Linear folded in via T-0085 in a later session), per the proprietary-content pivot. All examples paraphrased/genericized: no verbatim code, no repo/PR/issue links, no coworker or team names. Layer 1 has 27 rules; Layer 2 covers all 7 dimensions with GitHub- and Linear-sourced observations noted separately per dimension. Not yet committed to git.",
+            "files_touched": [
+              "claude-code-shared/resources/voice-profiles/dev-office.md (moved from docs/voice-profile.md in a later session, wired into pr-revise Step 8b)"
+            ]
+          }
+        ],
+        "follow_ups": [
+          {
+            "id": "FU-001",
+            "title": "Delete the abandoned voiceprint GitHub repo",
+            "steps": [
+              "Run: gh auth refresh -h github.com -s delete_repo (approve the browser device-flow prompt)",
+              "Run: gh repo delete Eric-Lingren/voiceprint --yes"
+            ],
+            "trigger_task": "T-0083",
+            "source": "discovered"
+          },
+          {
+            "id": "FU-002",
+            "title": "RESOLVED \u2014 set up Linear API access, then fold Linear signal into voice-profile.md",
+            "steps": [
+              "DONE: Linear MCP was already connected/authenticated this session, no manual key needed.",
+              "DONE: pulled Eric's authored Linear comments transiently (subagent context only, never written to a file), paraphrased directly into docs/voice-profile.md."
+            ],
+            "trigger_task": "T-0085",
+            "source": "discovered"
+          }
+        ]
+      }
+    },
+    {
+      "filename": "20260713-1458-voiceprint-linear-pull.md",
+      "type": "handoff",
+      "content": "# Handoff: Voiceprint \u2014 Linear corpus pull and profile update\n\n**Source ref:** `20260713-1427-voiceprint-voice-corpus.json`\n\n## What this is\n\nEric wants his own writing tone captured into a voice profile that AI writing\nagents can use so their output sounds like him (direct, informal) instead of\ngeneric AI prose (formal, hedgy). The GitHub half of this is already done.\nThis handoff is for the remaining Linear half.\n\n## What's already done\n\n- `docs/voice-profile.md` exists in this repo (public `~/.dotfiles`), built\n  entirely from Eric's GitHub PR/review comments (Quaestor-Technologies org).\n  Two layers: paste-ready imperative rules, then an evidenced profile across\n  7 dimensions. Not yet committed to git.\n- Full detail on what was tried, what got blocked, and why is in\n  `docs/tasks/20260713-1427-voiceprint-voice-corpus.json` \u2014 read task\n  summaries for T-0083 through T-0086 before doing anything. Don't\n  re-derive this from scratch; it's already written up there.\n\n## The load-bearing constraint (read this first)\n\nPartway through the original run, Claude Code's auto-mode classifier\nhard-blocked a script that was bulk-pulling verbatim company PR/review\ncomments (including code blocks) from Eric's employer's GitHub org and\nwriting them into a personal repo intended for push. It flagged this as a\ndata-exfiltration pattern regardless of stated user intent.\n\nThe resolution Eric chose applies to Linear too, since Linear comments also\nreference internal company work:\n\n- **Never persist raw pulled comment text to any file**, transient in-memory\n  processing only (or a scratchpad file deleted immediately after use).\n- **Paraphrase, don't quote verbatim**, when writing into `voice-profile.md`.\n  No code blocks, no direct issue/comment links back to the company's Linear\n  workspace, no coworker names, genericize everything.\n- Output lands only in `docs/voice-profile.md` in this public dotfiles repo,\n  there is no separate private corpus repo anymore (a `~/.voiceprint` repo\n  was created for that purpose, then abandoned and deleted mid-run \u2014 don't\n  recreate it).\n\nIf in doubt about whether something is \"verbatim enough\" to be a concern, err\ntowards paraphrasing more.\n\n## What's blocking Linear specifically\n\nNo Linear access existed in that session: no MCP server, no API key, no CLI.\nEric said he'd authenticate before spinning up this next agent, check\nwhether that's done (env var, keychain entry, or explicit key he provides at\nsession start) before assuming access still doesn't exist.\n\n## What to actually do\n\n1. Confirm Linear access works (however Eric set it up).\n2. Pull Eric's authored Linear issue comments, scoped the same way the seed\n   originally specified: all teams/issues he has access to, no time ceiling,\n   comments only (not descriptions).\n3. Do not write raw comments to any file. Process transiently and go\n   straight to paraphrased dimension-level observations.\n4. Read the existing `docs/voice-profile.md` and fold Linear-derived signal\n   into it in place (don't overwrite the GitHub-derived content, extend it \u2014\n   same 7 dimensions, same paste-ready rule block, update rule count/wording\n   if Linear reveals something GitHub didn't).\n5. Update `docs/tasks/20260713-1427-voiceprint-voice-corpus.json`: flip\n   T-0085 from `blocked` to `done` with an accurate summary, and update\n   T-0086's summary to note Linear signal was folded in. Re-validate against\n   schema after editing:\n   ```bash\n   bash ~/.dotfiles/claude-code-shared/scripts/validate-schema.sh \\\n     --instance ~/.dotfiles/claude-code-shared/contracts/task-schema.json \\\n     docs/tasks/20260713-1427-voiceprint-voice-corpus.json\n   ```\n6. Do this work directly in-session (like the GitHub pull was done), not\n   through `/dispatch-tasks` \u2192 `build-code`. That pipeline assumes a\n   TDD-testable codebase; this is data-gathering/authoring work with no test\n   suite to drive. Going through it would just cause confusion, not add\n   safety.\n\n## Known loose ends (not blocking, mention if relevant)\n\n- `~/.voiceprint` local dir may still exist if Eric hasn't run `rm -rf\n  ~/.voiceprint` himself yet (sandboxed delete was blocked by a hook last\n  session).\n- The remote GitHub repo `Eric-Lingren/voiceprint` may still exist; deleting\n  it needs `gh auth refresh -h github.com -s delete_repo` (browser consent)\n  then `gh repo delete Eric-Lingren/voiceprint --yes`. Both are tracked as\n  FU-001/FU-002 in the task file's `follow_ups`.\n- `docs/voice-profile.md` has not been committed to git yet.\n\n## Suggested skills\n\n- No `/to-tasks` or `/to-seed` needed here, the task file already exists and\n  covers this scope (T-0085/T-0086). Just do the work and update it directly.\n- `/clean-scaffolding` once this and the git commit are done, to archive the\n  seed/task chain.\n"
+    }
+  ]
+}

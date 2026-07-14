@@ -1,0 +1,286 @@
+{
+  "kind": "condensed",
+  "producer": "clean-scaffolding",
+  "slug": "improve-directory-structure-skill",
+  "title": "improve-directory-structure: a structural/dependency architecture skill",
+  "condensed_at": "2026-07-14T02:42:49Z",
+  "condensed_from": [
+    "20260709-1616-improve-directory-structure-skill.json",
+    "20260709-1616-improve-directory-structure-skill.json"
+  ],
+  "artifacts": [
+    {
+      "filename": "20260709-1616-improve-directory-structure-skill.json",
+      "type": "seed",
+      "content": {
+        "schema_version": "4",
+        "producer": "to-seed",
+        "source": {
+          "type": "session",
+          "ref": null
+        },
+        "title": "improve-directory-structure: a structural/dependency architecture skill",
+        "slug": "improve-directory-structure-skill",
+        "created": "2026-07-09T00:00:00Z",
+        "iteration": 1,
+        "summary": "A grill session evaluated whether the existing improve-codebase-architecture skill (module-depth lens, assumes CONTEXT.md/ADRs, testability-oriented heuristics) is the right tool to reorganize and clean up the claude-code-shared tooling repo itself (29 skills, 18 agents, 21 scripts, contracts, resources). Investigation found the skill is language-agnostic but its depth/testability heuristics and context-loader grounding assumptions don't map cleanly onto a prose/config-driven infra repo with no CONTEXT.md or ADRs. Rather than bending that skill to fit, the session designed a new sibling skill, improve-directory-structure, scoped to structural/organizational/dependency cleanup for any directory with structured references (code or not). It uses a deterministic scanner script (not freehand exploration) to build a node/edge dependency graph via pluggable per-repo-type extractors, evaluates findings against a curated cohesion/coupling/dependency-direction litmus set (SRP, CCP, CRP, DRY, ADP, SDP), stops at a verified plan/seed (no direct execution), and folds reference-integrity checking into the same scanner as a --check mode. Module-depth analysis and routing/decision-quality evaluation are explicitly deferred to the existing improve-codebase-architecture and improve-skill skills respectively.",
+        "decisions": [
+          "Primary target for this effort is structural/organizational health (file placement, coupling, consolidation, hierarchy weight) in the claude-code-shared tooling repo, not runtime decision-quality (routing, model-tier choices). Decision-quality is an explicit secondary/later pass using improve-skill.",
+          "Before any architecture work runs against claude-code-shared, seed a thin CONTEXT.md for the tooling system: a noun glossary (skill, agent, contract, hook, resource, registry, pipeline stage, tier, etc.) plus load-bearing invariants (absolute-path script references, registry.json as source-of-truth for agents, model-tiers.json keying skills/agents by name, .cch/.cco symlinking into claude-code-shared, hooks wired via settings.json). This grounds context-loader, which otherwise returns empty vocabulary/adrs when CONTEXT.md and docs/adr/ are absent.",
+          "improve-codebase-architecture stays scoped to code/module depth (React/TS and other executable-code targets). It is not the tool for reorganizing the claude-code-shared prose/config tooling repo. Do not bend or overload it to cover both use cases.",
+          "Build a new, separate sibling skill for structural/organizational/dependency cleanup rather than extending improve-codebase-architecture. It must reuse existing shared infra (context-loader agent, grill-step pattern, to-seed handoff) rather than duplicating it, to avoid adding to hierarchy bloat.",
+          "The new skill's scope is shape (b): audit through plan. It diagnoses and produces a verified reorg plan/seed. It does not execute file moves or reference rewrites directly -- those are handed to the existing to-seed -> to-tasks -> build-code pipeline as discrete, scriptable tasks.",
+          "The new skill's primary lens is a dependency/placement graph (nodes = skills/agents/scripts/contracts/resources; edges = absolute-path script calls, registry.json file refs, model-tiers.json keys, subagent_type spawns, resource includes, skill-pipeline.json stage links), not module-depth. Module-depth (the deletion test, shallow-interface analysis) is demoted to a secondary lens applied only to nodes already flagged by the graph.",
+          "The dependency graph must be built by a dedicated, deterministic scanner script living in claude-code-shared/scripts/ (per the standing scriptable-code rule), not by freehand Grep/Explore each run. The scanner emits {nodes, edges, metrics} JSON (fan-in, fan-out, dir depth, orphan flags); the skill reasons over that JSON rather than re-deriving it.",
+          "The scanner architecture splits into a generic, repo-agnostic analysis core (consumes {nodes, edges, metrics} JSON, computes coupling/placement/consolidation/hierarchy findings) plus pluggable per-repo-type edge extractors (the only repo-specific part). Ship two extractors at launch: one for this claude-tooling repo's edge conventions (registry.json, subagent_type=, absolute script paths, model-tiers.json keys) and one generic-code extractor (import/require-style edges across common languages). A markdown/docs-link extractor is deferred to a follow-on, not built now.",
+          "The skill's use-case boundary is 'any directory with structured, explicit cross-references' (code imports, config registries, doc link graphs) -- not literally any folder. Sparse/unstructured prose trees are out of the productive use case and should be described honestly as such, mirroring how improve-codebase-architecture is honestly scoped to module depth.",
+          "The quality litmus for reorg findings is a curated subset of classic architecture principles bound to concrete, computable graph signals, not the broad Clean Code canon: SRP (fan-out spans unrelated clusters -> split), CCP/locality (edges all point to one owner but node sits in shared -> move next to owner), CRP (resource used by one consumer but bucketed as shared -> co-locate or inline), DRY (high edge/content similarity between two nodes -> consolidate), ADP (a cycle in the edge graph -> break it), SDP (churny high-fan-out node depended on by many -> stabilize or invert), and a coupling/cohesion cluster-modularity score (a directory is really two concerns). Code-mechanics concerns (naming, function length, comments, error handling) are explicitly out of scope for this skill -- they belong to improve-codebase-architecture / improve-component. Every finding produced by the skill must cite both the principle and the specific graph edge/evidence that proves the violation.",
+          "Reference-integrity validation after a reorg is folded into the same scanner as a --check mode, rather than building a standalone validator. The scanner already resolves every edge to build the graph, so --check reuses that resolution to assert zero dangling edges and no new cycles, exiting non-zero on failure. This is dogfooding the DRY principle the skill itself enforces. The check mode must follow .cch/.cco symlinks (not treat them as ordinary edges) and must detect literal absolute-path string references (e.g. ~/.dotfiles/claude-code-shared/scripts/x.sh), not just structured registry entries. Every reorg task emitted downstream gets scanner --check as its acceptance gate.",
+          "The new skill is named improve-directory-structure (chosen over improve-repo-structure because 'repo' implies a git repository and would narrow the already-agreed any-directory, non-code-inclusive scope; 'directory' matches what the scanner literally takes as input).",
+          "The new skill is registered via /register-skill so it appears in model-tiers.json, the weekly usage report, and sync-model-tiers. The skill itself (judgment: reading the graph, grilling the reorg, writing the plan) is tiered T4/opus, matching the other architecture and grill skills. The scanner script and both extractors are deterministic, tier-less scripts (like validate_registry.py), not model-tiered entries. The existing context-loader agent is reused as-is rather than duplicated, now that a seeded CONTEXT.md will let it return real vocabulary."
+        ],
+        "open_threads": [],
+        "next_action": "Run /to-tasks on this seed to break the improve-directory-structure skill build into independently-gradable tasks (CONTEXT.md seeding, scanner script + --check mode, two edge extractors, generic analysis core, SKILL.md authoring, /register-skill registration).",
+        "status": "ready",
+        "verification": {
+          "iteration": 1,
+          "personas": [
+            "grounding",
+            "accuracy",
+            "completeness",
+            "coherence"
+          ],
+          "refutations_upheld": 0,
+          "refutations_screened": 0,
+          "clean": true,
+          "status": "verified"
+        }
+      }
+    },
+    {
+      "filename": "20260709-1616-improve-directory-structure-skill.json",
+      "type": "task",
+      "content": {
+        "schema_version": "2",
+        "producer": "to-tasks",
+        "source": {
+          "type": "seed",
+          "ref": "20260709-1616-improve-directory-structure-skill.json"
+        },
+        "generated_at": "2026-07-09T16:30:00Z",
+        "branching": {
+          "strategy": "single",
+          "branch": "feat/improve-directory-structure"
+        },
+        "tasks": [
+          {
+            "id": "T-0076",
+            "title": "Seed thin CONTEXT.md for the claude-code-shared tooling repo",
+            "type": "AFK",
+            "description": "Create a CONTEXT.md at the claude-code-shared root containing a noun glossary (skill, agent, contract, hook, resource, registry, pipeline stage, tier, etc.) and load-bearing invariants (absolute-path script references, registry.json as source-of-truth for agents, model-tiers.json keying skills/agents by name, .cch/.cco symlinking into claude-code-shared, hooks wired via settings.json). This grounds the context-loader agent, which currently returns empty vocabulary/adrs for this repo.",
+            "acceptance_criteria": [
+              "CONTEXT.md exists at claude-code-shared root and documents the noun glossary and invariants listed in the seed",
+              "Manually spawning context-loader against this repo returns non-empty vocabulary (verified by direct invocation, no unit test per infra convention)"
+            ],
+            "blocked_by": [],
+            "status": "done",
+            "branch": null,
+            "pr": "gh pr create --base main --head feat/improve-directory-structure --title \"improve-directory-structure: seed CONTEXT.md\" --body \"See docs/tasks/20260709-1616-improve-directory-structure-skill.json T-0076\"",
+            "summary": "Created claude-code-shared/CONTEXT.md with a noun glossary (Skill, Agent, Contract, Hook, Resource, Registry, Pipeline stage, Tier) and load-bearing invariants (absolute-path scripts, registry.json as agent source of truth, model-tiers.json keying, .cch/.cco symlinking, hooks wired via settings.json, contracts gating agent I/O), verified by direct context-loader invocation returning 8 non-empty vocabulary terms.",
+            "files_touched": [
+              "claude-code-shared/CONTEXT.md"
+            ],
+            "tests": {
+              "passed": 0,
+              "failed": 0
+            },
+            "log_path": "docs/tasks/.logs/20260709-1616-improve-directory-structure-skill/T-0076.md"
+          },
+          {
+            "id": "T-0077",
+            "title": "Scanner analysis core: findings engine over nodes/edges/metrics JSON",
+            "type": "AFK",
+            "description": "Build the generic, repo-agnostic analysis core of the dependency-graph scanner in claude-code-shared/scripts/. It consumes a {nodes, edges, metrics} JSON document (fan-in, fan-out, dir depth, orphan flags) and computes findings against the curated litmus set: SRP (fan-out spans unrelated clusters), CCP/locality (edges point to one owner but node lives in shared), CRP (single-consumer resource bucketed as shared), DRY (high edge/content similarity between two nodes), ADP (cycle in the edge graph), SDP (churny high-fan-out node with many dependents), and a coupling/cohesion cluster-modularity score. Every finding must cite the principle and the specific graph edge/evidence proving the violation. Deterministic, tier-less script -- no extractor logic lives here.",
+            "acceptance_criteria": [
+              "Script accepts a {nodes, edges, metrics} JSON fixture and emits a findings JSON with principle + evidence per finding",
+              "Running the script against a hand-built fixture containing one deliberate cycle, one deliberate DRY duplicate, and one deliberate misplaced-resource case surfaces exactly those three findings (verified by manual invocation, no unit test per infra convention)"
+            ],
+            "blocked_by": [],
+            "status": "done",
+            "branch": null,
+            "pr": "gh pr create --base main --head feat/improve-directory-structure --title \"improve-directory-structure: scanner analysis core\" --body \"See docs/tasks/20260709-1616-improve-directory-structure-skill.json T-0077\"",
+            "summary": "Built claude-code-shared/scripts/dependency-graph-findings.py, the generic findings engine over a {nodes, edges, metrics} dependency graph, computing SRP/CCP/CRP/DRY/ADP/SDP/MODULARITY findings with cited evidence; verified manually against a hand-built fixture that surfaces exactly the deliberate cycle, DRY duplicate, and misplaced-resource cases with no false positives.",
+            "files_touched": [
+              "claude-code-shared/scripts/dependency-graph-findings.py",
+              "claude-code-shared/scripts/dependency-graph-findings.example.json"
+            ],
+            "tests": {
+              "passed": 0,
+              "failed": 0
+            },
+            "log_path": "docs/tasks/.logs/20260709-1616-improve-directory-structure-skill/T-0077.md"
+          },
+          {
+            "id": "T-0078",
+            "title": "Claude-tooling edge extractor wired to the scanner core",
+            "type": "AFK",
+            "description": "Build the claude-tooling repo-type edge extractor: walks claude-code-shared and emits {nodes, edges, metrics} JSON by resolving registry.json entries, subagent_type= spawns, absolute script-path references, model-tiers.json keys, and skill-pipeline.json stage links into graph edges. Wire its output into the T-0077 analysis core so running the scanner end-to-end against the real claude-code-shared repo produces real findings, not fixture findings.",
+            "acceptance_criteria": [
+              "Running `scanner --extractor claude-tooling` against claude-code-shared produces a nodes/edges/metrics JSON with no parse errors",
+              "Piping that output into the T-0077 core produces at least one real finding grounded in an actual edge in the current repo (verified by manual invocation, no unit test per infra convention)"
+            ],
+            "blocked_by": [
+              "T-0077"
+            ],
+            "status": "done",
+            "branch": null,
+            "pr": "gh pr create --base main --head feat/improve-directory-structure --title \"improve-directory-structure: claude-tooling extractor\" --body \"See docs/tasks/20260709-1616-improve-directory-structure-skill.json T-0078\"",
+            "summary": "Built claude_tooling_extractor.py (walks claude-code-shared and resolves registry.json consumers, subagent_type= spawns, absolute scripts/ path references, model-tiers.json keys, and skill-pipeline.json next[] links into a {nodes, edges, metrics} graph) and scanner.py (CLI dispatcher, --extractor claude-tooling). Verified end-to-end: 99 nodes/204 edges/no parse errors, piped through the T-0077 findings core to produce 137 findings, with two spot-checked findings confirmed against real, current-repo edges.",
+            "files_touched": [
+              "claude-code-shared/scripts/claude_tooling_extractor.py",
+              "claude-code-shared/scripts/scanner.py"
+            ],
+            "tests": {
+              "passed": 0,
+              "failed": 0
+            },
+            "log_path": "docs/tasks/.logs/20260709-1616-improve-directory-structure-skill/T-0078.md"
+          },
+          {
+            "id": "T-0079",
+            "title": "Generic-code edge extractor wired to the scanner core",
+            "type": "AFK",
+            "description": "Build the generic-code edge extractor: walks an arbitrary code directory and emits {nodes, edges, metrics} JSON by resolving import/require-style edges across common languages (JS/TS, Python at minimum). Wire its output into the T-0077 analysis core so the same scanner CLI can target a plain code repo, not just claude-code-shared.",
+            "acceptance_criteria": [
+              "Running `scanner --extractor generic-code` against a sample JS/TS or Python directory produces a nodes/edges/metrics JSON with no parse errors",
+              "Piping that output into the T-0077 core produces findings consistent with the sample directory's known import structure (verified by manual invocation, no unit test per infra convention)"
+            ],
+            "blocked_by": [
+              "T-0077"
+            ],
+            "status": "done",
+            "branch": null,
+            "pr": "gh pr create --base main --head feat/improve-directory-structure --title \"improve-directory-structure: generic-code extractor\" --body \"See docs/tasks/20260709-1616-improve-directory-structure-skill.json T-0079\"",
+            "summary": "Built claude-code-shared/scripts/generic_code_extractor.py, a generic-code edge extractor that walks an arbitrary JS/TS/Python directory and emits {nodes, edges, metrics} JSON, and registered it as a second --extractor generic-code option in scanner.py's EXTRACTORS dispatcher alongside the existing claude-tooling extractor.",
+            "files_touched": [
+              "claude-code-shared/scripts/generic_code_extractor.py",
+              "claude-code-shared/scripts/scanner.py"
+            ],
+            "tests": {
+              "passed": 0,
+              "failed": 0
+            },
+            "log_path": "docs/tasks/.logs/20260709-1616-improve-directory-structure-skill/T-0079.md"
+          },
+          {
+            "id": "T-0080",
+            "title": "Scanner --check mode for reference-integrity validation",
+            "type": "AFK",
+            "description": "Add a --check mode to the scanner CLI that reuses the same edge-resolution pass built for T-0078/T-0079 to assert zero dangling edges and no new cycles, exiting non-zero on failure. Must follow .cch/.cco symlinks rather than treating them as ordinary edges, and must detect literal absolute-path string references (e.g. ~/.dotfiles/claude-code-shared/scripts/x.sh) in addition to structured registry entries.",
+            "acceptance_criteria": [
+              "`scanner --check` against the current claude-code-shared repo exits 0 with no dangling edges reported",
+              "Deliberately introducing a dangling reference (e.g. a registry.json entry pointing at a deleted file) and re-running --check causes a non-zero exit that names the broken edge (verified by manual invocation, no unit test per infra convention)"
+            ],
+            "blocked_by": [
+              "T-0078"
+            ],
+            "status": "done",
+            "branch": null,
+            "pr": "gh pr create --base main --head feat/improve-directory-structure --title \"improve-directory-structure: scanner --check mode\" --body \"See docs/tasks/20260709-1616-improve-directory-structure-skill.json T-0080\"",
+            "summary": "Added scanner.py --check (reference-integrity mode) that reuses claude_tooling_extractor's edge-resolution helpers via a new check_integrity() function to surface dangling references (registry.json consumers/files, script refs, model-tiers/skill-pipeline keys, and literal absolute-path refs that correctly follow .cch/.cco symlink-farm aliasing) plus cycle detection via dependency-graph-findings.py, excluding intentional pipeline_next workflow loops.",
+            "files_touched": [
+              "claude-code-shared/scripts/scanner.py",
+              "claude-code-shared/scripts/claude_tooling_extractor.py"
+            ],
+            "tests": {
+              "passed": 0,
+              "failed": 0
+            },
+            "log_path": "docs/tasks/.logs/20260709-1616-improve-directory-structure-skill/T-0080.md"
+          },
+          {
+            "id": "T-0081",
+            "title": "Author improve-directory-structure SKILL.md",
+            "type": "AFK",
+            "description": "Write the improve-directory-structure skill: invokes the scanner (T-0077/T-0078/T-0079) to build the dependency graph, reuses the context-loader agent (now grounded by T-0076's CONTEXT.md) and the grill-step pattern to interrogate proposed reorg findings against the curated litmus set, and hands off a verified reorg plan via the to-seed handoff pattern. The skill stops at a verified plan/seed -- it must never execute file moves or reference rewrites directly; those become discrete tasks for the existing to-seed -> to-tasks -> build-code pipeline, each carrying scanner --check (T-0080) as its acceptance gate. Every reorg task emitted downstream must cite scanner --check as its acceptance gate. The skill must honestly scope itself to directories with structured, explicit cross-references and decline sparse/unstructured prose trees, mirroring how improve-codebase-architecture is scoped to module depth.",
+            "acceptance_criteria": [
+              "SKILL.md exists at claude-code-shared/skills/improve-directory-structure/ and documents scope, litmus set, grill step, and verified-plan-only boundary",
+              "Running the skill end-to-end against claude-code-shared produces a verified reorg seed whose findings each cite a scanner edge and a litmus principle, and confirms no file moves were executed directly (verified by manual run, no unit test per infra convention)"
+            ],
+            "blocked_by": [
+              "T-0076",
+              "T-0077",
+              "T-0078",
+              "T-0079",
+              "T-0080"
+            ],
+            "status": "done",
+            "branch": null,
+            "pr": null,
+            "receipt": {
+              "summary": "Authored improve-directory-structure SKILL.md + resources/LITMUS.md. Ran skill end-to-end (live, non-interactive) against claude-code-shared: scanner.py produced 101-node/209-edge graph, dependency-graph-findings.py produced 139 findings, 1 candidate (F0006) accepted and several declined against LITMUS.md, zero file moves executed. /to-seed handoff completed with full 4-persona + judge panel verification (5 refutations screened, 2 upheld as open threads ot-002/ot-003 on DRY/SRP bulk-decline grounding) -- seed status draft/verified, not blocked on further work for this task.",
+              "files_touched": [
+                "claude-code-shared/skills/improve-directory-structure/SKILL.md",
+                "claude-code-shared/skills/improve-directory-structure/resources/LITMUS.md",
+                "docs/seeds/20260709-1728-claude-code-shared-reorg-plan.json"
+              ],
+              "tests": "no unit test per infra convention -- manual end-to-end verification recorded in trace log",
+              "log_path": "docs/tasks/.logs/20260709-1616-improve-directory-structure-skill/T-0081.md"
+            }
+          },
+          {
+            "id": "T-0082",
+            "title": "Register improve-directory-structure via /register-skill",
+            "type": "AFK",
+            "description": "Run /register-skill for improve-directory-structure so it appears in model-tiers.json's skills map (tiered T4/opus, matching improve-codebase-architecture and other grill/architecture skills), the weekly usage report, and sync-model-tiers. Register the scanner script and both edge extractors as tier-less, deterministic entries (like validate_registry.py), not as model-tiered skills/agents.",
+            "acceptance_criteria": [
+              "improve-directory-structure appears in model-tiers.json skills map at tier T4/opus",
+              "The scanner script and both extractors appear in the appropriate deterministic-scripts registry, not the tiered skills/agents maps",
+              "Weekly usage report / sync-model-tiers run cleanly against the updated registry (verified by manual invocation, no unit test per infra convention)"
+            ],
+            "blocked_by": [
+              "T-0081"
+            ],
+            "status": "done",
+            "branch": null,
+            "pr": null,
+            "receipt": {
+              "summary": "Registered improve-directory-structure at tier T4/opus/xhigh (matches sibling improve-codebase-architecture). Added to model-tiers.json skills map and delegate array. Ran sync-model-tiers.py --apply (already-consistent frontmatter, 0 writes needed for this skill). Ran inject-learning-tail.py --apply (bulk pass, added/refreshed tail block across all 30 skills). Added skills/improve-directory-structure/ to learning-contract.md Producers list.",
+              "files_touched": [
+                "claude-code-shared/resources/model-tiers.json",
+                "claude-code-shared/contracts/learning-contract.md",
+                "claude-code-shared/skills/*/SKILL.md (learning-tail bulk sync, 30 files)"
+              ],
+              "tests": "no unit test per infra convention -- verified via tier-advisor.sh emitting correct T4 advisory, frontmatter head check, and sync-model-tiers.py --check showing ok",
+              "log_path": null
+            }
+          }
+        ],
+        "follow_ups": [
+          {
+            "id": "FU-001",
+            "title": "Stale registry.json consumer name 'run-tasks'",
+            "steps": [
+              "Open claude-code-shared/agents/registry.json",
+              "Find consumer entries listing 'run-tasks' for browser-checker, lint-runner, and test-runner",
+              "Replace 'run-tasks' with the actual current consumer skill name(s) (likely build-code and/or dispatch-tasks, per the rename)",
+              "Re-run scanner --extractor claude-tooling --check (once T-0080 lands) to confirm the edge resolves cleanly"
+            ],
+            "trigger_task": "T-0078",
+            "source": "discovered",
+            "status": "done",
+            "receipt": {
+              "summary": "Real spawner of browser-checker/lint-runner/test-runner is the build-runner agent, not skill run-tasks (renamed away) or build-code directly. Updated registry.json consumers: browser-checker -> [build-runner, debug], lint-runner -> [build-runner], test-runner -> [build-runner]. Also fixed same stale run-tasks string on capture-learning/learning-grounding-judge consumers -> build-code, and removed stale skills/run-tasks/ line from learning-contract.md producers list.",
+              "files_touched": [
+                "claude-code-shared/agents/registry.json",
+                "claude-code-shared/contracts/learning-contract.md"
+              ],
+              "tests": "scanner.py --check --extractor claude-tooling: 0 dangling references (was 1), 0 cycles",
+              "log_path": null
+            }
+          }
+        ]
+      }
+    }
+  ]
+}
