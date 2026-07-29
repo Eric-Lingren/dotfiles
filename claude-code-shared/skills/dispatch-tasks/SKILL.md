@@ -48,7 +48,7 @@ For each item in a branch, check `blocked_by`. If any blocking task has a status
 - Remove it from its branch for this run.
 - Add it to the end-of-run blocked summary.
 
-### 3. Announce the plan
+### 3. Announce the plan, then STOP for confirmation
 
 Print the full plan before running anything. Do not skip this step.
 
@@ -63,14 +63,22 @@ Dispatch plan — docs/tasks/<filename>
 
 Default execution order: code first (lands fixes + commits), then reply
 (posts responses citing the fixing commit), then triage (mechanical export).
-Override this order now, or press Enter to accept.
+
+Reply to confirm, or tell me a different order / which branch to run.
 ```
 
 Read the `mode` and `runner` from `task-routing.json` for each branch. Show only branches that have eligible items.
 
+**This is a hard HITL gate. STOP here and end your turn.** Do not proceed to step 4 in the same turn. Do not print "Proceeding with default order" or any equivalent and continue — that defeats the gate. Executing a branch is irreversible work (writes code, posts replies, exports to external systems), so the user must get a real chance to intervene, reorder, or say "just create the tasks, don't run them."
+
+Only after the user replies in a **new message** do you continue to step 4. Interpret their reply:
+- Explicit acceptance ("yes", "go", "ok", "run it", empty confirm) → run in default order.
+- A different order or a named branch → honor it.
+- "Don't run" / "just create the tasks" / any decline → stop. Do not run any branch.
+
 **Reply-after-code ordering is load-bearing.** `reply` items are `blocked_by` their `code` fix task, so relay can cite the commit that landed the fix. If the reply branch is run before the code branch completes, those reply items report `blocked` (per step 2) and auto-defer to a later invocation — no reply is posted ahead of its fix. Keep `code` before `reply` unless the user has a specific reason to override.
 
-Let the user override the execution order at this prompt only. Record their choice. Do not prompt again per-run.
+Record the confirmed order. Do not prompt again per-run.
 
 ### 4. Run one branch
 

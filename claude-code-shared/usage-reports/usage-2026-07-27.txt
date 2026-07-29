@@ -1,0 +1,369 @@
+================================================================
+CC USAGE DIGEST -- 2026-W30 (vs 2026-W29, last complete weeks)
+================================================================
+  spend    $    179   v74%
+  opus%        43%   v3pt
+Traceback (most recent call last):
+  File "/Users/eric/.dotfiles/claude-code-shared/scripts/cc-usage-benchmark.py", line 809, in <module>
+    main()
+  File "/Users/eric/.dotfiles/claude-code-shared/scripts/cc-usage-benchmark.py", line 761, in main
+    digest_report(roots, args.config)
+  File "/Users/eric/.dotfiles/claude-code-shared/scripts/cc-usage-benchmark.py", line 695, in digest_report
+    a_c = snap[this_wk]["adherence"]
+KeyError: '2026-W30'
+
+Claude Code usage report — 2026-07-27
+================================================================
+
+================================================================
+PROFILE: OFFICE  (/Users/eric/.cco/projects)
+================================================================
+Date range : 2026-06-24 -> 2026-07-25
+Sessions   : 152
+Human reqs : 882  (work=814, continuation/ack=29)
+Noise dropped: 69  (/exit, local-command-caveat)
+Asst turns : 8059
+Reqs/session: 5.8
+
+--- PROJECTS (sessions) ---
+   143  -Users-eric-Documents-dev-Quaestor-Web
+     4  -Users-eric--dotfiles
+     3  -Users-eric-Documents-dev-Quaestor-Web-app
+     2  -Users-eric-Documents-dev-Quaestor-Web-client
+
+--- MODEL MIX (assistant turns) ---
+   52.8%  sonnet     4256
+   47.1%  opus       3798
+    0.1%  synthetic  5
+
+--- TOKENS + ROUGH COST (USD) ---
+  opus     in= 3,558,990 out=4,659,186 cacheW= 21,921,496 cacheR= 320,638,254  $1,294.81
+  sonnet   in= 1,426,056 out=2,788,041 cacheW= 19,795,343 cacheR= 384,929,494  $235.81
+  TOTAL    ~ $1,530.62
+
+--- DEEP THINKING ---
+   27.4% of assistant turns had a thinking block (2211)
+
+--- TOP TOOLS ---
+   48.3%  Bash                               1744
+   14.4%  Read                               521
+   14.3%  Edit                               516
+    8.5%  Agent                              305
+    2.9%  Write                              106
+    1.9%  ToolSearch                         70
+    1.8%  mcp__claude_ai_Linear__get_issue   66
+    1.7%  AskUserQuestion                    60
+    1.5%  Skill                              55
+    1.1%  mcp__claude_ai_Linear__save_issue  39
+    0.6%  TaskUpdate                         23
+    0.5%  TaskCreate                         18
+    0.4%  TaskOutput                         16
+    0.4%  ScheduleWakeup                     15
+    0.2%  mcp__claude_ai_Linear__list_issues 9
+
+--- SLASH COMMANDS / SKILLS ---
+    26  /model
+    20  /dispatch-tasks
+    16  /grill-me
+    14  /to-tasks
+    13  /to-seed
+    10  /code-review
+     7  /pr-code-review
+     5  /effort
+     3  /debug
+     2  /improve-directory-structure
+     2  /mcp
+     2  /revise-pr
+     1  /pr-revise
+
+--- GIT BRANCH WORK-TYPE (by prompt) ---
+   36.8%  main               325
+    5.9%  key-1772-fye-change-banner-doesnt-have-export-button 52
+    5.8%  key-1810-user-can-paste-values-into-selected-cells 51
+    5.6%  key-1831-user-can-delete-values-in-a-cell-in-select-mode 49
+    5.4%  key-1832-type-to-edit-refactor-route-through-keymap-reducer-effect 48
+    4.9%  key-1935-portco-cutover-scaffolding-ships-dark 43
+    4.4%  key-1898-portco-prep-shell 39
+    4.0%  key-1879-portco-topbartabs-migration-full-cutover-flip-8-routes 35
+    3.2%  key-1921-move-ds-ui-to-components-ui 28
+    3.1%  key-1899-portco-prep-containers 27
+    3.1%  key-1878-portco-topbar-prep 27
+    2.6%  key-1851-metrics-table-should-use-and-respect-reporting-currency 23
+
+--- REQUEST INTENT (primary bucket, work requests only) ---
+   28.1%  other          229
+   27.5%  planning       224
+   14.3%  feature-code   116
+    9.8%  testing        80
+    5.8%  review         47
+    4.2%  git-ops        34
+    3.4%  bugfix         28
+    3.2%  refactor       26
+    2.1%  research       17
+    1.6%  discussion     13
+
+--- REQUEST INTENT (all labels, multi-count) ---
+   53.4%  feature-code   435
+   28.1%  other          229
+   27.5%  planning       224
+   27.0%  testing        220
+   24.3%  git-ops        198
+   24.0%  bugfix         195
+   19.4%  refactor       158
+   18.4%  review         150
+   13.4%  research       109
+    1.6%  discussion     13
+
+================================================================
+PROFILE: PERSONAL  (/Users/eric/.cch/projects)
+================================================================
+Date range : 2026-06-30 -> 2026-07-27
+Sessions   : 96
+Human reqs : 556  (work=527, continuation/ack=12)
+Noise dropped: 34  (/exit, local-command-caveat)
+Asst turns : 5818
+Reqs/session: 5.8
+
+--- PROJECTS (sessions) ---
+    63  -Users-eric-Documents-dev-personal-SpawnedSapien
+    26  -Users-eric--dotfiles
+     3  -Users-eric-Documents-dev-Quaestor-Web-app
+     2  -Users-eric-Documents-dev-Quaestor-Web
+     1  -Users-eric-Documents-dev-personal-house-hunting
+     1  -Users-eric-Documents-dev-personal
+
+--- MODEL MIX (assistant turns) ---
+   55.5%  sonnet     3228
+   43.6%  opus       2536
+    0.8%  other      48
+    0.1%  synthetic  6
+
+--- TOKENS + ROUGH COST (USD) ---
+  opus     in= 1,617,604 out=3,516,758 cacheW= 13,277,787 cacheR= 218,752,502  $865.11
+  sonnet   in= 1,222,387 out=2,496,704 cacheW= 15,451,303 cacheR= 326,280,324  $196.94
+  TOTAL    ~ $1,062.05
+
+--- DEEP THINKING ---
+   26.6% of assistant turns had a thinking block (1548)
+
+--- TOP TOOLS ---
+   42.6%  Bash                               1125
+   17.6%  Edit                               465
+   15.0%  Read                               397
+    6.8%  Agent                              179
+    5.5%  Write                              145
+    3.4%  AskUserQuestion                    91
+    1.9%  mcp__claude_ai_Notion__fetch       49
+    1.7%  Skill                              46
+    1.3%  ToolSearch                         35
+    0.7%  TaskUpdate                         19
+    0.6%  WebSearch                          17
+    0.6%  TaskCreate                         15
+    0.5%  TaskOutput                         12
+    0.3%  mcp__claude_ai_Notion__search      7
+    0.2%  ScheduleWakeup                     6
+
+--- SLASH COMMANDS / SKILLS ---
+    18  /dispatch-tasks
+    15  /model
+    10  /to-tasks
+     6  /grill-with-docs
+     4  /grill-me
+     4  /to-seed
+     3  /debug
+     2  /run-task-followups
+     2  /effort
+     1  /improve-directory-structure
+     1  /clean-scaffolding
+     1  /pr-code-review
+     1  /to-prd-html
+
+--- GIT BRANCH WORK-TYPE (by prompt) ---
+   31.8%  feat               177
+   26.1%  main               145
+   24.5%  docs               136
+    9.9%  fix                55
+    4.3%  head               24
+    2.2%  key-1935-portco-cutover-scaffolding-ships-dark 12
+    1.3%  worktree-agent-abc8952906d7fc925 7
+
+--- REQUEST INTENT (primary bucket, work requests only) ---
+   36.1%  planning       190
+   20.7%  feature-code   109
+   19.9%  other          105
+    8.3%  testing        44
+    4.9%  bugfix         26
+    3.6%  review         19
+    2.7%  refactor       14
+    1.9%  research       10
+    1.3%  git-ops        7
+    0.6%  discussion     3
+
+--- REQUEST INTENT (all labels, multi-count) ---
+   70.2%  feature-code   370
+   36.1%  planning       190
+   32.8%  bugfix         173
+   28.3%  testing        149
+   22.2%  refactor       117
+   22.2%  git-ops        117
+   19.9%  other          105
+   16.9%  review         89
+   13.9%  research       73
+    0.6%  discussion     3
+
+================================================================
+AGGREGATE (all profiles combined)
+================================================================
+Date range : 2026-06-24 -> 2026-07-27
+Sessions   : 248
+Human reqs : 1438  (work=1341, continuation/ack=41)
+Noise dropped: 103  (/exit, local-command-caveat)
+Asst turns : 13877
+Reqs/session: 5.8
+
+--- PROJECTS (sessions) ---
+   145  -Users-eric-Documents-dev-Quaestor-Web
+    63  -Users-eric-Documents-dev-personal-SpawnedSapien
+    30  -Users-eric--dotfiles
+     6  -Users-eric-Documents-dev-Quaestor-Web-app
+     2  -Users-eric-Documents-dev-Quaestor-Web-client
+     1  -Users-eric-Documents-dev-personal-house-hunting
+     1  -Users-eric-Documents-dev-personal
+
+--- MODEL MIX (assistant turns) ---
+   53.9%  sonnet     7484
+   45.6%  opus       6334
+    0.3%  other      48
+    0.1%  synthetic  11
+
+--- TOKENS + ROUGH COST (USD) ---
+  opus     in= 5,176,594 out=8,175,944 cacheW= 35,199,283 cacheR= 539,390,756  $2,159.92
+  sonnet   in= 2,648,443 out=5,284,745 cacheW= 35,246,646 cacheR= 711,209,818  $432.75
+  TOTAL    ~ $2,592.67
+
+--- DEEP THINKING ---
+   27.1% of assistant turns had a thinking block (3759)
+
+--- TOP TOOLS ---
+   45.9%  Bash                               2869
+   15.7%  Edit                               981
+   14.7%  Read                               918
+    7.7%  Agent                              484
+    4.0%  Write                              251
+    2.4%  AskUserQuestion                    151
+    1.7%  ToolSearch                         105
+    1.6%  Skill                              101
+    1.1%  mcp__claude_ai_Linear__get_issue   66
+    0.8%  mcp__claude_ai_Notion__fetch       49
+    0.7%  TaskUpdate                         42
+    0.6%  mcp__claude_ai_Linear__save_issue  39
+    0.5%  TaskCreate                         33
+    0.4%  TaskOutput                         28
+    0.3%  ScheduleWakeup                     21
+
+--- SLASH COMMANDS / SKILLS ---
+    41  /model
+    38  /dispatch-tasks
+    24  /to-tasks
+    20  /grill-me
+    17  /to-seed
+    10  /code-review
+     8  /pr-code-review
+     7  /effort
+     6  /debug
+     6  /grill-with-docs
+     3  /improve-directory-structure
+     2  /mcp
+     2  /revise-pr
+     2  /run-task-followups
+     1  /pr-revise
+     1  /clean-scaffolding
+     1  /to-prd-html
+
+--- GIT BRANCH WORK-TYPE (by prompt) ---
+   32.7%  main               470
+   12.9%  feat               185
+    9.5%  docs               136
+    3.8%  key-1935-portco-cutover-scaffolding-ships-dark 55
+    3.8%  fix                55
+    3.6%  key-1772-fye-change-banner-doesnt-have-export-button 52
+    3.5%  key-1810-user-can-paste-values-into-selected-cells 51
+    3.4%  key-1831-user-can-delete-values-in-a-cell-in-select-mode 49
+    3.3%  key-1832-type-to-edit-refactor-route-through-keymap-reducer-effect 48
+    2.7%  key-1898-portco-prep-shell 39
+    2.4%  key-1879-portco-topbartabs-migration-full-cutover-flip-8-routes 35
+    1.9%  key-1921-move-ds-ui-to-components-ui 28
+
+--- REQUEST INTENT (primary bucket, work requests only) ---
+   30.9%  planning       414
+   24.9%  other          334
+   16.8%  feature-code   225
+    9.2%  testing        124
+    4.9%  review         66
+    4.0%  bugfix         54
+    3.1%  git-ops        41
+    3.0%  refactor       40
+    2.0%  research       27
+    1.2%  discussion     16
+
+--- REQUEST INTENT (all labels, multi-count) ---
+   60.0%  feature-code   805
+   30.9%  planning       414
+   27.5%  testing        369
+   27.4%  bugfix         368
+   24.9%  other          334
+   23.5%  git-ops        315
+   20.5%  refactor       275
+   17.8%  review         239
+   13.6%  research       182
+    1.2%  discussion     16
+
+================================================================
+INTENT SPLIT BY PROFILE (primary %)
+================================================================
+  bucket        office      personal    AGG
+  planning      27.5%       36.1%       30.9%
+  feature-code  14.3%       20.7%       16.8%
+  testing       9.8%        8.3%        9.2%
+  bugfix        3.4%        4.9%        4.0%
+  review        5.8%        3.6%        4.9%
+  refactor      3.2%        2.7%        3.0%
+  research      2.1%        1.9%        2.0%
+  git-ops       4.2%        1.3%        3.1%
+  discussion    1.6%        0.6%        1.2%
+  other         28.1%       19.9%       24.9%
+
+
+================================================================
+WEEKLY TREND
+================================================================
+================================================================
+WEEKLY MODEL TREND (assistant turns + est cost)
+================================================================
+  week       turns  opus%   son%   hai%      est$
+  2026-W26    1369     9%    90%     0% $     104
+  2026-W27    4407    48%    51%     0% $     862
+  2026-W28    3169    59%    40%     0% $     701
+  2026-W29    3481    46%    53%     0% $     686
+  2026-W30     974    43%    56%     0% $     179
+  2026-W31     418    32%    67%     0% $      60
+
+
+================================================================
+TIER ADHERENCE
+================================================================
+================================================================
+TIER ADHERENCE (skills + agents: expected vs actual model)
+================================================================
+  Only meaningful for sessions AFTER tiering rollout (older runs used the session model).
+  skill                            exp      match     n  actual-mix
+  build-code                       sonnet  100.0%     1  sonnet:1
+  improve-directory-structure      opus      0.0%     1  sonnet:1
+  pr-code-review                   sonnet  100.0%     1  sonnet:1
+  pr-revise                        sonnet  100.0%     1  sonnet:1
+  register-skill                   sonnet  100.0%     3  sonnet:3
+  tdd                              sonnet    0.0%     1  opus:1
+  to-tasks                         sonnet    0.0%     2  opus:2
+
+  OVERALL adherence: 60.0% (6/10)
+

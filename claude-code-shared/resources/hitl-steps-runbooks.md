@@ -83,9 +83,14 @@ Enrichment:
 ## Add env var to {platform}
 
 Steps:
-1. Go to {platform} dashboard > {app-name} > Settings > Environment Variables
-2. Add variable: Name: `{VAR_NAME}`, Value: {value_source}
-3. Redeploy or restart the service if required by the platform
+1. Go to {platform} dashboard > {app-name} > Settings > Environment Variables (Cloudflare Pages new nav: Build > Compute > Workers & Pages > project > Settings > Variables and secrets)
+2. Check the existing variable list first. If `{VAR_NAME}` is already listed, click that row to edit it — do NOT use "Add variable", it will fail with "Name already in use".
+3. Set/confirm Value: {value_source}
+4. Redeploy or restart the service if required by the platform (Cloudflare Pages: env var changes only take effect on the next deployment)
+
+Notes:
+- Cloudflare's dashboard nav changed (circa 2026): "Workers & Pages" is no longer a top-level sidebar item. It now lives under Build > Compute > Workers & Pages.
+- Cloudflare's "Add variable" flow does not check for existing names until after you type one, and only surfaces "Name already in use" as a red inline error under the Variable name field — easy to miss/confuse with an actual failure. Always check the existing table first.
 
 Enrichment:
 - Find var names: grep `.env*` files, `process.env.`, `Deno.env.get()`, `import.meta.env` in the diff and codebase.

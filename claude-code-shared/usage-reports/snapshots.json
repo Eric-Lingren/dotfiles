@@ -82,5 +82,38 @@
         }
       }
     }
+  },
+  "2026-W29": {
+    "adherence": {
+      "match": 5,
+      "n": 6,
+      "overall_pct": 83.3,
+      "skills": {
+        "pr-code-review": {
+          "exp": "sonnet",
+          "mix": {
+            "sonnet": 1
+          }
+        },
+        "pr-revise": {
+          "exp": "sonnet",
+          "mix": {
+            "sonnet": 1
+          }
+        },
+        "register-skill": {
+          "exp": "sonnet",
+          "mix": {
+            "sonnet": 3
+          }
+        },
+        "to-tasks": {
+          "exp": "sonnet",
+          "mix": {
+            "opus": 1
+          }
+        }
+      }
+    }
   }
 }
