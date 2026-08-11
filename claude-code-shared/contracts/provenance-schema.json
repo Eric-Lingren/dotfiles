@@ -11,7 +11,7 @@
       "enum": [
         "to-seed",
         "to-tasks",
-        "to-prd-html",
+        "to-spec",
         "debug",
         "pr-code-review",
         "improve-component",

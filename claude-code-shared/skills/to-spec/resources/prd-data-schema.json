@@ -21,7 +21,7 @@
     },
     "source": {
       "type": "string",
-      "description": "Origin of this record: 'to-seed', 'to-prd-html', or 'manual'."
+      "description": "Origin of this record: 'to-seed', 'to-spec', or 'manual'."
     },
     "title": {
       "type": "string",

@@ -121,7 +121,7 @@ def branch_prefix(b):
     return b.split("/")[0].lower() if "/" in b else b.lower()
 
 # ---- intent classification ----
-PLAN_CMDS   = {"to-prd-html", "to-prd", "grill-me", "grill-with-docs", "to-tasks", "prototype", "plan"}
+PLAN_CMDS   = {"to-spec", "to-prd", "grill-me", "grill-with-docs", "to-tasks", "prototype", "plan"}
 TEST_CMDS   = {"tdd", "to-e2e-tests"}
 REVIEW_CMDS = {"review", "code-review", "pr-code-review", "security-review", "caveman-review"}
 REFAC_CMDS  = {"improve-component", "improve-codebase-architecture", "simplify"}

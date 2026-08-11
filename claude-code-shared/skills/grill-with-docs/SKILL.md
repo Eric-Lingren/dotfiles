@@ -41,9 +41,9 @@ Then read the file and check for `open_threads`:
 
 Interview me relentlessly about every aspect of this plan until we reach a shared understanding. Walk down each branch of the design tree, resolving dependencies between decisions one-by-one. For each question, provide your recommended answer.
 
-Ask the questions one at a time, waiting for feedback on each question before continuing.
+Ask the questions one at a time, waiting for feedback on each question before continuing. Asking multiple questions at once is bewildering.
 
-Before formulating your question, if the answer could be in the codebase, spawn a read-only Haiku subagent for file exploration rather than reading files inline. If a question can be answered by reading code or project files, delegate that lookup to a Haiku subagent instead of asking the user.
+Before formulating your question, if the answer could be in the codebase, spawn a read-only Haiku subagent for file exploration rather than reading files inline. If a *fact* can be answered by reading code or project files, delegate that lookup to a Haiku subagent to look it up instead of asking the user. The *decisions* however are the users - put each one to them and wait for their answer.
 
 </what-to-do>
 

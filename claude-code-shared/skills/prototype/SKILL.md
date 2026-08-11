@@ -20,7 +20,7 @@ bash ~/.dotfiles/claude-code-shared/scripts/validate-schema.sh \
   --instance ~/.dotfiles/claude-code-shared/contracts/seed-schema.json \
   <output-path>
 ```
-On non-zero exit: STOP. Report stderr to the user. Do not write the file. It sits between `/grill-me` and `/to-prd-html` in the pipeline. The only durable output is a findings doc. The code is scaffolding and gets deleted.
+On non-zero exit: STOP. Report stderr to the user. Do not write the file. It sits between `/grill-me` and `/to-spec` in the pipeline. The only durable output is a findings doc. The code is scaffolding and gets deleted.
 
 ## Setup
 
@@ -112,7 +112,7 @@ Once the prototype has answered its question and a final direction is agreed upo
 
    ```
    How should I save this prototype's findings?
-   1. Seed file (docs/seeds/) — feeds directly into /to-prd-html and /to-tasks
+   1. Seed file (docs/seeds/) — feeds directly into /to-spec and /to-tasks
    2. Handoff file (docs/prototypes/) — human-readable only, no downstream skills
    3. Neither — findings are in the PR description only
    ```
@@ -129,7 +129,7 @@ Once the prototype has answered its question and a final direction is agreed upo
     Artifact: <absolute-path-to-artifact> (or "none" if option 3)
     PR:       <pr-url>
 
-    Run /to-prd-html or /to-tasks to continue.
+    Run /to-spec or /to-tasks to continue.
     ```
 
 <!-- learning-capture:start -->

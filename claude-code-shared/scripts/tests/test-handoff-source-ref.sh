@@ -6,7 +6,7 @@ set -euo pipefail
 
 SKILLS_DIR="$(cd "$(dirname "$0")/../../skills" && pwd)"
 HANDOFF_SKILL="$SKILLS_DIR/handoff/SKILL.md"
-PRD_SKILL="$SKILLS_DIR/to-prd-html/SKILL.md"
+PRD_SKILL="$SKILLS_DIR/to-spec/SKILL.md"
 
 TMP=$(mktemp -d)
 PASS=0
@@ -67,11 +67,11 @@ fi
 
 # --- PRD prd-provenance block ---
 
-# Case 5: to-prd-html SKILL.md still specifies prd-provenance block with source.ref
+# Case 5: to-spec SKILL.md still specifies prd-provenance block with source.ref
 if grep -q "prd-provenance" "$PRD_SKILL"; then
-  assert_pass "Case 5: to-prd-html/SKILL.md contains prd-provenance block spec"
+  assert_pass "Case 5: to-spec/SKILL.md contains prd-provenance block spec"
 else
-  assert_fail "Case 5: to-prd-html/SKILL.md missing prd-provenance spec"
+  assert_fail "Case 5: to-spec/SKILL.md missing prd-provenance spec"
 fi
 
 # Case 6: prd-provenance spec includes source.ref field
@@ -87,7 +87,7 @@ cat > "$FIXTURE_HTML" <<'EOF'
 <html><body>
 <script type="application/json" id="prd-provenance">
 {
-  "producer": "to-prd-html",
+  "producer": "to-spec",
   "source": {"type": "seed", "ref": "20260606-1200-test-feature-seed.json"}
 }
 </script>

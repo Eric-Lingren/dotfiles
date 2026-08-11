@@ -48,7 +48,7 @@ to-prd-md/
 
 ### Skill with assets
 ```
-to-prd-html/
+to-spec/
 ├── SKILL.md
 ├── scripts/
 │   └── next-prefix.sh

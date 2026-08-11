@@ -1,6 +1,6 @@
 ---
 name: resolve-ref-pattern
-description: Standard pattern for routing docs/ file-path arguments through resolve-ref.sh before reading. All consumer skills (grill-me, grill-with-docs, to-seed, to-tasks, to-prd-html, build-code, dispatch-tasks, attribution-tracer) use this pattern.
+description: Standard pattern for routing docs/ file-path arguments through resolve-ref.sh before reading. All consumer skills (grill-me, grill-with-docs, to-seed, to-tasks, to-spec, build-code, dispatch-tasks, attribution-tracer) use this pattern.
 ---
 
 # Resolve-ref pattern for docs/ file paths

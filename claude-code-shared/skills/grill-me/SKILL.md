@@ -34,11 +34,11 @@ effort: xhigh
 Interview me relentlessly about every aspect of this plan until we reach a shared understanding. Walk down each branch of the design tree, resolving dependencies between decisions one-by-one.
 
 For each question:
-1. Ask exactly ONE question per turn. One question mark. No sub-questions, no compound "X and Y?" questions, no follow-ups in the same message.
+1. Ask exactly ONE question per turn. One question mark. No sub-questions, no compound "X and Y?" questions, no follow-ups in the same message. Asking multiple questions at once is bewildering.
 2. Provide your recommended answer for the question you ask. State what you think the answer should be and why.
 3. When asking your first question, briefly signal the other major branches of the decision tree you plan to explore later, so the user knows you see the full picture.
 
-Before formulating your question, if the answer could be in the codebase, spawn a read-only Haiku subagent for file exploration rather than reading files inline. If a question can be answered by reading code or project files, delegate that lookup to a Haiku subagent instead of asking the user.
+Before formulating your question, if the answer could be in the codebase, spawn a read-only Haiku subagent for file exploration rather than reading files inline. If a *fact* can be answered by reading code or project files, delegate that lookup to a Haiku subagent to look it up instead of asking the user. The *decisions* however are the users - put each one to them and wait for their answer.
 
 ## Session end protocol
 
@@ -48,7 +48,7 @@ When all major branches are resolved, signal the end explicitly:
 
 Then print a text recommendation — do NOT use `AskUserQuestion` or any blocking UI element:
 
-> "Next: `/to-seed` to capture these decisions as a JSON IR, then `/to-tasks` or `/to-prd-html` from there."
+> "Next: `/to-seed` to capture these decisions as a JSON IR, then `/to-tasks` or `/to-spec` from there."
 
 **CRITICAL RULES:**
 - Do NOT implement any code, create any files, or make any changes after the grill session ends unless the user explicitly asks.

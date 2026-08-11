@@ -1,6 +1,6 @@
 ---
 name: to-seed
-description: Distill the current conversation or grill session into a standardized JSON IR (seed) and save it to docs/seeds/. Use when user wants to capture decisions and context from a conversation before moving to /to-prd-html, /to-tasks, or /prototype.
+description: Distill the current conversation or grill session into a standardized JSON IR (seed) and save it to docs/seeds/. Use when user wants to capture decisions and context from a conversation before moving to /to-spec, /to-tasks, or /prototype.
 argument-hint: "[optional: path to a handoff doc that carries a base seed to merge into]"
 model: sonnet
 effort: high
@@ -302,6 +302,6 @@ Read and execute `~/.dotfiles/claude-code-shared/resources/learning-capture.md`.
 This skill's slug is `to-seed`.
 <!-- skill-done: to-seed -->
   - `/to-tasks` — ready to implement without a formal PRD
-  - `/to-prd-html` — want a richer PRD before tasking
+  - `/to-spec` — want a richer PRD before tasking
   - `/prototype` — exploring the idea first
 <!-- learning-capture:end -->

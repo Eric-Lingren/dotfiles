@@ -36,7 +36,7 @@
       "model": "haiku",
       "description": "Discovers and distills project context (CONTEXT.md, ADRs, and typed brand/design sources) into a structured JSON payload. Returns JSON only \u2014 vocabulary inlined, everything else as paths for the caller to deep-read.",
       "consumers": [
-        "to-prd-html",
+        "to-spec",
         "to-tasks",
         "to-e2e-tasks",
         "improve-component",
@@ -176,7 +176,7 @@
         "tdd",
         "tldr-tech",
         "to-e2e-tasks",
-        "to-prd-html",
+        "to-spec",
         "to-seed",
         "to-tasks"
       ]
@@ -208,7 +208,7 @@
         "tdd",
         "tldr-tech",
         "to-e2e-tasks",
-        "to-prd-html",
+        "to-spec",
         "to-seed",
         "to-tasks"
       ]

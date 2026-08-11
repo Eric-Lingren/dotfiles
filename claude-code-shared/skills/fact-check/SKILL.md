@@ -11,7 +11,7 @@ Verify factual claims in any pasted input — from a single tweet to a full PRD 
 
 The verification engine lives in the `fact-checker` agent. This skill captures your input, spawns the agent in an isolated context (so its many web searches do not pollute the main thread), and routes its report to the right output format.
 
-The same `fact-checker` agent is the reuse point for future inline fact-checking in other skills (to-prd-html, to-tasks, run-tasks). Logic is never duplicated here.
+The same `fact-checker` agent is the reuse point for future inline fact-checking in other skills (to-spec, to-tasks, run-tasks). Logic is never duplicated here.
 
 ## Steps
 

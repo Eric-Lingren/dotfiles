@@ -14,11 +14,11 @@
     "to-seed": {
       "next": [
         {"skill": "to-tasks", "when": "ready to implement without a formal PRD"},
-        {"skill": "to-prd-html", "when": "want a richer PRD before tasking"},
+        {"skill": "to-spec", "when": "want a richer PRD before tasking"},
         {"skill": "prototype", "when": "exploring the idea first"}
       ]
     },
-    "to-prd-html": {
+    "to-spec": {
       "next": [
         {"skill": "to-tasks", "when": "PRD is approved and ready to break into tasks"}
       ]

@@ -62,11 +62,11 @@ class TestBuildTailBlock:
     def test_block_includes_next_steps_for_multiple_edges(self):
         edges = [
             {"skill": "to-tasks", "when": "ready to implement"},
-            {"skill": "to-prd-html", "when": "want richer PRD"},
+            {"skill": "to-spec", "when": "want richer PRD"},
         ]
         block = injector_mod.build_tail_block("to-seed", edges)
         assert "to-tasks" in block
-        assert "to-prd-html" in block
+        assert "to-spec" in block
         assert "ready to implement" in block
         assert "want richer PRD" in block
 

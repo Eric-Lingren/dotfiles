@@ -8,7 +8,7 @@
 
 set -euo pipefail
 
-SCHEMA_PATH="$(dirname "$(realpath "$0")")/../../to-prd-html/resources/prd-data-schema.json"
+SCHEMA_PATH="$(dirname "$(realpath "$0")")/../../to-spec/resources/prd-data-schema.json"
 
 file="${1:?Usage: extract-prd-json.sh <prd-file>}"
 

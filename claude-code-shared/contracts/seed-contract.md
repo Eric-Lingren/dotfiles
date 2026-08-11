@@ -12,11 +12,11 @@
 ## Consumers
 
 - `skills/to-tasks/` — reads seed file (or HTML PRD) to generate a task file
-- `skills/to-prd-html/` — reads seed file and renders it into an HTML PRD (`docs/prd/YYYYMMDD-HHMM-{slug}.html`, filename via `scripts/doc-filename.sh <slug> html`)
+- `skills/to-spec/` — reads seed file and renders it into an HTML PRD (`docs/prd/YYYYMMDD-HHMM-{slug}.html`, filename via `scripts/doc-filename.sh <slug> html`)
 
 ## HTML PRD: rendered seed format
 
-`to-prd-html` produces HTML PRDs that embed the seed JSON. `to-tasks` can consume them as an alternate input via `scripts/extract-prd-json.sh <path>`, which extracts the embedded seed JSON from the HTML. This makes the chain: seed → HTML PRD → tasks equally valid alongside seed → tasks directly.
+`to-spec` produces HTML PRDs that embed the seed JSON. `to-tasks` can consume them as an alternate input via `scripts/extract-prd-json.sh <path>`, which extracts the embedded seed JSON from the HTML. This makes the chain: seed → HTML PRD → tasks equally valid alongside seed → tasks directly.
 
 HTML PRDs are not a separately versioned schema. They carry the seed JSON verbatim inside the HTML, so the seed-schema.json constraint applies transitively.
 

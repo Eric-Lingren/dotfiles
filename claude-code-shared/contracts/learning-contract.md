@@ -35,7 +35,7 @@ All 30 shared skills. Plugin skills (caveman, chrome-devtools) are excluded.
 - `skills/vet/`
 - `skills/tldr-tech/`
 - `skills/to-e2e-tasks/`
-- `skills/to-prd-html/`
+- `skills/to-spec/`
 - `skills/to-seed/`
 - `skills/to-tasks/`
 

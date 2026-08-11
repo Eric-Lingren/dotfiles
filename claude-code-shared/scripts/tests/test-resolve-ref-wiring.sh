@@ -62,10 +62,10 @@ check_before "Case 3 to-seed" "$SKILLS_DIR/to-seed/SKILL.md" "Seed Context"
 check_wired "Case 4 to-tasks" "$SKILLS_DIR/to-tasks/SKILL.md"
 check_before "Case 4 to-tasks" "$SKILLS_DIR/to-tasks/SKILL.md" "on the selected file"
 
-# Case 5: to-prd-html wired before process-section extract-prd-json.sh call
+# Case 5: to-spec wired before process-section extract-prd-json.sh call
 # "to validate and read" only appears in the Process step, not the Contract header
-check_wired "Case 5 to-prd-html" "$SKILLS_DIR/to-prd-html/SKILL.md"
-check_before "Case 5 to-prd-html" "$SKILLS_DIR/to-prd-html/SKILL.md" "to validate and read the seed JSON"
+check_wired "Case 5 to-spec" "$SKILLS_DIR/to-spec/SKILL.md"
+check_before "Case 5 to-spec" "$SKILLS_DIR/to-spec/SKILL.md" "to validate and read the seed JSON"
 
 # Case 6: build-code wired before "Read the chosen JSON file"
 check_wired "Case 6 build-code" "$SKILLS_DIR/build-code/SKILL.md"
@@ -87,7 +87,7 @@ else
 fi
 
 # Case 9: bypass behavior mentioned in each wired skill
-for skill in grill-me grill-with-docs to-seed to-tasks to-prd-html build-code dispatch-tasks; do
+for skill in grill-me grill-with-docs to-seed to-tasks to-spec build-code dispatch-tasks; do
   SKILL_FILE="$SKILLS_DIR/$skill/SKILL.md"
   if grep -q "bypass\|Continue anyway" "$SKILL_FILE"; then
     assert_pass "Case 9 $skill: bypass behavior mentioned"

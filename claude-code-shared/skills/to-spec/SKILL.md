@@ -1,5 +1,5 @@
 ---
-name: to-prd-html
+name: to-spec
 description: Render a seed .json file into an interactive HTML PRD and save it to docs/prd/. Use when user wants to create a PRD from a seed file with rich interactive output.
 model: sonnet
 effort: high
@@ -28,7 +28,7 @@ This skill renders a seed `.json` file into an interactive HTML PRD. It does NOT
 
 ### 1. Resolve the seed path
 
-If a seed path was passed as an argument (e.g. `/to-prd-html docs/seeds/20260602-1234-my-feature.json`), use it directly.
+If a seed path was passed as an argument (e.g. `/to-spec docs/seeds/20260602-1234-my-feature.json`), use it directly.
 
 Otherwise, list `docs/seeds/*.json` and ask the user to choose one.
 
@@ -79,7 +79,7 @@ Resolve the absolute path of `docs/prd/` relative to the current working directo
 
 ### 5. Write the HTML PRD
 
-Use the template from `~/.dotfiles/claude-code-shared/skills/to-prd-html/resources/template.html` for the HTML shell.
+Use the template from `~/.dotfiles/claude-code-shared/skills/to-spec/resources/template.html` for the HTML shell.
 
 **Section rendering rules:**
 - Render a section ONLY if the corresponding seed field is present and non-empty.
@@ -95,7 +95,7 @@ Every HTML PRD MUST contain two metadata script blocks at the bottom of `<body>`
 2. `<script type="application/json" id="prd-provenance">` — provenance for this PRD document itself:
    ```json
    {
-     "producer": "to-prd-html",
+     "producer": "to-spec",
      "source": {"type": "seed", "ref": "<absolute-or-relative-path-to-seed-file>"}
    }
    ```
@@ -150,7 +150,7 @@ Include ONLY when the PRD content warrants them:
 
 <!-- learning-capture:start -->
 Read and execute `~/.dotfiles/claude-code-shared/resources/learning-capture.md`.
-This skill's slug is `to-prd-html`.
-<!-- skill-done: to-prd-html -->
+This skill's slug is `to-spec`.
+<!-- skill-done: to-spec -->
   - `/to-tasks` — PRD is approved and ready to break into tasks
 <!-- learning-capture:end -->

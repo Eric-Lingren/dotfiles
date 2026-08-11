@@ -48,7 +48,7 @@
       "Bash(bash *)",
       "Bash(~/.dotfiles/claude-code-shared/skills/improve-skill/scripts/scaffold-evals.sh greet *)",
       "Bash(~/.dotfiles/claude-code-shared/skills/improve-skill/scripts/scaffold-evals.sh code-review *)",
-      "Bash(~/.dotfiles/claude-code-shared/skills/improve-skill/scripts/count-tokens.sh to-prd-html *)",
+      "Bash(~/.dotfiles/claude-code-shared/skills/improve-skill/scripts/count-tokens.sh to-spec *)",
       "Bash(shellcheck claude-code-shared/scripts/doc-filename.sh)",
       "Bash(python -m pytest tests/test_detect_tooling.py -v)",
       "Bash(pip3 install *)",

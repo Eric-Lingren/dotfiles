@@ -115,5 +115,26 @@
         }
       }
     }
+  },
+  "2026-W31": {
+    "adherence": {
+      "match": 1,
+      "n": 2,
+      "overall_pct": 50.0,
+      "skills": {
+        "debug": {
+          "exp": "opus",
+          "mix": {
+            "opus": 1
+          }
+        },
+        "to-tasks": {
+          "exp": "sonnet",
+          "mix": {
+            "opus": 1
+          }
+        }
+      }
+    }
   }
 }

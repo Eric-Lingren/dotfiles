@@ -56,7 +56,7 @@ If neither `docs/prd/` nor `docs/seeds/` exists or both are empty on the current
 - Run `git branch --list "spike/*" "feat/*" "fix/*"` to check for work branches.
 - If work branches exist, tell the user: "No source artifacts found on this branch. These work branches exist:" and list them. Ask if they want to switch to one.
 - If the user picks a branch, run `git switch {branch-name}` and re-list both directories.
-- If no work branches exist either, tell the user to run `/to-seed` or `/to-prd-html` first.
+- If no work branches exist either, tell the user to run `/to-seed` or `/to-spec` first.
 
 **Hard refusal for draft seeds:** If the source is a seed JSON, read its `status` field. If `status` is `"draft"` (open_threads non-empty), stop immediately:
 

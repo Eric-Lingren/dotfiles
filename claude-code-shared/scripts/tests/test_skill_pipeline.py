@@ -12,7 +12,7 @@ SKILLS_DIR = SHARED / "skills"
 REQUIRED_SKILLS = {
     "to-seed", "to-tasks", "build-code", "debug", "pr-code-review",
     "grill-me", "grill-with-docs", "improve-skill", "prototype",
-    "to-prd-html", "to-e2e-tasks", "dispatch-tasks", "pr-revise",
+    "to-spec", "to-e2e-tasks", "dispatch-tasks", "pr-revise",
 }
 
 
@@ -93,12 +93,12 @@ class TestKnownEdges:
         targets = [e["skill"] for e in pipeline["skills"]["to-seed"]["next"]]
         assert "to-tasks" in targets
 
-    def test_to_seed_leads_to_to_prd_html(self, pipeline):
+    def test_to_seed_leads_to_to_spec(self, pipeline):
         targets = [e["skill"] for e in pipeline["skills"]["to-seed"]["next"]]
-        assert "to-prd-html" in targets
+        assert "to-spec" in targets
 
-    def test_to_prd_html_leads_to_to_tasks(self, pipeline):
-        targets = [e["skill"] for e in pipeline["skills"]["to-prd-html"]["next"]]
+    def test_to_spec_leads_to_to_tasks(self, pipeline):
+        targets = [e["skill"] for e in pipeline["skills"]["to-spec"]["next"]]
         assert "to-tasks" in targets
 
     def test_to_tasks_leads_to_dispatch_tasks(self, pipeline):

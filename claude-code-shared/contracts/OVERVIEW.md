@@ -22,7 +22,7 @@ SEED (seed-schema.json v2)          TASK (task-schema.json v1)         RUNNER-RE
                                             (docs/seeds/)
                                               /       \
                                              v         v
-                                        to-tasks   to-prd-html
+                                        to-tasks   to-spec
                                              ^         |
                                              |         | (embeds seed JSON)
                                              |         v

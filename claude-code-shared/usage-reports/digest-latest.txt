@@ -1,13 +1,9 @@
 ================================================================
-CC USAGE DIGEST -- 2026-W30 (vs 2026-W29, last complete weeks)
+CC USAGE DIGEST -- 2026-W31 (vs 2026-W30, last complete weeks)
 ================================================================
-  spend    $    179   v74%
-  opus%        43%   v3pt
-Traceback (most recent call last):
-  File "/Users/eric/.dotfiles/claude-code-shared/scripts/cc-usage-benchmark.py", line 809, in <module>
-    main()
-  File "/Users/eric/.dotfiles/claude-code-shared/scripts/cc-usage-benchmark.py", line 761, in main
-    digest_report(roots, args.config)
-  File "/Users/eric/.dotfiles/claude-code-shared/scripts/cc-usage-benchmark.py", line 695, in digest_report
-    a_c = snap[this_wk]["adherence"]
-KeyError: '2026-W30'
+  spend    $    440   ^145%
+  opus%        55%   ^12pt
+  adher.       50%   n/a   (1/2)
+
+  DRIFT (act):
+  to-tasks                   exp sonnet -> opus:1        1/1  3wk  -> re-tier up or add model override
