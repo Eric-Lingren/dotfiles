@@ -1,6 +1,6 @@
 ---
 name: clean-scaffolding
-description: Archive consumed doc scaffolding (seeds, PRDs, tasks, handoffs) in the current working tree. Bundles each fully-consumed lineage chain verbatim into docs/archive/. Leaves docs/adr/ and docs/prototype/ untouched. Deletes browser-checks and task trace logs without archiving. Use when done with a workflow and ready to clear the clutter. Pass --force or -y to skip the confirmation prompt.
+description: Archive consumed doc scaffolding (seeds, PRDs, tasks, handoffs) in the current working tree. Bundles each fully-consumed lineage chain verbatim into docs/archive/. Leaves docs/adr/, docs/prototype/, and docs/wizard/ untouched. Deletes browser-checks and task trace logs without archiving. Use when done with a workflow and ready to clear the clutter. Pass --force or -y to skip the confirmation prompt.
 argument-hint: "--force or -y to skip confirmation"
 model: haiku
 effort: low
@@ -13,7 +13,7 @@ This skill is **lineage-aware**: it groups artifacts by their provenance chain a
 **Three-way disposition:**
 - **Archive set** (bundle then remove originals): `docs/seeds/`, `docs/prd/`, `docs/tasks/`, `docs/handoffs/`
 - **Delete set** (remove without archiving): `docs/browser-checks/`, `docs/tasks/.logs/`
-- **Untouched**: `docs/adr/`, `docs/prototype/`
+- **Untouched**: `docs/adr/`, `docs/prototype/`, `docs/wizard/` (committed wizard snippets — durable example corpus, never archived or deleted)
 
 ## Process
 
