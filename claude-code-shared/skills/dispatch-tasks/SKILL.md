@@ -48,7 +48,7 @@ For each item in a branch, check `blocked_by`. If any blocking task has a status
 - Remove it from its branch for this run.
 - Add it to the end-of-run blocked summary.
 
-### 3. Announce the plan, then STOP for confirmation
+### 3. Announce the plan, then gate (or auto-proceed)
 
 Print the full plan before running anything. Do not skip this step.
 
@@ -69,7 +69,9 @@ Reply to confirm, or tell me a different order / which branch to run.
 
 Read the `mode` and `runner` from `task-routing.json` for each branch. Show only branches that have eligible items.
 
-**This is a hard HITL gate. STOP here and end your turn.** Do not proceed to step 4 in the same turn. Do not print "Proceeding with default order" or any equivalent and continue — that defeats the gate. Executing a branch is irreversible work (writes code, posts replies, exports to external systems), so the user must get a real chance to intervene, reorder, or say "just create the tasks, don't run them."
+**Single-branch fast path:** If exactly one branch has eligible items, print the plan and proceed directly to step 4 without waiting for confirmation. No ordering decision exists. Print `Auto-proceeding (only one branch eligible).` and continue in the same turn.
+
+**Multi-branch gate:** If two or more branches have eligible items, this is a hard HITL gate. STOP here and end your turn. Do not proceed to step 4 in the same turn. Executing multiple branches has ordering implications (reply must follow code) and may involve irreversible external writes (triage exports), so the user must get a real chance to intervene or reorder.
 
 Only after the user replies in a **new message** do you continue to step 4. Interpret their reply:
 - Explicit acceptance ("yes", "go", "ok", "run it", empty confirm) → run in default order.
