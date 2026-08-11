@@ -26,6 +26,10 @@ root=$(git -C "$dir" rev-parse --show-toplevel 2>/dev/null)
 
 # Exemptions.
 case "$root" in *dotfiles*) exit 0 ;; esac
+
+# Doc scaffolding (seeds, tasks, prd, archive, adr, prototype) is edited on
+# trunk by design, so exempt anything under a docs/ directory.
+case "$FILE" in */docs/*|docs/*) exit 0 ;; esac
 IFS=':' read -ra OK <<< "${CLAUDE_TRUNK_OK:-}"
 for pat in "${OK[@]}"; do
   [ -n "$pat" ] && case "$root" in *"$pat"*) exit 0 ;; esac
