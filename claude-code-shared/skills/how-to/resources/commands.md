@@ -113,36 +113,38 @@ git config commit.template .gitmessage
 
 **Start frontend** (from `./client`)
 ```bash
-yarn dev
+pnpm dev
 ```
 
 **Storybook** (from `./client`)
 ```bash
-yarn storybook
+pnpm storybook
 ```
 
 **TypeScript check**
 ```bash
-npx yarn type-check
+pnpm type-check
 # or via dev wrapper:
 dev type-check
 ```
 
 **Lint fix**
 ```bash
-yarn lint --fix
+pnpm lint --fix
 ```
 
 **Biome lint**
 ```bash
-yarn biome check --max-diagnostics=50
+pnpm exec biome check --max-diagnostics=50
+# run the project biome script (check + write):
+pnpm biome
 # lint only one error type:
-yarn lint --only=lint/correctness/noUnusedFunctionParameters ./src/
+pnpm lint --only=lint/correctness/noUnusedFunctionParameters ./src/
 ```
 
 **Biome format a file**
 ```bash
-yarn run biome format --write <file-name>
+pnpm exec biome format --write <file-name>
 git add <file-name>
 git commit -m "chore: format with biome" --no-verify
 git push
@@ -150,12 +152,12 @@ git push
 
 **Update Biome snapshot**
 ```bash
-yarn vitest biome-errors.vitest.test.ts -u
+pnpm exec vitest biome-errors.vitest.test.ts -u
 ```
 
 **Prettier format a file**
 ```bash
-yarn prettier -w src/pages/path/to/File.tsx
+pnpm exec prettier -w src/pages/path/to/File.tsx
 ```
 
 **Kill stale Next.js server on port 3000**
@@ -327,17 +329,17 @@ pytest -s <path>
 pytest --cov module_name --cov-report term-missing module_name
 ```
 
-**Run one Jest test**
+**Run one Vitest test**
 ```bash
-DEBUG_PRINT_LIMIT=20000 yarn test src/pages/settings/__tests__/UnifiedAccountSelector.test.tsx
+DEBUG_PRINT_LIMIT=20000 pnpm test src/pages/settings/__tests__/UnifiedAccountSelector.test.tsx
 ```
 
-**Jest coverage**
+**Vitest coverage**
 ```bash
-DEBUG_PRINT_LIMIT=20000 yarn test --watch --collectCoverage
+DEBUG_PRINT_LIMIT=20000 pnpm test --watch --collectCoverage
 ```
 
-**Jest debugging helpers**
+**Vitest debugging helpers**
 ```js
 screen.debug(testEl)                   // print element
 console.log(api.GET.mock.calls)        // check if API was called
