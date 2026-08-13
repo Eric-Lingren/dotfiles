@@ -272,6 +272,19 @@ if $MODE_PR; then
   echo "Creating PR..."
   PR_BODY=$("$SCRIPT_DIR/pr-desc" --stdout)
   BRANCH_SLUG=$(echo "$BRANCH" | tr '/' '-')
+
+  # Append "Closes #N" when an issue number is discoverable.
+  # Priority: (1) $GITHUB_CLOSES env var, (2) gh-NNN in branch name.
+  _issue_number=""
+  if [[ -n "${GITHUB_CLOSES:-}" ]]; then
+    _issue_number="$GITHUB_CLOSES"
+  elif [[ "$BRANCH_SLUG" =~ gh-([0-9]+) ]]; then
+    _issue_number="${BASH_REMATCH[1]}"
+  fi
+  if [[ -n "$_issue_number" ]]; then
+    PR_BODY="$(printf '%s\n\nCloses #%s' "$PR_BODY" "$_issue_number")"
+  fi
+
   if [[ "${GX_PR_DRAFT:-false}" == "true" ]]; then
     echo "  [draft — repo policy requires draft PRs for this repo]"
     gh pr create --title "$BRANCH_SLUG" --body "$PR_BODY" --draft

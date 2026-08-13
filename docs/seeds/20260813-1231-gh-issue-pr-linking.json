@@ -1,0 +1,41 @@
+{
+  "schema_version": "4",
+  "producer": "to-seed",
+  "source": {"type": "session", "ref": null},
+  "title": "GitHub Issue Auto-Linking in PR Workflow",
+  "slug": "gh-issue-pr-linking",
+  "created": "2026-08-13T00:00:00Z",
+  "summary": "The dispatch workflow (grill → seed → tasks → export-tasks-gh → build-code → gxpush) creates GitHub issues and PRs as separate, unlinked artifacts. Merging a PR does not auto-close the corresponding GitHub issue. The fix wires three layers: build-code reads export_url from the task JSON, encodes the issue number as a gh-N segment in the branch name, and sets GITHUB_CLOSES env var before calling gxpush. gxpush then appends 'Closes #N' to the PR body — using whichever signal it finds first. This mirrors the existing Linear ticket pattern, where the ticket is encoded in the branch name and extracted by gxpush/pr-desc at PR creation time.",
+  "problem_statement": "PRs created by the build-code/gxpush workflow do not reference their corresponding GitHub issues. Merging a PR therefore does not auto-close the linked issue. The root cause is that export_url (written back to the task JSON by export-tasks-gh after issue creation) is never read by build-code or gxpush — so the issue number is absent from the branch name and the PR body.",
+  "solution": "Wire export_url through the build pipeline in two parallel paths (belt and suspenders): (1) build-code encodes the issue number as gh-N in the branch name and (2) sets GITHUB_CLOSES env var. gxpush checks $GITHUB_CLOSES and also applies a regex over the branch name for self-discovery. When either signal is present, gxpush appends 'Closes #N' to the PR body. If export_url is null, both paths are silently skipped.",
+  "decisions": [
+    "Discovery uses both branch name encoding (gh-N segment) AND GITHUB_CLOSES env var — belt and suspenders, same pattern as Linear ticket linking.",
+    "Closing keyword injection lives in gxpush: after pr-desc generates the PR body, gxpush appends 'Closes #N'. The pr-desc script is not changed.",
+    "Branch name format encodes the GitHub issue number as a gh- prefix segment: feat/t-0023-gh-42-bootstrap-auth.",
+    "Closing keyword is 'Closes' (not 'Fixes' or 'Resolves').",
+    "No schema changes to task-schema.json. export_url is used as-is — for the sapien GitHub repo it is always the GitHub issue URL.",
+    "Silent skip when export_url is null — build-code skips branch encoding and GITHUB_CLOSES; gxpush creates the PR without an issue link. No warning emitted.",
+    "Logic lives in build-code SKILL.md: read export_url from task JSON, extract issue number, encode gh-N in branch name, set GITHUB_CLOSES env var before calling gxpush.",
+    "branching-strategy.md is updated to document the gh-N segment in the branch name format.",
+    "gxpush is updated to (a) extract gh-[0-9]+ from the branch name via regex and (b) check $GITHUB_CLOSES env var, then append 'Closes #N' to PR_BODY when either is present."
+  ],
+  "implementation_decisions": [
+    "build-code reads task JSON at runtime to obtain export_url — no new schema field or write-back needed.",
+    "gxpush regex target: gh-[0-9]+ in the branch name. GITHUB_CLOSES env var is the explicit path; branch regex is the self-discovery fallback."
+  ],
+  "open_threads": [],
+  "disposed_threads": [],
+  "deferred": [],
+  "out_of_scope": [],
+  "next_action": "Run /to-tasks to break this into implementation tasks for build-code SKILL.md, gxpush, and branching-strategy.md.",
+  "status": "ready",
+  "iteration": 1,
+  "verification": {
+    "iteration": 1,
+    "personas": ["grounding", "accuracy", "completeness", "coherence"],
+    "refutations_upheld": 2,
+    "refutations_screened": 1,
+    "clean": false,
+    "status": "verified"
+  }
+}
