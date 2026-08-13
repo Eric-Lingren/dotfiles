@@ -34,14 +34,17 @@ If single: ask "Branch name?"
 
 ## Branch name derivation (per-task)
 
-Format: `{prefix}/t-{id-number}-{kebab-title}`
+Format: `{prefix}/t-{id-number}[-gh-{issue}]-{kebab-title}`
 
-- Lowercase, max ~40 chars total
+- Lowercase, max ~50 chars total
 - `{prefix}`: from current branch (`feat/`, `fix/`, or `spike/`). If no recognized prefix (e.g. `main`), ask: "Is this a feat or fix?"
 - `{id-number}`: numeric portion of the task ID (e.g. `0023` from `T-0023`)
+- `gh-{issue}` (**optional**): present only when the task's `export_url` is a GitHub issue URL. The issue number is the last path segment of that URL (e.g. `export_url: "https://github.com/org/repo/issues/42"` → `gh-42`). Placed immediately after the task-ID segment.
 - `{kebab-title}`: first 3-4 words of title, kebab-cased
 
-Example: `T-0023 "Bootstrap auth schema"` on a `feat/*` branch → `feat/t-0023-bootstrap-auth-schema`
+Examples:
+- Without GitHub issue: `T-0023 "Bootstrap auth schema"` → `feat/t-0023-bootstrap-auth-schema`
+- With GitHub issue #42: `T-0023 "Bootstrap auth schema"` + `export_url: ".../issues/42"` → `feat/t-0023-gh-42-bootstrap-auth-schema`
 
 ## JSON recording
 

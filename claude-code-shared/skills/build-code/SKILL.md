@@ -101,7 +101,11 @@ If `type` is `"HITL"`: set status to `deferred_hitl` in the JSON, print the task
 #### c. Execute AFK tasks
 
 1. Update task status to `in_progress` in the JSON.
-2. If `branching.strategy` is `"per-task"`, create and check out the task's branch now.
+2. If `branching.strategy` is `"per-task"`, derive and create the task's branch now:
+   - Read `export_url` from the task object (may be `null` or absent).
+   - If `export_url` is a GitHub issue URL (matches `https://github.com/<org>/<repo>/issues/<N>`), extract `<N>` (the last path segment as an integer). Insert a `gh-<N>` segment immediately after the task-ID segment in the branch name. For example: `feat/t-0023-gh-42-bootstrap-auth-schema`. Also set `GITHUB_CLOSES=<N>` in the environment so `gxpush` appends `Closes #<N>` to the PR body automatically.
+   - If `export_url` is `null`, absent, or does not match a GitHub issue URL, skip both steps silently (no `gh-N` segment, no `GITHUB_CLOSES`).
+   - Create and check out the derived branch.
 3. Spawn exactly one `build-runner` agent for this task:
 
 ```
