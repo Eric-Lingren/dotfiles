@@ -39,14 +39,20 @@ Read the task file. Read `~/.dotfiles/claude-code-shared/resources/task-routing.
 
 ### 2. Partition items by task_type
 
-Group `tasks[]` items into branches keyed by `task_type`. Exclude items with `status` of `done`, `merged`, or `blocked`.
+Group `tasks[]` items into branches keyed by `task_type`. Exclude items with `status` of `done` or `merged`.
+
+Do **not** exclude `blocked` items by status. A `blocked` item is a *parked* item from a prior run, not a terminal one. Re-evaluate it below; its dependencies may have landed since it was parked.
 
 Items without a `task_type` field are treated as `code` (legacy compatibility).
 
-For each item in a branch, check `blocked_by`. If any blocking task has a status other than `done` or `merged`:
-- Mark the item `blocked` in the task file JSON (write immediately).
-- Remove it from its branch for this run.
-- Add it to the end-of-run blocked summary.
+The candidates above form this run's **executable set**. Only park an item when a dependency lives *outside* that set. An intra-branch dependency chain is left intact and handed to the branch runner, which sequences it live in `id` order (build-code checks each task's `blocked_by` at execution time, so a dependency that ran earlier this run is already `done` when its dependent is reached). This is what lets one code-branch invocation drain a full chain AFK, instead of one link per run.
+
+For each candidate item, inspect `blocked_by`:
+- **All blockers `done`/`merged`** → item is eligible. If its current status is `blocked`, flip it back to `not_started` (unstick it) and write immediately.
+- **Some blocker unsatisfied, but every unsatisfied blocker is in the same branch and in this run's executable set** → keep the item in its branch. Do not park it. The runner sequences the chain.
+- **Some unsatisfied blocker is outside this run's executable set** (a different branch, a HITL/deferred item, or anything not running this invocation) → mark the item `blocked` in the JSON (write immediately), remove it from its branch for this run, and add it to the end-of-run blocked summary.
+
+**Ordering assumption:** the runner drains an intra-branch chain only when `id` order respects dependency order (a task's blockers have lower ids). Task producers already emit ids in dependency order, so this holds. If a chain is authored out of order, the runner halts on the out-of-order link and that link reports blocked — re-run to continue.
 
 ### 3. Announce the plan, then gate (or auto-proceed)
 
@@ -68,6 +74,30 @@ Reply to confirm, or tell me a different order / which branch to run.
 ```
 
 Read the `mode` and `runner` from `task-routing.json` for each branch. Show only branches that have eligible items.
+
+**Triage routing at a glance.** If the `triage` branch has eligible items, print a per-item routing table directly beneath the plan, *before* the gate. This resolves each item's destination up front so the user sees where every triage item lands before confirming, instead of waiting for the spawned `export-tasks` dry-run. Resolve each triage item exactly the way `export-tasks` does (see `agents/task-exporters/export-tasks.md` step 3):
+
+- Read `destinations[item.domain]` from `task-routing.json`.
+- **Flat destination** (has a top-level `adapter`, e.g. `standard-metrics`): every deliverable routes to that adapter regardless of `deliverable`.
+- **Split destination** (has `code` / `non-code` sub-keys, e.g. `personal`, `spawned-sapien`): route by `item.deliverable`.
+
+Map the resolved adapter to a friendly `Routes to` label: `github-issues` → `GitHub Issues`, `linear` → `Linear`, `notion` → `Notion (<domain>)`. The `Type` column restates the AFK/HITL nature the deliverable encodes: `code` deliverable is AFK work (an issue/ticket an agent can later build), `non-code` is HITL work (a human task parked in Notion).
+
+```
+Triage routing at a glance — 7 items
+
+ ID      Deliverable  Type   Routes to
+ ──────  ───────────  ─────  ─────────────────────
+ T-0136  code         AFK    GitHub Issues
+ T-0137  code         AFK    GitHub Issues
+ T-0138  code         AFK    GitHub Issues
+ T-0139  code         AFK    GitHub Issues
+ T-0140  non-code     HITL   Notion (spawned-sapien)
+ T-0141  non-code     HITL   Notion (spawned-sapien)
+ T-0142  non-code     HITL   Notion (spawned-sapien)
+```
+
+If any item resolves to a hard wall crossing (`standard-metrics` domain routed off Linear, or a non-corporate item routed to a corporate adapter — same rule as `export-tasks` step 4), append a `WARNING:` line per offending item. This is preview only. `export-tasks` still runs its own dry-run and wall check before any write; this table does not authorize writes.
 
 **Single-branch fast path:** If exactly one branch has eligible items, print the plan and proceed directly to step 4 without waiting for confirmation. No ordering decision exists. Print `Auto-proceeding (only one branch eligible).` and continue in the same turn.
 

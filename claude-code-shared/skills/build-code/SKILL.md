@@ -60,8 +60,9 @@ If a specific task ID was given:
 - Still check its `blocked_by` dependencies (see step 4).
 
 If no task ID was given, build the queue:
-- Include all tasks with status `not_started` or `failed`, in `id` order. Resumption is free: a `failed` task from a prior run is retried exactly like a fresh `not_started` task.
-- Skip tasks with status `in_progress`, `done`, `merged`, `blocked`, or `deferred_hitl`.
+- Include all tasks with status `not_started`, `failed`, or `blocked`, in `id` order. Resumption is free: a `failed` task from a prior run is retried exactly like a fresh `not_started` task.
+- A `blocked` task is a *parked* item, not a terminal one. Re-include it so its `blocked_by` is re-evaluated live at execution time (step 4a). If its blockers have since landed (`done`/`merged`), it runs; if not, step 4a re-parks it. This is what unsticks a task once its dependency completes, instead of excluding it by status forever. Mirrors the same rule in `dispatch-tasks` step 2.
+- Skip tasks with status `in_progress`, `done`, `merged`, or `deferred_hitl`.
 
 ### 3. Set up branching
 
