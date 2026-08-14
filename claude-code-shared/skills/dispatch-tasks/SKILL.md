@@ -81,20 +81,20 @@ Read the `mode` and `runner` from `task-routing.json` for each branch. Show only
 - **Flat destination** (has a top-level `adapter`, e.g. `standard-metrics`): every deliverable routes to that adapter regardless of `deliverable`.
 - **Split destination** (has `code` / `non-code` sub-keys, e.g. `personal`, `spawned-sapien`): route by `item.deliverable`.
 
-Map the resolved adapter to a friendly `Routes to` label: `github-issues` → `GitHub Issues`, `linear` → `Linear`, `notion` → `Notion (<domain>)`. The `Type` column restates the AFK/HITL nature the deliverable encodes: `code` deliverable is AFK work (an issue/ticket an agent can later build), `non-code` is HITL work (a human task parked in Notion).
+Map the resolved adapter to a friendly `Routes to` label: `github-issues` → `GitHub Issues`, `linear` → `Linear`, `notion` → `Notion (<domain>)`. The `Type` column restates the AFK/HITL nature the deliverable encodes: `code` deliverable is AFK work (an issue/ticket an agent can later build), `non-code` is HITL work (a human task parked in Notion). Include the item's `title` field as a `Title` column so the user can identify what each row represents without cross-referencing the task file.
 
 ```
 Triage routing at a glance — 7 items
 
- ID      Deliverable  Type   Routes to
- ──────  ───────────  ─────  ─────────────────────
- T-0136  code         AFK    GitHub Issues
- T-0137  code         AFK    GitHub Issues
- T-0138  code         AFK    GitHub Issues
- T-0139  code         AFK    GitHub Issues
- T-0140  non-code     HITL   Notion (spawned-sapien)
- T-0141  non-code     HITL   Notion (spawned-sapien)
- T-0142  non-code     HITL   Notion (spawned-sapien)
+ ID      Title                                           Deliverable  Type   Routes to
+ ──────  ──────────────────────────────────────────────  ───────────  ─────  ─────────────────────
+ T-0136  Some task title here                            code         AFK    GitHub Issues
+ T-0137  Another task title                              code         AFK    GitHub Issues
+ T-0138  Yet another task title                          code         AFK    GitHub Issues
+ T-0139  One more task title                             code         AFK    GitHub Issues
+ T-0140  A non-code task title                           non-code     HITL   Notion (spawned-sapien)
+ T-0141  Another non-code task title                     non-code     HITL   Notion (spawned-sapien)
+ T-0142  Final non-code task title                       non-code     HITL   Notion (spawned-sapien)
 ```
 
 If any item resolves to a hard wall crossing (`standard-metrics` domain routed off Linear, or a non-corporate item routed to a corporate adapter — same rule as `export-tasks` step 4), append a `WARNING:` line per offending item. This is preview only. `export-tasks` still runs its own dry-run and wall check before any write; this table does not authorize writes.

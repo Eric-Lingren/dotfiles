@@ -58,6 +58,9 @@
     "relay": {
       "next": []
     },
+    "answer": {
+      "next": []
+    },
     "investigate": {
       "next": []
     },

@@ -316,10 +316,16 @@
         "Skill registered and invocable as /answer"
       ],
       "blocked_by": ["T-0082"],
-      "status": "failed",
+      "status": "done",
       "branch": null,
       "pr": null,
-      "summary": "Agent timed out (stream watchdog, 600s stall) during test writing in Cycle 6. The SKILL.md was created and registered (skill appeared in system registry mid-run) but the test suite was incomplete at stall time.",
+      "summary": "Added 'answer' to skill-pipeline.json as a terminal skill entry — the only missing piece after the prior timed-out run had already created the SKILL.md, model-tiers registration, and test file. All 17 tests in test_answer_skill.py pass.",
+      "files_touched": [
+        "/Users/eric/.dotfiles/claude-code-shared/skill-pipeline.json",
+        "/Users/eric/.dotfiles/claude-code-shared/scripts/tests/test_answer_skill.py",
+        "/Users/eric/.dotfiles/claude-code-shared/skills/answer/SKILL.md"
+      ],
+      "tests": {"passed": 17, "failed": 0},
       "log_path": "docs/tasks/.logs/20260814-1236-investigation-egress-architecture/T-0083.md"
     },
     {
@@ -530,6 +536,22 @@
       "domain": "personal",
       "deliverable": "code",
       "description": "Sourcing and authoring the slack-casual voice profile from real Slack messages.\n\nDistill the same way dev-office was built from real PR/Linear comments; guessing the voice would defeat the purpose.",
+      "acceptance_criteria": ["Item has been exported to its destination by export-tasks"],
+      "blocked_by": [],
+      "status": "not_started",
+      "branch": null,
+      "pr": null,
+      "seed_ref": "20260814-1234-investigation-egress-architecture.json",
+      "task_ref": "20260814-1236-investigation-egress-architecture.json"
+    },
+    {
+      "id": "T-0094",
+      "title": "Replace slack-casual.md placeholder with distilled voice profile",
+      "type": "AFK",
+      "task_type": "triage",
+      "domain": "personal",
+      "deliverable": "code",
+      "description": "resources/voice-profiles/slack-casual.md is currently a placeholder created by T-0082. Replace it with a real Layer 1 + Layer 2 evidenced voice profile distilled from the target author's actual Slack messages.\n\nMethodology: same approach used for dev-office.md (real source material, not guessed). Collect a representative sample of Eric's sent Slack messages, then distill Layer 1 (vocabulary, sentence length, punctuation habits) and Layer 2 (tone, formality, humor patterns). Update the profile in place. Confirm 31 tests still pass: python3 claude-code-shared/scripts/tests/test_answer_composer_agent.py.",
       "acceptance_criteria": ["Item has been exported to its destination by export-tasks"],
       "blocked_by": [],
       "status": "not_started",
