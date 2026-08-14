@@ -4,10 +4,15 @@
     "dev-office": {
       "file": "dev-office.md",
       "description": "Default professional dev-office voice for PR review and revision output."
+    },
+    "slack-casual": {
+      "file": "slack-casual.md",
+      "description": "Informal Slack reply voice for answer-composer egress output. Direct, low-hedging, contraction-heavy. Profile content is a placeholder — replace with distilled voice samples before production use."
     }
   },
   "skills": {
     "pr-code-review": "dev-office",
-    "pr-revise": "dev-office"
+    "pr-revise": "dev-office",
+    "answer-composer": "slack-casual"
   }
 }

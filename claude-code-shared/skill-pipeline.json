@@ -55,9 +55,6 @@
         {"skill": "to-tasks", "when": "the seed is written and ready to break into code + reply tasks"}
       ]
     },
-    "vet": {
-      "next": []
-    },
     "relay": {
       "next": []
     },

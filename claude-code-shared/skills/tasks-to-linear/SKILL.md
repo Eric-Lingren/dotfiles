@@ -75,7 +75,7 @@ Scan the `tasks` array for any entries where `linear_url` is already set. If any
 
 Sort tasks so that issues with no `blocked_by` are created first. Build a mapping of `task-id → linear-issue-id` as you go so that `blockedBy` can reference real Linear IDs.
 
-For each task, create a Linear issue with:
+For each task, assemble the full ticket title and description, then spawn the `export-tasks-linear` agent to create the Linear issue.
 
 **Title:** `{slug}: {task title}` (where `slug` is derived from the task filename as described in step 2)
 Example: `jwt-auth-migration: Bootstrap JWT signing infrastructure`
@@ -114,16 +114,32 @@ The description must be fully self-contained — the agent picking up this ticke
 …
 ```
 
-**Fields to set:**
-- `team` — the selected team
-- `project` — the selected project, if any
-- `state` — the selected status, if any
-- `labels` — the selected labels, if any
-- `blockedBy` — array of Linear issue IDs for any `blocked_by` task IDs, resolved from the mapping built during this run plus any existing `linear_url` entries from prior runs
+**Resolve blockedBy IDs:** for each `blocked_by` task ID in the task, look up the corresponding Linear issue ID from the mapping built during this run (or from existing `linear_url` entries from prior runs).
+
+**Spawn `export-tasks-linear` per task:**
+
+```
+Agent(
+  subagent_type="export-tasks-linear",
+  prompt=JSON.stringify({
+    "title": "{slug}: {task.title}",
+    "description": "<assembled description above>",
+    "team_id": "<selected team id>",
+    "project_id": "<selected project id or null>",
+    "status_id": "<selected status id or null>",
+    "label_ids": ["<selected label ids or empty array>"],
+    "blocked_by_linear_ids": ["<resolved linear IDs for blocked_by or empty array>"]
+  })
+)
+```
+
+The agent responds with the Linear issue URL as its sole content, or `ERROR: <reason>` on failure.
+
+Extract the issue URL from the agent response. If the response starts with `ERROR:`, treat the write as failed and note the error.
+
+Build the `task-id → linear-issue-id` mapping from each returned URL (parse the issue identifier, e.g. `ENG-123`, from the URL path) so that subsequent tasks in the same run can reference it in `blocked_by_linear_ids`.
 
 **Fields to never set:** `estimate` or any complexity/story-point field — do not set these under any circumstances.
-
-**Fields to drop from the task JSON:** `type`, `status`, `branch`, `pr`, `blocked_by` (replaced by real `blockedBy` relations)
 
 ### 9. Write Linear URLs back to the JSON file
 

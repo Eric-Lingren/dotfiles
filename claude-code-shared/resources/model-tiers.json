@@ -52,7 +52,8 @@
     "pr-revise": "T3",
     "vet": "T3",
     "relay": "T2",
-    "investigate": "T3",
+    "investigate": "T1",
+    "answer": "T1",
     "improve-directory-structure": "T4"
   },
   "agents": {

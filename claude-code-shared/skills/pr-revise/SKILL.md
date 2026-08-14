@@ -241,57 +241,49 @@ Apply all stated overrides before proceeding.
 
 ---
 
-## Step 5 — Mandatory universal diligence gate
+## Step 5 — Automated diligence gate (investigator)
 
-**This gate is non-optional.** Every harvested item must pass through it. There is no bypass path. Partial completion (leaving any item without an explicit verdict) is not allowed before proceeding to Step 6.
+**This gate is non-optional.** Every claim-bearing item must pass through it. There is no bypass path. Partial completion (leaving any item without an explicit verdict) is not allowed before proceeding to Step 6.
 
-`revise-pr` is the only untrusted data inlet in the pipeline. Reviewer and bugbot comments are unverified claims. Other ingestion skills (debug, grill-me, code-review) start from pre-verified human or ruleset input; this one does not. Diligence is what makes the output trustworthy.
+`revise-pr` is the only untrusted data inlet in the pipeline. Reviewer and bugbot comments are unverified claims. Other ingestion skills (debug, grill-me, code-review) start from pre-verified human or ruleset input; this one does not. The investigator agent is what makes the output trustworthy.
 
-### Per-item diligence
+### Per-claim investigator invocation
 
-For each harvested item, surface these three pieces of context side by side:
+For each claim-bearing item — primarily `bug`-class items, plus any `change` or `diligence` item that makes a verifiable factual assertion — spawn the `investigator` agent using the Agent tool. Pass the reviewer's claim text as the `claim` input, along with `cwd` (the repo root) so the investigator can search the codebase.
 
-1. **Flagged claim text** — the reviewer's exact words verbatim (full body, not truncated)
-2. **Originating comment URL** — the direct link from harvest
-3. **Relevant code context** — the relevant section from the PR diff (use `gh pr diff <url>`) or the referenced file, focused on the exact lines the comment addresses
+The investigator is the Opus-tier orchestrator defined in `agents/investigator.md`. It decomposes the claim into sub-claims, routes each to the correct leaf agent (code, web, GitHub, Linear, Notion), and returns a schema-valid `investigation-result` per `contracts/investigation-result-schema.json`.
 
-Present these together so the user can evaluate the claim against the actual code in one view.
+Non-claim-bearing items (`question`, `nit`, `discuss`) do not require investigator invocation. Present the claim text and URL to the user for manual review; collect a `reviewed` verdict and any reclassification before proceeding.
 
-### Diligence verdicts
+### Verdict-to-action mapping
 
-The user renders one of these verdicts for each item.
+The investigator returns one of four verdicts. Apply this gate filter to each claim:
 
-**Bug-class items** take one of these dispositions:
+| Verdict | Gate action |
+|---------|-------------|
+| `VERIFIED_TRUE` | **Proceed** — claim confirmed; include in the draft unchanged |
+| `CONTESTED` | **Proceed** — genuine expert disagreement; note the contested status in the draft |
+| `INSUFFICIENT_EVIDENCE` | **Downgrade** — caveat the claim explicitly; do not state it as fact, or drop if the reply depends entirely on the claim being true |
+| `VERIFIED_FALSE` | **Drop** — exclude this claim from the draft entirely; do not post it |
 
-| Verdict | Meaning |
-|---------|---------|
-| `confirmed_escape` | Bug is real and escaped code review — it should have been caught |
-| `false_flag` | The claim is incorrect; the code is fine as written |
-| `not_an_escape` | Bug is real but was a known tradeoff or intentional decision |
-| `unverified` | Still uncertain after diligence; needs more investigation |
+**VERIFIED_FALSE — drop the claim:** Remove it from the `reply_body` and do not create a `fix` task based solely on it. Annotate the triage table row: "dropped: VERIFIED_FALSE". The investigator's evidence block is the reasoning record.
 
-**Non-bug items** (`change`, `question`, `diligence`, `discuss`, `nit`) take the verdict
-`reviewed` once the user has looked at the claim against the code and confirmed it does not
-reclassify to a bug. `reviewed` is the explicit verdict that satisfies the gate exit
-condition for non-bug items; it carries no disposition. If diligence promotes a non-bug item
-to `bug`, it then takes one of the four bug dispositions above instead.
+**INSUFFICIENT_EVIDENCE — downgrade with explicit caveat:** Include the item in the draft only with a hedge (e.g., "I haven't been able to confirm this from the code — can you point me to the specific path?"). Never present an INSUFFICIENT_EVIDENCE claim as an established fact. If the reply cannot be written without asserting the unverified claim, drop it instead.
+
+**VERIFIED_TRUE / CONTESTED — proceed:** These claims proceed to the draft. VERIFIED_TRUE items proceed unchanged; CONTESTED items note the disagreement in the reply body. Update the triage table disposition accordingly (VERIFIED_TRUE bug items move toward `confirmed_escape`; CONTESTED items stay at their current disposition).
 
 ### Reconciliation
 
-Diligence may change an item's classification, not just its disposition. Examples:
-- A `question` that turns out to be a real bug → promote to `bug, confirmed_escape`
-- A `bug` that the reviewer misread → demote to `false_flag`
-- A `diligence` item that is actually just a nit → reclassify to `nit`
+Investigator verdicts may change an item's classification, not just its disposition:
+- A `question` that verifies as VERIFIED_TRUE → promote to `bug, confirmed_escape`
+- A `bug` returning VERIFIED_FALSE → reclassify to `false_flag`
+- A `diligence` item returning INSUFFICIENT_EVIDENCE → caveat or drop
 
-Update the triage table row for any item whose class or disposition changes during diligence.
+Update the triage table row for any item whose class or disposition changes after the gate.
 
 ### Gate exit condition
 
-No item may exit this gate without an explicit verdict. Bug-class items need one of the four
-dispositions; non-bug items need `reviewed`. Do not proceed to Step 6 until every item has a
-diligence verdict recorded.
-
-Note: when the `vet` skill is built, it slots into this gate as the automated diligence executor. For v1, diligence is manual.
+No claim-bearing item may exit this gate without a verdict from the investigator and a mapped action (proceed / caveat / drop) recorded in the triage table. Non-claim-bearing items need `reviewed`. Do not proceed to Step 6 until every item has a diligence verdict recorded.
 
 ---
 

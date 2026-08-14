@@ -230,6 +230,39 @@ Run this checklist against **every changed file**, not just files that appear se
 - [ ] No packages with known CVEs introduced (check via `npm audit` / `yarn audit`)
 - [ ] Dependency version ranges are not dangerously wide (e.g. `*` or `>=0.0.0`)
 
+## Step 10: Pre-submit claim verification (investigator gate)
+
+**This gate is non-optional.** Every finding that contains a factual claim must pass through it before being included in the output or posted as a PR comment. There is no bypass path.
+
+Review findings are factual claims about the code. Before any finding is output or posted, spawn the `investigator` agent using the Agent tool for each factual claim in the finding body. Pass the finding text as the `claim` input along with `cwd` (the repo root) so the investigator can search the codebase.
+
+The investigator is the Opus-tier orchestrator defined in `agents/investigator.md`. It decomposes each claim into sub-claims, routes each to the correct leaf agent (code, web, GitHub, Linear, Notion), and returns a schema-valid `investigation-result` per `contracts/investigation-result-schema.json`.
+
+### Verdict-to-action mapping
+
+The investigator returns one of four verdicts. Apply this gate filter to each finding:
+
+| Verdict | Gate action |
+|---------|-------------|
+| `VERIFIED_TRUE` | **Proceed** — claim confirmed; include the finding unchanged |
+| `CONTESTED` | **Proceed** — genuine expert disagreement; note the contested status in the finding |
+| `INSUFFICIENT_EVIDENCE` | **Downgrade** — caveat the claim explicitly; do not state it as fact, or drop the finding if the review comment depends entirely on the unverified claim being true |
+| `VERIFIED_FALSE` | **Drop** — exclude this finding from output and from any comment posted to the PR |
+
+**VERIFIED_FALSE — drop the finding:** Remove it from the review output entirely. Do not post it. Annotate your working notes: "dropped: VERIFIED_FALSE".
+
+**INSUFFICIENT_EVIDENCE — downgrade with explicit caveat:** Include the finding only with a hedge (e.g., "I wasn't able to confirm this from the code — could you point me to the specific path?"). Never present an INSUFFICIENT_EVIDENCE claim as an established fact. If the comment cannot be written without asserting the unverified claim, drop it instead.
+
+**VERIFIED_TRUE / CONTESTED — proceed:** These findings proceed to output. VERIFIED_TRUE findings proceed unchanged; CONTESTED findings note the disagreement in the finding body.
+
+### Scope: which findings require the gate
+
+Run the gate on findings that make a verifiable factual assertion about the code (🔴 bug, 🟡 risk, and any ❓ q that asserts a specific fact). For each such finding, spawn one investigator call before output.
+
+Pure style/naming nits (🔵 nit) that make no factual claim about runtime behavior may skip the gate.
+
+---
+
 ## Provenance
 
 pr-code-review does not write task files. If a future variant writes a task JSON, stamp it with `"producer": "pr-code-review"` and `"source": {"type": "session", "ref": null}` per `contracts/task-schema.json`.

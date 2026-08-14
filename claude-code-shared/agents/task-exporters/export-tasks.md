@@ -66,7 +66,7 @@ Stop immediately if any required Notion DB ID is a placeholder. Do not write any
 For any `auth=api-token` Notion route, verify the token is set before showing the dry-run:
 
 ```bash
-bash ~/.dotfiles/claude-code-shared/agents/task-exporters/export-tasks-notion/check-token.sh
+bash ~/.dotfiles/claude-code-shared/agents/egress/notion/check-token.sh
 ```
 
 If the script exits non-zero, print its stderr output and stop.

@@ -44,7 +44,7 @@ No other text. No markdown. No explanation.
 
 ## Scripts
 
-Colocated scripts: `~/.dotfiles/claude-code-shared/agents/task-exporters/export-tasks-notion/`
+Colocated scripts: `~/.dotfiles/claude-code-shared/agents/egress/notion/`
 
 - `check-token.sh` - verifies `NOTION_PERSONAL_TOKEN` is set. Exit 0 = ok, exit 1 = error with setup instructions on stderr.
 - `notion-page-api.sh <db_id> <title> <description>` - creates page via REST API. Stdout: page URL.
@@ -58,7 +58,7 @@ Select the write path based on `auth`.
 1. Verify token:
 
 ```bash
-bash ~/.dotfiles/claude-code-shared/agents/task-exporters/export-tasks-notion/check-token.sh
+bash ~/.dotfiles/claude-code-shared/agents/egress/notion/check-token.sh
 ```
 
 If non-zero exit: respond `ERROR: <stderr content>` and stop.
@@ -66,7 +66,7 @@ If non-zero exit: respond `ERROR: <stderr content>` and stop.
 2. Create page:
 
 ```bash
-bash ~/.dotfiles/claude-code-shared/agents/task-exporters/export-tasks-notion/notion-page-api.sh \
+bash ~/.dotfiles/claude-code-shared/agents/egress/notion/notion-page-api.sh \
   "$DB_ID" \
   "$TITLE" \
   "$DESCRIPTION"

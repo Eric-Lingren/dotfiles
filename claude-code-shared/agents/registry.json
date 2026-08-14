@@ -2,6 +2,17 @@
   "version": "1.0",
   "agents": [
     {
+      "name": "investigator",
+      "file": "agents/investigator.md",
+      "model": "opus",
+      "description": "Investigator orchestrator (Opus tier). Decomposes a question into sub-claims, routes each to the correct leaf agent (investigator-code, -web, -linear, -github, -notion), aggregates results, and enforces the INSUFFICIENT_EVIDENCE propagation rule. Emits a schema-valid investigation-result.",
+      "consumers": [
+        "investigate",
+        "pr-revise",
+        "pr-code-review"
+      ]
+    },
+    {
       "name": "fact-checker",
       "file": "agents/fact-checker.md",
       "model": "sonnet",
@@ -133,7 +144,7 @@
     },
     {
       "name": "export-tasks-gh",
-      "file": "agents/task-exporters/export-tasks-gh/agent.md",
+      "file": "agents/egress/github/export-tasks-gh.md",
       "model": "haiku",
       "description": "GitHub Issues write adapter. Creates a single GitHub issue from structured JSON input. Spawned by the export-tasks coordinator per gh-issues item. Returns the created issue URL as the sole response line.",
       "consumers": [
@@ -142,11 +153,20 @@
     },
     {
       "name": "export-tasks-notion",
-      "file": "agents/task-exporters/export-tasks-notion/agent.md",
+      "file": "agents/egress/notion/export-tasks-notion.md",
       "model": "haiku",
       "description": "Notion write adapter. Creates a single Notion page from structured JSON input using MCP or API-token auth. Spawned by the export-tasks coordinator per notion item. Returns the created page URL as the sole response line.",
       "consumers": [
         "export-tasks"
+      ]
+    },
+    {
+      "name": "export-tasks-linear",
+      "file": "agents/egress/linear/export-tasks-linear.md",
+      "model": "haiku",
+      "description": "Linear write adapter. Creates a single Linear issue from structured JSON input using the Linear MCP tool. Spawned by tasks-to-linear per task item. Returns the created issue URL as the sole response line.",
+      "consumers": [
+        "tasks-to-linear"
       ]
     },
     {
@@ -180,6 +200,13 @@
         "to-seed",
         "to-tasks"
       ]
+    },
+    {
+      "name": "answer-composer",
+      "file": "agents/egress/answer-composer.md",
+      "model": "sonnet",
+      "description": "Sonnet-tier egress agent. Consumes an investigation-result and composes a voice-matched Slack reply using the slack-casual voice profile. Citations render inline per distinct verified claim. INSUFFICIENT_EVIDENCE claims surface an explicit 'couldn't confirm' tag — never smoothed over. Adds no content beyond what the investigation-result provides. Output is copy-only for manual paste to Slack.",
+      "consumers": []
     },
     {
       "name": "learning-grounding-judge",
