@@ -10,7 +10,48 @@ effort: low
 invokedBy: human
 ---
 
-## Step 1 — Detect link input
+## Step 0 — Parse --out flag
+
+Parse `--out` from the user's args before doing anything else.
+
+**Accepted values:** `raw`, `slack`
+**Default:** `slack`
+
+```
+--out raw    Return the investigation-result JSON directly, without voicing.
+--out slack  Route the result through answer-composer for a voiced Slack reply (default).
+```
+
+Strip `--out <value>` from the args before passing the question or claim to the investigator.
+
+If `--out` is set to a value other than `raw` or `slack`, stop and tell the user the valid options.
+
+## Step 1 — Input guard (JSON vs prose detection)
+
+Before doing anything else with the cleaned input (after stripping `--out`), check whether it is a pre-existing investigation result.
+
+**Rule:** if the input starts with `{`, attempt to parse it as JSON and validate it against the `investigation-result` schema (`contracts/investigation-result-schema.json`). Three outcomes:
+
+| Input shape | Treatment |
+|---|---|
+| Valid `investigation-result` JSON (schema_version, verdict, evidence all present and valid) | **Skip investigation.** Pass the result directly to Step 4 (voicing). |
+| Starts with `{` but fails schema validation (missing required fields, wrong types, etc.) | **Treat as prose.** Continue to Step 2 (link detection) and then Step 3 (investigator). |
+| Does not start with `{` (plain prose, URL, question) | **Treat as prose.** Continue to Step 2 (link detection) and then Step 3 (investigator). |
+
+**Validation checklist for schema-valid investigation-result JSON:**
+- Top-level object with `schema_version` field equal to `"1"`
+- `verdict` field present and set to one of the four valid verdicts:
+  - `VERIFIED_TRUE`
+  - `VERIFIED_FALSE`
+  - `INSUFFICIENT_EVIDENCE`
+  - `CONTESTED`
+- `evidence` field is an array (empty arrays are valid; required to be non-empty only for `VERIFIED_TRUE` and `VERIFIED_FALSE`)
+
+If the input passes all three checks, it is schema-valid. Do not re-investigate it — use it as-is for voicing.
+
+If the input fails any check (or is not JSON at all), treat it as prose and proceed to Step 2.
+
+## Step 2 — Detect link input
 
 If the user's input is (or contains) a URL, fetch the content first to derive the question or claim.
 
@@ -27,9 +68,9 @@ If the user's input is (or contains) a URL, fetch the content first to derive th
 - Use `WebFetch` to retrieve the page content.
 - Extract the core question or claim from the content.
 
-If the input is already a plain question or claim (no URL), skip Step 1 entirely.
+If the input is already a plain question or claim (no URL), skip Step 2 entirely.
 
-## Step 2 — Spawn the investigator
+## Step 3 — Spawn the investigator
 
 Use the Agent tool with `subagent_type: investigator`. Pass the derived (or original) question or claim. Include `cwd` if the investigation involves codebase claims.
 
@@ -59,7 +100,26 @@ User pastes `https://acme.slack.com/archives/C012AB3CD/p1723660012345678`.
 3. Derive question from thread (e.g., "Was the deploy on 2026-08-14 the cause of the latency spike?").
 4. Pass derived question to investigator.
 
-Return the raw investigation-result JSON from the agent to the caller.
+## Step 4 — Route output based on --out flag
+
+After the investigator returns its `investigation-result` (or when Step 1 passes a pre-existing result directly here), branch on the `--out` value resolved in Step 0.
+
+### --out raw
+
+Return the `investigation-result` JSON directly to the caller. Do not spawn any additional agent. This applies both when the investigator produced the result (Step 3) and when Step 1 short-circuited directly to this step.
+
+### --out slack (default)
+
+Pass the `investigation-result` to `answer-composer` for voicing. This applies both when the investigator produced the result (Step 3) and when Step 1 short-circuited directly to this step.
+
+```
+Agent({
+  subagent_type: "answer-composer",
+  prompt: "investigation_result: <paste investigation-result JSON here>\nquestion: <original question>"
+})
+```
+
+Return the voiced Slack reply from `answer-composer` to the caller.
 
 <!-- learning-capture:start -->
 Read and execute `~/.dotfiles/claude-code-shared/resources/learning-capture.md`.

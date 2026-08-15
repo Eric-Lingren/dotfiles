@@ -1,0 +1,121 @@
+{
+  "schema_version": "2",
+  "producer": "to-tasks",
+  "source": {
+    "type": "seed",
+    "ref": "20260814-2000-investigate-pipeline-unification.json"
+  },
+  "generated_at": "2026-08-14T21:02:00Z",
+  "branching": {
+    "strategy": "single",
+    "branch": "feat/investigate-pipeline-unification"
+  },
+  "tasks": [
+    {
+      "id": "T-0095",
+      "title": "Delete /answer skill and scrub all references",
+      "type": "AFK",
+      "task_type": "code",
+      "description": "Delete the /answer skill file and remove all references to it from skill-pipeline.json, model-tiers.json, and the dispatch-tasks routing table (added in commit e736f45). Before making any changes, write characterization tests capturing current /investigate behavior so the delete does not silently regress it.",
+      "acceptance_criteria": [
+        "Characterization tests for /investigate output written before any file is deleted",
+        "/answer skill file deleted",
+        "skill-pipeline.json has no /answer entry",
+        "model-tiers.json has no /answer entry",
+        "dispatch-tasks routing table has no /answer entry",
+        "All characterization tests pass after the delete"
+      ],
+      "blocked_by": [],
+      "status": "done",
+      "branch": null,
+      "pr": null,
+      "summary": "Deleted the /answer skill file and removed all references from skill-pipeline.json, model-tiers.json, and learning-contract.md (dispatch-tasks had no /answer entry). A bash validation script was written first as characterization test coverage; all 7 checks pass after deletion.",
+      "files_touched": [
+        "/Users/eric/.dotfiles/claude-code-shared/skills/answer/SKILL.md",
+        "/Users/eric/.dotfiles/claude-code-shared/skill-pipeline.json",
+        "/Users/eric/.dotfiles/claude-code-shared/resources/model-tiers.json",
+        "/Users/eric/.dotfiles/claude-code-shared/contracts/learning-contract.md"
+      ],
+      "tests": {"passed": 7, "failed": 0},
+      "log_path": "docs/tasks/.logs/20260814-2102-investigate-pipeline-unification.json/T-0095.md"
+    },
+    {
+      "id": "T-0096",
+      "title": "Add --out flag to /investigate with raw and slack modes",
+      "type": "AFK",
+      "task_type": "code",
+      "description": "Add --out flag parsing to /investigate SKILL.md. Default mode is slack, which routes to answer-composer for voiced output. Accepted values are raw (returns investigation-result JSON directly) and slack. v1 supports only these two modes. The answer-composer agent is retained as the slack voicing layer and called exclusively from /investigate --out slack.",
+      "acceptance_criteria": [
+        "/investigate with no --out flag defaults to slack mode and routes through answer-composer",
+        "/investigate --out raw returns investigation-result JSON without voicing",
+        "/investigate --out slack routes through answer-composer and returns voiced output",
+        "Tests cover both modes and the default"
+      ],
+      "blocked_by": ["T-0095"],
+      "status": "done",
+      "branch": null,
+      "pr": null,
+      "summary": "Added --out flag parsing to /investigate SKILL.md. Step 0 documents the flag (accepted values: raw, slack; default: slack) and strips it from args before investigation. Step 3 branches on the flag: --out raw returns investigation-result JSON directly; --out slack (default) passes the result to answer-composer for a voiced Slack reply. A bash validation script with 10 checks confirms all acceptance criteria are present in SKILL.md.",
+      "files_touched": [
+        "/Users/eric/.dotfiles/claude-code-shared/skills/investigate/SKILL.md",
+        "/Users/eric/.dotfiles/claude-code-shared/scripts/validate-investigate-out-flag.sh"
+      ],
+      "tests": {"passed": 10, "failed": 0},
+      "log_path": "docs/tasks/.logs/20260814-2102-investigate-pipeline-unification.json/T-0096.md"
+    },
+    {
+      "id": "T-0097",
+      "title": "Add input guard to /investigate (JSON vs prose detection)",
+      "type": "AFK",
+      "task_type": "code",
+      "description": "Add an input guard to /investigate that detects whether the input is schema-valid investigation-result JSON or raw prose. Schema-valid JSON skips fresh investigation and passes directly to the voicing layer (answer-composer for --out slack, returned directly for --out raw). Raw prose always spawns fresh investigation via the investigator. Invalid JSON that does not match the investigation-result schema is treated as prose and triggers fresh investigation. This guard prevents un-investigated prose from ever reaching the answer-composer.",
+      "acceptance_criteria": [
+        "Raw prose input always triggers fresh investigation",
+        "Schema-valid investigation-result JSON input skips investigation and goes to voicing",
+        "Invalid JSON (not matching investigation-result schema) is treated as prose and triggers fresh investigation",
+        "Tests cover all three input paths: prose, valid investigation-result JSON, invalid JSON"
+      ],
+      "blocked_by": ["T-0096"],
+      "status": "done",
+      "branch": null,
+      "pr": null,
+      "summary": "Added 'Step 1 — Input guard (JSON vs prose detection)' to /investigate SKILL.md. The guard checks whether cleaned input is schema-valid investigation-result JSON (schema_version + verdict + evidence present): if valid, it short-circuits directly to voicing (Step 4) skipping the investigator; if invalid JSON or plain prose it falls through to link detection (Step 2) and the investigator (Step 3). Existing steps renumbered. Six new structural tests added; all 19 investigate skill tests pass.",
+      "files_touched": [
+        "/Users/eric/.dotfiles/claude-code-shared/skills/investigate/SKILL.md",
+        "/Users/eric/.dotfiles/claude-code-shared/scripts/tests/test_investigate_skill.py"
+      ],
+      "tests": {"passed": 19, "failed": 0},
+      "log_path": "docs/tasks/.logs/20260814-2102-investigate-pipeline-unification.json/T-0097.md"
+    },
+    {
+      "id": "T-0098",
+      "title": "Update investigator agent for bounded expansion",
+      "type": "AFK",
+      "task_type": "code",
+      "description": "Update the investigator agent to implement bounded expansion. After answering the literal claim, the investigator identifies a relevance-gated set of adjacent material facts the asker likely needs, investigates each, and includes only those with supporting evidence and a blob-URL citation (using the citation construction from commit 3c31398, unchanged). Facts that prove uninformative are dropped. The specific cap count is left to implementation judgment. This always-on behavior applies to all callers including pr-revise and pr-code-review.",
+      "acceptance_criteria": [
+        "Investigator returns adjacent material facts beyond the literal claim when they are relevant",
+        "Each adjacent fact carries a blob-URL citation pointing to the supporting code location",
+        "Facts with no supporting evidence are excluded from the investigation-result",
+        "investigation-result schema remains valid with the expanded output",
+        "Blob-URL citation construction from commit 3c31398 is used without modification",
+        "Tests verify a representative claim produces expansion with citations"
+      ],
+      "blocked_by": [],
+      "status": "done",
+      "branch": null,
+      "pr": null,
+      "summary": "Added bounded expansion to the investigator orchestrator: a new Step 4 identifies 2-4 relevance-gated adjacent material facts after resolving the literal claim, investigates each via leaf agents, drops facts with no evidence (INSUFFICIENT_EVIDENCE), and emits survivors with GitHub blob-URL citations in a new optional adjacent_facts field. Schema, contract doc, and agent instructions updated; 17 bash checks and 12 new Python tests verify the behavior.",
+      "files_touched": [
+        "/Users/eric/.dotfiles/claude-code-shared/agents/investigator.md",
+        "/Users/eric/.dotfiles/claude-code-shared/contracts/investigation-result-schema.json",
+        "/Users/eric/.dotfiles/claude-code-shared/contracts/investigation-result-contract.md",
+        "/Users/eric/.dotfiles/claude-code-shared/scripts/tests/test_investigator_bounded_expansion.sh",
+        "/Users/eric/.dotfiles/claude-code-shared/scripts/tests/test_investigator_orchestrator.py"
+      ],
+      "tests": {"passed": 55, "failed": 0},
+      "log_path": "docs/tasks/.logs/20260814-2102-investigate-pipeline-unification.json/T-0098.md"
+    }
+  ],
+  "follow_ups": []
+}

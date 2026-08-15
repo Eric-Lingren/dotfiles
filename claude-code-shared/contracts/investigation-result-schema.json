@@ -52,6 +52,55 @@
       "type": "string",
       "minLength": 1,
       "description": "Optional. For leaf agents: the exact sub-claim this result addresses, as decomposed by the orchestrator."
+    },
+    "adjacent_facts": {
+      "type": "array",
+      "description": "Optional. Orchestrator-only. Bounded expansion: adjacent material facts the asker likely needs, each investigated and cited. Facts with no supporting evidence are excluded. Capped at implementation judgment (typically 2–4).",
+      "items": {
+        "type": "object",
+        "required": ["claim", "verdict", "evidence"],
+        "additionalProperties": false,
+        "properties": {
+          "claim": {
+            "type": "string",
+            "minLength": 1,
+            "description": "The adjacent fact that was investigated."
+          },
+          "verdict": {
+            "type": "string",
+            "enum": ["VERIFIED_TRUE", "VERIFIED_FALSE", "INSUFFICIENT_EVIDENCE", "CONTESTED"],
+            "description": "Outcome of the adjacent-fact investigation."
+          },
+          "evidence": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["source", "ref", "quote"],
+              "additionalProperties": false,
+              "properties": {
+                "source": {
+                  "type": "string",
+                  "enum": ["web", "code", "linear", "github", "notion"]
+                },
+                "ref": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "quote": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              }
+            },
+            "description": "Citations for the adjacent fact. Non-empty for VERIFIED_TRUE and VERIFIED_FALSE."
+          },
+          "summary": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Optional. Human-readable explanation of the adjacent-fact verdict."
+          }
+        }
+      }
     }
   },
   "if": {

@@ -6,9 +6,8 @@
 
 ## Producers
 
-All 31 shared skills. Plugin skills (caveman, chrome-devtools) are excluded.
+All 30 shared skills. Plugin skills (caveman, chrome-devtools) are excluded.
 
-- `skills/answer/`
 - `skills/build-code/`
 - `skills/cc-usage-analytics/`
 - `skills/clean-scaffolding/`
