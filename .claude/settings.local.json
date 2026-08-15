@@ -76,7 +76,8 @@
       "Bash(open *)",
       "Bash(ls -la reviewers/)",
       "Bash(wc -l reviewers/*.md)",
-      "Bash(env)"
+      "Bash(env)",
+      "Agent"
     ]
   },
   "prefersReducedMotion": false

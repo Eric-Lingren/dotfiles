@@ -15,7 +15,6 @@ All 31 shared skills. Plugin skills (caveman, chrome-devtools) are excluded.
 - `skills/pr-code-review/`
 - `skills/debug/`
 - `skills/dispatch-tasks/`
-- `skills/fact-check/`
 - `skills/find-work/`
 - `skills/grill-me/`
 - `skills/grill-with-docs/`

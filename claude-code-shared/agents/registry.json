@@ -13,15 +13,6 @@
       ]
     },
     {
-      "name": "fact-checker",
-      "file": "agents/fact-checker.md",
-      "model": "sonnet",
-      "description": "Fact verification specialist. Extracts verifiable claims from any input, checks each against live web sources, and returns a report with citable source links.",
-      "consumers": [
-        "fact-check"
-      ]
-    },
-    {
       "name": "architecture-auditor",
       "file": "agents/architecture-auditor.md",
       "model": "sonnet",
@@ -179,7 +170,6 @@
         "clean-scaffolding",
         "pr-code-review",
         "debug",
-        "fact-check",
         "find-work",
         "grill-me",
         "grill-with-docs",
@@ -218,7 +208,6 @@
         "clean-scaffolding",
         "pr-code-review",
         "debug",
-        "fact-check",
         "find-work",
         "grill-me",
         "grill-with-docs",
