@@ -1,0 +1,824 @@
+{
+  "kind": "condensed",
+  "producer": "clean-scaffolding",
+  "slug": "investigation-egress-architecture",
+  "title": "Investigation and Egress Architecture",
+  "condensed_at": "2026-08-15T04:30:23Z",
+  "condensed_from": [
+    "20260814-1234-investigation-egress-architecture.json",
+    "20260814-1236-investigation-egress-architecture.json"
+  ],
+  "artifacts": [
+    {
+      "filename": "20260814-1234-investigation-egress-architecture.json",
+      "type": "seed",
+      "content": {
+        "schema_version": "4",
+        "producer": "to-seed",
+        "source": {
+          "type": "session",
+          "ref": null
+        },
+        "title": "Investigation and Egress Architecture",
+        "slug": "investigation-egress-architecture",
+        "created": "2026-08-14T19:25:29Z",
+        "iteration": 1,
+        "status": "ready",
+        "summary": "Design for two symmetric pipeline lanes built on the existing coordinator/worker pattern. An investigation (fan-in) lane verifies claims against multiple sources with a hard trust guarantee, and an egress (fan-out) lane routes voice-matched drafts to external channels. The investigate skill is a thin human doorway; the investigator agent (Opus) is the orchestrator that decomposes a question, routes sub-claims to source-specialized leaf agents (investigator-code, -web, -linear, -github, -notion under agents/investigators/), and aggregates them under a unified investigation-result contract that mandates citations and never smooths over INSUFFICIENT_EVIDENCE. The retired fact-check and vet skills collapse into investigator-web and investigator-code. A separate answer-composer egress agent plus an /answer doorway serve a Slack Q&A track, composing answers in a new slack-casual voice profile with inline per-claim citations, copy-only via manual paste. investigator wires in as the diligence gate for pr-revise and pr-code-review so no false claim reaches a colleague. relay is promoted to the egress orchestrator with post-github/-linear/-slack adapter stubs under agents/egress/ organized by channel, consolidating the existing export-tasks-gh/-notion and tasks-to-linear writers, all posting deferred behind copy-only stub banners.",
+        "decisions": [
+          "investigate is a thin human doorway skill whose only job is to spawn the investigator orchestrator agent; humans invoke skills, agents cannot be typed as slash commands, so exactly one skill doorway is kept.",
+          "investigator is the orchestrator agent: it decomposes a question into sub-claims, routes each to the correct source leaf, and aggregates the results. It is callable both by humans (via the investigate skill) and directly by other agents (pr-revise, pr-code-review).",
+          "Source verification is done by specialized leaf agents, one per evidence source, so new sources bolt on without affecting existing ones (strategy/plugin pattern).",
+          "Leaf agents are named investigator-<source> (noun form) to preserve the house skill=verb / agent=noun boundary and mirror the export-tasks -> export-tasks-gh coordinator/worker pattern.",
+          "Phase 1 leaves (all in scope to build in this effort, none phased to later): investigator-code, investigator-web, investigator-linear, investigator-github, investigator-notion.",
+          "All investigator agents (orchestrator + 5 leaves) live grouped under agents/investigators/, mirroring the existing agents/task-exporters/ grouping.",
+          "A unified investigation-result contract is authored as a dual-doc pair (investigation-result-schema.json draft-07 + investigation-result-contract.md), versioned by schema_version, distinct from learning-schema to avoid cross-workflow drift.",
+          "All leaves and the orchestrator emit the single investigation-result contract. Verdict/confidence axis: VERIFIED_TRUE, VERIFIED_FALSE, INSUFFICIENT_EVIDENCE, CONTESTED.",
+          "Every verdict carries a mandatory evidence[] array of {source, ref, quote}. A VERIFIED_TRUE or VERIFIED_FALSE with empty evidence[] is a schema violation; only INSUFFICIENT_EVIDENCE may cite nothing.",
+          "Abstention is contract-enforced, not model-judged: if any load-bearing sub-claim returns INSUFFICIENT_EVIDENCE, the aggregate answer inherits that uncertainty and states it. The orchestrator never averages uncertainty away into false confidence.",
+          "Per-source citation mapping: web ref=URL, code ref=file:line, linear ref=ticket URL, github ref=issue/PR URL, notion ref=page URL/block id; quote is the supporting span in each case.",
+          "The fact-check and vet skills are retired. The old fact-checker agent becomes investigator-web. The vet stub's diligence job becomes investigator-code. The vet stub is deleted.",
+          "Slack is treated as an ingress channel for questions, not a verification source; there is no investigator-slack.",
+          "Slack Q&A ingress for the POC is manual paste (message text or link) into the answer doorway; automated Slack ingress is deferred.",
+          "The Slack answer track uses a separate /answer doorway skill (question-in, voice-prose-out), distinct from /investigate (raw verdict-out). Same investigator core, different output surface.",
+          "answer-composer is a separate egress agent that consumes investigation-result and writes the voice-matched reply. investigator stays pure and reusable; the voice layer never touches verification logic.",
+          "Voice governs style, never content: answer-composer may only state claims that investigation-result verified, each with its citation. It may not add a single unverified sentence to sound natural.",
+          "A new slack-casual voice profile is created for the Slack answer track (friendlier, more upbeat, still professional), because the existing dev-office profile was distilled only from GitHub PR comments and Linear issue comments and contains zero Slack material.",
+          "slack-casual is sourced from Eric's real Slack messages (provided at build time), registered in voice-routing.json, and routed from the answer doorway skill.",
+          "Citations in the composed answer render inline-linked per distinct claim (not as an end footnote block); INSUFFICIENT_EVIDENCE claims render an explicit 'couldn't confirm' tag instead of a citation.",
+          "investigator becomes the shared diligence gate wired into pr-revise (Step 5, replacing the manual/vet-stub diligence) and pr-code-review (pre-submit claim verification); claims that come back VERIFIED_FALSE or INSUFFICIENT_EVIDENCE are dropped or downgraded before posting. debug wiring is deferred.",
+          "Model tiers: investigate and answer doorway skills = Haiku; the five leaf agents and answer-composer = Sonnet; investigator orchestrator = Opus (set now, given it is the most critical node and most sensitive to decomposition quality). investigator-code is the first leaf on the Opus escalation watch list for multi-file reasoning.",
+          "The egress lane mirrors the investigation lane as a coordinator/worker fan-out. relay is promoted from a PR-reply-specific skill to the egress orchestrator that routes any approved draft to its channel adapter.",
+          "relay's current PR-specific mechanics (stitching the fixing-commit permalink, keying by PR thread_id) are adapter-level and descend into the post-github adapter; what stays in relay is channel-agnostic routing + HITL.",
+          "Egress is organized BY CHANNEL under agents/egress/ (github/, linear/, notion/, slack/); each channel folder holds that channel's write adapters for both create-artifact and post-comment verbs.",
+          "All existing external-write adapters are consolidated under agents/egress/ by channel: export-tasks-gh -> egress/github/, export-tasks-notion -> egress/notion/, tasks-to-linear's write path -> egress/linear/. dispatch-tasks, the export-tasks coordinator, and task-routing.json are rewired to the new paths.",
+          "New post-comment adapters (post-github, post-linear, post-slack) ship now as copy-only stubs that print the draft behind a 'NO EXTERNAL CALLS MADE / paste manually' banner plus a vet-style stub marker; live posting is deferred.",
+          "A shared egress-result contract (dual-doc, like investigation-result) defines adapter return shape {posted, url, thread_id, status}; stubs return status: copy-only.",
+          "The full egress architecture is scaffolded now as wiring anchors (following the investigate/vet stub-as-anchor precedent) even though live posting is deferred, to de-risk the high-risk write-back vector by fixing its shape first.",
+          "The two egress coordinators stay separate for now (export-tasks for artifact creation, relay for comment posting); both spawn adapters from the agents/egress/ channel folders. Unifying them is a later option, not launch scope."
+        ],
+        "open_threads": [],
+        "disposed_threads": [],
+        "deferred": [
+          {
+            "text": "Automated posting for egress adapters (live gh/Linear/Slack write-back, thread resolution, idempotency, thread-id keying).",
+            "rationale": "Write-back UX and error cases are genuinely hard and were already deferred once for that reason; POC value does not depend on it.",
+            "context": "post-github/-linear/-slack ship as copy-only stubs now; the egress-result contract already defines the eventual {posted,url,thread_id,status} shape so live posting slots in without reshaping.",
+            "source_seed": "investigation-egress-architecture"
+          },
+          {
+            "text": "Sentry, Datadog, and Slack investigator source leaves.",
+            "rationale": "Zero usage evidence across both profiles; building them now is speculative.",
+            "context": "The plugin/leaf isolation means these bolt on later under agents/investigators/ with zero disruption once external-signal investigation matters.",
+            "source_seed": "investigation-egress-architecture"
+          },
+          {
+            "text": "Automated Slack ingress (bot or MCP listener) for the answer track.",
+            "rationale": "No Slack integration configured today; manual paste is sufficient to prove the POC.",
+            "context": "Ingress = manual paste of message text or link for v1.",
+            "source_seed": "investigation-egress-architecture"
+          },
+          {
+            "text": "Wiring investigator as a diligence gate into the debug skill.",
+            "rationale": "debug makes claims to yourself during diagnosis, lower blast radius, and it already has its own repro loop.",
+            "context": "Add in the same wave as the Sentry/Datadog external-signal leaves.",
+            "source_seed": "investigation-egress-architecture"
+          },
+          {
+            "text": "Unifying the two egress coordinators (export-tasks + relay) into one.",
+            "rationale": "Not needed for launch; both can spawn adapters from the shared channel folders as-is.",
+            "context": "Revisit after the by-channel consolidation lands.",
+            "source_seed": "investigation-egress-architecture"
+          },
+          {
+            "text": "Sourcing and authoring the slack-casual voice profile from real Slack messages.",
+            "rationale": "Requires Eric to hand over a representative sample of his Slack messages at build time.",
+            "context": "Distill the same way dev-office was built from real PR/Linear comments; guessing the voice would defeat the purpose.",
+            "source_seed": "investigation-egress-architecture"
+          }
+        ],
+        "out_of_scope": [
+          {
+            "text": "Pulling git push / gxpush / PR-creation into the egress consolidation.",
+            "rationale": "That is code delivery inside build-code's core loop, a different lane from ticketing/comments/messages; including it would balloon scope into build-code internals."
+          }
+        ],
+        "implementation_decisions": [
+          "Contracts follow the house dual-doc convention: <name>-schema.json (JSON Schema draft-07) + <name>-contract.md, versioned via schema_version hard-cutover, $ref-ing provenance-schema.json where shared.",
+          "New contract names chosen to avoid collision: investigation-result-* (not verdict-*, which is the seed-verification judge output, nor runner-result-*, which is lint/test) and egress-result-*.",
+          "Voice resolution reuses the existing voice-routing.json mechanism (skill-name -> profile) consumed at runtime, the same path pr-code-review and pr-revise use; register-skill assigns the profile on registration.",
+          "answer-composer lives OUTSIDE agents/investigators/ (grouped with egress agents) so the investigators directory preserves the invariant that everything in it produces an investigation-result.",
+          "Escalation policy: start every node at its defensible tier floor and escalate only on measured evidence; investigator orchestrator is the exception, set to Opus at launch."
+        ],
+        "risks_and_tradeoffs": [
+          "Egress posting is a high-risk vector (idempotency, thread keying, resolve-vs-reply, error handling); mitigated by shipping copy-only stubs now and fixing the architecture shape before any live write.",
+          "investigator-code may exceed Sonnet on hard multi-file code-behavior claims; mitigated by keeping it Sonnet with an explicit Opus escalation watch rather than paying Opus prophylactically.",
+          "Consolidating the working export-tasks-gh/-notion and tasks-to-linear adapters is a refactor with breakage risk (dispatch-tasks, export-tasks coordinator, task-routing.json references); it is a sequenced build chunk, not a free rename.",
+          "The trust guarantee depends on leaf verdict correctness, so no verdict-emitting agent is allowed on Haiku; doorways are the only Haiku nodes."
+        ],
+        "further_notes": [
+          "Three-lane symmetry across the system: Investigation fan-in (investigator -> investigator-<source>, agents/investigators/), Egress fan-out (relay -> post-<channel>, agents/egress/), and the existing Artifact export (export-tasks -> export-tasks-<dest>) folding into agents/egress/ by channel.",
+          "Provenance check confirmed dev-office.md was distilled from GitHub PR comments plus ~40 Linear issue comments (Aug 2025-Jul 2026), with zero Slack source material, which is why a separate slack-casual profile is warranted.",
+          "Usage evidence that ranked the leaves: Linear ~106 MCP calls/month (67 get_issue reads), GitHub 33% of sessions on feature/fix branches, Notion ~49 fetch/month, Web ~17 calls/month; Sentry/Datadog/Slack/Drive/Jira had zero evidence."
+        ],
+        "next_action": "Run /to-tasks on this seed to slice the build into tracer-bullet tasks, sequencing the investigation lane (contract + investigator + leaves) ahead of the egress consolidation refactor.",
+        "verification": {
+          "iteration": 1,
+          "personas": [
+            "grounding",
+            "accuracy",
+            "completeness",
+            "coherence"
+          ],
+          "refutations_upheld": 1,
+          "refutations_screened": 5,
+          "clean": false,
+          "status": "verified"
+        }
+      }
+    },
+    {
+      "filename": "20260814-1236-investigation-egress-architecture.json",
+      "type": "task",
+      "content": {
+        "schema_version": "2",
+        "producer": "to-tasks",
+        "source": {
+          "type": "seed",
+          "ref": "20260814-1234-investigation-egress-architecture.json"
+        },
+        "generated_at": "2026-08-14T19:38:00Z",
+        "branching": {
+          "strategy": "single",
+          "branch": "feat/investigation-egress-arch"
+        },
+        "tasks": [
+          {
+            "id": "T-0072",
+            "title": "Author investigation-result dual-doc contract",
+            "type": "AFK",
+            "task_type": "code",
+            "deliverable": "code",
+            "description": "Create the investigation-result dual-doc contract pair under contracts/. The JSON Schema (investigation-result-schema.json, draft-07) defines: verdict enum (VERIFIED_TRUE | VERIFIED_FALSE | INSUFFICIENT_EVIDENCE | CONTESTED), a mandatory evidence[] array of {source, ref, quote} objects that must be non-empty for VERIFIED_TRUE and VERIFIED_FALSE verdicts, and schema_version. The companion investigation-result-contract.md documents the verdict axis, citation mapping by source type (web=URL, code=file:line, linear=ticket URL, github=issue/PR URL, notion=page URL/block id), and the INSUFFICIENT_EVIDENCE propagation rule: if any load-bearing sub-claim returns INSUFFICIENT_EVIDENCE, the aggregate answer inherits that uncertainty and states it explicitly. All leaf agents and the orchestrator emit this single contract.",
+            "acceptance_criteria": [
+              "contracts/investigation-result-schema.json exists (draft-07) with verdict, evidence[], and schema_version fields",
+              "Schema validates investigation-result fixtures for all four verdict types",
+              "Schema rejects a VERIFIED_TRUE or VERIFIED_FALSE with empty evidence[]",
+              "Schema accepts INSUFFICIENT_EVIDENCE with empty evidence[]",
+              "contracts/investigation-result-contract.md documents all five citation mapping types and the propagation rule"
+            ],
+            "blocked_by": [],
+            "status": "done",
+            "branch": null,
+            "pr": null,
+            "summary": "Created the investigation-result dual-doc contract pair: a draft-07 JSON Schema that enforces non-empty evidence[] for VERIFIED_TRUE/VERIFIED_FALSE via an if/then conditional (allowing empty evidence for INSUFFICIENT_EVIDENCE and CONTESTED), and a companion markdown documenting all five citation source types and the INSUFFICIENT_EVIDENCE propagation rule. A 25-test pytest suite validates all four verdict fixtures plus all rejection cases.",
+            "files_touched": [
+              "/Users/eric/.dotfiles/claude-code-shared/contracts/investigation-result-schema.json",
+              "/Users/eric/.dotfiles/claude-code-shared/contracts/investigation-result-contract.md",
+              "/Users/eric/.dotfiles/claude-code-shared/scripts/tests/test_investigation_result_schema.py"
+            ],
+            "tests": {
+              "passed": 25,
+              "failed": 0
+            },
+            "log_path": "docs/tasks/.logs/20260814-1236-investigation-egress-architecture/T-0072.md"
+          },
+          {
+            "id": "T-0073",
+            "title": "Build investigator-web leaf agent and retire fact-check skill",
+            "type": "AFK",
+            "task_type": "code",
+            "deliverable": "code",
+            "description": "Create agents/investigators/investigator-web.md (Sonnet tier). The agent accepts a sub-claim and emits an investigation-result contract. It searches the web via available MCP tools, selects the most authoritative supporting or refuting source, and populates evidence[] with ref=URL and quote=the supporting span. If no credible web source exists, it returns INSUFFICIENT_EVIDENCE with empty evidence[]. Retire the fact-check skill: delete skills/fact-check.md (or replace with a one-line stub redirecting to /investigate) and migrate the fact-checker agent into agents/investigators/investigator-web.md.",
+            "acceptance_criteria": [
+              "agents/investigators/investigator-web.md exists with Sonnet tier annotation",
+              "Agent emits schema-valid investigation-result for a sample web claim",
+              "VERIFIED_TRUE/FALSE outputs carry non-empty evidence[] with URL refs",
+              "fact-check skill is retired (deleted or redirected to /investigate)",
+              "Unit test validates the agent's output against investigation-result-schema.json"
+            ],
+            "blocked_by": [
+              "T-0072"
+            ],
+            "status": "done",
+            "branch": null,
+            "pr": null,
+            "summary": "Created agents/investigators/investigator-web.md (Sonnet tier, WebSearch/WebFetch tools) that accepts a sub-claim and emits a schema-valid investigation-result contract; retired the fact-check skill by replacing its SKILL.md with a RETIRED redirect stub pointing to /investigate.",
+            "files_touched": [
+              "/Users/eric/.dotfiles/claude-code-shared/agents/investigators/investigator-web.md",
+              "/Users/eric/.dotfiles/claude-code-shared/skills/fact-check/SKILL.md",
+              "/Users/eric/.dotfiles/claude-code-shared/scripts/tests/test_investigator_web.py"
+            ],
+            "tests": {
+              "passed": 15,
+              "failed": 0
+            },
+            "log_path": "docs/tasks/.logs/20260814-1236-investigation-egress-architecture/T-0073.md"
+          },
+          {
+            "id": "T-0074",
+            "title": "Build investigator-code leaf agent and delete vet stub",
+            "type": "AFK",
+            "task_type": "code",
+            "deliverable": "code",
+            "description": "Create agents/investigators/investigator-code.md (Sonnet tier; flagged on the Opus escalation watch list for multi-file reasoning). The agent accepts a code-behavior claim and emits an investigation-result contract. It reads the codebase using Grep/Glob/Read tools, locates the relevant file and line, and populates evidence[] with ref=file:line and quote=the relevant code span. If the code cannot confirm or deny the claim, it returns INSUFFICIENT_EVIDENCE. Write characterization tests documenting the vet stub's existing diligence behavior before deleting it, then delete the vet stub skill (skills/vet.md or equivalent).",
+            "acceptance_criteria": [
+              "agents/investigators/investigator-code.md exists with Sonnet tier annotation and Opus escalation watch note",
+              "Agent emits schema-valid investigation-result for a sample code claim",
+              "evidence[] refs use file:line format",
+              "Characterization tests for vet's prior behavior written and passing before vet stub is deleted",
+              "vet stub deleted from skills/"
+            ],
+            "blocked_by": [
+              "T-0072"
+            ],
+            "status": "done",
+            "branch": null,
+            "pr": null,
+            "summary": "Created investigator-code.md (Sonnet tier, Opus escalation watch for multi-file reasoning) that emits investigation-result contract with code evidence using file:line refs. Deleted the vet stub directory and removed its entry from skill-pipeline.json; 18-test pytest suite characterizes both the deletion and the new agent's structural contract.",
+            "files_touched": [
+              "/Users/eric/.dotfiles/claude-code-shared/agents/investigators/investigator-code.md",
+              "/Users/eric/.dotfiles/claude-code-shared/scripts/tests/test_investigator_code.py",
+              "/Users/eric/.dotfiles/claude-code-shared/skill-pipeline.json",
+              "/Users/eric/.dotfiles/claude-code-shared/skills/vet/SKILL.md"
+            ],
+            "tests": {
+              "passed": 76,
+              "failed": 0
+            },
+            "log_path": "docs/tasks/.logs/20260814-1236-investigation-egress-architecture/T-0074.md"
+          },
+          {
+            "id": "T-0075",
+            "title": "Build investigator-linear leaf agent",
+            "type": "AFK",
+            "task_type": "code",
+            "deliverable": "code",
+            "description": "Create agents/investigators/investigator-linear.md (Sonnet tier). The agent accepts a sub-claim and emits an investigation-result contract. It queries Linear via the available MCP tools, finds the most relevant issue or comment, and populates evidence[] with ref=ticket URL and quote=the supporting span. Returns INSUFFICIENT_EVIDENCE with empty evidence[] if no relevant Linear record exists.",
+            "acceptance_criteria": [
+              "agents/investigators/investigator-linear.md exists with Sonnet tier annotation",
+              "Agent emits schema-valid investigation-result",
+              "evidence[] refs use Linear ticket URL format",
+              "Unit test validates output against investigation-result-schema.json"
+            ],
+            "blocked_by": [
+              "T-0072"
+            ],
+            "status": "done",
+            "branch": null,
+            "pr": null,
+            "summary": "Created investigator-linear.md (Sonnet tier) following the established leaf-agent pattern. Agent accepts sub_claim, queries Linear via MCP tools, populates evidence[] with Linear ticket URLs, and returns INSUFFICIENT_EVIDENCE with empty evidence[] when no relevant record exists. 16 new tests validate structural properties and schema compliance; full investigation pipeline (74 tests) passes clean.",
+            "files_touched": [
+              "/Users/eric/.dotfiles/claude-code-shared/agents/investigators/investigator-linear.md",
+              "/Users/eric/.dotfiles/claude-code-shared/scripts/tests/test_investigator_linear.py"
+            ],
+            "tests": {
+              "passed": 16,
+              "failed": 0
+            },
+            "log_path": "docs/tasks/.logs/20260814-1236-investigation-egress-architecture/T-0075.md"
+          },
+          {
+            "id": "T-0076",
+            "title": "Build investigator-github leaf agent",
+            "type": "AFK",
+            "task_type": "code",
+            "deliverable": "code",
+            "description": "Create agents/investigators/investigator-github.md (Sonnet tier). The agent accepts a sub-claim and emits an investigation-result contract. It queries GitHub via available MCP tools or gh CLI, finds the most relevant issue or PR, and populates evidence[] with ref=issue/PR URL and quote=the supporting span. Returns INSUFFICIENT_EVIDENCE with empty evidence[] if no relevant GitHub record exists.",
+            "acceptance_criteria": [
+              "agents/investigators/investigator-github.md exists with Sonnet tier annotation",
+              "Agent emits schema-valid investigation-result",
+              "evidence[] refs use GitHub issue/PR URL format",
+              "Unit test validates output against investigation-result-schema.json"
+            ],
+            "blocked_by": [
+              "T-0072"
+            ],
+            "status": "done",
+            "branch": null,
+            "pr": null,
+            "summary": "Created agents/investigators/investigator-github.md (Sonnet tier) \u2014 a GitHub leaf agent that queries GitHub via gh CLI, emits schema-valid investigation-result with source: 'github' and issue/PR URL refs, and falls back to INSUFFICIENT_EVIDENCE when no relevant record is found. Accompanied by an 18-test pytest suite.",
+            "files_touched": [
+              "/Users/eric/.dotfiles/claude-code-shared/agents/investigators/investigator-github.md",
+              "/Users/eric/.dotfiles/claude-code-shared/scripts/tests/test_investigator_github.py"
+            ],
+            "tests": {
+              "passed": 18,
+              "failed": 0
+            },
+            "log_path": "docs/tasks/.logs/20260814-1236-investigation-egress-architecture/T-0076.md"
+          },
+          {
+            "id": "T-0077",
+            "title": "Build investigator-notion leaf agent",
+            "type": "AFK",
+            "task_type": "code",
+            "deliverable": "code",
+            "description": "Create agents/investigators/investigator-notion.md (Sonnet tier). The agent accepts a sub-claim and emits an investigation-result contract. It queries Notion via the available MCP tools, finds the most relevant page or block, and populates evidence[] with ref=page URL or block ID and quote=the supporting span. Returns INSUFFICIENT_EVIDENCE with empty evidence[] if no relevant Notion record exists.",
+            "acceptance_criteria": [
+              "agents/investigators/investigator-notion.md exists with Sonnet tier annotation",
+              "Agent emits schema-valid investigation-result",
+              "evidence[] refs use Notion page URL or block ID format",
+              "Unit test validates output against investigation-result-schema.json"
+            ],
+            "blocked_by": [
+              "T-0072"
+            ],
+            "status": "done",
+            "branch": null,
+            "pr": null,
+            "summary": "Created investigator-notion.md (Sonnet tier, Notion MCP tools) and test_investigator_notion.py (19 tests) following the established investigator leaf agent pattern. The agent queries Notion via MCP search/retrieve tools, emits schema-valid investigation-result with source 'notion' and refs as page URLs or block IDs, and returns INSUFFICIENT_EVIDENCE with empty evidence[] when no relevant record is found.",
+            "files_touched": [
+              "/Users/eric/.dotfiles/claude-code-shared/agents/investigators/investigator-notion.md",
+              "/Users/eric/.dotfiles/claude-code-shared/scripts/tests/test_investigator_notion.py"
+            ],
+            "tests": {
+              "passed": 19,
+              "failed": 0
+            },
+            "log_path": "docs/tasks/.logs/20260814-1236-investigation-egress-architecture/T-0077.md"
+          },
+          {
+            "id": "T-0078",
+            "title": "Build investigator orchestrator agent (Opus)",
+            "type": "AFK",
+            "task_type": "code",
+            "deliverable": "code",
+            "description": "Create agents/investigator.md (Opus tier). The orchestrator decomposes a question into sub-claims, routes each to the correct source leaf agent (investigator-code, -web, -linear, -github, -notion under agents/investigators/), and aggregates the per-leaf investigation-results into a unified top-level investigation-result. The aggregator enforces the propagation rule: if any load-bearing sub-claim returns INSUFFICIENT_EVIDENCE, the aggregate verdict inherits that uncertainty and states it explicitly \u2014 the orchestrator never averages uncertainty away into false confidence. All evidence[] arrays are merged. The agent is callable by humans via the investigate skill and directly by other agents (pr-revise, pr-code-review). Emits a schema-valid investigation-result.",
+            "acceptance_criteria": [
+              "agents/investigator.md exists with Opus tier annotation",
+              "Orchestrator decomposes a multi-source question and routes to at least two leaf agents",
+              "Aggregated result is schema-valid investigation-result",
+              "A sub-claim returning INSUFFICIENT_EVIDENCE causes aggregate to carry INSUFFICIENT_EVIDENCE, not a smoothed-over verdict",
+              "Integration test verifies decompose -> route -> aggregate flow end-to-end"
+            ],
+            "blocked_by": [
+              "T-0073",
+              "T-0074",
+              "T-0075",
+              "T-0076",
+              "T-0077"
+            ],
+            "status": "done",
+            "branch": null,
+            "pr": null,
+            "summary": "Created agents/investigator.md (Opus tier) \u2014 the investigation orchestrator that decomposes questions into sub-claims, routes each to the appropriate leaf agent (investigator-code, -web, -linear, -github, -notion), merges evidence[], and enforces the INSUFFICIENT_EVIDENCE propagation rule. Updated registry.json with the orchestrator entry and replaced the previously-stubbed investigate SKILL.md with a functional implementation. 26 new tests.",
+            "files_touched": [
+              "/Users/eric/.dotfiles/claude-code-shared/agents/investigator.md",
+              "/Users/eric/.dotfiles/claude-code-shared/agents/registry.json",
+              "/Users/eric/.dotfiles/claude-code-shared/skills/investigate/SKILL.md",
+              "/Users/eric/.dotfiles/claude-code-shared/scripts/tests/test_investigator_orchestrator.py"
+            ],
+            "tests": {
+              "passed": 26,
+              "failed": 0
+            },
+            "log_path": "docs/tasks/.logs/20260814-1236-investigation-egress-architecture/T-0078.md"
+          },
+          {
+            "id": "T-0079",
+            "title": "Build investigate skill (thin human doorway)",
+            "type": "AFK",
+            "task_type": "code",
+            "deliverable": "code",
+            "description": "Create skills/investigate.md (Haiku tier). The skill is the human-facing doorway: it accepts a question, spawns the investigator orchestrator agent, and returns the raw investigation-result verdict to the caller. No verification logic lives in the skill itself \u2014 all diligence is in the agent layer. Register the skill so /investigate is invocable.",
+            "acceptance_criteria": [
+              "skills/investigate.md exists with Haiku tier annotation",
+              "Skill spawns investigator agent and returns raw investigation-result",
+              "No diligence or verification logic in the skill body",
+              "Skill registered and invocable as /investigate"
+            ],
+            "blocked_by": [
+              "T-0078"
+            ],
+            "status": "done",
+            "branch": null,
+            "pr": null,
+            "summary": "Rewrote skills/investigate/SKILL.md as a thin Haiku-tier (T1) doorway: model set to haiku/low, body reduced to spawn-and-return-raw with no diligence logic. Updated model-tiers.json (investigate T3->T1) and confirmed with sync-model-tiers.py. Skill remains registered in skill-pipeline.json and is invocable as /investigate.",
+            "files_touched": [
+              "/Users/eric/.dotfiles/claude-code-shared/skills/investigate/SKILL.md",
+              "/Users/eric/.dotfiles/claude-code-shared/resources/model-tiers.json",
+              "/Users/eric/.dotfiles/claude-code-shared/scripts/tests/test_investigate_skill.py"
+            ],
+            "tests": {
+              "passed": 13,
+              "failed": 0
+            },
+            "log_path": "docs/tasks/.logs/20260814-1236-investigation-egress-architecture/T-0079.md"
+          },
+          {
+            "id": "T-0080",
+            "title": "Wire investigator into pr-revise as diligence gate",
+            "type": "AFK",
+            "task_type": "code",
+            "deliverable": "code",
+            "description": "Modify the pr-revise skill to wire investigator as the Step 5 diligence gate, replacing the prior manual or vet-stub diligence. Before posting any claim-bearing draft, pr-revise spawns investigator on each claim. Claims returning VERIFIED_FALSE are dropped from the draft. Claims returning INSUFFICIENT_EVIDENCE are downgraded with an explicit caveat or dropped. Only VERIFIED_TRUE and CONTESTED claims proceed to posting.",
+            "acceptance_criteria": [
+              "pr-revise Step 5 calls investigator instead of prior manual/vet diligence",
+              "A VERIFIED_FALSE claim is dropped from the pr-revise draft before posting",
+              "An INSUFFICIENT_EVIDENCE claim is downgraded or dropped, not stated as fact",
+              "Test or fixture verifies gate behavior end-to-end"
+            ],
+            "blocked_by": [
+              "T-0078"
+            ],
+            "status": "done",
+            "branch": null,
+            "pr": null,
+            "summary": "Rewrote pr-revise Step 5 to wire the investigator agent as the automated diligence gate, replacing the old manual/vet-stub diligence. The new Step 5 spawns the investigator per claim-bearing item, maps VERIFIED_FALSE to drop, INSUFFICIENT_EVIDENCE to downgrade-with-caveat, and VERIFIED_TRUE/CONTESTED to proceed; the vet-stub placeholder note is removed.",
+            "files_touched": [
+              "/Users/eric/.dotfiles/claude-code-shared/skills/pr-revise/SKILL.md",
+              "/Users/eric/.dotfiles/claude-code-shared/scripts/tests/test_pr_revise_investigator_gate.py"
+            ],
+            "tests": {
+              "passed": 17,
+              "failed": 0
+            },
+            "log_path": "docs/tasks/.logs/20260814-1236-investigation-egress-architecture/T-0080.md"
+          },
+          {
+            "id": "T-0081",
+            "title": "Wire investigator into pr-code-review as pre-submit claim gate",
+            "type": "AFK",
+            "task_type": "code",
+            "deliverable": "code",
+            "description": "Modify the pr-code-review skill to add pre-submit claim verification via investigator. Before any finding is posted to the PR, pr-code-review spawns investigator on each factual claim in the finding body. Claims returning VERIFIED_FALSE are dropped. INSUFFICIENT_EVIDENCE claims are downgraded with an explicit caveat. VERIFIED_TRUE and CONTESTED proceed to posting.",
+            "acceptance_criteria": [
+              "pr-code-review spawns investigator for pre-submit claim verification before posting",
+              "A VERIFIED_FALSE claim in a finding body is dropped before posting",
+              "An INSUFFICIENT_EVIDENCE claim is downgraded or dropped, not stated as fact",
+              "Test or fixture verifies gate behavior"
+            ],
+            "blocked_by": [
+              "T-0078"
+            ],
+            "status": "done",
+            "branch": null,
+            "pr": null,
+            "summary": "Added Step 10 (pre-submit claim verification gate) to pr-code-review/SKILL.md. Spawns investigator per finding, applies VERIFIED_FALSE=drop, INSUFFICIENT_EVIDENCE=caveat, VERIFIED_TRUE/CONTESTED=proceed. Nits scoped out (no verifiable claims). 34/34 tests passing.",
+            "files_touched": [
+              "/Users/eric/.dotfiles/claude-code-shared/skills/pr-code-review/SKILL.md",
+              "/Users/eric/.dotfiles/claude-code-shared/scripts/tests/test_pr_code_review_investigator_gate.py"
+            ],
+            "tests": {
+              "passed": 34,
+              "failed": 0
+            },
+            "log_path": "docs/tasks/.logs/20260814-1236-investigation-egress-architecture/T-0081.md"
+          },
+          {
+            "id": "T-0082",
+            "title": "Build answer-composer egress agent",
+            "type": "AFK",
+            "task_type": "code",
+            "deliverable": "code",
+            "description": "Create agents/egress/answer-composer.md (Sonnet tier). The agent consumes an investigation-result and composes a voice-matched Slack reply routed through the slack-casual voice profile (registered in voice-routing.json; profile content is sourced separately). Citations render inline per distinct verified claim, not as an end-footnote block. Claims that returned INSUFFICIENT_EVIDENCE render an explicit 'couldn't confirm' tag in place of a citation, never smoothed over. Voice governs style only: answer-composer may state only claims that investigation-result verified and may not add a single unverified sentence to sound natural. Output is copy-only (for manual paste to Slack). The agent lives under agents/egress/, not agents/investigators/, preserving the invariant that everything in agents/investigators/ produces an investigation-result.",
+            "acceptance_criteria": [
+              "agents/egress/answer-composer.md exists with Sonnet tier annotation",
+              "Agent accepts investigation-result and produces a prose Slack reply",
+              "Each VERIFIED_TRUE claim carries an inline citation with its ref",
+              "An INSUFFICIENT_EVIDENCE claim renders 'couldn't confirm' tag, not a fabricated statement",
+              "Agent adds no content beyond what investigation-result provides",
+              "voice-routing.json entry for slack-casual is wired (profile content can be a placeholder)"
+            ],
+            "blocked_by": [
+              "T-0078"
+            ],
+            "status": "done",
+            "branch": null,
+            "pr": null,
+            "summary": "Created agents/egress/answer-composer.md (Sonnet tier) that consumes an investigation-result and composes a voice-matched Slack reply: VERIFIED_TRUE claims get inline citations, INSUFFICIENT_EVIDENCE claims render a 'couldn't confirm' tag and are never smoothed over, and no unverified content is added. Wired slack-casual voice profile into voice-routing.json and registry.json, and added a placeholder slack-casual.md profile.",
+            "files_touched": [
+              "/Users/eric/.dotfiles/claude-code-shared/agents/egress/answer-composer.md",
+              "/Users/eric/.dotfiles/claude-code-shared/resources/voice-profiles/slack-casual.md",
+              "/Users/eric/.dotfiles/claude-code-shared/resources/voice-routing.json",
+              "/Users/eric/.dotfiles/claude-code-shared/agents/registry.json",
+              "/Users/eric/.dotfiles/claude-code-shared/scripts/tests/test_answer_composer_agent.py"
+            ],
+            "tests": {
+              "passed": 31,
+              "failed": 0
+            },
+            "log_path": "docs/tasks/.logs/20260814-1236-investigation-egress-architecture/T-0082.md"
+          },
+          {
+            "id": "T-0083",
+            "title": "Build answer skill (thin Slack Q&A doorway)",
+            "type": "AFK",
+            "task_type": "code",
+            "deliverable": "code",
+            "description": "Create skills/answer.md (Haiku tier). The skill is the human-facing doorway for the Slack Q&A track: it accepts a question (manual paste of Slack message text or link), spawns the investigator orchestrator to verify claims, passes the investigation-result to answer-composer, and returns the composed Slack reply for manual paste. No verification or composition logic lives in the skill. Register the skill so /answer is invocable.",
+            "acceptance_criteria": [
+              "skills/answer.md exists with Haiku tier annotation",
+              "Skill accepts a question, spawns investigator, passes result to answer-composer, returns composed reply",
+              "No verification or composition logic in the skill body",
+              "Skill registered and invocable as /answer"
+            ],
+            "blocked_by": [
+              "T-0082"
+            ],
+            "status": "done",
+            "branch": null,
+            "pr": null,
+            "summary": "Added 'answer' to skill-pipeline.json as a terminal skill entry \u2014 the only missing piece after the prior timed-out run had already created the SKILL.md, model-tiers registration, and test file. All 17 tests in test_answer_skill.py pass.",
+            "files_touched": [
+              "/Users/eric/.dotfiles/claude-code-shared/skill-pipeline.json",
+              "/Users/eric/.dotfiles/claude-code-shared/scripts/tests/test_answer_skill.py",
+              "/Users/eric/.dotfiles/claude-code-shared/skills/answer/SKILL.md"
+            ],
+            "tests": {
+              "passed": 17,
+              "failed": 0
+            },
+            "log_path": "docs/tasks/.logs/20260814-1236-investigation-egress-architecture/T-0083.md"
+          },
+          {
+            "id": "T-0084",
+            "title": "Author egress-result dual-doc contract",
+            "type": "AFK",
+            "task_type": "code",
+            "deliverable": "code",
+            "description": "Create the egress-result dual-doc contract pair under contracts/. The JSON Schema (egress-result-schema.json, draft-07) defines the adapter return shape: {posted: boolean, url: string|null, thread_id: string|null, status: string} where status enum includes 'copy-only', 'posted', and 'failed'. The companion egress-result-contract.md documents what each field means, how stubs use status: copy-only, and how live adapters will populate url and thread_id once write-back is implemented. Versioned via schema_version.",
+            "acceptance_criteria": [
+              "contracts/egress-result-schema.json exists (draft-07) with posted, url, thread_id, status fields",
+              "contracts/egress-result-contract.md documents copy-only stub behavior and live adapter shape",
+              "Schema validates a copy-only stub result (posted: false, url: null, status: 'copy-only')",
+              "Schema validates a posted result with non-null url and thread_id",
+              "Schema rejects a result missing the status field"
+            ],
+            "blocked_by": [],
+            "status": "done",
+            "branch": null,
+            "pr": null,
+            "summary": "Created egress-result dual-doc contract: egress-result-schema.json (draft-07, schema_version const '1', posted/url/thread_id/status fields with if/then/else conditionals enforcing copy-only and posted invariants) and egress-result-contract.md (field reference, status axis table, copy-only stub behavior, live adapter shape). 19 pytest tests all pass.",
+            "files_touched": [
+              "/Users/eric/.dotfiles/claude-code-shared/contracts/egress-result-schema.json",
+              "/Users/eric/.dotfiles/claude-code-shared/contracts/egress-result-contract.md",
+              "/Users/eric/.dotfiles/claude-code-shared/scripts/tests/test_egress_result_schema.py"
+            ],
+            "tests": {
+              "passed": 19,
+              "failed": 0
+            },
+            "log_path": "docs/tasks/.logs/20260814-1236-investigation-egress-architecture/T-0084.md"
+          },
+          {
+            "id": "T-0085",
+            "title": "Scaffold agents/egress/ channel structure and copy-only post-comment stubs",
+            "type": "AFK",
+            "task_type": "code",
+            "deliverable": "code",
+            "description": "Create the agents/egress/ directory structure with channel subfolders: github/, linear/, notion/, slack/. Create copy-only stub agents for post-comment verbs: agents/egress/github/post-github.md, agents/egress/linear/post-linear.md, agents/egress/slack/post-slack.md. Each stub prints the draft behind a 'NO EXTERNAL CALLS MADE \u2014 paste manually' banner, includes a stub marker following the vet-style anchor precedent, and returns a schema-valid egress-result with status: copy-only. This scaffolding fixes the egress architecture shape before any live write-back lands, de-risking the high-risk write-back vector by establishing the contract boundaries now.",
+            "acceptance_criteria": [
+              "agents/egress/github/, linear/, notion/, slack/ directories exist",
+              "agents/egress/github/post-github.md, /linear/post-linear.md, /slack/post-slack.md exist",
+              "Each stub returns schema-valid egress-result with status: copy-only",
+              "Each stub prints 'NO EXTERNAL CALLS MADE' banner with draft content",
+              "Stub markers present per vet-style anchor convention"
+            ],
+            "blocked_by": [
+              "T-0084"
+            ],
+            "status": "done",
+            "branch": null,
+            "pr": null,
+            "summary": "Created agents/egress/ channel subdirectories (github/, linear/, notion/, slack/) and three copy-only post-comment stub agents (post-github.md, post-linear.md, post-slack.md). Each stub has YAML frontmatter with haiku model, a STUB marker HTML comment, a 'NO EXTERNAL CALLS MADE \u2014 paste manually' banner, and a schema-valid egress-result JSON block with status: copy-only. 16 new tests added and all passing.",
+            "files_touched": [
+              "/Users/eric/.dotfiles/claude-code-shared/agents/egress/github/post-github.md",
+              "/Users/eric/.dotfiles/claude-code-shared/agents/egress/linear/post-linear.md",
+              "/Users/eric/.dotfiles/claude-code-shared/agents/egress/slack/post-slack.md",
+              "/Users/eric/.dotfiles/claude-code-shared/scripts/tests/test_egress_stubs.py"
+            ],
+            "tests": {
+              "passed": 16,
+              "failed": 0
+            },
+            "log_path": "docs/tasks/.logs/20260814-1236-investigation-egress-architecture/T-0085.md"
+          },
+          {
+            "id": "T-0086",
+            "title": "Consolidate artifact-export adapters under agents/egress/ by channel",
+            "type": "AFK",
+            "task_type": "code",
+            "deliverable": "code",
+            "description": "Refactor the existing artifact-export adapters into agents/egress/ by channel. Before any restructuring: write characterization tests that document the current behavior of export-tasks-gh, export-tasks-notion, and the tasks-to-linear write path. Then move: export-tasks-gh into agents/egress/github/, export-tasks-notion into agents/egress/notion/, the tasks-to-linear write path into agents/egress/linear/. Rewire dispatch-tasks, the export-tasks coordinator, and task-routing.json to reference the new paths. All characterization tests must stay green after the move.",
+            "acceptance_criteria": [
+              "Characterization tests for all three adapters written and green before any file moves",
+              "agents/egress/github/, /notion/, /linear/ contain the consolidated adapters",
+              "dispatch-tasks, export-tasks coordinator, and task-routing.json reference new adapter paths",
+              "All characterization tests green after move",
+              "No existing export-tasks or tasks-to-linear functionality regresses"
+            ],
+            "blocked_by": [
+              "T-0085"
+            ],
+            "status": "done",
+            "branch": null,
+            "pr": null,
+            "summary": "Moved export-tasks-gh and export-tasks-notion adapters from agents/task-exporters/ into agents/egress/github/ and agents/egress/notion/ respectively, extracted the tasks-to-linear write path into a new agents/egress/linear/export-tasks-linear.md agent, and updated registry.json, export-tasks.md, and tasks-to-linear/SKILL.md to reference the new locations. Characterization bash tests (32 total) written and verified GREEN before any moves, then kept GREEN after the moves.",
+            "files_touched": [
+              "/Users/eric/.dotfiles/claude-code-shared/agents/egress/github/export-tasks-gh.md",
+              "/Users/eric/.dotfiles/claude-code-shared/agents/egress/github/gh-issue.sh",
+              "/Users/eric/.dotfiles/claude-code-shared/agents/egress/notion/export-tasks-notion.md",
+              "/Users/eric/.dotfiles/claude-code-shared/agents/egress/notion/check-token.sh",
+              "/Users/eric/.dotfiles/claude-code-shared/agents/egress/notion/notion-page-api.sh",
+              "/Users/eric/.dotfiles/claude-code-shared/agents/egress/linear/export-tasks-linear.md",
+              "/Users/eric/.dotfiles/claude-code-shared/agents/registry.json",
+              "/Users/eric/.dotfiles/claude-code-shared/agents/task-exporters/export-tasks.md",
+              "/Users/eric/.dotfiles/claude-code-shared/skills/tasks-to-linear/SKILL.md",
+              "/Users/eric/.dotfiles/claude-code-shared/tests/characterization/test-gh-adapter.sh",
+              "/Users/eric/.dotfiles/claude-code-shared/tests/characterization/test-notion-adapter.sh",
+              "/Users/eric/.dotfiles/claude-code-shared/tests/characterization/test-linear-adapter.sh",
+              "/Users/eric/.dotfiles/claude-code-shared/tests/characterization/run-all.sh"
+            ],
+            "tests": {
+              "passed": 32,
+              "failed": 0
+            },
+            "log_path": "docs/tasks/.logs/20260814-1236-investigation-egress-architecture/T-0086.md"
+          },
+          {
+            "id": "T-0087",
+            "title": "Promote relay to channel-agnostic egress orchestrator",
+            "type": "AFK",
+            "task_type": "code",
+            "deliverable": "code",
+            "description": "Refactor the relay skill into a channel-agnostic egress orchestrator. Before restructuring: write characterization tests for current relay behavior (PR-thread reply flow, commit permalink stitching, thread_id keying). Then extract the PR-specific mechanics (fixing-commit permalink construction, thread_id/thread_id_type keying, resolve-vs-reply logic) into agents/egress/github/post-github.md. What stays in relay: channel-agnostic routing (read task_type and reply_url to determine the channel adapter) and the HITL confirmation gate. Relay dispatches to the appropriate channel adapter under agents/egress/. All characterization tests must stay green after the refactor.",
+            "acceptance_criteria": [
+              "Characterization tests for current relay behavior written and green before refactor",
+              "PR-specific mechanics (commit permalink, thread_id keying) moved to agents/egress/github/post-github.md",
+              "relay routes to channel adapters under agents/egress/ by channel",
+              "relay retains HITL confirmation gate",
+              "All characterization tests green after refactor",
+              "End-to-end smoke test: dispatch-tasks -> relay -> post-github stub flow passes"
+            ],
+            "blocked_by": [
+              "T-0086"
+            ],
+            "status": "done",
+            "branch": null,
+            "pr": null,
+            "summary": "Refactored relay into a channel-agnostic egress orchestrator that routes by reply_url domain to adapters under agents/egress/. Moved PR-specific mechanics (commit permalink construction, thread_id/thread_id_type keying) into post-github.md. All 20 tests pass: 10 characterization tests green before and after refactor, 8 target architecture tests went RED->GREEN, 2 smoke tests.",
+            "files_touched": [
+              "/Users/eric/.dotfiles/claude-code-shared/scripts/tests/test_relay_egress_orchestrator.py",
+              "/Users/eric/.dotfiles/claude-code-shared/skills/relay/SKILL.md",
+              "/Users/eric/.dotfiles/claude-code-shared/agents/egress/github/post-github.md"
+            ],
+            "tests": {
+              "passed": 20,
+              "failed": 0
+            },
+            "log_path": "docs/tasks/.logs/20260814-1236-investigation-egress-architecture/T-0087.md"
+          },
+          {
+            "id": "T-0088",
+            "title": "Automated posting for egress adapters",
+            "type": "AFK",
+            "task_type": "triage",
+            "domain": "personal",
+            "deliverable": "code",
+            "description": "Automated posting for egress adapters (live gh/Linear/Slack write-back, thread resolution, idempotency, thread-id keying).\n\npost-github/-linear/-slack ship as copy-only stubs now; the egress-result contract already defines the eventual {posted,url,thread_id,status} shape so live posting slots in without reshaping.",
+            "acceptance_criteria": [
+              "Item has been exported to its destination by export-tasks"
+            ],
+            "blocked_by": [],
+            "status": "done",
+            "export_url": "https://github.com/Eric-Lingren/dotfiles/issues/42",
+            "branch": null,
+            "pr": null,
+            "seed_ref": "20260814-1234-investigation-egress-architecture.json",
+            "task_ref": "20260814-1236-investigation-egress-architecture.json"
+          },
+          {
+            "id": "T-0089",
+            "title": "Sentry, Datadog, and Slack investigator source leaves",
+            "type": "AFK",
+            "task_type": "triage",
+            "domain": "personal",
+            "deliverable": "code",
+            "description": "Sentry, Datadog, and Slack investigator source leaves.\n\nThe plugin/leaf isolation means these bolt on later under agents/investigators/ with zero disruption once external-signal investigation matters.",
+            "acceptance_criteria": [
+              "Item has been exported to its destination by export-tasks"
+            ],
+            "blocked_by": [],
+            "status": "done",
+            "export_url": "https://github.com/Eric-Lingren/dotfiles/issues/44",
+            "branch": null,
+            "pr": null,
+            "seed_ref": "20260814-1234-investigation-egress-architecture.json",
+            "task_ref": "20260814-1236-investigation-egress-architecture.json"
+          },
+          {
+            "id": "T-0090",
+            "title": "Automated Slack ingress (bot or MCP listener) for the answer track",
+            "type": "AFK",
+            "task_type": "triage",
+            "domain": "personal",
+            "deliverable": "code",
+            "description": "Automated Slack ingress (bot or MCP listener) for the answer track.\n\nIngress = manual paste of message text or link for v1.",
+            "acceptance_criteria": [
+              "Item has been exported to its destination by export-tasks"
+            ],
+            "blocked_by": [],
+            "status": "done",
+            "export_url": "https://github.com/Eric-Lingren/dotfiles/issues/39",
+            "branch": null,
+            "pr": null,
+            "seed_ref": "20260814-1234-investigation-egress-architecture.json",
+            "task_ref": "20260814-1236-investigation-egress-architecture.json"
+          },
+          {
+            "id": "T-0091",
+            "title": "Wiring investigator as a diligence gate into the debug skill",
+            "type": "AFK",
+            "task_type": "triage",
+            "domain": "personal",
+            "deliverable": "code",
+            "description": "Wiring investigator as a diligence gate into the debug skill.\n\nAdd in the same wave as the Sentry/Datadog external-signal leaves.",
+            "acceptance_criteria": [
+              "Item has been exported to its destination by export-tasks"
+            ],
+            "blocked_by": [],
+            "status": "done",
+            "export_url": "https://github.com/Eric-Lingren/dotfiles/issues/38",
+            "branch": null,
+            "pr": null,
+            "seed_ref": "20260814-1234-investigation-egress-architecture.json",
+            "task_ref": "20260814-1236-investigation-egress-architecture.json"
+          },
+          {
+            "id": "T-0092",
+            "title": "Unifying the two egress coordinators (export-tasks + relay) into one",
+            "type": "AFK",
+            "task_type": "triage",
+            "domain": "personal",
+            "deliverable": "code",
+            "description": "Unifying the two egress coordinators (export-tasks + relay) into one.\n\nRevisit after the by-channel consolidation lands.",
+            "acceptance_criteria": [
+              "Item has been exported to its destination by export-tasks"
+            ],
+            "blocked_by": [],
+            "status": "done",
+            "export_url": "https://github.com/Eric-Lingren/dotfiles/issues/43",
+            "branch": null,
+            "pr": null,
+            "seed_ref": "20260814-1234-investigation-egress-architecture.json",
+            "task_ref": "20260814-1236-investigation-egress-architecture.json"
+          },
+          {
+            "id": "T-0093",
+            "title": "Sourcing and authoring the slack-casual voice profile from real Slack messages",
+            "type": "AFK",
+            "task_type": "triage",
+            "domain": "personal",
+            "deliverable": "code",
+            "description": "Sourcing and authoring the slack-casual voice profile from real Slack messages.\n\nDistill the same way dev-office was built from real PR/Linear comments; guessing the voice would defeat the purpose.",
+            "acceptance_criteria": [
+              "Item has been exported to its destination by export-tasks"
+            ],
+            "blocked_by": [],
+            "status": "done",
+            "export_url": "https://github.com/Eric-Lingren/dotfiles/issues/41",
+            "branch": null,
+            "pr": null,
+            "seed_ref": "20260814-1234-investigation-egress-architecture.json",
+            "task_ref": "20260814-1236-investigation-egress-architecture.json"
+          },
+          {
+            "id": "T-0094",
+            "title": "Replace slack-casual.md placeholder with distilled voice profile",
+            "type": "AFK",
+            "task_type": "triage",
+            "domain": "personal",
+            "deliverable": "code",
+            "description": "resources/voice-profiles/slack-casual.md is currently a placeholder created by T-0082. Replace it with a real Layer 1 + Layer 2 evidenced voice profile distilled from the target author's actual Slack messages.\n\nMethodology: same approach used for dev-office.md (real source material, not guessed). Collect a representative sample of Eric's sent Slack messages, then distill Layer 1 (vocabulary, sentence length, punctuation habits) and Layer 2 (tone, formality, humor patterns). Update the profile in place. Confirm 31 tests still pass: python3 claude-code-shared/scripts/tests/test_answer_composer_agent.py.",
+            "acceptance_criteria": [
+              "Item has been exported to its destination by export-tasks"
+            ],
+            "blocked_by": [],
+            "status": "done",
+            "export_url": "https://github.com/Eric-Lingren/dotfiles/issues/40",
+            "branch": null,
+            "pr": null,
+            "seed_ref": "20260814-1234-investigation-egress-architecture.json",
+            "task_ref": "20260814-1236-investigation-egress-architecture.json"
+          }
+        ],
+        "follow_ups": [
+          {
+            "id": "FU-001",
+            "title": "Replace slack-casual.md placeholder with distilled voice profile",
+            "steps": [
+              "Collect a representative sample of the target author's real Slack messages (same methodology used for dev-office.md \u2014 pull from actual sent messages, not paraphrased).",
+              "Open resources/voice-profiles/slack-casual.md and replace the placeholder content with a real Layer 1 + Layer 2 evidenced profile following the dev-office.md format.",
+              "Register the updated profile in resources/voice-routing.json under the 'answer' skill key (already wired as a placeholder by T-0082).",
+              "Run: python3 claude-code-shared/scripts/tests/test_answer_composer_agent.py to confirm all 31 tests still pass with the real profile in place."
+            ],
+            "trigger_task": "T-0082",
+            "source": "discovered"
+          }
+        ]
+      }
+    }
+  ]
+}

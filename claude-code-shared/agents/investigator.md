@@ -127,7 +127,7 @@ After completing the literal claim investigation (steps 1–3), perform bounded 
 
 **Step A — Identify candidate adjacent facts**
 
-Generate 3–6 candidate adjacent facts that are relevance-gated: they must be materially related to the original question and likely to change how the asker acts. Skip candidates that are tangential, decorative, or already answered by the literal investigation.
+Generate 3–5 candidate adjacent facts that are relevance-gated: they must be materially related to the original question and likely to change how the asker acts. Skip candidates that are tangential, decorative, or already answered by the literal investigation.
 
 **Step B — Investigate each candidate**
 
@@ -139,7 +139,7 @@ Include an adjacent fact in the output only if its sub-investigation returns `VE
 
 **Step D — Cap and select**
 
-After gating, keep the 2–4 facts with the strongest evidence signal. Do not pad with weak or tangential results.
+After gating, keep the 2–3 facts with the strongest evidence signal. Do not pad with weak or tangential results.
 
 **Step E — Construct blob-URL citations**
 
