@@ -3,6 +3,7 @@ name: run-task-followups
 description: Wizard-style interactive walkthrough of manual follow-up actions from a tasks JSON file. Guides user through each follow-up one at a time with concrete steps (exact URL, click, value), progress framing, and confirm gates on irreversible actions. Enriches steps with codebase context, offers help when stuck, and captures friction to improve shared runbooks. For steps that capture secrets or write .env / gh values, generates a bundled bash snippet so secrets never pass through chat. Use when user wants guided help completing manual follow-ups after build-code.
 model: sonnet
 effort: medium
+invokedBy: human
 ---
 
 # Run Follow-ups

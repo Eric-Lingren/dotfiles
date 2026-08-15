@@ -8,6 +8,7 @@ description: >
   composition logic lives here.
 model: haiku
 effort: low
+invokedBy: human
 ---
 
 Spawn the `investigator` agent with the user's question. Pass the returned investigation-result and the original question to the `answer-composer` agent. Return the composed Slack reply as-is.

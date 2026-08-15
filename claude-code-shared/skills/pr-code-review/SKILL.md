@@ -6,6 +6,7 @@ description: >
   "review this PR", "code review", or invokes /review.
 model: sonnet
 effort: high
+invokedBy: human
 ---
 
 <!-- tier-delegate: managed by sync-model-tiers.py -->

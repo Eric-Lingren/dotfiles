@@ -4,6 +4,7 @@ description: Interview the user relentlessly about a plan or design until reachi
 argument-hint: "[optional: path to a seed or handoff doc to resume from]"
 model: opus
 effort: xhigh
+invokedBy: human
 ---
 
 ## Resume mode

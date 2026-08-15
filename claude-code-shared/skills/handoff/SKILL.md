@@ -4,6 +4,7 @@ description: Compact the current conversation into a handoff document for anothe
 argument-hint: "What will the next session be used for?"
 model: sonnet
 effort: medium
+invokedBy: human
 ---
 
 Write a handoff document summarising the current conversation so a fresh agent can continue the work. Save to `docs/handoffs/` in the current workspace. Create the directory if it does not exist.

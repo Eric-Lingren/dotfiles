@@ -26,7 +26,7 @@ Every evidence item carries `source`, `ref`, and `quote`. The `ref` format is fi
 | `source` | `ref` format | Example |
 |---|---|---|
 | `web` | Full URL | `https://docs.example.com/feature-flags` |
-| `code` | `file:line` (relative to repo root) | `src/auth/middleware.ts:88` |
+| `code` | GitHub blob URL with line anchor | `https://github.com/org/repo/blob/main/src/auth/middleware.ts#L88` |
 | `linear` | Linear ticket URL | `https://linear.app/acme/issue/ENG-512` |
 | `github` | GitHub issue or PR URL | `https://github.com/org/repo/pull/204` |
 | `notion` | Notion page URL or block id | `https://notion.so/workspace/Design-Brief-abc123` |

@@ -4,6 +4,7 @@ description: Grilling session that challenges your plan against the existing dom
 argument-hint: "[optional: path to a seed or handoff doc to resume from]"
 model: opus
 effort: xhigh
+invokedBy: human
 ---
 
 ## Mode detection

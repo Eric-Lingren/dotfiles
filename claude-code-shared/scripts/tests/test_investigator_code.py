@@ -126,9 +126,12 @@ def test_investigator_code_uses_code_reading_tools(agent_text):
     )
 
 
-def test_investigator_code_documents_file_line_ref_format(agent_text):
-    assert "file:line" in agent_text, (
-        "Agent must document file:line ref format for code evidence"
+def test_investigator_code_documents_github_url_ref_format(agent_text):
+    assert "github.com" in agent_text, (
+        "Agent must document GitHub URL ref format for code evidence"
+    )
+    assert "#L" in agent_text, (
+        "Agent must document line anchor (#L) in GitHub URL ref format"
     )
 
 
@@ -146,7 +149,7 @@ def test_investigator_code_specifies_code_source_type(agent_text):
 
 
 def test_verified_true_code_output_is_schema_valid(schema):
-    """VERIFIED_TRUE with a code file:line ref is schema-valid."""
+    """VERIFIED_TRUE with a code GitHub URL ref is schema-valid."""
     doc = {
         "schema_version": "1",
         "verdict": "VERIFIED_TRUE",
@@ -154,7 +157,7 @@ def test_verified_true_code_output_is_schema_valid(schema):
         "evidence": [
             {
                 "source": "code",
-                "ref": "src/auth/authenticate.ts:42",
+                "ref": "https://github.com/org/repo/blob/main/src/auth/authenticate.ts#L42",
                 "quote": "if (!credentials) throw new Error('credentials required');",
             }
         ],
@@ -164,7 +167,7 @@ def test_verified_true_code_output_is_schema_valid(schema):
 
 
 def test_verified_false_code_output_is_schema_valid(schema):
-    """VERIFIED_FALSE with a code file:line ref is schema-valid."""
+    """VERIFIED_FALSE with a code GitHub URL ref is schema-valid."""
     doc = {
         "schema_version": "1",
         "verdict": "VERIFIED_FALSE",
@@ -172,7 +175,7 @@ def test_verified_false_code_output_is_schema_valid(schema):
         "evidence": [
             {
                 "source": "code",
-                "ref": "src/config/index.ts:10",
+                "ref": "https://github.com/org/repo/blob/main/src/config/index.ts#L10",
                 "quote": "const config = JSON.parse(fs.readFileSync('./config.json', 'utf8'));",
             }
         ],
@@ -193,25 +196,26 @@ def test_insufficient_evidence_code_output_is_schema_valid(schema):
     validate(doc, schema)
 
 
-def test_code_evidence_ref_uses_file_line_format(schema):
-    """Code evidence ref follows file:line format (relative path:integer)."""
+def test_code_evidence_ref_uses_github_url_format(schema):
+    """Code evidence ref must be a GitHub blob URL with a line anchor."""
     doc = {
         "schema_version": "1",
         "verdict": "VERIFIED_TRUE",
         "evidence": [
             {
                 "source": "code",
-                "ref": "src/utils/parser.py:88",
+                "ref": "https://github.com/org/repo/blob/main/src/utils/parser.py#L88",
                 "quote": "raise ValueError('invalid token')",
             }
         ],
     }
     validate(doc, schema)
     ref = doc["evidence"][0]["ref"]
-    # Must end with a colon-separated integer line number
-    parts = ref.rsplit(":", 1)
-    assert len(parts) == 2 and parts[1].isdigit(), (
-        f"Code ref must be 'file:line' with integer line number, got: {ref}"
+    assert ref.startswith("https://github.com/"), (
+        f"Code ref must be a GitHub URL, got: {ref}"
+    )
+    assert "#L" in ref, (
+        f"Code ref must include a line anchor (#LNN), got: {ref}"
     )
 
 

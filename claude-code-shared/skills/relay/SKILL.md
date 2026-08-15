@@ -8,6 +8,7 @@ description: >
   reply branch, or the user invokes /relay <task-file>.
 model: sonnet
 effort: medium
+invokedBy: both
 ---
 
 # Relay

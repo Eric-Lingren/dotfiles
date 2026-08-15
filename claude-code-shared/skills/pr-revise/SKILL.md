@@ -9,6 +9,7 @@ description: >
 slug: pr-revise
 model: sonnet
 effort: high
+invokedBy: human
 ---
 
 <!-- tier-delegate: managed by sync-model-tiers.py -->

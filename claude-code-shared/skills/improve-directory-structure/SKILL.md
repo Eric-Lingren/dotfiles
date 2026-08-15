@@ -3,6 +3,7 @@ name: improve-directory-structure
 description: Build a dependency graph over a directory tree and surface reorganization opportunities (misplaced shared nodes, low-cohesion clusters, near-duplicate files) informed by domain vocabulary and ADR decisions. Grills each candidate against a curated litmus set, then hands off a verified reorg plan via to-seed. Never moves files or rewrites references directly. Use when the user wants to reorganize a directory, audit repo layout, find directory-structure smells, or asks "does this belong here".
 model: opus
 effort: xhigh
+invokedBy: human
 ---
 
 <!-- tier-delegate: managed by sync-model-tiers.py -->

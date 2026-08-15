@@ -7,6 +7,7 @@ description: >
   investigation-result with a unified verdict and merged evidence.
 model: haiku
 effort: low
+invokedBy: human
 ---
 
 ## Step 1 — Detect link input

@@ -3,6 +3,7 @@ name: dispatch-tasks
 description: Orchestrate a task file by partitioning items by task_type and running one branch per invocation. Routes code items to build-code (inline), reply items to relay (inline), and triage items to export-tasks (agent). Re-entrant — run once per branch until all items are done. Use when user wants to dispatch a mixed task file, route deferred triage items to destinations, or run one pass of the pipeline.
 model: sonnet
 effort: medium
+invokedBy: human
 ---
 
 # Dispatch Tasks

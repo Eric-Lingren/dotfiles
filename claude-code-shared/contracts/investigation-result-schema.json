@@ -27,7 +27,7 @@
           "source": {
             "type": "string",
             "enum": ["web", "code", "linear", "github", "notion"],
-            "description": "Evidence source type. Determines the expected ref format: web=URL, code=file:line, linear=ticket URL, github=issue/PR URL, notion=page URL or block id."
+            "description": "Evidence source type. Determines the expected ref format: web=URL, code=GitHub blob URL with #L anchor, linear=ticket URL, github=issue/PR URL, notion=page URL or block id."
           },
           "ref": {
             "type": "string",
@@ -77,7 +77,7 @@
       "evidence": [
         {
           "source": "code",
-          "ref": "src/validators/input.ts:42",
+          "ref": "https://github.com/org/repo/blob/main/src/validators/input.ts#L42",
           "quote": "if (value === null) throw new Error('null not allowed');"
         }
       ],

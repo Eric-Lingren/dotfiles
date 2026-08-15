@@ -60,14 +60,30 @@ Run 2–3 independent searches with varied search terms. A claim about "retry lo
 
 Do not rely on your training knowledge alone. Every verdict requires live code inspection.
 
-### 2. Find the exact line
+### 2. Construct the GitHub permalink
 
-Once you identify the relevant file, narrow to the specific line or span that confirms or contradicts the claim. A good evidence item is:
+Once you identify the relevant file and line, construct a browser-openable GitHub URL:
 
-- **`ref`**: `path/to/file.ext:NNN` — path relative to repo root, colon, integer line number
-- **`quote`**: the verbatim code at that line (or the surrounding 1–3 lines if context is needed)
+1. **Get the remote URL:**
+   ```bash
+   git remote get-url origin
+   ```
+   Convert SSH (`git@github.com:owner/repo.git`) to HTTPS (`https://github.com/owner/repo`).
 
-The `ref` format is **always** `file:line` — for example `src/auth/middleware.ts:88`. Do not use absolute paths or ranges (use the first relevant line).
+2. **Get the current branch:**
+   ```bash
+   git rev-parse --abbrev-ref HEAD
+   ```
+
+3. **Compute the relative path** from the repo root (strip the absolute prefix).
+
+4. **Assemble the ref:**
+   ```
+   https://github.com/<owner>/<repo>/blob/<branch>/<relative-path>#L<line>
+   ```
+   Example: `https://github.com/Eric-Lingren/dotfiles/blob/main/src/auth/middleware.ts#L88`
+
+The `ref` in every evidence item is this GitHub permalink. Never use a bare `file:line` path — the URL is browser-openable, shareable with people who lack the repo, and paste-searchable in the IDE.
 
 ### 3. Assign a verdict
 
@@ -94,7 +110,7 @@ Return exactly this shape (no prose, no markdown fences — raw JSON only):
   "evidence": [
     {
       "source": "code",
-      "ref": "<relative/path/to/file.ext:NNN>",
+      "ref": "https://github.com/<owner>/<repo>/blob/<branch>/<relative-path>#L<line>",
       "quote": "<verbatim code at that line>"
     }
   ],
@@ -116,7 +132,7 @@ For `INSUFFICIENT_EVIDENCE` with no relevant code found:
 
 ## Rules
 
-- Always set `source: "code"` for code evidence. The `ref` must be `file:line` (relative path, colon, integer).
+- Always set `source: "code"` for code evidence. The `ref` must be a full GitHub blob URL with a line anchor (`#L<integer>`).
 - `quote` must be verbatim code from the file — not a paraphrase or reconstruction.
 - Include exactly one evidence item for `VERIFIED_TRUE`/`VERIFIED_FALSE`. The schema requires at least one; do not fabricate evidence to satisfy this — return `INSUFFICIENT_EVIDENCE` instead.
 - Never return more than three evidence items. The orchestrator wants the single most authoritative signal, not a code tour.

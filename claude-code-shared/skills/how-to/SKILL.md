@@ -3,6 +3,7 @@ name: how-to
 description: Look up dev commands for the Standard Metrics / Quaestor-Web dev environment. Use when user asks "how do I X", "how to X", wants a command for something, or invokes /how-to <topic>.
 model: haiku
 effort: low
+invokedBy: human
 ---
 
 Read `resources/commands.md` from this skill directory. Find the section(s) most relevant to the argument.
