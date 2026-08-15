@@ -108,6 +108,7 @@ When `depth == fast`, also pass `model: "sonnet"` to override the default Opus t
 
 ```
 Agent({
+  description: "Investigate: Was the egress hook regression introduced in PR #204?",
   subagent_type: "investigator",
   model: "sonnet",
   prompt: "question: Was the egress hook regression introduced in PR #204?\ncwd: /path/to/repo\ndepth: fast"
@@ -118,6 +119,7 @@ Agent({
 
 ```
 Agent({
+  description: "Investigate: The feature flag was disabled before the incident on 2026-08-10.",
   subagent_type: "investigator",
   prompt: "claim: The feature flag was disabled before the incident on 2026-08-10.\ndepth: deep"
 })
@@ -145,6 +147,7 @@ Pass the `investigation-result` to `answer-composer` for voicing. This applies b
 
 ```
 Agent({
+  description: "Voice investigation result as Slack reply",
   subagent_type: "answer-composer",
   prompt: "investigation_result: <paste investigation-result JSON here>\nquestion: <original question>"
 })
