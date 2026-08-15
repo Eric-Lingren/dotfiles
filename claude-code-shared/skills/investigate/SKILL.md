@@ -102,16 +102,19 @@ If the input is already a plain question or claim (no URL), skip Step 2 entirely
 
 Use the Agent tool with `subagent_type: investigator`. Pass the derived (or original) question or claim. Include `cwd` if the investigation involves codebase claims. Always append `depth: <value>` (resolved in Step 0) to the prompt string.
 
-**Example — question form:**
+When `depth == fast`, also pass `model: "sonnet"` to override the default Opus tier. Fast mode skips adjacent_facts and runs on Sonnet, making it meaningfully quicker. Deep mode uses the default (Opus) and no model override is needed.
+
+**Example — question form (fast):**
 
 ```
 Agent({
   subagent_type: "investigator",
+  model: "sonnet",
   prompt: "question: Was the egress hook regression introduced in PR #204?\ncwd: /path/to/repo\ndepth: fast"
 })
 ```
 
-**Example — claim form:**
+**Example — claim form (deep):**
 
 ```
 Agent({
