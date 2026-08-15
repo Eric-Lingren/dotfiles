@@ -52,7 +52,6 @@
     "vet": "T3",
     "relay": "T2",
     "investigate": "T1",
-    "answer": "T1",
     "improve-directory-structure": "T4"
   },
   "agents": {

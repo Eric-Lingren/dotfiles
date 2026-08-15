@@ -514,3 +514,178 @@ def test_integration_verified_false_wins_over_true_no_insufficient(schema):
     result = _aggregate(sub_results)
     validate(result, schema)
     assert result["verdict"] == "VERIFIED_FALSE"
+
+
+# ---------------------------------------------------------------------------
+# Slice 7: Bounded expansion — adjacent material facts (T-0098)
+# ---------------------------------------------------------------------------
+
+
+def test_investigator_orchestrator_documents_bounded_expansion(agent_text):
+    """Orchestrator must describe the bounded expansion step."""
+    lower = agent_text.lower()
+    assert "bounded expansion" in lower, (
+        "Orchestrator missing 'bounded expansion' instruction. "
+        "Step 4 must define this always-on behavior."
+    )
+
+
+def test_investigator_orchestrator_documents_adjacent_facts(agent_text):
+    """Orchestrator must reference adjacent_facts as the output field."""
+    assert "adjacent_facts" in agent_text, (
+        "Orchestrator must document the adjacent_facts output field."
+    )
+
+
+def test_investigator_orchestrator_documents_relevance_gate(agent_text):
+    """Orchestrator must describe the relevance-gate for adjacent facts."""
+    lower = agent_text.lower()
+    assert "relevance-gate" in lower or "relevance gate" in lower, (
+        "Orchestrator must document relevance-gating for adjacent fact candidates."
+    )
+
+
+def test_investigator_orchestrator_documents_evidence_gate_drop(agent_text):
+    """Orchestrator must state that facts with no evidence are dropped."""
+    lower = agent_text.lower()
+    assert "silently drop" in lower or "evidence gate" in lower or "drop" in lower, (
+        "Orchestrator must state that adjacent facts with no evidence are dropped."
+    )
+
+
+def test_investigator_orchestrator_documents_blob_url_for_adjacent(agent_text):
+    """Orchestrator must require GitHub blob URLs for adjacent fact code refs."""
+    # blob-URL pattern must appear in the bounded-expansion section
+    assert "github.com" in agent_text and "blob" in agent_text and "#L" in agent_text, (
+        "Orchestrator must document GitHub blob URL construction for adjacent fact code refs."
+    )
+
+
+def test_investigator_orchestrator_expansion_always_on(agent_text):
+    """Orchestrator must state bounded expansion applies to all callers (always-on)."""
+    lower = agent_text.lower()
+    assert "always-on" in lower or "all callers" in lower, (
+        "Orchestrator must state bounded expansion is always-on for all callers."
+    )
+
+
+def test_schema_has_adjacent_facts_field(schema):
+    """investigation-result-schema.json must include an adjacent_facts property."""
+    assert "adjacent_facts" in schema.get("properties", {}), (
+        "Schema missing 'adjacent_facts' property. "
+        "The bounded expansion output must be defined in the schema."
+    )
+
+
+def test_schema_adjacent_facts_is_array(schema):
+    """adjacent_facts must be typed as an array."""
+    af = schema["properties"].get("adjacent_facts", {})
+    assert af.get("type") == "array", (
+        f"adjacent_facts.type is '{af.get('type')}', expected 'array'."
+    )
+
+
+def test_schema_adjacent_facts_items_have_required_fields(schema):
+    """adjacent_facts items must require claim, verdict, and evidence."""
+    af = schema["properties"]["adjacent_facts"]
+    items = af.get("items", {})
+    required = items.get("required", [])
+    for field in ["claim", "verdict", "evidence"]:
+        assert field in required, (
+            f"adjacent_facts items missing required field '{field}'. Got: {required}"
+        )
+
+
+def test_schema_backward_compat_without_adjacent_facts(schema):
+    """A result without adjacent_facts must still validate (field is optional)."""
+    import jsonschema as _jschema
+    doc = {
+        "schema_version": "1",
+        "verdict": "INSUFFICIENT_EVIDENCE",
+        "evidence": [],
+        "summary": "Nothing found.",
+    }
+    _jschema.validate(doc, schema)  # Must not raise
+
+
+def test_schema_expansion_result_with_adjacent_facts_validates(schema):
+    """A result with a populated adjacent_facts array must validate against the schema."""
+    import jsonschema as _jschema
+    doc = {
+        "schema_version": "1",
+        "verdict": "VERIFIED_TRUE",
+        "evidence": [
+            {
+                "source": "code",
+                "ref": "https://github.com/org/repo/blob/main/src/auth/middleware.ts#L88",
+                "quote": "export const HOOK_ENABLED = true;",
+            }
+        ],
+        "summary": "The hook is enabled.",
+        "adjacent_facts": [
+            {
+                "claim": "Tests cover the hook enabled path.",
+                "verdict": "VERIFIED_TRUE",
+                "evidence": [
+                    {
+                        "source": "code",
+                        "ref": "https://github.com/org/repo/blob/main/src/auth/middleware.test.ts#L22",
+                        "quote": "it('enables hook when HOOK_ENABLED is true', ...)",
+                    }
+                ],
+                "summary": "A test asserts the enabled path.",
+            }
+        ],
+    }
+    _jschema.validate(doc, schema)  # Must not raise
+
+
+def test_adjacent_facts_evidence_gate_drops_insufficient():
+    """
+    Adjacent facts with INSUFFICIENT_EVIDENCE should not appear in the output.
+    This test documents the expected filtering logic as a reference implementation.
+    """
+    candidate_results = [
+        {
+            "claim": "Tests cover the hook.",
+            "verdict": "VERIFIED_TRUE",
+            "evidence": [
+                {
+                    "source": "code",
+                    "ref": "https://github.com/org/repo/blob/main/src/auth.test.ts#L10",
+                    "quote": "it('hooks correctly', ...)",
+                }
+            ],
+        },
+        {
+            "claim": "The hook was added in the last 30 days.",
+            "verdict": "INSUFFICIENT_EVIDENCE",
+            "evidence": [],
+        },
+        {
+            "claim": "The hook is consumed by the router.",
+            "verdict": "VERIFIED_TRUE",
+            "evidence": [
+                {
+                    "source": "code",
+                    "ref": "https://github.com/org/repo/blob/main/src/router.ts#L5",
+                    "quote": "if (HOOK_ENABLED) { applyHook(); }",
+                }
+            ],
+        },
+    ]
+
+    # Reference implementation of evidence gate: drop INSUFFICIENT_EVIDENCE items
+    gated = [
+        r for r in candidate_results
+        if r["verdict"] in ("VERIFIED_TRUE", "VERIFIED_FALSE") and r["evidence"]
+    ]
+
+    assert len(gated) == 2, (
+        f"Expected 2 adjacent facts after gating, got {len(gated)}. "
+        "INSUFFICIENT_EVIDENCE must be silently dropped."
+    )
+    claims_kept = {r["claim"] for r in gated}
+    assert "The hook was added in the last 30 days." not in claims_kept, (
+        "INSUFFICIENT_EVIDENCE fact must not survive the evidence gate."
+    )

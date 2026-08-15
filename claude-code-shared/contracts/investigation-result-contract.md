@@ -55,6 +55,17 @@ The propagation rule is contract-enforced, not model-judged. An orchestrator tha
 
 - `summary` — human-readable explanation of the verdict. **Required** from the orchestrator; optional for leaf agents. Must not introduce claims not grounded in `evidence[]`.
 - `sub_claim` — the specific sub-claim this result addresses, as decomposed by the orchestrator. Populated by leaf agents; omitted by the orchestrator (which addresses the parent claim).
+- `adjacent_facts` — orchestrator-only. Bounded expansion: a relevance-gated array of adjacent material facts the asker likely needs, each carrying a `claim`, `verdict`, `evidence[]`, and optional `summary`. Facts with no supporting evidence are excluded (not included with empty evidence). Capped at implementation judgment (typically 2–4). Each code `evidence[].ref` uses a GitHub blob URL with `#L<line>` anchor, constructed by the same method as investigator-code.
+
+## Bounded expansion (orchestrator only)
+
+After resolving the literal claim, the orchestrator identifies adjacent material facts the asker likely needs — related but not directly asked questions that would change how the asker acts on the answer. Examples: if the claim is about a function, adjacent facts might include callers, tests, or recent changes.
+
+Rules:
+1. **Relevance-gate:** only facts materially related to the original question qualify.
+2. **Evidence gate:** a fact is included in `adjacent_facts` only if the sub-investigation returns `VERIFIED_TRUE` or `VERIFIED_FALSE` with at least one evidence item. Facts returning `INSUFFICIENT_EVIDENCE` are silently dropped.
+3. **Cap:** implementation judgment, typically 2–4 adjacent facts. Do not pad.
+4. **Citation format:** code refs use GitHub blob URLs with `#L<line>` anchor (same construction as investigator-code leaf agent).
 
 ---
 

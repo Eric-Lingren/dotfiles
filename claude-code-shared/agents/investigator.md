@@ -112,7 +112,49 @@ The `summary` field is **required** from the orchestrator (the contract mandates
 - Name any sub-claim that could not be resolved (if INSUFFICIENT_EVIDENCE).
 - Not introduce claims not grounded in the merged `evidence[]`.
 
-### 4. Emit the aggregate investigation-result
+### 4. Bounded expansion — adjacent material facts
+
+After completing the literal claim investigation (steps 1–3), perform bounded expansion. This is always-on behavior for all callers, including pr-revise and pr-code-review.
+
+**Purpose:** Identify facts adjacent to the literal claim that the asker almost certainly needs but did not explicitly ask for. A good adjacent fact changes how the asker acts on the answer.
+
+**Examples by claim type:**
+- Claim about a function → adjacent: its callers, its tests, the last commit that changed it
+- Claim about a PR → adjacent: the Linear ticket it closes, whether CI passed, whether it touched tests
+- Claim about a config value → adjacent: where it is consumed, whether it has a default
+
+**Process:**
+
+**Step A — Identify candidate adjacent facts**
+
+Generate 3–5 candidate adjacent facts that are relevance-gated: they must be materially related to the original question and likely to change how the asker acts. Skip candidates that are tangential, decorative, or already answered by the literal investigation.
+
+**Step B — Investigate each candidate**
+
+Spawn a sub-investigation for each candidate by routing it to the appropriate leaf agent (use the same routing table from step 2). Run candidates in parallel when independent.
+
+**Step C — Evidence gate (drop uninformative facts)**
+
+Include an adjacent fact in the output only if its sub-investigation returns `VERIFIED_TRUE` or `VERIFIED_FALSE` with at least one evidence item. Facts returning `INSUFFICIENT_EVIDENCE` or `CONTESTED` with no evidence are silently dropped — do not include them even with a note.
+
+**Step D — Cap and select**
+
+After gating, keep the 2–3 facts with the strongest evidence signal. Do not pad with weak or tangential results.
+
+**Step E — Construct blob-URL citations**
+
+For code evidence in adjacent facts, use the GitHub blob URL construction:
+1. `git remote get-url origin` → convert SSH to HTTPS
+2. `git rev-parse --abbrev-ref HEAD` → branch name
+3. Assemble: `https://github.com/<owner>/<repo>/blob/<branch>/<relative-path>#L<line>`
+
+This is the same construction used by investigator-code leaf agents — do not deviate.
+
+**Output field:** Populate `adjacent_facts` in the aggregate result (see schema). If no adjacent facts survive the evidence gate, omit the field entirely.
+
+---
+
+### 5. Emit the aggregate investigation-result
 
 Return exactly this shape (no prose, no markdown fences — raw JSON only):
 
@@ -128,11 +170,25 @@ Return exactly this shape (no prose, no markdown fences — raw JSON only):
     },
     {
       "source": "code",
-      "ref": "src/network/egress.ts:14",
+      "ref": "https://github.com/org/repo/blob/main/src/network/egress.ts#L14",
       "quote": "export const EGRESS_HOOK_ENABLED = false;"
     }
   ],
-  "summary": "Both sub-claims resolved VERIFIED_TRUE: PR #204 was merged before the incident, and the egress hook was disabled in that PR."
+  "summary": "Both sub-claims resolved VERIFIED_TRUE: PR #204 was merged before the incident, and the egress hook was disabled in that PR.",
+  "adjacent_facts": [
+    {
+      "claim": "Tests cover the egress hook behaviour.",
+      "verdict": "VERIFIED_TRUE",
+      "evidence": [
+        {
+          "source": "code",
+          "ref": "https://github.com/org/repo/blob/main/src/network/egress.test.ts#L22",
+          "quote": "it('disables egress when EGRESS_HOOK_ENABLED is false', ...)"
+        }
+      ],
+      "summary": "A dedicated test asserts the hook is disabled when the flag is false."
+    }
+  ]
 }
 ```
 
@@ -164,6 +220,9 @@ Note: the orchestrator does **not** set `sub_claim` on its own output. `sub_clai
 - **Do not modify leaf results.** Pass `sub_claim` verbatim. Aggregate evidence items as-is.
 - `summary` must not introduce claims not grounded in the merged `evidence[]`.
 - If no leaf agents are reachable (all return errors or access failures), return `INSUFFICIENT_EVIDENCE` with a summary explaining the access failure.
+- **Bounded expansion is always-on.** Do not skip the adjacent-facts step based on caller identity. pr-revise, pr-code-review, and the investigate skill all receive expansion.
+- **Evidence gate for adjacent facts.** Never include an adjacent fact with empty `evidence[]`. Drop it silently instead.
+- **Blob-URL citations in adjacent facts.** Code refs in `adjacent_facts` must use GitHub blob URLs (`https://github.com/<owner>/<repo>/blob/<branch>/<path>#L<line>`). Never use bare `file:line` paths.
 
 ## Output
 

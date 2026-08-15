@@ -236,3 +236,82 @@ def test_investigate_skill_has_no_leaf_agent_routing_instructions(skill_text):
         "SKILL.md body contains leaf agent routing instructions. "
         "Routing lives in the investigator orchestrator, not in the skill doorway."
     )
+
+
+# ---------------------------------------------------------------------------
+# Slice 7: Input guard (JSON vs prose detection) — T-0097
+# ---------------------------------------------------------------------------
+
+
+def test_investigate_skill_has_input_guard_section(skill_text):
+    """SKILL.md must document an input guard step for JSON vs prose detection."""
+    body = _extract_body(skill_text)
+    lower = body.lower()
+    assert "input guard" in lower, (
+        "SKILL.md is missing an input guard section. "
+        "A step must detect whether input is schema-valid investigation-result JSON "
+        "or raw prose, so pre-existing results are never re-investigated."
+    )
+
+
+def test_investigate_skill_guard_covers_prose_path(skill_text):
+    """Input guard must describe the prose input path (triggers fresh investigation)."""
+    body = _extract_body(skill_text)
+    lower = body.lower()
+    # The guard must address inputs that are plain prose / questions
+    assert re.search(r"prose|plain.*question|plain.*claim|treat as prose", lower), (
+        "SKILL.md input guard does not describe handling of raw prose input. "
+        "Raw prose must always trigger fresh investigation via the investigator."
+    )
+
+
+def test_investigate_skill_guard_covers_valid_json_path(skill_text):
+    """Input guard must describe the valid investigation-result JSON path (skip investigation)."""
+    body = _extract_body(skill_text)
+    # Check that schema-valid JSON is described as bypassing/skipping investigation
+    assert re.search(
+        r"skip investigation|pass.*directly.*voic|short.circuit|skip.*investigat",
+        body,
+        re.IGNORECASE,
+    ), (
+        "SKILL.md input guard does not describe the valid JSON short-circuit path. "
+        "Schema-valid investigation-result JSON must skip investigation and go directly to voicing."
+    )
+
+
+def test_investigate_skill_guard_covers_invalid_json_path(skill_text):
+    """Input guard must describe the invalid JSON path (treat as prose)."""
+    body = _extract_body(skill_text)
+    lower = body.lower()
+    # The guard must address JSON that fails schema validation
+    assert re.search(
+        r"fails.*schema|schema.*validation|invalid.*json|not.*match.*schema|"
+        r"missing.*required.*field|wrong.*type",
+        lower,
+    ), (
+        "SKILL.md input guard does not describe handling of invalid JSON (schema mismatch). "
+        "JSON that fails schema validation must be treated as prose and trigger fresh investigation."
+    )
+
+
+def test_investigate_skill_guard_appears_before_investigator_step(skill_text):
+    """Input guard must appear before the investigator spawn step in the document."""
+    body = _extract_body(skill_text)
+    guard_pos = body.lower().find("input guard")
+    investigator_pos = body.lower().find("spawn the investigator")
+    assert guard_pos != -1, "Input guard section not found in SKILL.md body."
+    assert investigator_pos != -1, "Investigator spawn step not found in SKILL.md body."
+    assert guard_pos < investigator_pos, (
+        f"Input guard (pos {guard_pos}) must appear before the investigator spawn step "
+        f"(pos {investigator_pos}) in SKILL.md. The guard runs before spawning the investigator."
+    )
+
+
+def test_investigate_skill_guard_references_schema(skill_text):
+    """Input guard must reference the investigation-result schema for validation."""
+    body = _extract_body(skill_text)
+    lower = body.lower()
+    assert "schema_version" in lower or "investigation-result-schema" in lower or "investigation-result schema" in lower, (
+        "SKILL.md input guard does not reference the investigation-result schema. "
+        "The guard must validate against the schema to distinguish valid results from prose."
+    )
