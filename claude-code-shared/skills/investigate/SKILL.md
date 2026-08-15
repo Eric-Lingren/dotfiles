@@ -10,7 +10,9 @@ effort: low
 invokedBy: human
 ---
 
-## Step 0 — Parse --out flag
+## Step 0 — Parse flags and resolve depth
+
+### --out flag
 
 Parse `--out` from the user's args before doing anything else.
 
@@ -25,6 +27,32 @@ Parse `--out` from the user's args before doing anything else.
 Strip `--out <value>` from the args before passing the question or claim to the investigator.
 
 If `--out` is set to a value other than `raw` or `slack`, stop and tell the user the valid options.
+
+### Depth
+
+Check whether `$ARGUMENTS` contains the explicit word `fast` or `deep` (case-insensitive, whole-word match against the flag list):
+
+- If `fast` is present → set `depth = fast`. Strip the word from the args.
+- If `deep` is present → set `depth = deep`. Strip the word from the args.
+- If neither is present → ask:
+
+```
+AskUserQuestion({
+  header: "Depth",
+  options: [
+    {
+      label: "Fast",
+      description: "Literal answer only — verdict + evidence, skips adjacent-facts, fewer spawns, quicker."
+    },
+    {
+      label: "Deep",
+      description: "Full investigation + adjacent facts, more spawns, slower."
+    }
+  ]
+})
+```
+
+Set `depth` to whichever option the user selects (`fast` or `deep`).
 
 ## Step 1 — Input guard (JSON vs prose detection)
 
@@ -72,14 +100,14 @@ If the input is already a plain question or claim (no URL), skip Step 2 entirely
 
 ## Step 3 — Spawn the investigator
 
-Use the Agent tool with `subagent_type: investigator`. Pass the derived (or original) question or claim. Include `cwd` if the investigation involves codebase claims.
+Use the Agent tool with `subagent_type: investigator`. Pass the derived (or original) question or claim. Include `cwd` if the investigation involves codebase claims. Always append `depth: <value>` (resolved in Step 0) to the prompt string.
 
 **Example — question form:**
 
 ```
 Agent({
   subagent_type: "investigator",
-  prompt: "question: Was the egress hook regression introduced in PR #204?\ncwd: /path/to/repo"
+  prompt: "question: Was the egress hook regression introduced in PR #204?\ncwd: /path/to/repo\ndepth: fast"
 })
 ```
 
@@ -88,7 +116,7 @@ Agent({
 ```
 Agent({
   subagent_type: "investigator",
-  prompt: "claim: The feature flag was disabled before the incident on 2026-08-10."
+  prompt: "claim: The feature flag was disabled before the incident on 2026-08-10.\ndepth: deep"
 })
 ```
 
@@ -98,7 +126,7 @@ User pastes `https://acme.slack.com/archives/C012AB3CD/p1723660012345678`.
 1. Parse: channel=`C012AB3CD`, ts=`1723660012.345678`.
 2. Call `slack_read_thread` to fetch thread content.
 3. Derive question from thread (e.g., "Was the deploy on 2026-08-14 the cause of the latency spike?").
-4. Pass derived question to investigator.
+4. Pass derived question to investigator with the resolved `depth` value appended.
 
 ## Step 4 — Route output based on --out flag
 

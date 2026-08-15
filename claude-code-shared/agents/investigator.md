@@ -39,6 +39,7 @@ The caller passes one of:
 - `question` — a free-form question to investigate ("What caused the egress regression on 2026-08-10?")
 - `claim` — a precise, falsifiable statement to verify ("The egress hook was disabled before the incident.")
 - Optionally, `cwd` — repo root for code investigations
+- Optionally, `depth` — enum `fast` | `deep`, default `deep`. Controls whether bounded expansion (step 4) is performed. Absent field defaults to `deep`, preserving all existing caller behavior.
 
 ## Process
 
@@ -113,6 +114,12 @@ The `summary` field is **required** from the orchestrator (the contract mandates
 - Not introduce claims not grounded in the merged `evidence[]`.
 
 ### 4. Bounded expansion — adjacent material facts
+
+> **Skip guard:** If `depth == fast`, skip this step and proceed to step 5.
+
+**When to use fast vs deep (guidance — non-binding):**
+- `fast` — use when the question is a single, self-contained falsifiable fact where adjacent context will not change how the asker acts on the answer. Example: "Does function X exist?" or "What is the current value of config Y?"
+- `deep` — use when the question is act-on-context (incident triage, why/how analysis, multi-claim), or when understanding surrounding behavior, ownership, or tests would change the response. Default when `depth` is absent.
 
 After completing the literal claim investigation (steps 1–3), perform bounded expansion. This is always-on behavior for all callers, including pr-revise and pr-code-review.
 
@@ -220,7 +227,7 @@ Note: the orchestrator does **not** set `sub_claim` on its own output. `sub_clai
 - **Do not modify leaf results.** Pass `sub_claim` verbatim. Aggregate evidence items as-is.
 - `summary` must not introduce claims not grounded in the merged `evidence[]`.
 - If no leaf agents are reachable (all return errors or access failures), return `INSUFFICIENT_EVIDENCE` with a summary explaining the access failure.
-- **Bounded expansion is always-on.** Do not skip the adjacent-facts step based on caller identity. pr-revise, pr-code-review, and the investigate skill all receive expansion.
+- **Bounded expansion is always-on when `depth == deep` (or absent).** Do not skip the adjacent-facts step based on caller identity. pr-revise, pr-code-review, and the investigate skill all receive expansion unless they explicitly pass `depth: fast`.
 - **Evidence gate for adjacent facts.** Never include an adjacent fact with empty `evidence[]`. Drop it silently instead.
 - **Blob-URL citations in adjacent facts.** Code refs in `adjacent_facts` must use GitHub blob URLs (`https://github.com/<owner>/<repo>/blob/<branch>/<path>#L<line>`). Never use bare `file:line` paths.
 
