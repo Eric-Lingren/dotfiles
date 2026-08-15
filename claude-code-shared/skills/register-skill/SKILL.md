@@ -3,6 +3,7 @@ name: register-skill
 description: Register a new skill or agent into the shared infrastructure so tier-advisor, the weekly usage report, and sync-model-tiers never miss it. Invoke as /register-skill <name>. Covers both the skill registration path (tiered via model-tiers.json skills map) and the agent registration path (tiered via model-tiers.json agents map). This file is the canonical reference for the full registration chain.
 model: sonnet
 effort: medium
+invokedBy: human
 ---
 
 # Register Skill

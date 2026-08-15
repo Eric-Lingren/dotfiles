@@ -3,6 +3,7 @@ name: to-e2e-tasks
 description: Analyze branch changes, discover critical user-facing workflows, grill the test plan, and generate a Playwright e2e tasks JSON file for build-code. Output is a tasks JSON plan, not implemented tests. Use when user wants to plan e2e coverage after implementing a feature.
 model: sonnet
 effort: high
+invokedBy: human
 ---
 
 <!-- tier-delegate: managed by sync-model-tiers.py -->

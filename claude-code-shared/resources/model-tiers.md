@@ -23,7 +23,7 @@ so ad-hoc prompts run T3. Skills override via their own frontmatter.
 ```json
 {
   "skills": { "how-to": "T1", ... },
-  "agents": { "fact-checker": "T3", "context-loader": "T1", ... }
+  "agents": { "context-loader": "T1", ... }
 }
 ```
 

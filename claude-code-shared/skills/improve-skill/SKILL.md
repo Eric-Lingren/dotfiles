@@ -8,6 +8,7 @@ description: >
   "optimize skill", "self-improve", or invokes /improve-skill.
 model: sonnet
 effort: high
+invokedBy: human
 ---
 
 # Improve Skill

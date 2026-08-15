@@ -3,6 +3,7 @@ name: cc-usage-analytics
 description: View and explore Claude Code usage analytics — model mix, estimated cost, request intent, weekly trend, and per-skill tier adherence across the office (cco) and home (cch) profiles. Use when the user wants to see usage stats, run the benchmark, view the weekly report, check if model spend/tiers are trending right, or invokes /cc-usage-analytics.
 model: sonnet
 effort: medium
+invokedBy: human
 ---
 
 Surface and explore Claude Code usage analytics. All tools live in

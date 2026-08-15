@@ -55,10 +55,10 @@
         {"skill": "to-tasks", "when": "the seed is written and ready to break into code + reply tasks"}
       ]
     },
-    "vet": {
+    "relay": {
       "next": []
     },
-    "relay": {
+    "answer": {
       "next": []
     },
     "investigate": {
@@ -81,9 +81,6 @@
       "next": []
     },
     "handoff": {
-      "next": []
-    },
-    "fact-check": {
       "next": []
     },
     "find-work": {

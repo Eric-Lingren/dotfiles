@@ -3,6 +3,7 @@ name: to-spec
 description: Render a seed .json file into an interactive HTML PRD and save it to docs/prd/. Use when user wants to create a PRD from a seed file with rich interactive output.
 model: sonnet
 effort: high
+invokedBy: human
 ---
 
 ## Contract

@@ -3,6 +3,7 @@ name: improve-codebase-architecture
 description: Find deepening opportunities in a codebase, informed by domain vocabulary and ADR decisions loaded via the context-loader agent. Use when the user wants to improve architecture, find refactoring opportunities, consolidate tightly-coupled modules, or make a codebase more testable and AI-navigable.
 model: opus
 effort: xhigh
+invokedBy: human
 ---
 
 <!-- tier-delegate: managed by sync-model-tiers.py -->

@@ -43,7 +43,7 @@ No other text. No markdown. No explanation.
 
 ## Script
 
-Colocated script: `~/.dotfiles/claude-code-shared/agents/task-exporters/export-tasks-gh/gh-issue.sh`
+Colocated script: `~/.dotfiles/claude-code-shared/agents/egress/github/gh-issue.sh`
 
 Args: `<title> <body> <org/repo>`
 Stdout: issue URL
@@ -56,7 +56,7 @@ Stderr: error message on failure
 3. Run:
 
 ```bash
-bash ~/.dotfiles/claude-code-shared/agents/task-exporters/export-tasks-gh/gh-issue.sh \
+bash ~/.dotfiles/claude-code-shared/agents/egress/github/gh-issue.sh \
   "$TITLE" \
   "$DESCRIPTION" \
   "$ORG_REPO"

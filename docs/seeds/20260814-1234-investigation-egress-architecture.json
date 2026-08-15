@@ -1,0 +1,83 @@
+{
+  "schema_version": "4",
+  "producer": "to-seed",
+  "source": { "type": "session", "ref": null },
+  "title": "Investigation and Egress Architecture",
+  "slug": "investigation-egress-architecture",
+  "created": "2026-08-14T19:25:29Z",
+  "iteration": 1,
+  "status": "ready",
+  "summary": "Design for two symmetric pipeline lanes built on the existing coordinator/worker pattern. An investigation (fan-in) lane verifies claims against multiple sources with a hard trust guarantee, and an egress (fan-out) lane routes voice-matched drafts to external channels. The investigate skill is a thin human doorway; the investigator agent (Opus) is the orchestrator that decomposes a question, routes sub-claims to source-specialized leaf agents (investigator-code, -web, -linear, -github, -notion under agents/investigators/), and aggregates them under a unified investigation-result contract that mandates citations and never smooths over INSUFFICIENT_EVIDENCE. The retired fact-check and vet skills collapse into investigator-web and investigator-code. A separate answer-composer egress agent plus an /answer doorway serve a Slack Q&A track, composing answers in a new slack-casual voice profile with inline per-claim citations, copy-only via manual paste. investigator wires in as the diligence gate for pr-revise and pr-code-review so no false claim reaches a colleague. relay is promoted to the egress orchestrator with post-github/-linear/-slack adapter stubs under agents/egress/ organized by channel, consolidating the existing export-tasks-gh/-notion and tasks-to-linear writers, all posting deferred behind copy-only stub banners.",
+  "decisions": [
+    "investigate is a thin human doorway skill whose only job is to spawn the investigator orchestrator agent; humans invoke skills, agents cannot be typed as slash commands, so exactly one skill doorway is kept.",
+    "investigator is the orchestrator agent: it decomposes a question into sub-claims, routes each to the correct source leaf, and aggregates the results. It is callable both by humans (via the investigate skill) and directly by other agents (pr-revise, pr-code-review).",
+    "Source verification is done by specialized leaf agents, one per evidence source, so new sources bolt on without affecting existing ones (strategy/plugin pattern).",
+    "Leaf agents are named investigator-<source> (noun form) to preserve the house skill=verb / agent=noun boundary and mirror the export-tasks -> export-tasks-gh coordinator/worker pattern.",
+    "Phase 1 leaves (all in scope to build in this effort, none phased to later): investigator-code, investigator-web, investigator-linear, investigator-github, investigator-notion.",
+    "All investigator agents (orchestrator + 5 leaves) live grouped under agents/investigators/, mirroring the existing agents/task-exporters/ grouping.",
+    "A unified investigation-result contract is authored as a dual-doc pair (investigation-result-schema.json draft-07 + investigation-result-contract.md), versioned by schema_version, distinct from learning-schema to avoid cross-workflow drift.",
+    "All leaves and the orchestrator emit the single investigation-result contract. Verdict/confidence axis: VERIFIED_TRUE, VERIFIED_FALSE, INSUFFICIENT_EVIDENCE, CONTESTED.",
+    "Every verdict carries a mandatory evidence[] array of {source, ref, quote}. A VERIFIED_TRUE or VERIFIED_FALSE with empty evidence[] is a schema violation; only INSUFFICIENT_EVIDENCE may cite nothing.",
+    "Abstention is contract-enforced, not model-judged: if any load-bearing sub-claim returns INSUFFICIENT_EVIDENCE, the aggregate answer inherits that uncertainty and states it. The orchestrator never averages uncertainty away into false confidence.",
+    "Per-source citation mapping: web ref=URL, code ref=file:line, linear ref=ticket URL, github ref=issue/PR URL, notion ref=page URL/block id; quote is the supporting span in each case.",
+    "The fact-check and vet skills are retired. The old fact-checker agent becomes investigator-web. The vet stub's diligence job becomes investigator-code. The vet stub is deleted.",
+    "Slack is treated as an ingress channel for questions, not a verification source; there is no investigator-slack.",
+    "Slack Q&A ingress for the POC is manual paste (message text or link) into the answer doorway; automated Slack ingress is deferred.",
+    "The Slack answer track uses a separate /answer doorway skill (question-in, voice-prose-out), distinct from /investigate (raw verdict-out). Same investigator core, different output surface.",
+    "answer-composer is a separate egress agent that consumes investigation-result and writes the voice-matched reply. investigator stays pure and reusable; the voice layer never touches verification logic.",
+    "Voice governs style, never content: answer-composer may only state claims that investigation-result verified, each with its citation. It may not add a single unverified sentence to sound natural.",
+    "A new slack-casual voice profile is created for the Slack answer track (friendlier, more upbeat, still professional), because the existing dev-office profile was distilled only from GitHub PR comments and Linear issue comments and contains zero Slack material.",
+    "slack-casual is sourced from Eric's real Slack messages (provided at build time), registered in voice-routing.json, and routed from the answer doorway skill.",
+    "Citations in the composed answer render inline-linked per distinct claim (not as an end footnote block); INSUFFICIENT_EVIDENCE claims render an explicit 'couldn't confirm' tag instead of a citation.",
+    "investigator becomes the shared diligence gate wired into pr-revise (Step 5, replacing the manual/vet-stub diligence) and pr-code-review (pre-submit claim verification); claims that come back VERIFIED_FALSE or INSUFFICIENT_EVIDENCE are dropped or downgraded before posting. debug wiring is deferred.",
+    "Model tiers: investigate and answer doorway skills = Haiku; the five leaf agents and answer-composer = Sonnet; investigator orchestrator = Opus (set now, given it is the most critical node and most sensitive to decomposition quality). investigator-code is the first leaf on the Opus escalation watch list for multi-file reasoning.",
+    "The egress lane mirrors the investigation lane as a coordinator/worker fan-out. relay is promoted from a PR-reply-specific skill to the egress orchestrator that routes any approved draft to its channel adapter.",
+    "relay's current PR-specific mechanics (stitching the fixing-commit permalink, keying by PR thread_id) are adapter-level and descend into the post-github adapter; what stays in relay is channel-agnostic routing + HITL.",
+    "Egress is organized BY CHANNEL under agents/egress/ (github/, linear/, notion/, slack/); each channel folder holds that channel's write adapters for both create-artifact and post-comment verbs.",
+    "All existing external-write adapters are consolidated under agents/egress/ by channel: export-tasks-gh -> egress/github/, export-tasks-notion -> egress/notion/, tasks-to-linear's write path -> egress/linear/. dispatch-tasks, the export-tasks coordinator, and task-routing.json are rewired to the new paths.",
+    "New post-comment adapters (post-github, post-linear, post-slack) ship now as copy-only stubs that print the draft behind a 'NO EXTERNAL CALLS MADE / paste manually' banner plus a vet-style stub marker; live posting is deferred.",
+    "A shared egress-result contract (dual-doc, like investigation-result) defines adapter return shape {posted, url, thread_id, status}; stubs return status: copy-only.",
+    "The full egress architecture is scaffolded now as wiring anchors (following the investigate/vet stub-as-anchor precedent) even though live posting is deferred, to de-risk the high-risk write-back vector by fixing its shape first.",
+    "The two egress coordinators stay separate for now (export-tasks for artifact creation, relay for comment posting); both spawn adapters from the agents/egress/ channel folders. Unifying them is a later option, not launch scope."
+  ],
+  "open_threads": [],
+  "disposed_threads": [],
+  "deferred": [
+    { "text": "Automated posting for egress adapters (live gh/Linear/Slack write-back, thread resolution, idempotency, thread-id keying).", "rationale": "Write-back UX and error cases are genuinely hard and were already deferred once for that reason; POC value does not depend on it.", "context": "post-github/-linear/-slack ship as copy-only stubs now; the egress-result contract already defines the eventual {posted,url,thread_id,status} shape so live posting slots in without reshaping.", "source_seed": "investigation-egress-architecture" },
+    { "text": "Sentry, Datadog, and Slack investigator source leaves.", "rationale": "Zero usage evidence across both profiles; building them now is speculative.", "context": "The plugin/leaf isolation means these bolt on later under agents/investigators/ with zero disruption once external-signal investigation matters.", "source_seed": "investigation-egress-architecture" },
+    { "text": "Automated Slack ingress (bot or MCP listener) for the answer track.", "rationale": "No Slack integration configured today; manual paste is sufficient to prove the POC.", "context": "Ingress = manual paste of message text or link for v1.", "source_seed": "investigation-egress-architecture" },
+    { "text": "Wiring investigator as a diligence gate into the debug skill.", "rationale": "debug makes claims to yourself during diagnosis, lower blast radius, and it already has its own repro loop.", "context": "Add in the same wave as the Sentry/Datadog external-signal leaves.", "source_seed": "investigation-egress-architecture" },
+    { "text": "Unifying the two egress coordinators (export-tasks + relay) into one.", "rationale": "Not needed for launch; both can spawn adapters from the shared channel folders as-is.", "context": "Revisit after the by-channel consolidation lands.", "source_seed": "investigation-egress-architecture" },
+    { "text": "Sourcing and authoring the slack-casual voice profile from real Slack messages.", "rationale": "Requires Eric to hand over a representative sample of his Slack messages at build time.", "context": "Distill the same way dev-office was built from real PR/Linear comments; guessing the voice would defeat the purpose.", "source_seed": "investigation-egress-architecture" }
+  ],
+  "out_of_scope": [
+    { "text": "Pulling git push / gxpush / PR-creation into the egress consolidation.", "rationale": "That is code delivery inside build-code's core loop, a different lane from ticketing/comments/messages; including it would balloon scope into build-code internals." }
+  ],
+  "implementation_decisions": [
+    "Contracts follow the house dual-doc convention: <name>-schema.json (JSON Schema draft-07) + <name>-contract.md, versioned via schema_version hard-cutover, $ref-ing provenance-schema.json where shared.",
+    "New contract names chosen to avoid collision: investigation-result-* (not verdict-*, which is the seed-verification judge output, nor runner-result-*, which is lint/test) and egress-result-*.",
+    "Voice resolution reuses the existing voice-routing.json mechanism (skill-name -> profile) consumed at runtime, the same path pr-code-review and pr-revise use; register-skill assigns the profile on registration.",
+    "answer-composer lives OUTSIDE agents/investigators/ (grouped with egress agents) so the investigators directory preserves the invariant that everything in it produces an investigation-result.",
+    "Escalation policy: start every node at its defensible tier floor and escalate only on measured evidence; investigator orchestrator is the exception, set to Opus at launch."
+  ],
+  "risks_and_tradeoffs": [
+    "Egress posting is a high-risk vector (idempotency, thread keying, resolve-vs-reply, error handling); mitigated by shipping copy-only stubs now and fixing the architecture shape before any live write.",
+    "investigator-code may exceed Sonnet on hard multi-file code-behavior claims; mitigated by keeping it Sonnet with an explicit Opus escalation watch rather than paying Opus prophylactically.",
+    "Consolidating the working export-tasks-gh/-notion and tasks-to-linear adapters is a refactor with breakage risk (dispatch-tasks, export-tasks coordinator, task-routing.json references); it is a sequenced build chunk, not a free rename.",
+    "The trust guarantee depends on leaf verdict correctness, so no verdict-emitting agent is allowed on Haiku; doorways are the only Haiku nodes."
+  ],
+  "further_notes": [
+    "Three-lane symmetry across the system: Investigation fan-in (investigator -> investigator-<source>, agents/investigators/), Egress fan-out (relay -> post-<channel>, agents/egress/), and the existing Artifact export (export-tasks -> export-tasks-<dest>) folding into agents/egress/ by channel.",
+    "Provenance check confirmed dev-office.md was distilled from GitHub PR comments plus ~40 Linear issue comments (Aug 2025-Jul 2026), with zero Slack source material, which is why a separate slack-casual profile is warranted.",
+    "Usage evidence that ranked the leaves: Linear ~106 MCP calls/month (67 get_issue reads), GitHub 33% of sessions on feature/fix branches, Notion ~49 fetch/month, Web ~17 calls/month; Sentry/Datadog/Slack/Drive/Jira had zero evidence."
+  ],
+  "next_action": "Run /to-tasks on this seed to slice the build into tracer-bullet tasks, sequencing the investigation lane (contract + investigator + leaves) ahead of the egress consolidation refactor.",
+  "verification": {
+    "iteration": 1,
+    "personas": ["grounding", "accuracy", "completeness", "coherence"],
+    "refutations_upheld": 1,
+    "refutations_screened": 5,
+    "clean": false,
+    "status": "verified"
+  }
+}

@@ -4,6 +4,7 @@ description: Archive consumed doc scaffolding (seeds, PRDs, tasks, handoffs) in 
 argument-hint: "--force or -y to skip confirmation"
 model: haiku
 effort: low
+invokedBy: human
 ---
 
 Archive consumed scaffolding artifacts from `docs/` in the current working directory.

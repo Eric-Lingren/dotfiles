@@ -4,6 +4,7 @@ description: Distill the current conversation or grill session into a standardiz
 argument-hint: "[optional: path to a handoff doc that carries a base seed to merge into]"
 model: sonnet
 effort: high
+invokedBy: human
 ---
 
 # To Seed
