@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 # gxcheck — read-only branch state reporter
+# What: checks 5 branch-health conditions (on_base, merged, foreign-author, remote_gone, stale) and prints WARN or OK
+# When: before starting work on a branch, or before gxpush, to catch stale or misowned branches
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/gx-lib.sh"

@@ -1,0 +1,73 @@
+{
+  "schema_version": "4",
+  "producer": "to-seed",
+  "source": {"type": "session", "ref": null},
+  "title": "worktree tool and .scripts documentation",
+  "slug": "worktree-tool-and-scripts-docs",
+  "created": "2026-08-15T21:30:49Z",
+  "iteration": 1,
+  "status": "ready",
+  "summary": "Design for a `worktree` shell command (alias `wt`) that makes git worktrees easy to use for parallel agent sessions. The tool follows Model 2: the user opens a fresh cmux tab manually, then types `wt <branch>` to set up the worktree and cd that tab into it. No tab-spawning, no cmux choreography. Implemented as a zsh function so it can cd the calling shell. Worktrees live at ~/Documents/dev/worktrees/<repo>/<branch>. A single smart bare command handles all resolution cases: existing folder, local-only branch, remote-only branch, or brand-new branch. Also in scope: add a standard 3-line header comment to every script in ~/.dotfiles/.scripts/ for discoverability.",
+  "decisions": [
+    "Command is named `worktree` with alias `wt`; this is its own tool, not part of the gx family.",
+    "Model 2 scoping: user opens a fresh cmux tab themselves; `wt` only does git worktree setup and `cd` — it never spawns, switches, or closes cmux tabs.",
+    "Implemented as a zsh shell function (not a standalone script) so it can cd the calling shell. Engine logic lives in ~/.dotfiles/.scripts/worktree.",
+    "Worktrees are stored at ~/Documents/dev/worktrees/<repo>/<branch>, grouped by repo to allow a single list/clean pass across all repos.",
+    "Resolution order for `wt <branch> [base]`: (1) worktree folder exists -> cd into it; (2) branch exists locally, no folder -> make folder, cd in; (3) branch exists on GitHub remote only -> fetch it down as a local tracking branch, make folder, cd in; (4) branch exists nowhere -> create from base (default main), confirm with [Y/n], make folder, cd in.",
+    "New branches fork from main by default. User can override the base with an optional second arg: `wt feat/x develop`. A [Y/n] confirmation is shown before creating.",
+    "Missing feat/fix/spike branch prefix warns but does not block.",
+    "Attaching to an existing branch prints 'attaching to existing branch <name>' so the user always sees what the tool chose.",
+    "`go` verb is dropped; smart bare command `wt <branch>` handles both switch and create by resolving through the 4-step order above.",
+    "`new` verb is dropped; bare `wt <branch> [base]` covers all create cases including custom base.",
+    "Commands: `wt <branch> [base]` (smart default), `wt ls` (current repo; --all for every repo), `wt rm <branch>` (remove folder, keep branch, block on unsaved work unless --force), `wt -h` / `wt --help` (full command list). Bare `wt` with no args shows help plus ls output.",
+    "New tab lands in a plain shell (option A). `--claude` flag auto-starts the agent when desired.",
+    "The same worktree folder can be open in multiple tabs simultaneously (e.g. agent in one tab, terminal in another). No conflict.",
+    "`wt rm <branch>` removes the worktree folder and closes nothing; it keeps the branch. It blocks if the folder has uncommitted or unpushed changes unless --force is passed.",
+    "Cleanup split: `wt rm` frees the workspace; `gxclean` prunes merged branches. No overlap.",
+    "Two invocation doors: shell command (primary, works outside Claude sessions), thin Claude skill (secondary, for use from inside a session). Both call the same engine script.",
+    "Add a 3-line header comment to every script in ~/.dotfiles/.scripts/ using format: name+one-liner on line 1, `What:` line, `When:` line with key flags. Scripts to document: gxcheck, gxclean, gxmove, gxpush, gxsync, gx-lib.sh, pr-commit, pr-desc, the new worktree script, and gxpush-issue-link.test.sh."
+  ],
+  "open_threads": [],
+  "disposed_threads": [],
+  "deferred": [
+    {
+      "text": "Fork-PR checkout: `wt <branch>` for a branch from an outside-contributor fork (not same-repo remote branch)",
+      "rationale": "Requires `gh pr checkout` under the hood and a different resolution path. Same-repo remote branches work with plain fetch. Scoped out to keep initial build focused.",
+      "context": "User asked about pasting a GitHub branch name and having it pull automatically. Same-repo branches are in scope. Cross-fork PRs need a separate gh pr checkout path wired in later.",
+      "source_seed": "docs/seeds/20260815-1430-worktree-tool-and-scripts-docs.json"
+    }
+  ],
+  "out_of_scope": [
+    {
+      "text": "cmux tab spawning: `wt` creating, switching, or closing cmux tabs programmatically",
+      "rationale": "User explicitly chose Model 2 — they open tabs manually. Scripted cmux tab choreography is the root cause of bugs in the existing .cmux-startup.sh and is excluded from this tool."
+    },
+    {
+      "text": "Fixing or replacing .cmux-startup.sh",
+      "rationale": "User noted it is buggy but it is not part of this design scope. Separate effort if pursued."
+    }
+  ],
+  "problem_statement": "Git worktrees let you run parallel agent sessions on separate branches in separate folders, but the raw git commands are hard to remember for infrequent users. There is no tooling to make the create/switch/remove lifecycle feel seamless or to integrate it with the existing cmux-based terminal workflow.",
+  "solution": "A `worktree` shell command (alias `wt`) that reduces the full lifecycle to one smart verb. The user opens a cmux tab and types `wt <branch>` — the tool resolves local, remote, or new branches automatically and cds the tab into the right worktree folder. Cleanup is `wt rm`. Discoverability via `wt -h`. Also ships standard header docs on all scripts in ~/.dotfiles/.scripts/.",
+  "implementation_decisions": [
+    "Engine logic in ~/.dotfiles/.scripts/worktree (bash script). The zsh function sources and delegates to it so the cd propagates to the calling shell.",
+    "Base branch resolved from repo-policy.json GX_BASE_BRANCH (same as gxsync), default main. Reuses existing gx-lib.sh infrastructure.",
+    "Remote branch detection via `git ls-remote --heads origin <branch>` before attempting fetch.",
+    "Worktree path construction: `~/Documents/dev/worktrees/$(basename $(git rev-parse --show-toplevel))/<branch>`.",
+    "Header format for .scripts/ docs: `# <name> — <one-liner>` / `# What: <what it does>` / `# When: <when to use, flags>`."
+  ],
+  "risks_and_tradeoffs": [
+    "zsh-function requirement means the tool does not work in bash sessions or non-interactive shells. Acceptable given the user's zsh environment.",
+    "Remote branch fetch on `wt <branch>` hits the network. Fast on good connections, slow on bad ones. Mitigated by only fetching when local lookup fails.",
+    "Worktree folder names inherit branch slashes (feat/x becomes feat/x nested dir). Git handles this fine; some tools may not display the nesting clearly."
+  ],
+  "next_action": "Run /to-tasks to break this into independently-grabbable build tasks",
+  "verification": {
+    "iteration": 1,
+    "personas": ["grounding", "accuracy", "completeness", "coherence"],
+    "refutations_upheld": 0,
+    "refutations_screened": 2,
+    "clean": true,
+    "status": "verified"
+  }
+}

@@ -1,9 +1,7 @@
 #!/usr/bin/env bash
 # gxpush-issue-link.test.sh — Unit tests for the Closes #N PR-body injection logic
-# Tests the logic in isolation using a helper function that mirrors gxpush's implementation.
-#
-# Usage: bash .scripts/gxpush-issue-link.test.sh
-# Exit 0 = all pass, non-zero = failures present
+# What: runs 7 assertions against the resolve_closes_suffix helper that mirrors gxpush's issue-link injection
+# When: run directly to verify the Closes #N logic; exit 0 = all pass, non-zero = failures present
 
 set -uo pipefail
 

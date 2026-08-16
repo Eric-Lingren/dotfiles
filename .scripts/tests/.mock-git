@@ -1,0 +1,171 @@
+#!/usr/bin/env bash
+# Mock git binary for worktree tests.
+# Behaviour controlled by env vars:
+#   MOCK_TOPLEVEL        — returned by rev-parse --show-toplevel (default: /fake/myrepo)
+#   MOCK_LOCAL_BRANCHES  — colon-separated list of branches that exist locally
+#   MOCK_REMOTE_BRANCHES — colon-separated list of branches that exist on remote
+#   MOCK_REMOTE_URL      — returned by remote get-url origin (default: "")
+#   MOCK_PORCELAIN       — content returned by `git -C <path> status --porcelain` (empty = clean)
+#   MOCK_UNPUSHED        — content returned by `git -C <path> log @{u}..` (empty = all pushed)
+#   GIT_CALL_LOG         — if set, each call is appended as a line to this file
+
+MOCK_TOPLEVEL="${MOCK_TOPLEVEL:-/fake/myrepo}"
+MOCK_LOCAL_BRANCHES="${MOCK_LOCAL_BRANCHES:-}"
+MOCK_REMOTE_BRANCHES="${MOCK_REMOTE_BRANCHES:-}"
+MOCK_REMOTE_URL="${MOCK_REMOTE_URL:-}"
+MOCK_PORCELAIN="${MOCK_PORCELAIN:-}"
+MOCK_UNPUSHED="${MOCK_UNPUSHED:-}"
+
+# ─── Handle -C <path> flag ────────────────────────────────────────────────────
+# git -C <path> <subcmd> ...  →  strip -C and path, treat rest normally
+if [[ "${1:-}" == "-C" ]]; then
+  shift  # consume -C
+  shift  # consume the path argument
+fi
+
+subcmd="$1"
+shift || true
+
+# Log every call when GIT_CALL_LOG is set
+[[ -n "${GIT_CALL_LOG:-}" ]] && echo "$subcmd $*" >> "$GIT_CALL_LOG"
+
+case "$subcmd" in
+
+  rev-parse)
+    case "${1:-}" in
+      --show-toplevel)
+        echo "$MOCK_TOPLEVEL"
+        ;;
+      --abbrev-ref)
+        # @{u} means upstream — signal no upstream by returning 1
+        if [[ "${2:-}" == "@{u}" || "${3:-}" == "@{u}" ]]; then
+          exit 1
+        fi
+        echo "main"
+        ;;
+      *)
+        echo "main"
+        ;;
+    esac
+    ;;
+
+  remote)
+    # git remote get-url origin
+    echo "$MOCK_REMOTE_URL"
+    ;;
+
+  config)
+    # git config user.name etc.
+    echo "Test User"
+    ;;
+
+  log)
+    # git log @{u}.. --oneline  →  return MOCK_UNPUSHED
+    # Check if arguments contain @{u}..
+    local_log_args="$*"
+    if echo "$local_log_args" | grep -q '@{u}\.\.'; then
+      echo "$MOCK_UNPUSHED"
+    else
+      echo ""
+    fi
+    ;;
+
+  branch)
+    echo ""
+    ;;
+
+  rev-list)
+    echo "0"
+    ;;
+
+  show-ref)
+    # git show-ref --verify --quiet refs/heads/<branch>
+    # Consume flag args
+    branch_ref=""
+    for arg in "$@"; do
+      [[ "$arg" == --* ]] && continue
+      branch_ref="$arg"
+      break
+    done
+    branch="${branch_ref#refs/heads/}"
+    IFS=':' read -ra branches <<< "$MOCK_LOCAL_BRANCHES"
+    for b in "${branches[@]}"; do
+      [[ "$b" == "$branch" ]] && exit 0
+    done
+    exit 1
+    ;;
+
+  ls-remote)
+    # git ls-remote --heads origin <branch>
+    # or git ls-remote --exit-code --heads origin <branch>
+    branch=""
+    for arg in "$@"; do
+      [[ "$arg" == --* ]] && continue
+      [[ "$arg" == "origin" ]] && continue
+      branch="$arg"
+      break
+    done
+    if [[ -n "$branch" ]]; then
+      IFS=':' read -ra branches <<< "$MOCK_REMOTE_BRANCHES"
+      for b in "${branches[@]}"; do
+        if [[ "$b" == "$branch" ]]; then
+          echo "abc123def456abc7 refs/heads/$branch"
+          exit 0
+        fi
+      done
+    fi
+    exit 0
+    ;;
+
+  fetch)
+    # git fetch origin branch:branch — always succeed
+    exit 0
+    ;;
+
+  status)
+    # git status --porcelain  →  return MOCK_PORCELAIN
+    echo "$MOCK_PORCELAIN"
+    ;;
+
+  worktree)
+    subcmd2="${1:-}"
+    shift || true
+    case "$subcmd2" in
+      add)
+        # git worktree add [-b <new-branch>] <dir> [<base>]
+        # Consume -b <branchname> if present
+        if [[ "${1:-}" == "-b" ]]; then
+          shift  # consume -b
+          shift  # consume branch name
+        fi
+        target_dir="${1:-}"
+        if [[ -n "$target_dir" ]]; then
+          mkdir -p "$target_dir"
+          # Create a .git file so wt ls can detect this as a worktree
+          echo "gitdir: /fake/.git/worktrees/branch" > "$target_dir/.git"
+        fi
+        ;;
+      remove)
+        # git worktree remove <path>
+        rm_path="${1:-}"
+        if [[ -n "$rm_path" && -d "$rm_path" ]]; then
+          rm -rf "$rm_path"
+        fi
+        ;;
+      prune)
+        # no-op
+        ;;
+      list)
+        # Return MOCK_WORKTREE_LIST if set
+        if [[ -n "${MOCK_WORKTREE_LIST:-}" ]]; then
+          echo "$MOCK_WORKTREE_LIST"
+        fi
+        ;;
+    esac
+    exit 0
+    ;;
+
+  *)
+    exit 0
+    ;;
+esac

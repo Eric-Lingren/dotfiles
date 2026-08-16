@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 # gxclean — on-demand merged branch cleanup
+# What: lists all local branches merged into origin/<base> and interactively deletes them
+# When: periodically to prune stale local branches; prompts before deleting (type n to abort)
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/gx-lib.sh"

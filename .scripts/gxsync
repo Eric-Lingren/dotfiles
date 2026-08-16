@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 # gxsync — sync feature branch with base via merge
+# What: fetches origin and merges origin/<base> into the current feature branch, showing ahead/behind counts first
+# When: feature branch is behind main; prompts before merging; exits 1 on conflict with resolution instructions
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/gx-lib.sh"
