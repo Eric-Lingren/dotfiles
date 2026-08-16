@@ -37,6 +37,7 @@ All 30 shared skills. Plugin skills (caveman, chrome-devtools) are excluded.
 - `skills/to-spec/`
 - `skills/to-seed/`
 - `skills/to-tasks/`
+- `skills/worktree/`
 
 New skills registered via `register-skill` are added to this list automatically.
 

@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 # gx-lib.sh — shared helpers for the gx git toolkit
+# What: provides gx_load_policy (loads per-repo config from repo-policy.json) and gx_exclude_patterns helper
+# When: sourced by all gx scripts at startup; not invoked directly
 
 GX_POLICY_FILE="${GX_POLICY_FILE:-$HOME/.dotfiles/claude-code-shared/resources/repo-policy.json}"
 

@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 # gxpush — preview-and-confirm push with flags
+# What: stages files, scans for secrets, generates an AI commit message, and pushes to origin with an optional PR
+# When: ready to push; flags: --all (blast-radius), --pick (git add -p), --pr (open PR), --push-only, --auto (no prompts)
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/gx-lib.sh"

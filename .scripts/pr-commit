@@ -1,7 +1,7 @@
 #!/bin/bash
 # pr-commit — AI-generated git commit message from staged diff
-# Usage: pr-commit [--stdout]
-#   --stdout  print to stdout instead of clipboard
+# What: feeds the staged diff to Claude and returns a one-line imperative commit message under 72 chars
+# When: after staging files; --stdout prints to terminal, default copies to clipboard
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/gx-lib.sh"

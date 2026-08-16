@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 # gxmove — relocate uncommitted changes to another branch
+# What: stashes staged and unstaged changes, switches to the target branch, and pops the stash there
+# When: started work on the wrong branch; usage: gxmove <target-branch>
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/gx-lib.sh"

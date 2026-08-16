@@ -89,6 +89,25 @@ source ~/Documents/dev/Quaestor-Web/dev/.zshrc
 # FUNCTIONS                                #
 # ─────────────────────────────────────────#
 
+function wt {
+  local output exit_code launch_claude=false target first_line
+  output=$("$HOME/.dotfiles/.scripts/worktree" "$@")
+  exit_code=$?
+  if [[ $exit_code -eq 0 && -n "$output" ]]; then
+    first_line=$(printf '%s' "$output" | head -1)
+    if [[ "$first_line" == "LAUNCH_CLAUDE" ]]; then
+      launch_claude=true
+      target=$(printf '%s' "$output" | tail -1)
+    else
+      target="$first_line"
+    fi
+    cd "$target"
+    if $launch_claude; then
+      claude
+    fi
+  fi
+}
+
 function runserver {
   cd ~/Documents/dev/Quaestor-Web/app
   dev aws-refresh-env

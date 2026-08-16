@@ -1,4 +1,7 @@
 #!/bin/bash
+# pr-desc — AI-generated GitHub PR description from branch diff
+# What: feeds branch commits and diff to Claude and returns a formatted PR body with Linear ticket link
+# When: before opening a PR on GitHub; --stdout prints to terminal, default copies to clipboard
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/gx-lib.sh"
