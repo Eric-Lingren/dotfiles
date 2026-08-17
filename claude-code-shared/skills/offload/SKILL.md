@@ -49,7 +49,17 @@ Resolve the tier to `model` and `effort` values from the `tiers` section.
 
 Example: `"to-seed": "T3"` resolves to `model: "sonnet"`, `effort: "high"`.
 
-### 3. Spawn the remote agent
+### 3. Read the target skill's SKILL.md
+
+Before spawning, read the target skill's full SKILL.md from the local filesystem:
+
+```
+~/.dotfiles/claude-code-shared/skills/<target-skill>/SKILL.md
+```
+
+If the file is not found, stop and report the missing path to the user. Do not guess alternate locations.
+
+### 4. Spawn the remote agent
 
 Spawn an Agent with:
 
@@ -65,19 +75,23 @@ prompt: <see template below>
 ```
 You are running the /<target-skill> skill at effort level: <resolved effort>.
 
+## Skill instructions
+
+Execute the following skill exactly. Do not deviate from its output format.
+
+<full contents of the target SKILL.md, pasted verbatim>
+
 ## Input
 
 <input-content or compressed context brief>
 
-## Instructions
+## Output instructions
 
-1. Load and execute the /<target-skill> skill as instructed in its SKILL.md.
-2. Produce the complete output the skill would display to the user.
-3. Return ONLY that output in your final response — no truncation, no summary.
-   - If the skill outputs plain text (e.g. pr-code-review review comments), return plain text.
+1. Follow the skill's output format exactly — same structure, same labels, same ordering.
+2. Return ONLY the skill's final user-facing output in your response — no truncation, no summary.
+   - If the skill outputs plain text (e.g. pr-code-review), return plain text.
    - If the skill outputs a JSON file (e.g. to-tasks), return valid JSON.
-   - Do NOT invent a JSON wrapper or restructure the output. Return it exactly as
-     the skill would display or write it. The caller writes it to disk verbatim.
+   - Do NOT invent a wrapper format. Return verbatim what the skill specifies.
 
 Effort level reminder: work at <resolved effort> effort — <effort description>.
 ```
@@ -88,7 +102,7 @@ Effort descriptions by level:
 - `high` — context-aware, standard depth.
 - `xhigh` — deep reasoning, architecture-level thinking.
 
-### 4. Receive output and write to disk
+### 5. Receive output and write to disk
 
 Receive the agent's text response.
 
@@ -105,7 +119,7 @@ Generate a filename:
 
 Write the agent's response verbatim to that path.
 
-### 5. Display the output
+### 6. Display the output
 
 After writing, display the agent's output directly to the user — exactly as the skill would have shown it locally. Do not summarize or reformat. Print the full content, then report the output path on a final line:
 
