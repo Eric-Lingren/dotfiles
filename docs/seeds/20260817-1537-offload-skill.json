@@ -1,0 +1,79 @@
+{
+  "schema_version": "4",
+  "producer": "to-seed",
+  "source": {"type": "session", "ref": null},
+  "title": "Offload Skill",
+  "slug": "offload-skill",
+  "created": "2026-08-17T21:37:00Z",
+  "summary": "The user wants to offload heavy skill executions (to-seed, to-tasks) to remote cloud VMs to preserve local context window and save local compute. The solution is a new skill named 'offload' that wraps the isolation: 'remote' Agent tool pattern, passes input content to the cloud VM, runs the target skill there, reads the output file, and returns content as text to the local orchestrator which writes files locally. Skill name 'offload' was chosen for brevity and consistency with verb-pattern skills. Effort level for the remote agent is hardcoded via prompt text using values from model-tiers.json, since /effort propagation to remote agents is unverified.",
+  "problem_statement": "Running /to-seed and /to-tasks locally consumes significant local context window and blocks the local session during long-running skill executions.",
+  "solution": "A new skill named 'offload' that accepts a target skill name and input content, looks up the model tier from model-tiers.json, spawns a remote agent with isolation: 'remote' and the correct model param, instructs the remote agent to run the target skill and return the full output file content as text, and writes that content to a local path outside the corporate GitHub repo.",
+  "decisions": [
+    "Cloud environment setup script clones https://github.com/Eric-Lingren/dotfiles.git to ~/.dotfiles on VM boot, creating symlinks so skills are available at ~/.cch/skills/",
+    "Dotfiles repo is public; no auth token needed in setup script",
+    "Cloud setup script tested and verified: 28 skills available at ~/.cch/skills/ on cloud VM",
+    "cch --cloud / cco --cloud creates cloud sessions from terminal; --teleport attaches to local terminal (not cloud VM)",
+    "True cloud VM execution requires browser interaction or isolation: 'remote' subagent pattern",
+    "File content transfers between cloud VM and local via text in agent responses; local session writes files to disk",
+    "Local context window is preserved because remote agent intermediate work stays on VM context, only final text result returns",
+    "The delegate array in model-tiers.json is for local Haiku delegation only; it does not handle remote cloud execution",
+    "isolation: 'remote' is not present anywhere in the current skills/scripts codebase; this is net-new infrastructure",
+    "A new skill is needed; extending the delegate pattern is off the table",
+    "Artifact files (seed JSON, task JSON) must not be committed to corporate GitHub repo; they stay local only",
+    "Skills write output files to cloud VM disk; the remote agent wrapper must read and return full file content as text",
+    "Cold VM startup overhead is approximately 30-60 seconds per remote agent spawn",
+    "Model tiers already properly assigned in model-tiers.json and synced to SKILL.md frontmatter",
+    "to-seed is T3 (sonnet/high), to-tasks is T3 (sonnet/high), debug is T4 (opus/xhigh), grill-me is T4 (opus/xhigh)",
+    "Skill name is 'offload': shortest accurate label, verb-pattern consistent with other skills, no collision with existing skills",
+    "Effort level is hardcoded via prompt text instruction from model-tiers.json values; /effort session propagation to remote agents is unverified and not relied upon"
+  ],
+  "open_threads": [],
+  "disposed_threads": [
+    {"id": "ot-001", "text": "Final name for the new cloud offload skill (cloud-offload, offload, remote-run, or other)", "disposition": "decided", "iteration": 2},
+    {"id": "ot-002", "text": "Whether effort level control (/effort) is honored in remote agent sessions the same way as locally", "disposition": "decided", "iteration": 2}
+  ],
+  "next_action": "Build the offload skill SKILL.md in /Users/eric/.dotfiles/claude-code-shared/skills/",
+  "status": "ready",
+  "iteration": 2,
+  "implementation_decisions": [
+    "New skill named 'offload' accepts: target skill name + input content as arguments",
+    "Skill looks up model tier and effort from model-tiers.json for the target skill",
+    "Skill spawns Agent with isolation: 'remote' and the correct model param",
+    "Remote agent prompt instructs: run the target skill at <effort> effort, then read the output file and return full content as text",
+    "Local orchestrator writes the returned content to a local path (not in the corporate repo)",
+    "Default output paths: /Users/eric/.dotfiles/docs/seeds/ for seeds, /Users/eric/.dotfiles/docs/tasks/ for tasks"
+  ],
+  "deferred": [
+    {
+      "text": "Test whether /effort session propagation carries over to isolation: 'remote' agents",
+      "rationale": "Unverified at build time; hardcoded prompt-text approach is the safe default for v1",
+      "context": "If propagation works, the skill could drop the explicit effort instruction and rely on session state instead",
+      "source_seed": null
+    },
+    {
+      "text": "Playwright and browser testing in cloud VMs",
+      "rationale": "Briefly explored as an Amp orbs equivalent; user interested but not the immediate focus",
+      "context": "Cloud VMs have chrome-devtools-mcp available; setup script would need to install browser deps for full Playwright support",
+      "source_seed": null
+    }
+  ],
+  "out_of_scope": [
+    {"text": "Committing artifact files (seeds, tasks) to corporate GitHub repo", "rationale": "User explicitly requires these stay local only"},
+    {"text": "Moving personal skills into corporate repo", "rationale": "User lacks access rights and permissions"},
+    {"text": "Using Amp orbs", "rationale": "User wants to stay on Claude Code; Amp orbs researched as reference point only"},
+    {"text": "Extending the delegate array pattern for remote execution", "rationale": "delegate is for local Haiku delegation only; wrong abstraction for cloud offload"}
+  ],
+  "risks_and_tradeoffs": [
+    "Cold VM startup adds 30-60s per remote spawn; only worthwhile for long-running skills",
+    "Remote agent must be explicitly instructed to read and return output file content; standard skill invocation alone is insufficient",
+    "Effort level hardcoded via prompt text may diverge from future model-tiers.json updates unless kept in sync"
+  ],
+  "verification": {
+    "iteration": 2,
+    "personas": ["grounding", "accuracy", "completeness", "coherence"],
+    "refutations_upheld": 3,
+    "refutations_screened": 1,
+    "clean": false,
+    "status": "verified"
+  }
+}
