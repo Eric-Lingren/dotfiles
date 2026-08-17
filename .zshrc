@@ -83,6 +83,9 @@ eval "$(fnm env --use-on-cd)"
 
 source ~/Documents/dev/Quaestor-Web/dev/.zshrc
 
+# New tabs that inherit a worktree CWD fall back to the main repo root
+[[ "$PWD" == */worktrees/* ]] && cd ~/Documents/dev/Quaestor-Web
+
 
 
 # ─────────────────────────────────────────#
@@ -102,6 +105,27 @@ function wt {
       target="$first_line"
     fi
     cd "$target"
+    local _wt_branch=""
+    for _wt_arg in "$@"; do
+      if [[ "$_wt_arg" != --* && "$_wt_arg" != "ls" && "$_wt_arg" != "rm" && "$_wt_arg" != "-h" && "$_wt_arg" != "--help" ]]; then
+        _wt_branch="$_wt_arg"
+        break
+      fi
+    done
+    if [[ -n "$_wt_branch" ]]; then
+      local _wt_label="${_wt_branch#feat/}"
+      _wt_label="${_wt_label#fix/}"
+      _wt_label="${_wt_label#spike/}"
+      _wt_label="🌿 $_wt_label"
+      ZSH_THEME_TERM_TITLE_IDLE="$_wt_label"
+      ZSH_THEME_TERM_TAB_TITLE_IDLE="$_wt_label"
+      local _wt_identity _wt_surface _wt_workspace
+      _wt_identity=$(cmux identify 2>/dev/null)
+      _wt_surface=$(printf '%s' "$_wt_identity" | grep -o 'surface:[0-9]*' | head -1)
+      _wt_workspace=$(printf '%s' "$_wt_identity" | grep -o 'workspace:[0-9]*' | head -1)
+      [[ -n "$_wt_surface" ]] && cmux rename-tab --surface "$_wt_surface" "$_wt_label" 2>/dev/null || true
+      [[ -n "$_wt_workspace" ]] && cmux rename-workspace --workspace "$_wt_workspace" "$_wt_label" 2>/dev/null || true
+    fi
     if $launch_claude; then
       claude
     fi

@@ -74,6 +74,26 @@ Read CLAUDE.md if present — it defines the project's conventions you must enfo
 
 Before drafting review comments, resolve this skill's voice profile: look up `pr-code-review` in `claude-code-shared/resources/voice-routing.json`'s `skills` map to get the mapped profile name(s), then resolve each name in the `profiles` map to its `file` path (relative to `claude-code-shared/resources/voice-profiles/`) and read that file. Write review comments in that voice. Do not hardcode a profile filename — always resolve it through `voice-routing.json` at run time.
 
+## Step 1b: Derive accurate line numbers from the diff
+
+**Never cite a line number from the raw diff file's row count.** That number is meaningless to a reader navigating the source file.
+
+Every hunk in a unified diff starts with a header:
+```
+@@ -old_start,old_count +new_start,new_count @@
+```
+
+`new_start` is the first line number in the **new file** for that hunk. Walk each line after the header and maintain a running counter:
+
+- Line starts with ` ` (context): this line exists in the new file at the current counter. Increment counter.
+- Line starts with `+` (added): this line exists in the new file at the current counter. **This is the line number to cite for added code.** Increment counter.
+- Line starts with `-` (removed): this line does **not** exist in the new file. Do **not** increment counter.
+- A new `@@ ... @@` header: reset counter to the new `new_start` value.
+
+When you form a finding, cite the **new-file line number** derived this way, not the diff row.
+
+If the changed line is a removal (a `-` line) with no replacement, cite the nearest surrounding context line in the new file instead, and note it was removed.
+
 ## Step 2: Understand context
 
 Before writing a single comment, read the files surrounding each changed section. A line that looks wrong in isolation may be correct in context. Likewise, a line that looks fine may conflict with a neighboring invariant.

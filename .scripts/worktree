@@ -217,16 +217,16 @@ fi
 # Case 2: branch exists locally but no worktree folder
 if git show-ref --verify --quiet "refs/heads/$BRANCH" 2>/dev/null; then
   mkdir -p "$(dirname "$WORKTREE_DIR")"
-  git worktree add "$WORKTREE_DIR" "$BRANCH"
+  git worktree add "$WORKTREE_DIR" "$BRANCH" >&2
   emit_path "$WORKTREE_DIR"
   exit 0
 fi
 
 # Case 3: branch exists on remote only — fetch then create
 if git ls-remote --heads origin "$BRANCH" 2>/dev/null | grep -q "refs/heads/$BRANCH"; then
-  git fetch origin "$BRANCH:$BRANCH"
+  git fetch origin "$BRANCH:$BRANCH" >&2
   mkdir -p "$(dirname "$WORKTREE_DIR")"
-  git worktree add "$WORKTREE_DIR" "$BRANCH"
+  git worktree add "$WORKTREE_DIR" "$BRANCH" >&2
   emit_path "$WORKTREE_DIR"
   exit 0
 fi
@@ -240,6 +240,6 @@ if [[ "$CONFIRM" == "n" || "$CONFIRM" == "N" ]]; then
 fi
 
 mkdir -p "$(dirname "$WORKTREE_DIR")"
-git worktree add -b "$BRANCH" "$WORKTREE_DIR" "$BASE"
+git worktree add -b "$BRANCH" "$WORKTREE_DIR" "$BASE" >&2
 emit_path "$WORKTREE_DIR"
 exit 0
