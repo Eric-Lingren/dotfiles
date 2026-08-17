@@ -13,7 +13,7 @@ This skill is **lineage-aware**: it groups artifacts by their provenance chain a
 
 **Three-way disposition:**
 - **Archive set** (bundle then remove originals): `docs/seeds/`, `docs/prd/`, `docs/tasks/`, `docs/handoffs/`
-- **Delete set** (remove without archiving): `docs/browser-checks/`, `docs/tasks/.logs/`
+- **Delete set** (remove without archiving): `docs/browser-checks/`, `docs/tasks/.logs/`, `docs/offload-output/`
 - **Untouched**: `docs/adr/`, `docs/prototype/`, `docs/wizard/` (committed wizard snippets — durable example corpus, never archived or deleted)
 
 ## Process

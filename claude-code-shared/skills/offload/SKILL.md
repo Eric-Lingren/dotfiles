@@ -72,10 +72,12 @@ You are running the /<target-skill> skill at effort level: <resolved effort>.
 ## Instructions
 
 1. Load and execute the /<target-skill> skill as instructed in its SKILL.md.
-2. Produce the full output the skill would normally write to a file.
-3. Return the COMPLETE file content as plain text in your final response — no truncation,
-   no summary, no fences around the whole thing (only fences inside the content if the
-   skill uses them). The caller will write the text to disk exactly as returned.
+2. Produce the complete output the skill would display to the user.
+3. Return ONLY that output in your final response — no truncation, no summary.
+   - If the skill outputs plain text (e.g. pr-code-review review comments), return plain text.
+   - If the skill outputs a JSON file (e.g. to-tasks), return valid JSON.
+   - Do NOT invent a JSON wrapper or restructure the output. Return it exactly as
+     the skill would display or write it. The caller writes it to disk verbatim.
 
 Effort level reminder: work at <resolved effort> effort — <effort description>.
 ```
@@ -88,19 +90,25 @@ Effort descriptions by level:
 
 ### 4. Receive output and write to disk
 
-Receive the agent's text response (the full file content).
+Receive the agent's text response.
 
-Determine the output directory:
-- If the target skill produces **seeds** (e.g. `to-seed`): write to `docs/seeds/`
-- If the target skill produces **tasks** (e.g. `to-tasks`): write to `docs/tasks/`
-- Otherwise: write to `docs/offload-output/` and create the directory if needed.
+Determine the output directory and file extension:
+- If the target skill produces **seeds** (e.g. `to-seed`): write to `docs/seeds/`, use `md`
+- If the target skill produces **tasks** (e.g. `to-tasks`): write to `docs/tasks/`, use `json`
+- Otherwise: write to `docs/offload-output/` (create if needed), use `md`
 
 Generate a filename:
 
 ```bash
-~/.dotfiles/claude-code-shared/scripts/doc-filename.sh <target-skill>-offload json
+~/.dotfiles/claude-code-shared/scripts/doc-filename.sh <target-skill>-offload <ext>
 ```
 
 Write the agent's response verbatim to that path.
 
-Report the output path to the user.
+### 5. Display the output
+
+After writing, display the agent's output directly to the user — exactly as the skill would have shown it locally. Do not summarize or reformat. Print the full content, then report the output path on a final line:
+
+```
+Output: <path>
+```

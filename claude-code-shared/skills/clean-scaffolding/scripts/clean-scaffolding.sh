@@ -9,7 +9,7 @@
 #                embed full content verbatim, then remove originals.
 #
 # Archive set (bundled then removed):  docs/seeds/, docs/prd/, docs/tasks/, docs/handoffs/
-# Delete set (removed, not archived):  docs/browser-checks/, docs/tasks/.logs/
+# Delete set (removed, not archived):  docs/browser-checks/, docs/tasks/.logs/, docs/offload-output/
 # Untouched:                           docs/adr/, docs/prototype/
 #
 # Never runs git. Never edits .gitignore. Deletion uses explicit rm per path:
@@ -19,7 +19,7 @@
 set -euo pipefail
 
 ARCHIVE_DIRS="docs/seeds docs/prd docs/tasks docs/handoffs"
-DELETE_DIRS="docs/browser-checks docs/tasks/.logs"
+DELETE_DIRS="docs/browser-checks docs/tasks/.logs docs/offload-output"
 DIRS="$ARCHIVE_DIRS $DELETE_DIRS"
 
 list_dir() {
@@ -29,6 +29,7 @@ list_dir() {
     docs/tasks)          find docs/tasks          -maxdepth 1 -type f              2>/dev/null ;;
     docs/handoffs)       find docs/handoffs       -maxdepth 1 -name '*.md' -type f 2>/dev/null ;;
     docs/browser-checks) find docs/browser-checks -maxdepth 1 -type f             2>/dev/null ;;
+    docs/offload-output) find docs/offload-output -maxdepth 1 -type f             2>/dev/null ;;
     docs/tasks/.logs)    find docs/tasks/.logs    -type f                        2>/dev/null ;;
   esac
 }
@@ -80,7 +81,7 @@ $files
 EOF
   done
   find docs/tasks/.logs -mindepth 1 -type d -empty -delete 2>/dev/null || true
-  rmdir docs/tasks/.logs docs/seeds docs/prd docs/tasks docs/handoffs docs/browser-checks docs 2>/dev/null || true
+  rmdir docs/tasks/.logs docs/seeds docs/prd docs/tasks docs/handoffs docs/browser-checks docs/offload-output docs 2>/dev/null || true
   printf "Deleted %d files.\n" "$total"
 }
 
@@ -100,7 +101,7 @@ do_delete_files() {
     fi
   done
   find docs/tasks/.logs -mindepth 1 -type d -empty -delete 2>/dev/null || true
-  rmdir docs/tasks/.logs docs/seeds docs/prd docs/tasks docs/handoffs docs/browser-checks docs 2>/dev/null || true
+  rmdir docs/tasks/.logs docs/seeds docs/prd docs/tasks docs/handoffs docs/browser-checks docs/offload-output docs 2>/dev/null || true
   printf "Deleted %d files.\n" "$total"
 }
 

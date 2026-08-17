@@ -4,7 +4,7 @@
     "account": "cch",
     "base_branch": "main",
     "domain": "personal",
-    "exclude": ["docs/prototype/", "docs/browser-checks/"]
+    "exclude": ["docs/prototype/", "docs/browser-checks/", "docs/offload-output/"]
   },
   "Quaestor-Technologies/Quaestor-Web": {
     "label": "quaestor-web",
@@ -12,20 +12,20 @@
     "base_branch": "main",
     "pr_draft": true,
     "domain": "standard-metrics",
-    "exclude": ["docs", "docs/adr/", "docs/prototype/", "docs/browser-checks/", "docs/seeds/", "docs/tasks/", "docs/handoffs/", "docs/prd/", "docs/archive/", ".gitignore"]
+    "exclude": ["docs", "docs/adr/", "docs/prototype/", "docs/browser-checks/", "docs/seeds/", "docs/tasks/", "docs/handoffs/", "docs/prd/", "docs/archive/", "docs/offload-output/", ".gitignore"]
   },
   "Eric-Lingren/SpawnedSapien": {
     "label": "spawnedsapien",
     "account": "cch",
     "base_branch": "main",
     "domain": "spawned-sapien",
-    "exclude": ["docs/prototype/", "docs/browser-checks/"]
+    "exclude": ["docs/prototype/", "docs/browser-checks/", "docs/offload-output/"]
   },
   "Eric-Lingren/ericlingren": {
     "label": "ericlingren",
     "account": "cch",
     "base_branch": "main",
     "domain": "personal",
-    "exclude": ["docs/browser-checks/"]
+    "exclude": ["docs/browser-checks/", "docs/offload-output/"]
   }
 }
