@@ -53,7 +53,8 @@
     "relay": "T2",
     "investigate": "T1",
     "improve-directory-structure": "T4",
-    "worktree": "T2"
+    "worktree": "T2",
+    "offload": "T2"
   },
   "agents": {
     "architecture-auditor": "T3",

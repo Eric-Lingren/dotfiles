@@ -1,0 +1,84 @@
+{
+  "schema_version": "2",
+  "producer": "to-tasks",
+  "source": {"type": "seed", "ref": "20260817-1537-offload-skill.json"},
+  "generated_at": "2026-08-17T22:00:00Z",
+  "branching": {
+    "strategy": "single",
+    "branch": "feat/offload-skill"
+  },
+  "tasks": [
+    {
+      "id": "T-0078",
+      "title": "Create offload skill and register in model-tiers.json",
+      "type": "AFK",
+      "task_type": "code",
+      "description": "Create claude-code-shared/skills/offload/SKILL.md with full skill instructions. The skill accepts two inputs: (1) target skill name, (2) input content — either passed as an arg or compressed from the local conversation context before spawning. The skill looks up model and effort for the target skill from model-tiers.json, spawns Agent with isolation: 'remote' and the resolved model param, and includes a prompt template that instructs the remote agent to run the target skill at the looked-up effort level and return the full output file content as text. The local session receives that text and writes it to docs/seeds/ (for seeds) or docs/tasks/ (for tasks). Add 'offload': 'T2' to the skills section of model-tiers.json. Run scripts/sync-model-tiers.py --apply to propagate the tier to SKILL.md frontmatter.",
+      "acceptance_criteria": [
+        "claude-code-shared/skills/offload/SKILL.md exists with name, description, model (sonnet), effort (medium), invokedBy (human) frontmatter",
+        "model-tiers.json includes 'offload': 'T2' in skills section",
+        "bash ~/.dotfiles/claude-code-shared/scripts/validate-schema.sh --instance ... model-tiers.json exits 0",
+        "SKILL.md instructions cover: target skill arg, input content arg, model-tiers.json lookup, Agent spawn with isolation: 'remote', remote prompt template with effort instruction, local file write to docs/seeds/ or docs/tasks/",
+        "offload is NOT added to the delegate array (delegate is for local Haiku only)"
+      ],
+      "blocked_by": [],
+      "status": "done",
+      "summary": "Created claude-code-shared/skills/offload/SKILL.md with correct frontmatter (model: sonnet, effort: medium, invokedBy: human) and full skill instructions covering target-skill arg, input-content arg with compression fallback, model-tiers.json lookup, Agent spawn with isolation: 'remote', remote prompt template with effort instruction, and local file write routing; registered 'offload': 'T2' in model-tiers.json and confirmed sync-model-tiers.py --apply propagated correctly.",
+      "files_touched": ["claude-code-shared/skills/offload/SKILL.md", "claude-code-shared/resources/model-tiers.json"],
+      "tests": {"passed": 0, "failed": 0, "skipped": 0},
+      "log_path": "docs/tasks/.logs/20260817-1600-offload-skill/T-0078.md",
+      "branch": null,
+      "pr": null
+    },
+    {
+      "id": "T-0079",
+      "title": "Live smoke test: invoke offload with to-seed on cloud VM",
+      "type": "HITL",
+      "task_type": "code",
+      "description": "Invoke /offload to-seed with a short test input. Verify the remote agent executes on a cloud VM via isolation: 'remote', returns seed content as text, and the local session writes a valid JSON file to docs/seeds/. Cold VM startup of 30-60s is expected on first invocation. Observe that only the final result text appears in the local context window, not the remote agent's intermediate tool calls.",
+      "acceptance_criteria": [
+        "/offload to-seed invocation completes without error",
+        "Output seed file written to docs/seeds/ with valid JSON content",
+        "File contains expected seed fields: schema_version, title, decisions",
+        "Local context window contains only the final returned text, not remote intermediate work"
+      ],
+      "blocked_by": ["T-0078"],
+      "status": "deferred_hitl",
+      "branch": null,
+      "pr": null
+    },
+    {
+      "id": "T-0080",
+      "title": "Test whether /effort session propagation carries over to isolation: 'remote' agents",
+      "type": "AFK",
+      "task_type": "triage",
+      "domain": "personal",
+      "deliverable": "code",
+      "description": "Test whether /effort session propagation carries over to isolation: 'remote' agents.\n\nIf propagation works, the offload skill could drop the explicit effort instruction in the remote prompt and rely on session state instead. This is currently unverified; the v1 offload skill hardcodes effort via prompt text from model-tiers.json as a safe default.",
+      "acceptance_criteria": ["Item has been exported to its destination by export-tasks"],
+      "blocked_by": [],
+      "status": "not_started",
+      "branch": null,
+      "pr": null,
+      "seed_ref": "20260817-1537-offload-skill.json",
+      "task_ref": "20260817-1600-offload-skill.json"
+    },
+    {
+      "id": "T-0081",
+      "title": "Playwright and browser testing in cloud VMs",
+      "type": "AFK",
+      "task_type": "triage",
+      "domain": "personal",
+      "deliverable": "code",
+      "description": "Playwright and browser testing in cloud VMs.\n\nCloud VMs have chrome-devtools-mcp available; the cloud setup script would need to install browser deps for full Playwright support. Explored briefly as an Amp orbs equivalent.",
+      "acceptance_criteria": ["Item has been exported to its destination by export-tasks"],
+      "blocked_by": [],
+      "status": "not_started",
+      "branch": null,
+      "pr": null,
+      "seed_ref": "20260817-1537-offload-skill.json",
+      "task_ref": "20260817-1600-offload-skill.json"
+    }
+  ],
+  "follow_ups": []
+}
