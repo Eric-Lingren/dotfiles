@@ -136,5 +136,64 @@
         }
       }
     }
+  },
+  "2026-W33": {
+    "adherence": {
+      "match": 6,
+      "n": 16,
+      "overall_pct": 37.5,
+      "skills": {
+        "build-code": {
+          "exp": "sonnet",
+          "mix": {
+            "opus": 1
+          }
+        },
+        "dispatch-tasks": {
+          "exp": "sonnet",
+          "mix": {
+            "sonnet": 2
+          }
+        },
+        "investigate": {
+          "exp": "haiku",
+          "mix": {
+            "opus": 1,
+            "sonnet": 6
+          }
+        },
+        "pr-revise": {
+          "exp": "sonnet",
+          "mix": {
+            "sonnet": 1
+          }
+        },
+        "relay": {
+          "exp": "sonnet",
+          "mix": {
+            "opus": 1,
+            "sonnet": 1
+          }
+        },
+        "run-task-followups": {
+          "exp": "sonnet",
+          "mix": {
+            "opus": 1
+          }
+        },
+        "tasks-to-linear": {
+          "exp": "sonnet",
+          "mix": {
+            "sonnet": 1
+          }
+        },
+        "vet": {
+          "exp": "sonnet",
+          "mix": {
+            "sonnet": 1
+          }
+        }
+      }
+    }
   }
 }
