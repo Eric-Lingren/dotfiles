@@ -1,9 +1,13 @@
 ================================================================
-CC USAGE DIGEST -- 2026-W31 (vs 2026-W30, last complete weeks)
+CC USAGE DIGEST -- 2026-W33 (vs 2026-W31, last complete weeks)
 ================================================================
-  spend    $    440   ^145%
-  opus%        55%   ^12pt
-  adher.       50%   n/a   (1/2)
+  spend    $  1,212   ^176%
+  opus%        47%   v8pt
+  adher.       38%   v12pt   (6/16)
 
   DRIFT (act):
-  to-tasks                   exp sonnet -> opus:1        1/1  3wk  -> re-tier up or add model override
+  investigate                exp haiku  -> sonnet:6,opus:1 7/7  1wk  -> T1 ran pricier -> check launch path / hook
+  DRIFT (minor / watch):
+  relay                      exp sonnet -> opus:1        1/2  1wk  -> re-tier up or add model override
+  build-code                 exp sonnet -> opus:1        1/1  1wk  -> re-tier up or add model override
+  run-task-followups         exp sonnet -> opus:1        1/1  1wk  -> re-tier up or add model override
