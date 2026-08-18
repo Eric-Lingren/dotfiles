@@ -130,14 +130,13 @@ function wt {
       local _wt_split
       _wt_split=$(cmux new-split right --surface "$_wt_surface" --workspace "$_wt_workspace" 2>/dev/null | grep -o 'surface:[0-9]*' | head -1)
       if [[ -n "$_wt_split" ]]; then
+        [[ -n "$_wt_label" ]] && cmux rename-tab --surface "$_wt_split" "$_wt_label" 2>/dev/null || true
         cmux send --surface "$_wt_split" "cd $(printf '%q' "$target")" 2>/dev/null
-        cmux send-key --surface "$_wt_split" Return 2>/dev/null
-        cmux send --surface "$_wt_split" "claude" 2>/dev/null
         cmux send-key --surface "$_wt_split" Return 2>/dev/null
       fi
     fi
     if $launch_claude; then
-      claude
+      cco
     fi
   fi
 }
