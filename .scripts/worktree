@@ -8,20 +8,6 @@ source "$SCRIPT_DIR/gx-lib.sh"
 
 WORKTREE_BASE="${WORKTREE_BASE:-$HOME/Documents/dev/worktrees}"
 
-# ─── Strip --claude flag (position-independent) ────────────────────────────────
-
-LAUNCH_CLAUDE=false
-_args=()
-for _arg in "$@"; do
-  if [[ "$_arg" == "--claude" ]]; then
-    LAUNCH_CLAUDE=true
-  else
-    _args+=("$_arg")
-  fi
-done
-set -- "${_args[@]}"
-unset _args _arg
-
 # ─── Help ──────────────────────────────────────────────────────────────────────
 
 print_help() {
@@ -29,12 +15,12 @@ print_help() {
 wt — git worktree helper
 
 USAGE
-  wt <branch> [base] [--claude]  resolve or create a worktree; --claude launches claude after cd
-  wt ls                       list worktrees for the current repo
-  wt ls --all                 list all worktrees across all repos
-  wt rm <branch>              remove a worktree (keeps the branch intact)
-  wt rm <branch> --force      remove even with uncommitted or unpushed changes
-  wt -h, wt --help            show this help
+  wt <branch> [base]  resolve or create a worktree
+  wt ls               list worktrees for the current repo
+  wt ls --all         list all worktrees across all repos
+  wt rm <branch>      remove a worktree (keeps the branch intact)
+  wt rm <branch> --force  remove even with uncommitted or unpushed changes
+  wt -h, wt --help    show this help
 
 WORKTREE LOCATION
   ~/Documents/dev/worktrees/<repo>/<branch>
@@ -46,12 +32,9 @@ EOF
 }
 
 # ─── Output helper ────────────────────────────────────────────────────────────
-# Emits the worktree path to stdout, preceded by LAUNCH_CLAUDE sentinel if needed.
 
 emit_path() {
-  local path="$1"
-  $LAUNCH_CLAUDE && echo "LAUNCH_CLAUDE"
-  echo "$path"
+  echo "$1"
 }
 
 # ─── Repo resolution helper ────────────────────────────────────────────────────

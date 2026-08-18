@@ -83,8 +83,11 @@ eval "$(fnm env --use-on-cd)"
 
 source ~/Documents/dev/Quaestor-Web/dev/.zshrc
 
-# New tabs that inherit a worktree CWD fall back to the main repo root
-[[ "$PWD" == */worktrees/* ]] && cd ~/Documents/dev/Quaestor-Web
+# New tabs that inherit a worktree CWD fall back to the main repo root on main branch
+if [[ "$PWD" == */worktrees/* ]]; then
+  cd ~/Documents/dev/Quaestor-Web
+  git switch main -q 2>/dev/null || true
+fi
 
 
 
@@ -93,17 +96,11 @@ source ~/Documents/dev/Quaestor-Web/dev/.zshrc
 # ─────────────────────────────────────────#
 
 function wt {
-  local output exit_code launch_claude=false target first_line
+  local output exit_code target
   output=$("$HOME/.dotfiles/.scripts/worktree" "$@")
   exit_code=$?
   if [[ $exit_code -eq 0 && -n "$output" ]]; then
-    first_line=$(printf '%s' "$output" | head -1)
-    if [[ "$first_line" == "LAUNCH_CLAUDE" ]]; then
-      launch_claude=true
-      target=$(printf '%s' "$output" | tail -1)
-    else
-      target="$first_line"
-    fi
+    target=$(printf '%s' "$output" | tail -1)
     cd "$target"
     local _wt_branch=""
     for _wt_arg in "$@"; do
@@ -134,9 +131,6 @@ function wt {
         cmux send --surface "$_wt_split" "cd $(printf '%q' "$target")" 2>/dev/null
         cmux send-key --surface "$_wt_split" Return 2>/dev/null
       fi
-    fi
-    if $launch_claude; then
-      cco
     fi
   fi
 }
