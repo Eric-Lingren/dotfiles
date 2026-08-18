@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # gxpush — preview-and-confirm push with flags
-# What: stages files, scans for secrets, generates an AI commit message, and pushes to origin with an optional PR
-# When: ready to push; flags: --all (blast-radius), --pick (git add -p), --pr (open PR), --push-only, --auto (no prompts)
+# What: stages files, scans for secrets, generates an AI commit message, pushes to origin, and fills in an empty PR description
+# When: ready to push; flags: --all (blast-radius), --pick (git add -p), --pr (open PR), --push-only, --auto (no prompts),
+#       --no-desc (never touch the PR body), --force-desc (regenerate even when a body exists)
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/gx-lib.sh"
@@ -16,6 +17,8 @@ MODE_PICK=false
 MODE_PR=false
 MODE_PUSH_ONLY=false
 MODE_AUTO=false
+MODE_NO_DESC=false
+MODE_FORCE_DESC=false
 
 for arg in "$@"; do
   case "$arg" in
@@ -24,6 +27,8 @@ for arg in "$@"; do
     --pr)         MODE_PR=true ;;
     --push-only)  MODE_PUSH_ONLY=true ;;
     --auto)       MODE_AUTO=true ;;
+    --no-desc)    MODE_NO_DESC=true ;;
+    --force-desc) MODE_FORCE_DESC=true ;;
   esac
 done
 
@@ -269,30 +274,158 @@ if [[ $? -ne 0 ]]; then
   exit 1
 fi
 
-if $MODE_PR; then
-  echo ""
-  echo "Creating PR..."
-  PR_BODY=$("$SCRIPT_DIR/pr-desc" --stdout)
-  BRANCH_SLUG=$(echo "$BRANCH" | tr '/' '-')
+# --- PR description ---
+# Runs on every push, not only --pr. If a PR already exists for this branch and
+# its body is empty, generate a description and fill it in.
 
-  # Append "Closes #N" when an issue number is discoverable.
-  # Priority: (1) $GITHUB_CLOSES env var, (2) gh-NNN in branch name.
-  _issue_number=""
+BRANCH_SLUG=$(echo "$BRANCH" | tr '/' '-')
+
+# Append "Closes #N" when an issue number is discoverable.
+# Priority: (1) $GITHUB_CLOSES env var, (2) gh-NNN in branch name.
+append_closes() {
+  local body="$1" _issue_number=""
   if [[ -n "${GITHUB_CLOSES:-}" ]]; then
     _issue_number="$GITHUB_CLOSES"
   elif [[ "$BRANCH_SLUG" =~ gh-([0-9]+) ]]; then
     _issue_number="${BASH_REMATCH[1]}"
   fi
   if [[ -n "$_issue_number" ]]; then
-    PR_BODY="$(printf '%s\n\nCloses #%s' "$PR_BODY" "$_issue_number")"
-  fi
-
-  if [[ "${GX_PR_DRAFT:-false}" == "true" ]]; then
-    echo "  [draft — repo policy requires draft PRs for this repo]"
-    gh pr create --title "$BRANCH_SLUG" --body "$PR_BODY" --draft
+    printf '%s\n\nCloses #%s' "$body" "$_issue_number"
   else
-    gh pr create --title "$BRANCH_SLUG" --body "$PR_BODY"
+    printf '%s' "$body"
   fi
+}
+
+GX_TMPFILES=()
+gx_tmpfile() {
+  local f
+  f=$(mktemp)
+  GX_TMPFILES+=("$f")
+  echo "$f"
+}
+gx_cleanup() {
+  [[ ${#GX_TMPFILES[@]} -gt 0 ]] && rm -f "${GX_TMPFILES[@]}"
+}
+trap gx_cleanup EXIT
+
+generate_pr_body() {
+  echo "Generating PR description..." >&2
+  local body
+  # GX_PR_DESC_CMD lets tests swap in a stub generator.
+  body=$("${GX_PR_DESC_CMD:-$SCRIPT_DIR/pr-desc}" --stdout)
+  [[ -z "$body" ]] && return 1
+  append_closes "$body"
+}
+
+if ! command -v gh >/dev/null 2>&1; then
+  echo "Done."
+  exit 0
+fi
+
+PR_JSON=$(gh pr view --json number,url,body 2>/dev/null)
+
+# No PR yet: create one only when --pr was passed.
+if [[ -z "$PR_JSON" ]]; then
+  if $MODE_PR; then
+    echo ""
+    echo "Creating PR..."
+    PR_BODY=$(generate_pr_body)
+    [[ -z "$PR_BODY" ]] && PR_BODY="(no description generated)"
+    BODY_FILE=$(gx_tmpfile)
+    printf '%s\n' "$PR_BODY" > "$BODY_FILE"
+    if [[ "${GX_PR_DRAFT:-false}" == "true" ]]; then
+      echo "  [draft — repo policy requires draft PRs for this repo]"
+      gh pr create --title "$BRANCH_SLUG" --body-file "$BODY_FILE" --draft
+    else
+      gh pr create --title "$BRANCH_SLUG" --body-file "$BODY_FILE"
+    fi
+  fi
+  echo "Done."
+  exit 0
+fi
+
+# A PR exists. Backfill its description when it has no real content.
+read -r PR_NUMBER PR_URL <<< "$(printf '%s' "$PR_JSON" | python3 -c '
+import json, sys
+d = json.load(sys.stdin)
+print(d["number"], d["url"])
+')"
+EXISTING_FILE=$(gx_tmpfile)
+printf '%s' "$PR_JSON" | python3 -c '
+import json, sys
+sys.stdout.write(json.load(sys.stdin).get("body") or "")
+' > "$EXISTING_FILE"
+
+echo ""
+echo "Existing PR: #$PR_NUMBER  $PR_URL"
+
+if $MODE_NO_DESC; then
+  echo "  description: skipped (--no-desc)"
+  echo "Done."
+  exit 0
+fi
+
+# empty = no content at all, template = the repo's PR template, unfilled.
+BODY_STATE=$("$SCRIPT_DIR/gx-pr-body" status < "$EXISTING_FILE")
+
+case "$BODY_STATE" in
+  empty)    echo "  description: missing" ;;
+  template) echo "  description: unfilled PR template" ;;
+  filled)   echo "  description: already written" ;;
+esac
+
+if [[ "$BODY_STATE" == "filled" ]] && ! $MODE_FORCE_DESC; then
+  echo "  leaving as-is (--force-desc to regenerate)"
+  echo "Done."
+  exit 0
+fi
+
+if [[ "$BODY_STATE" == "filled" ]] && ! $MODE_AUTO; then
+  printf "  Overwrite the existing description? [y/N] "
+  read -r DESC_CONFIRM
+  if [[ "$DESC_CONFIRM" != "y" && "$DESC_CONFIRM" != "Y" ]]; then
+    echo "  description: left unchanged."
+    echo "Done."
+    exit 0
+  fi
+fi
+
+PR_DESC=$(generate_pr_body)
+if [[ -z "$PR_DESC" ]]; then
+  echo "  description: generation failed, PR left unchanged."
+  exit 1
+fi
+
+# Merge into the existing body so template sections (compliance checklists and
+# the like) survive. A "filled" overwrite replaces the body outright.
+DESC_FILE=$(gx_tmpfile)
+printf '%s\n' "$PR_DESC" > "$DESC_FILE"
+BODY_FILE=$(gx_tmpfile)
+if [[ "$BODY_STATE" == "filled" ]]; then
+  cp "$DESC_FILE" "$BODY_FILE"
+else
+  "$SCRIPT_DIR/gx-pr-body" merge --desc "$DESC_FILE" < "$EXISTING_FILE" > "$BODY_FILE"
+fi
+
+if ! $MODE_AUTO; then
+  echo ""
+  echo "────────── proposed PR description ──────────"
+  cat "$BODY_FILE"
+  echo "─────────────────────────────────────────────"
+  printf "Apply to PR #%s? [Y/n] " "$PR_NUMBER"
+  read -r APPLY_CONFIRM
+  if [[ "$APPLY_CONFIRM" == "n" || "$APPLY_CONFIRM" == "N" ]]; then
+    echo "  description: not applied."
+    echo "Done."
+    exit 0
+  fi
+fi
+
+if gh pr edit "$PR_NUMBER" --body-file "$BODY_FILE"; then
+  echo "  description: updated on PR #$PR_NUMBER"
+else
+  echo "  description: gh pr edit failed."
+  exit 1
 fi
 
 echo "Done."

@@ -1,0 +1,168 @@
+#!/usr/bin/env python3
+"""gx-pr-body - classify and fill a GitHub PR description.
+
+What: decides whether a PR body is empty, an unfilled repo template, or real
+      prose, and merges a generated description into an unfilled template
+      without destroying the template's other sections.
+When: called by gxpush after pushing, to backfill a PR that has no real body.
+
+Subcommands:
+  status            read a PR body on stdin, print: empty | template | filled
+  merge --desc FILE read a PR body on stdin, print the merged body
+
+Options:
+  --repo-root DIR   repo to search for a PR template (default: git toplevel)
+  --template FILE   use this template file instead of auto-discovery
+"""
+
+import argparse
+import glob
+import os
+import re
+import subprocess
+import sys
+
+# Candidate PR template locations, in GitHub's own resolution order.
+TEMPLATE_GLOBS = [
+    ".github/PULL_REQUEST_TEMPLATE.md",
+    ".github/pull_request_template.md",
+    ".github/PULL_REQUEST_TEMPLATE/*.md",
+    "docs/PULL_REQUEST_TEMPLATE.md",
+    "docs/pull_request_template.md",
+    "PULL_REQUEST_TEMPLATE.md",
+    "pull_request_template.md",
+]
+
+HEADING_RE = re.compile(r"^#{1,6}\s+\S")
+CHECKBOX_RE = re.compile(r"^(\s*[-*]\s*\[)[xX](\])")
+HTML_COMMENT_RE = re.compile(r"<!--.*?-->", re.DOTALL)
+
+
+def normalize(text):
+    """Reduce a body to its comparable substance.
+
+    Strips CRs, HTML comments, and trailing whitespace, unchecks every
+    checkbox so a ticked template still matches its source, and collapses
+    blank-line runs. Two bodies that normalize alike are the same body.
+    """
+    text = text.replace("\r\n", "\n").replace("\r", "\n")
+    text = HTML_COMMENT_RE.sub("", text)
+    lines = []
+    for line in text.split("\n"):
+        line = CHECKBOX_RE.sub(r"\1 \2", line.rstrip())
+        lines.append(line)
+    out = []
+    for line in lines:
+        if not line and out and not out[-1]:
+            continue
+        out.append(line)
+    return "\n".join(out).strip()
+
+
+def git_toplevel():
+    try:
+        return subprocess.check_output(
+            ["git", "rev-parse", "--show-toplevel"],
+            stderr=subprocess.DEVNULL,
+            text=True,
+        ).strip()
+    except (subprocess.CalledProcessError, OSError):
+        return None
+
+
+def find_templates(repo_root, explicit):
+    if explicit:
+        return [explicit] if os.path.isfile(explicit) else []
+    if not repo_root:
+        return []
+    found = []
+    for pattern in TEMPLATE_GLOBS:
+        for path in sorted(glob.glob(os.path.join(repo_root, pattern))):
+            if os.path.isfile(path):
+                found.append(path)
+    return found
+
+
+def read(path):
+    with open(path, encoding="utf-8", errors="replace") as handle:
+        return handle.read()
+
+
+def classify(body, templates):
+    """empty (no substance) | template (matches an unfilled template) | filled."""
+    norm_body = normalize(body)
+    if not norm_body:
+        return "empty", None
+    for path in templates:
+        if normalize(read(path)) == norm_body:
+            return "template", path
+    return "filled", None
+
+
+def merge(body, desc):
+    """Drop desc into the template's first section, keeping later sections.
+
+    The placeholder region runs from just after the first heading to the next
+    structural marker: another heading, an HTML block, or a checklist item.
+    Everything from that marker on is preserved verbatim.
+    """
+    desc = desc.strip()
+    lines = body.replace("\r\n", "\n").replace("\r", "\n").split("\n")
+
+    heading_idx = next(
+        (i for i, line in enumerate(lines) if HEADING_RE.match(line)), None
+    )
+    if heading_idx is None:
+        # No heading to slot into. Lead with the description, keep the rest.
+        rest = "\n".join(lines).strip()
+        return f"{desc}\n\n{rest}\n" if rest else f"{desc}\n"
+
+    end_idx = len(lines)
+    for i in range(heading_idx + 1, len(lines)):
+        stripped = lines[i].lstrip()
+        if (
+            HEADING_RE.match(lines[i])
+            or stripped.startswith("<")
+            or re.match(r"^[-*]\s*\[[ xX]\]", stripped)
+        ):
+            end_idx = i
+            break
+
+    head = lines[: heading_idx + 1]
+    tail = lines[end_idx:]
+    merged = head + ["", desc]
+    if tail:
+        merged += [""] + tail
+    return "\n".join(merged).rstrip() + "\n"
+
+
+def main():
+    parser = argparse.ArgumentParser(add_help=True, description=__doc__)
+    parser.add_argument("command", choices=["status", "merge"])
+    parser.add_argument("--desc", help="file holding the generated description")
+    parser.add_argument("--repo-root", default=None)
+    parser.add_argument("--template", default=None)
+    args = parser.parse_args()
+
+    body = sys.stdin.read()
+    repo_root = args.repo_root or git_toplevel()
+    templates = find_templates(repo_root, args.template)
+    state, _ = classify(body, templates)
+
+    if args.command == "status":
+        print(state)
+        return 0
+
+    if not args.desc:
+        parser.error("merge requires --desc FILE")
+    desc = read(args.desc)
+
+    if state == "empty":
+        sys.stdout.write(desc.strip() + "\n")
+    else:
+        sys.stdout.write(merge(body, desc))
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

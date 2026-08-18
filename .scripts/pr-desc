@@ -16,8 +16,9 @@ BRANCH=$(git rev-parse --abbrev-ref HEAD)
 TICKET=$(echo "$BRANCH" | grep -oE '[A-Za-z]+-[0-9]+' | tr '[:lower:]' '[:upper:]')
 LINEAR_URL="https://linear.app/standard-metrics/issue/$TICKET"
 LINEAR_LINK="Linear Ticket: [$TICKET]($LINEAR_URL)"
-COMMITS=$(git log main...HEAD --oneline)
-DIFF=$(git diff main...HEAD | head -n 300)
+BASE="${GX_BASE_BRANCH:-main}"
+COMMITS=$(git log "$BASE"...HEAD --oneline)
+DIFF=$(git diff "$BASE"...HEAD | head -n 300)
 
 PROMPT="Branch: $BRANCH
 Commits:

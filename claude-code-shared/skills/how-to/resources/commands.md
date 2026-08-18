@@ -509,7 +509,15 @@ Personal git toolkit for dotfiles and personal repos. All verbs live in `~/.dotf
 ~/.dotfiles/.scripts/gxpush --pick    # interactive hunk selection (git add -p)
 ~/.dotfiles/.scripts/gxpush --pr      # push and open PR (uses pr-desc --stdout)
 ~/.dotfiles/.scripts/gxpush --push-only  # skip staging/commit; push only (for cherry-pick flows)
+~/.dotfiles/.scripts/gxpush --no-desc    # never touch the PR description
+~/.dotfiles/.scripts/gxpush --force-desc # regenerate the description even if one exists
 ```
+
+After pushing, gxpush checks whether the branch already has a PR. If that PR's body
+is empty, or is still the repo's unfilled PR template, it runs `pr-desc` and fills it
+in. A description someone already wrote is left alone unless you pass `--force-desc`.
+Filling an unfilled template replaces only the placeholder text under the first heading,
+so template sections like compliance checklists survive.
 
 **gxmove** — relocate uncommitted changes to another branch.
 ```bash
