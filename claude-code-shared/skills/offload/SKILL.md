@@ -37,6 +37,7 @@ If no target skill is given, print the invocation form above and stop.
 If no `input-content` was provided, compress the current conversation to a brief:
 - Include the topic, key decisions, and any file paths or data needed by the target skill.
 - Keep it under 400 words — enough context for a cold agent to run the skill without this session.
+- Always include the current git branch: run `git branch --show-current` and append `Current branch: <result>` to the brief. Skills like `to-seed` use this to skip their interactive branch prompt.
 
 ### 2. Look up model and effort from model-tiers.json
 
@@ -85,12 +86,20 @@ Execute the following skill exactly. Do not deviate from its output format.
 
 <input-content or compressed context brief>
 
+## Remote execution constraints
+
+You are running cold with no access to the local filesystem or session transcript. Apply these rules:
+
+1. **Branch prompts**: do not ask. Use the `Current branch:` value from the Input section above.
+2. **Adversarial verification** (e.g. to-seed persona stage): skip it. Set `verification.status: "degraded"` and `verification.skipped_reason: "no local transcript available in remote execution"`. Do not spawn persona sub-agents.
+3. **File writes**: do not write files. Return the output as text — the caller writes it to disk.
+
 ## Output instructions
 
 1. Follow the skill's output format exactly — same structure, same labels, same ordering.
-2. Return ONLY the skill's final user-facing output in your response — no truncation, no summary.
+2. Return ONLY the skill's final output in your response — no truncation, no summary.
    - If the skill outputs plain text (e.g. pr-code-review), return plain text.
-   - If the skill outputs a JSON file (e.g. to-tasks), return valid JSON.
+   - If the skill outputs a JSON file (e.g. to-seed, to-tasks), return valid JSON.
    - Do NOT invent a wrapper format. Return verbatim what the skill specifies.
 
 Effort level reminder: work at <resolved effort> effort — <effort description>.
@@ -107,7 +116,7 @@ Effort descriptions by level:
 Receive the agent's text response.
 
 Determine the output directory and file extension:
-- If the target skill produces **seeds** (e.g. `to-seed`): write to `docs/seeds/`, use `md`
+- If the target skill produces **seeds** (e.g. `to-seed`): write to `docs/seeds/`, use `json`
 - If the target skill produces **tasks** (e.g. `to-tasks`): write to `docs/tasks/`, use `json`
 - Otherwise: write to `docs/offload-output/` (create if needed), use `md`
 
