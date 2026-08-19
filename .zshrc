@@ -44,6 +44,10 @@ setopt NO_SHARE_HISTORY
 export PATH="$HOME/.console-ninja/.bin:$PATH"
 export PATH="/Applications/Ghostty.app/Contents/MacOS:$PATH"
 export PATH="$HOME/.scripts:$PATH"
+# Editor CLI shims. VS Code owns `code`; Cursor aliased so its bundled
+# `code` binary cannot shadow it.
+export PATH="/Applications/Visual Studio Code.app/Contents/Resources/app/bin:$PATH"
+alias cursor="/Applications/Cursor.app/Contents/Resources/app/bin/cursor"
 
 
 
