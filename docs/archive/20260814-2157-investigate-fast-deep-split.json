@@ -1,0 +1,144 @@
+{
+  "kind": "condensed",
+  "producer": "clean-scaffolding",
+  "slug": "investigate-fast-deep-split",
+  "title": "Investigate skill fast/deep split",
+  "condensed_at": "2026-08-19T01:55:03Z",
+  "condensed_from": [
+    "20260814-2157-investigate-fast-deep-split.json",
+    "20260814-2212-investigate-fast-deep-split.json"
+  ],
+  "artifacts": [
+    {
+      "filename": "20260814-2157-investigate-fast-deep-split.json",
+      "type": "seed",
+      "content": {
+        "schema_version": "4",
+        "producer": "to-seed",
+        "source": {
+          "type": "session",
+          "ref": null
+        },
+        "title": "Investigate skill fast/deep split",
+        "slug": "investigate-fast-deep-split",
+        "created": "2026-08-14T21:57:00Z",
+        "iteration": 1,
+        "status": "ready",
+        "summary": "The investigate skill's investigator agent runs a 5-step pipeline. Step 4 (Bounded expansion \u2014 adjacent_facts) spawns 3-5 extra sub-investigations to surface adjacent material facts. This is always-on today and accounts for meaningful latency. The decision: split fast vs deep modes gated entirely on whether step 4 runs. Steps 1-3 are identical in both modes. The investigate skill will always present an AskUserQuestion prompt (header: Depth) before routing to the investigator; explicit 'fast' or 'deep' in the user's message skips the prompt. A new `depth: fast|deep` field is added to the investigator Input contract. Absent \u2192 deep, preserving current behavior for direct callers (pr-revise, pr-code-review). The field is universal \u2014 any caller may pass it. A one-line skip guard at the top of step 4 enforces fast mode. Fast/deep guidance is documented in investigator.md as a non-binding rule: fast for one self-contained falsifiable fact; deep for act-on-context, triage, why/how, or multi-claim.",
+        "decisions": [
+          "Lever is step 4 (Bounded expansion \u2014 adjacent_facts) on/off only. Steps 1-3 run identically in both modes.",
+          "Control surface is AskUserQuestion in the investigate skill \u2014 no typed flag. User taps, not types.",
+          "Skill always presents fast/deep prompt. Explicit 'fast' or 'deep' in the user's request skips the prompt and honors the explicit choice.",
+          "depth: fast|deep field added to investigator agent Input contract. Absent \u2192 deep. Preserves current always-on behavior for all existing callers.",
+          "Step 4 gains a one-line skip guard: if depth == fast, skip step 4 and proceed to step 5. Step 5 is unchanged (adjacent_facts already optional in schema).",
+          "depth field is universal \u2014 any caller may pass it at any call-site. Not restricted to the investigate skill.",
+          "Direct callers (pr-revise, pr-code-review) do not change today. They pass no depth field \u2192 default deep. They may add depth: fast at specific call-sites in the future.",
+          "Fast/deep line documented as guidance in investigator.md: fast = one self-contained falsifiable fact where adjacent context won't change the action; deep = act-on-context, incident triage, why/how, or multi-claim.",
+          "AskUserQuestion prompt: header 'Depth', question 'Fast or deep answer?', Fast listed first (Literal answer only, verdict+evidence, skips adjacent-facts, fewer spawns, quicker), Deep listed second (Full investigation + adjacent facts, more spawns, slower)."
+        ],
+        "open_threads": [],
+        "disposed_threads": [],
+        "implementation_decisions": [
+          "agents/investigator.md: add `depth` (optional, enum fast|deep, default deep) to the Input section.",
+          "agents/investigator.md: add skip guard at top of step 4 \u2014 'If depth == fast, skip this step and proceed to step 5.'",
+          "agents/investigator.md: add fast/deep guidance block near step 4 or in a preamble, non-binding, per the documented line.",
+          "skills/investigate/SKILL.md: add Step 0 (or inline after input parse) \u2014 spawn AskUserQuestion with header 'Depth', 'Fast or deep answer?', Fast/Deep options. Honor explicit 'fast'/'deep' in $ARGUMENTS to skip prompt.",
+          "skills/investigate/SKILL.md: append `depth: fast` or `depth: deep` to the investigator prompt string based on user selection."
+        ],
+        "next_action": "Run /to-tasks to generate the implementation task file for the two-file change.",
+        "further_notes": [
+          "Both files are under ~/.dotfiles/claude-code-shared/ \u2014 investigator.md under agents/, SKILL.md under skills/investigate/.",
+          "The investigate skill already parses --out raw|slack in Step 0. The depth prompt is a separate concern and should be its own step or a parallel parse in the same step.",
+          "No changes to the investigation-result schema are needed \u2014 adjacent_facts is already optional/omittable."
+        ],
+        "verification": {
+          "iteration": 1,
+          "personas": [
+            "grounding",
+            "accuracy",
+            "completeness",
+            "coherence"
+          ],
+          "refutations_upheld": 0,
+          "refutations_screened": 0,
+          "clean": true,
+          "status": "verified"
+        }
+      }
+    },
+    {
+      "filename": "20260814-2212-investigate-fast-deep-split.json",
+      "type": "task",
+      "content": {
+        "schema_version": "2",
+        "producer": "to-tasks",
+        "source": {
+          "type": "seed",
+          "ref": "20260814-2157-investigate-fast-deep-split.json"
+        },
+        "generated_at": "2026-08-14T22:12:00Z",
+        "branching": {
+          "strategy": "single",
+          "branch": "feat/investigate-fast-deep-split"
+        },
+        "tasks": [
+          {
+            "id": "T-0070",
+            "title": "Add depth field and skip guard to investigator agent",
+            "type": "AFK",
+            "task_type": "code",
+            "description": "Update agents/investigator.md to add a `depth` field (optional, enum fast|deep, default deep) to the Input contract section. Add a one-line skip guard at the top of step 4 (Bounded expansion / adjacent_facts): 'If depth == fast, skip this step and proceed to step 5.' Add a fast/deep guidance block near step 4 (non-binding): fast = one self-contained falsifiable fact where adjacent context won't change the action; deep = act-on-context, incident triage, why/how, or multi-claim. Absent depth field defaults to deep, preserving all existing caller behavior.",
+            "acceptance_criteria": [
+              "agents/investigator.md Input section contains depth field documented as optional, enum fast|deep, default deep",
+              "Step 4 in agents/investigator.md opens with a skip guard: 'If depth == fast, skip this step and proceed to step 5'",
+              "Fast/deep guidance block is present near step 4 with the two-case rule (fast vs deep)",
+              "Existing callers (pr-revise, pr-code-review) that pass no depth field are unaffected by the change"
+            ],
+            "blocked_by": [],
+            "status": "done",
+            "branch": null,
+            "pr": null,
+            "summary": "Added optional depth field (fast|deep, default deep) to investigator.md Input contract, a skip guard at the top of step 4, and a non-binding fast/deep guidance block; existing callers passing no depth field are unaffected.",
+            "files_touched": [
+              "claude-code-shared/agents/investigator.md"
+            ],
+            "tests": {
+              "passed": 4,
+              "failed": 0
+            },
+            "log_path": "docs/tasks/.logs/20260814-2212-investigate-fast-deep-split.json/T-0070.md"
+          },
+          {
+            "id": "T-0071",
+            "title": "Add fast/deep depth prompt to investigate skill",
+            "type": "AFK",
+            "task_type": "code",
+            "description": "Update skills/investigate/SKILL.md to present an AskUserQuestion prompt before routing to the investigator. The prompt uses header 'Depth', question 'Fast or deep answer?', with Fast listed first (literal answer only, verdict+evidence, skips adjacent-facts, fewer spawns, quicker) and Deep listed second (full investigation + adjacent facts, more spawns, slower). If the user's $ARGUMENTS contain the explicit word 'fast' or 'deep', skip the prompt entirely and honor the explicit choice. After selection (or auto-detection), append `depth: fast` or `depth: deep` to the investigator prompt string. The investigate skill already parses --out raw|slack in Step 0; the depth prompt is a separate concern handled as its own step or a parallel parse in the same step.",
+            "acceptance_criteria": [
+              "skills/investigate/SKILL.md contains an AskUserQuestion step with header 'Depth' and two options: Fast and Deep",
+              "Explicit 'fast' or 'deep' in $ARGUMENTS bypasses the AskUserQuestion prompt",
+              "The investigator prompt string receives `depth: fast` or `depth: deep` appended based on the selection",
+              "Running the investigate skill without an explicit depth flag surfaces the fast/deep prompt before investigation begins"
+            ],
+            "blocked_by": [
+              "T-0070"
+            ],
+            "status": "done",
+            "branch": null,
+            "pr": null,
+            "summary": "Added fast/deep depth resolution to SKILL.md: Step 0 now detects explicit 'fast'/'deep' in $ARGUMENTS (bypassing the prompt) or surfaces an AskUserQuestion with header 'Depth' and Fast/Deep options; Step 3 always appends `depth: <value>` to the investigator prompt string.",
+            "files_touched": [
+              "claude-code-shared/skills/investigate/SKILL.md"
+            ],
+            "tests": {
+              "passed": 4,
+              "failed": 0
+            },
+            "log_path": "docs/tasks/.logs/20260814-2212-investigate-fast-deep-split.json/T-0071.md"
+          }
+        ],
+        "follow_ups": []
+      }
+    }
+  ]
+}
