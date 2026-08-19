@@ -87,10 +87,17 @@ eval "$(fnm env --use-on-cd)"
 
 source ~/Documents/dev/Quaestor-Web/dev/.zshrc
 
-# New tabs that inherit a worktree CWD fall back to the main repo root on main branch
-if [[ "$PWD" == */worktrees/* ]]; then
+# New cmux tabs inherit the parent pane's CWD. Opening a fresh workspace from
+# inside a worktree would start you in that worktree instead of clean, so reset
+# to the main repo root.
+#
+# Editor terminals are exempt. Cursor and VS Code both report TERM_PROGRAM=vscode
+# and root their integrated terminal in the folder the window has open, which for
+# a worktree window is the worktree itself. Without this guard the rc file cds
+# out of it and the terminal reports the main clone instead. cmux reports
+# TERM_PROGRAM=ghostty.
+if [[ "$PWD" == */worktrees/* && "$TERM_PROGRAM" != "vscode" ]]; then
   cd ~/Documents/dev/Quaestor-Web
-  git switch main -q 2>/dev/null || true
 fi
 
 
