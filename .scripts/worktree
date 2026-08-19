@@ -22,8 +22,24 @@ USAGE
   wt rm <branch> --force  remove even with uncommitted or unpushed changes
   wt -h, wt --help    show this help
 
+FLAGS
+  --no-install        skip the dependency install step
+  --no-links          skip the local config symlink step
+
 WORKTREE LOCATION
   ~/Documents/dev/worktrees/<repo>/<branch>
+
+DEPENDENCIES
+  node_modules is gitignored, so a new worktree starts empty. On create, deps
+  are installed for the repo root and each immediate subdir holding a
+  package.json, using the package manager named by its lockfile. On attach,
+  only dirs still missing node_modules are installed.
+
+LOCAL CONFIG
+  Gitignored config listed under "worktree_links" in repo-policy.json is
+  symlinked from the main worktree into each new worktree. A plain branch
+  checkout leaves such files untouched, so every branch reads one shared file.
+  Symlinks reproduce that. Existing regular files are never overwritten.
 
 BRANCH PREFIXES
   Recommended: feat/, fix/, spike/
@@ -39,11 +55,38 @@ emit_path() {
 
 # ─── Repo resolution helper ────────────────────────────────────────────────────
 
+# Resolve the MAIN worktree root, never the current one.
+#
+# git rev-parse --show-toplevel returns whichever worktree you are standing in.
+# Running wt from inside a worktree would therefore name the repo after the
+# branch's leaf directory, and nest new worktrees under the wrong parent.
+#
+# --git-common-dir always points at the main clone's .git. It comes back
+# relative (".git", "../.git") when you are already in the main worktree, and
+# absolute ("/path/to/repo/.git") when you are in a linked one.
+main_worktree_root() {
+  local common
+  common=$(git rev-parse --git-common-dir 2>/dev/null) || return 1
+  [[ -n "$common" ]] || return 1
+
+  if [[ "$common" != /* ]]; then
+    # Relative form: already in the main worktree.
+    git rev-parse --show-toplevel 2>/dev/null
+    return
+  fi
+
+  echo "${common%/.git}"
+}
+
 resolve_repo() {
-  REPO_ROOT=$(git rev-parse --show-toplevel 2>/dev/null) || {
+  REPO_ROOT=$(main_worktree_root) || {
     echo "ERROR: not inside a git repository" >&2
     exit 1
   }
+  if [[ -z "$REPO_ROOT" ]]; then
+    echo "ERROR: not inside a git repository" >&2
+    exit 1
+  fi
   REPO_NAME=$(basename "$REPO_ROOT")
 }
 
@@ -131,6 +174,114 @@ cmd_rm() {
   echo "Removed worktree for branch '$branch'" >&2
 }
 
+# ─── Dependency install ───────────────────────────────────────────────────────
+
+# Installs JS deps for the repo root and each immediate subdir holding a
+# package.json. node_modules is gitignored, so a fresh worktree has none, and
+# the editor reports every import as unresolved until this runs.
+#
+# $1 worktree dir. $2 "true" to skip dirs that already have node_modules.
+install_deps() {
+  local wt_dir="$1"
+  local only_if_missing="${2:-false}"
+  local dir pm label
+
+  [[ "$INSTALL_DEPS" == true ]] || return 0
+
+  for dir in "$wt_dir" "$wt_dir"/*/; do
+    dir="${dir%/}"
+    [[ -d "$dir" ]] || continue
+    [[ -f "$dir/package.json" ]] || continue
+    [[ "$only_if_missing" == true && -d "$dir/node_modules" ]] && continue
+
+    if [[ -f "$dir/pnpm-lock.yaml" ]]; then
+      pm="pnpm"
+    elif [[ -f "$dir/yarn.lock" ]]; then
+      pm="yarn"
+    elif [[ -f "$dir/bun.lockb" || -f "$dir/bun.lock" ]]; then
+      pm="bun"
+    elif [[ -f "$dir/package-lock.json" ]]; then
+      pm="npm"
+    else
+      continue
+    fi
+
+    label="${dir#$wt_dir}"
+    label="${label#/}"
+    [[ -n "$label" ]] || label="."
+
+    if [[ -z "$(command -v "$pm")" ]]; then
+      echo "WARN: $pm not on PATH; skipping install in $label" >&2
+      continue
+    fi
+
+    echo "installing deps: $pm install in $label" >&2
+    ( cd "$dir" && "$pm" install >&2 ) || \
+      echo "WARN: $pm install failed in $label; worktree usable but deps incomplete" >&2
+  done
+}
+
+# ─── Local config links ───────────────────────────────────────────────────────
+
+# Symlinks gitignored local config from the main worktree into a new worktree.
+# git leaves ignored files alone on checkout, so one directory switching
+# branches sees a single shared .env. A symlink gives a worktree the same
+# behaviour. A copy would not: it drifts the moment a credential is rotated.
+#
+# $1 worktree dir.
+link_local_config() {
+  local wt_dir="$1"
+  local main_root rel src dest dest_parent
+
+  [[ "$LINK_CONFIG" == true ]] || return 0
+
+  main_root=$(main_worktree_root) || return 0
+  [[ -n "$main_root" ]] || return 0
+
+  while IFS= read -r rel; do
+    [[ -n "$rel" ]] || continue
+    src="$main_root/$rel"
+    dest="$wt_dir/$rel"
+
+    if [[ ! -e "$src" ]]; then
+      echo "WARN: local config '$rel' not found in $main_root; skipping" >&2
+      continue
+    fi
+
+    if [[ -L "$dest" ]]; then
+      continue
+    fi
+
+    if [[ -e "$dest" ]]; then
+      echo "WARN: '$rel' already exists in worktree as a real file; leaving it alone" >&2
+      continue
+    fi
+
+    dest_parent=$(dirname "$dest")
+    [[ -d "$dest_parent" ]] || mkdir -p "$dest_parent"
+
+    if ln -s "$src" "$dest" 2>/dev/null; then
+      echo "linked local config: $rel -> $src" >&2
+    else
+      echo "WARN: could not link '$rel' into worktree" >&2
+    fi
+  done < <(gx_worktree_links)
+}
+
+# ─── Flag extraction ──────────────────────────────────────────────────────────
+
+INSTALL_DEPS=true
+LINK_CONFIG=true
+WT_ARGS=()
+for wt_arg in "$@"; do
+  case "$wt_arg" in
+    --no-install) INSTALL_DEPS=false ;;
+    --no-links) LINK_CONFIG=false ;;
+    *) WT_ARGS+=("$wt_arg") ;;
+  esac
+done
+set -- "${WT_ARGS[@]}"
+
 # ─── Dispatch ─────────────────────────────────────────────────────────────────
 
 CMD="${1:-}"
@@ -163,12 +314,8 @@ esac
 BRANCH="$CMD"
 BASE_OVERRIDE="${2:-}"
 
-# Resolve repo root and name
-REPO_ROOT=$(git rev-parse --show-toplevel 2>/dev/null) || {
-  echo "ERROR: not inside a git repository" >&2
-  exit 1
-}
-REPO_NAME=$(basename "$REPO_ROOT")
+# Resolve repo root and name (always the MAIN worktree, see main_worktree_root)
+resolve_repo
 
 # Worktree path formula (WORKTREE_BASE is overridable for tests)
 WORKTREE_DIR="$WORKTREE_BASE/$REPO_NAME/$BRANCH"
@@ -193,6 +340,8 @@ fi
 # Case 1: worktree folder already exists — attach to it
 if [[ -d "$WORKTREE_DIR" ]]; then
   echo "attaching to existing branch $BRANCH" >&2
+  link_local_config "$WORKTREE_DIR"
+  install_deps "$WORKTREE_DIR" true
   emit_path "$WORKTREE_DIR"
   exit 0
 fi
@@ -201,6 +350,8 @@ fi
 if git show-ref --verify --quiet "refs/heads/$BRANCH" 2>/dev/null; then
   mkdir -p "$(dirname "$WORKTREE_DIR")"
   git worktree add "$WORKTREE_DIR" "$BRANCH" >&2
+  link_local_config "$WORKTREE_DIR"
+  install_deps "$WORKTREE_DIR"
   emit_path "$WORKTREE_DIR"
   exit 0
 fi
@@ -210,6 +361,8 @@ if git ls-remote --heads origin "$BRANCH" 2>/dev/null | grep -q "refs/heads/$BRA
   git fetch origin "$BRANCH:$BRANCH" >&2
   mkdir -p "$(dirname "$WORKTREE_DIR")"
   git worktree add "$WORKTREE_DIR" "$BRANCH" >&2
+  link_local_config "$WORKTREE_DIR"
+  install_deps "$WORKTREE_DIR"
   emit_path "$WORKTREE_DIR"
   exit 0
 fi
@@ -224,5 +377,7 @@ fi
 
 mkdir -p "$(dirname "$WORKTREE_DIR")"
 git worktree add -b "$BRANCH" "$WORKTREE_DIR" "$BASE" >&2
+link_local_config "$WORKTREE_DIR"
+install_deps "$WORKTREE_DIR"
 emit_path "$WORKTREE_DIR"
 exit 0

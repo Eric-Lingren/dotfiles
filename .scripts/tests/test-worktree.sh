@@ -408,107 +408,51 @@ assert_contains "help-long: stderr shows wt ls" "wt ls" "$RUN_STDERR"
 assert_contains "help-long: stderr shows wt rm" "wt rm" "$RUN_STDERR"
 teardown_mock_env
 
-# ─── --claude flag: plain wt does NOT emit LAUNCH_CLAUDE ─────────────────────
+# ─── stdout purity: only the worktree path reaches stdout ────────────────────
+# The wt zsh function cds to stdout, so every human-facing line must go to
+# stderr. Dependency install and config link output must not leak in.
 
 setup_mock_env
-mkdir -p "$TEST_WORKTREES/myrepo/feat/no-claude"
-run_wt -- feat/no-claude
-assert_eq "no-claude: exit code 0" "0" "$RUN_EXIT"
-assert_eq "no-claude: stdout is just the path (no sentinel)" "$TEST_WORKTREES/myrepo/feat/no-claude" "$RUN_STDOUT"
-assert_not_contains "no-claude: stdout has no LAUNCH_CLAUDE sentinel" "LAUNCH_CLAUDE" "$RUN_STDOUT"
+mkdir -p "$TEST_WORKTREES/myrepo/feat/quiet"
+run_wt -- feat/quiet
+assert_eq "stdout-purity: exit code 0" "0" "$RUN_EXIT"
+assert_eq "stdout-purity: stdout is just the path" "$TEST_WORKTREES/myrepo/feat/quiet" "$RUN_STDOUT"
+assert_not_contains "stdout-purity: no install output on stdout" "installing deps" "$RUN_STDOUT"
+assert_not_contains "stdout-purity: no link output on stdout" "linked local config" "$RUN_STDOUT"
 teardown_mock_env
 
-# ─── --claude flag: after branch name (case1 worktree exists) ─────────────────
+# ─── --no-install / --no-links are consumed, not treated as a branch ─────────
 
 setup_mock_env
-mkdir -p "$TEST_WORKTREES/myrepo/feat/with-claude"
-run_wt -- feat/with-claude --claude
-assert_eq "claude-after: exit code 0" "0" "$RUN_EXIT"
-FIRST_LINE=$(printf '%s' "$RUN_STDOUT" | head -1)
-SECOND_LINE=$(printf '%s' "$RUN_STDOUT" | tail -1)
-assert_eq "claude-after: first line is LAUNCH_CLAUDE sentinel" "LAUNCH_CLAUDE" "$FIRST_LINE"
-assert_eq "claude-after: second line is worktree path" "$TEST_WORKTREES/myrepo/feat/with-claude" "$SECOND_LINE"
+mkdir -p "$TEST_WORKTREES/myrepo/feat/flags"
+run_wt -- feat/flags --no-install --no-links
+assert_eq "flags: exit code 0" "0" "$RUN_EXIT"
+assert_eq "flags: stdout is the branch path, flags stripped" "$TEST_WORKTREES/myrepo/feat/flags" "$RUN_STDOUT"
 teardown_mock_env
-
-# ─── --claude flag: before branch name (position-independent) ─────────────────
 
 setup_mock_env
-mkdir -p "$TEST_WORKTREES/myrepo/feat/claude-first"
-run_wt -- --claude feat/claude-first
-assert_eq "claude-before: exit code 0" "0" "$RUN_EXIT"
-FIRST_LINE=$(printf '%s' "$RUN_STDOUT" | head -1)
-SECOND_LINE=$(printf '%s' "$RUN_STDOUT" | tail -1)
-assert_eq "claude-before: first line is LAUNCH_CLAUDE sentinel" "LAUNCH_CLAUDE" "$FIRST_LINE"
-assert_eq "claude-before: second line is worktree path" "$TEST_WORKTREES/myrepo/feat/claude-first" "$SECOND_LINE"
+mkdir -p "$TEST_WORKTREES/myrepo/feat/flags-first"
+run_wt -- --no-links feat/flags-first
+assert_eq "flags-first: flag before branch name still resolves" "$TEST_WORKTREES/myrepo/feat/flags-first" "$RUN_STDOUT"
 teardown_mock_env
 
-# ─── --claude flag: with base override (wt feat/x develop --claude) ──────────
+# ─── repo name comes from the MAIN worktree, not the current one ─────────────
+# Running wt from inside a linked worktree must still nest under <repo>/, not
+# under the leaf directory of the worktree you happen to be standing in.
 
 setup_mock_env
-GIT_CALL_LOG=$(mktemp)
-echo "Y" | env \
-  PATH="$MOCK_BIN_DIR:$PATH" \
-  WORKTREE_BASE="$TEST_WORKTREES" \
-  MOCK_TOPLEVEL=/fake/myrepo \
-  GIT_CALL_LOG="$GIT_CALL_LOG" \
-  "$WORKTREE_SCRIPT" "feat/base-and-claude" "develop" "--claude" >"$GIT_CALL_LOG.stdout" 2>/dev/null
-RUN_EXIT=$?
-RUN_STDOUT=$(cat "$GIT_CALL_LOG.stdout")
-FIRST_LINE=$(printf '%s' "$RUN_STDOUT" | head -1)
-SECOND_LINE=$(printf '%s' "$RUN_STDOUT" | tail -1)
-assert_eq "claude-base: exit code 0" "0" "$RUN_EXIT"
-assert_eq "claude-base: first line is LAUNCH_CLAUDE" "LAUNCH_CLAUDE" "$FIRST_LINE"
-assert_eq "claude-base: second line is worktree path" "$TEST_WORKTREES/myrepo/feat/base-and-claude" "$SECOND_LINE"
-if grep -q "develop" "$GIT_CALL_LOG"; then
-  echo "PASS: claude-base: base override 'develop' used with --claude"
-  ((PASS++))
-else
-  echo "FAIL: claude-base: 'develop' not found in git call log"
-  cat "$GIT_CALL_LOG" | sed 's/^/    /'
-  ((FAIL++))
-fi
-rm -f "$GIT_CALL_LOG" "$GIT_CALL_LOG.stdout"
+mkdir -p "$TEST_WORKTREES/myrepo/feat/from-worktree"
+run_wt "MOCK_TOPLEVEL=/fake/worktrees/myrepo/feat/other" "MOCK_COMMON_DIR=/fake/myrepo/.git" -- feat/from-worktree
+assert_eq "main-root: exit code 0" "0" "$RUN_EXIT"
+assert_eq "main-root: nests under repo name, not worktree leaf" "$TEST_WORKTREES/myrepo/feat/from-worktree" "$RUN_STDOUT"
+assert_not_contains "main-root: does not use the worktree leaf dir" "$TEST_WORKTREES/other/" "$RUN_STDOUT"
 teardown_mock_env
-
-# ─── --claude flag: case2 local branch ────────────────────────────────────────
 
 setup_mock_env
-run_wt "MOCK_LOCAL_BRANCHES=feat/claude-local" -- feat/claude-local --claude
-assert_eq "claude-local: exit code 0" "0" "$RUN_EXIT"
-FIRST_LINE=$(printf '%s' "$RUN_STDOUT" | head -1)
-SECOND_LINE=$(printf '%s' "$RUN_STDOUT" | tail -1)
-assert_eq "claude-local: first line is LAUNCH_CLAUDE" "LAUNCH_CLAUDE" "$FIRST_LINE"
-assert_eq "claude-local: second line is path" "$TEST_WORKTREES/myrepo/feat/claude-local" "$SECOND_LINE"
+mkdir -p "$TEST_WORKTREES/myrepo/feat/from-main"
+run_wt -- feat/from-main
+assert_eq "main-root: relative common dir keeps main-worktree behaviour" "$TEST_WORKTREES/myrepo/feat/from-main" "$RUN_STDOUT"
 teardown_mock_env
-
-# ─── --claude flag: case3 remote branch ───────────────────────────────────────
-
-setup_mock_env
-run_wt "MOCK_REMOTE_BRANCHES=feat/claude-remote" -- feat/claude-remote --claude
-assert_eq "claude-remote: exit code 0" "0" "$RUN_EXIT"
-FIRST_LINE=$(printf '%s' "$RUN_STDOUT" | head -1)
-SECOND_LINE=$(printf '%s' "$RUN_STDOUT" | tail -1)
-assert_eq "claude-remote: first line is LAUNCH_CLAUDE" "LAUNCH_CLAUDE" "$FIRST_LINE"
-assert_eq "claude-remote: second line is path" "$TEST_WORKTREES/myrepo/feat/claude-remote" "$SECOND_LINE"
-teardown_mock_env
-
-# ─── wt function: LAUNCH_CLAUDE check in .zshrc ───────────────────────────────
-
-if grep -q "LAUNCH_CLAUDE" "$ZSHRC"; then
-  echo "PASS: wt function handles LAUNCH_CLAUDE sentinel in .zshrc"
-  ((PASS++))
-else
-  echo "FAIL: wt function does not handle LAUNCH_CLAUDE sentinel in .zshrc"
-  ((FAIL++))
-fi
-
-if grep -q "claude" "$ZSHRC"; then
-  echo "PASS: wt function invokes claude in .zshrc"
-  ((PASS++))
-else
-  echo "FAIL: wt function does not invoke claude in .zshrc"
-  ((FAIL++))
-fi
 
 # ─── Results ──────────────────────────────────────────────────────────────────
 

@@ -2,6 +2,9 @@
 # Mock git binary for worktree tests.
 # Behaviour controlled by env vars:
 #   MOCK_TOPLEVEL        — returned by rev-parse --show-toplevel (default: /fake/myrepo)
+#   MOCK_COMMON_DIR      — returned by rev-parse --git-common-dir (default: .git).
+#                          Relative means "in the main worktree"; set an absolute
+#                          path to simulate running from inside a linked worktree.
 #   MOCK_LOCAL_BRANCHES  — colon-separated list of branches that exist locally
 #   MOCK_REMOTE_BRANCHES — colon-separated list of branches that exist on remote
 #   MOCK_REMOTE_URL      — returned by remote get-url origin (default: "")
@@ -35,6 +38,9 @@ case "$subcmd" in
     case "${1:-}" in
       --show-toplevel)
         echo "$MOCK_TOPLEVEL"
+        ;;
+      --git-common-dir)
+        echo "${MOCK_COMMON_DIR:-.git}"
         ;;
       --abbrev-ref)
         # @{u} means upstream — signal no upstream by returning 1

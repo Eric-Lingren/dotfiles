@@ -34,7 +34,8 @@ _gx_account_to_config() {
 }
 
 # Look up the policy entry for the current repo.
-# Sets GX_LABEL, GX_BASE_BRANCH, GX_EXCLUDE_JSON, GX_CLAUDE_CONFIG in the caller's environment.
+# Sets GX_LABEL, GX_BASE_BRANCH, GX_EXCLUDE_JSON, GX_CLAUDE_CONFIG, GX_WORKTREE_LINKS_JSON
+# in the caller's environment.
 # Returns 0 on registered hit, 1 on unregistered fallback (with stderr warning).
 gx_load_policy() {
   local remote_url key
@@ -44,6 +45,7 @@ gx_load_policy() {
     GX_LABEL="unknown"
     GX_BASE_BRANCH="${GX_BASE_BRANCH:-main}"
     GX_EXCLUDE_JSON="[]"
+    GX_WORKTREE_LINKS_JSON="[]"
     GX_CLAUDE_CONFIG="$(_gx_account_to_config cch)"
     return 1
   fi
@@ -55,6 +57,7 @@ gx_load_policy() {
     GX_LABEL="unknown"
     GX_BASE_BRANCH="${GX_BASE_BRANCH:-main}"
     GX_EXCLUDE_JSON="[]"
+    GX_WORKTREE_LINKS_JSON="[]"
     GX_CLAUDE_CONFIG="$(_gx_account_to_config cch)"
     return 1
   fi
@@ -72,6 +75,7 @@ if key in data:
     print(json.dumps(e.get('exclude', [])))
     print(e.get('account', 'cch'))
     print('true' if e.get('pr_draft', False) else 'false')
+    print(json.dumps(e.get('worktree_links', [])))
 else:
     sys.exit(1)
 " 2>/dev/null)
@@ -81,6 +85,7 @@ else:
     GX_LABEL="unknown"
     GX_BASE_BRANCH="${GX_BASE_BRANCH:-main}"
     GX_EXCLUDE_JSON="[]"
+    GX_WORKTREE_LINKS_JSON="[]"
     GX_CLAUDE_CONFIG="$(_gx_account_to_config cch)"
     return 1
   fi
@@ -91,7 +96,24 @@ else:
   GX_EXCLUDE_JSON=$(echo "$entry" | sed -n '3p')
   GX_CLAUDE_CONFIG="$(_gx_account_to_config "$(echo "$entry" | sed -n '4p')")"
   GX_PR_DRAFT=$(echo "$entry" | sed -n '5p')
+  GX_WORKTREE_LINKS_JSON=$(echo "$entry" | sed -n '6p')
   return 0
+}
+
+# Return worktree link paths as a newline-separated list.
+# These are gitignored local config files symlinked from the main worktree into
+# each new worktree, so every worktree reads one shared file the way a plain
+# branch checkout does.
+gx_worktree_links() {
+  echo "${GX_WORKTREE_LINKS_JSON:-[]}" | python3 -c "
+import json, sys
+try:
+    paths = json.load(sys.stdin)
+except Exception:
+    paths = []
+for p in paths:
+    print(p)
+"
 }
 
 # Return exclude patterns as a newline-separated list (for use with grep/find).
