@@ -1,0 +1,104 @@
+{
+  "schema_version": "2",
+  "producer": "to-tasks",
+  "source": {"type": "seed", "ref": "20260819-0038-pipeline-agent-files.json"},
+  "generated_at": "2026-08-19T00:39:00-07:00",
+  "branching": {
+    "strategy": "single",
+    "branch": "feat/skill-speed-optimization"
+  },
+  "tasks": [
+    {
+      "id": "T-0005",
+      "title": "Create to-tasks agent file",
+      "type": "AFK",
+      "task_type": "code",
+      "deliverable": "code",
+      "description": "Create claude-code-shared/agents/to-tasks.md with restrictive frontmatter (name: to-tasks, description, tools: Read/Write/Bash/Agent, model: sonnet) and a one-line body pointing to the skill. No AskUserQuestion in the tool list — branch name derives from seed slug automatically in unattended runs. The file is canonical: any skill that wants to spawn to-tasks as a subagent can reference it by name.",
+      "acceptance_criteria": [
+        "File claude-code-shared/agents/to-tasks.md exists with valid frontmatter",
+        "tools list contains exactly: Read, Write, Bash, Agent",
+        "model field is sonnet",
+        "Body is a single line: 'Follow ~/.dotfiles/claude-code-shared/skills/to-tasks/SKILL.md exactly.'",
+        "Spawning the agent by subagent_type 'to-tasks' resolves without error in a test invocation"
+      ],
+      "blocked_by": [],
+      "status": "done",
+      "branch": null,
+      "pr": null,
+      "summary": "Created claude-code-shared/agents/to-tasks.md with frontmatter (name: to-tasks, tools: Read/Write/Bash/Agent, model: sonnet) and a single-line body pointing to the skill file.",
+      "files_touched": ["claude-code-shared/agents/to-tasks.md"],
+      "tests": {"passed": 0, "failed": 0},
+      "log_path": "docs/tasks/.logs/20260819-0039-pipeline-agent-files.json/T-0005.md"
+    },
+    {
+      "id": "T-0006",
+      "title": "Create build-code agent file",
+      "type": "AFK",
+      "task_type": "code",
+      "deliverable": "code",
+      "description": "Create claude-code-shared/agents/build-code.md with restrictive frontmatter (name: build-code, description, tools: Read/Write/Edit/Bash/Agent, model: sonnet) and a one-line body pointing to the skill. Edit is included so the agent can do targeted task-JSON status updates mid-run without overwriting the whole file. The file is canonical: any skill can spawn build-code by subagent_type name.",
+      "acceptance_criteria": [
+        "File claude-code-shared/agents/build-code.md exists with valid frontmatter",
+        "tools list contains exactly: Read, Write, Edit, Bash, Agent",
+        "model field is sonnet",
+        "Body is a single line: 'Follow ~/.dotfiles/claude-code-shared/skills/build-code/SKILL.md exactly.'",
+        "Spawning the agent by subagent_type 'build-code' resolves without error in a test invocation"
+      ],
+      "blocked_by": [],
+      "status": "done",
+      "branch": null,
+      "pr": null,
+      "summary": "Created claude-code-shared/agents/build-code.md with valid frontmatter (name: build-code, tools: Read/Write/Edit/Bash/Agent, model: sonnet) and a single-line body pointing to the skill file.",
+      "files_touched": ["claude-code-shared/agents/build-code.md"],
+      "tests": {"passed": 0, "failed": 0},
+      "log_path": "docs/tasks/.logs/20260819-0039-pipeline-agent-files.json/T-0006.md"
+    },
+    {
+      "id": "T-0007",
+      "title": "Create pr-code-review agent file",
+      "type": "AFK",
+      "task_type": "code",
+      "deliverable": "code",
+      "description": "Create claude-code-shared/agents/pr-code-review.md with restrictive frontmatter (name: pr-code-review, description, tools: Read/Bash/Agent, model: sonnet) and a one-line body pointing to the skill. Read-heavy skill needs no Write/Edit. The file is canonical: any skill can spawn pr-code-review by subagent_type name.",
+      "acceptance_criteria": [
+        "File claude-code-shared/agents/pr-code-review.md exists with valid frontmatter",
+        "tools list contains exactly: Read, Bash, Agent",
+        "model field is sonnet",
+        "Body is a single line: 'Follow ~/.dotfiles/claude-code-shared/skills/pr-code-review/SKILL.md exactly.'",
+        "Spawning the agent by subagent_type 'pr-code-review' resolves without error in a test invocation"
+      ],
+      "blocked_by": [],
+      "status": "done",
+      "branch": null,
+      "pr": null,
+      "summary": "Created claude-code-shared/agents/pr-code-review.md with restrictive frontmatter (tools: Read, Bash, Agent; model: sonnet) and a single-line body directing execution to the skill file.",
+      "files_touched": ["claude-code-shared/agents/pr-code-review.md"],
+      "tests": {"passed": 5, "failed": 0},
+      "log_path": "docs/tasks/.logs/20260819-0039-pipeline-agent-files.json/T-0007.md"
+    },
+    {
+      "id": "T-0008",
+      "title": "Update sprout-seed to spawn named subagent types",
+      "type": "AFK",
+      "task_type": "code",
+      "deliverable": "code",
+      "description": "Update claude-code-shared/skills/sprout-seed/SKILL.md to spawn subagent_type='to-tasks', 'build-code', and 'pr-code-review' instead of 'general-purpose'. Prompt templates for unattended overrides (branch name, gate bypasses) stay in the prompt body, not the agent file. The change eliminates the full tool schema overhead and model ambiguity that general-purpose carries.",
+      "acceptance_criteria": [
+        "sprout-seed SKILL.md references subagent_type 'to-tasks', 'build-code', 'pr-code-review' for the respective spawn calls",
+        "No remaining 'general-purpose' spawn calls for these three agents in sprout-seed SKILL.md",
+        "Prompt templates for branch name and gate bypass overrides are retained in the spawn prompt bodies",
+        "A test sprout-seed run resolves each agent file without error"
+      ],
+      "blocked_by": ["T-0005", "T-0006", "T-0007"],
+      "status": "done",
+      "branch": null,
+      "pr": null,
+      "summary": "Updated sprout-seed SKILL.md to spawn named subagent types (to-tasks, build-code, pr-code-review) instead of general-purpose, removing model overrides while preserving all prompt template content.",
+      "files_touched": ["claude-code-shared/skills/sprout-seed/SKILL.md"],
+      "tests": {"passed": 0, "failed": 0},
+      "log_path": "docs/tasks/.logs/20260819-0039-pipeline-agent-files.json/T-0008.md"
+    }
+  ],
+  "follow_ups": []
+}

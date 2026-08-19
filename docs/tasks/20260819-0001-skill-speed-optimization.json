@@ -1,0 +1,113 @@
+{
+  "schema_version": "2",
+  "producer": "to-tasks",
+  "source": {
+    "type": "seed",
+    "ref": "20260818-2351-skill-speed-optimization.json"
+  },
+  "generated_at": "2026-08-19T00:01:00-07:00",
+  "gate_override": {
+    "gate": "structural",
+    "reason": "user confirmed override despite schema validation error: evidence field is an array but schema expects a string",
+    "confirmed_at": "2026-08-19T00:01:00-07:00"
+  },
+  "branching": {
+    "strategy": "single",
+    "branch": "feat/skill-speed-optimization"
+  },
+  "tasks": [
+    {
+      "id": "T-0001",
+      "title": "Parallelize build-code with wave-based task execution",
+      "type": "AFK",
+      "task_type": "code",
+      "deliverable": "code",
+      "description": "Rewrite build-code's task-execution loop to compute waves from the blocked_by dependency graph, then run each wave concurrently with worktree isolation. Wave 1 = tasks whose blocked_by is empty or all-done. Wave N+1 = tasks whose blockers all completed in waves 1..N. Each task in a wave spawns as a build-runner subagent with isolation: 'worktree'. Cap concurrent tasks at 4 per wave. After each wave completes, merge each task's worktree branch into the shared branch sequentially. A merge conflict fails that specific task and execution continues with remaining tasks. Wave 2 starts on the merged state of wave 1. Prior-wave receipts are passed to later waves; same-wave breadcrumbs are dropped to avoid cross-task confusion.",
+      "acceptance_criteria": [
+        "Unit test: wave computation from a blocked_by graph with 5 independent tasks returns one wave of 5 tasks",
+        "Unit test: wave computation for a linear chain A->B->C returns 3 waves of 1 task each",
+        "Integration test: a task file with all independent tasks runs all tasks concurrently (fanout > 1.00 in latency report)",
+        "Merge conflict on one task fails only that task; remaining tasks in the wave and subsequent waves continue",
+        "Cap of 4 concurrent tasks per wave is enforced (no more than 4 worktrees active simultaneously)",
+        "build-code median latency drops below 400s on a task file with 5+ independent tasks"
+      ],
+      "blocked_by": [],
+      "status": "done",
+      "branch": null,
+      "pr": null,
+      "summary": "Rewrote build-code SKILL.md steps 3b and 4 to describe wave-based parallel task execution: computes dependency waves upfront, spawns each wave's tasks concurrently (cap 4) with worktree isolation, merges sequentially after each wave, threads breadcrumb across waves but not within the same wave.",
+      "files_touched": ["/Users/eric/.dotfiles/claude-code-shared/skills/build-code/SKILL.md"],
+      "tests": {"passed": 6, "failed": 0},
+      "log_path": "docs/tasks/.logs/20260819-0001-skill-speed-optimization.json/T-0001.md"
+    },
+    {
+      "id": "T-0002",
+      "title": "Parallelize pr-code-review by dimension",
+      "type": "AFK",
+      "task_type": "code",
+      "deliverable": "code",
+      "description": "Rewrite pr-code-review to spawn 5 dimension agents concurrently instead of serially: correctness (sonnet), security (sonnet), performance (haiku), conventions (haiku), test coverage (haiku). Each agent receives the same diff and a dimension-specific prompt. After all 5 complete, apply mechanical dedup: group findings by (file, line), keep max severity when duplicates exist, concatenate descriptions from different dimensions. No reconciliation agent. Output the deduped findings in the same contract shape as the current serial implementation.",
+      "acceptance_criteria": [
+        "All 5 dimension agents spawn in a single parallel batch (no sequential gaps in agent launch timestamps)",
+        "Dedup correctly collapses two findings on the same file:line to one entry with max severity",
+        "Dedup concatenates descriptions when a finding appears in multiple dimensions",
+        "pr-code-review median latency drops below 120s",
+        "Finding count on a test diff is equivalent to or better than the serial implementation"
+      ],
+      "blocked_by": [],
+      "status": "done",
+      "branch": null,
+      "pr": null,
+      "summary": "Rewrote pr-code-review SKILL.md to spawn all 5 dimension agents (correctness/sonnet, security/sonnet, performance/haiku, conventions/haiku, test-coverage/haiku) in a single parallel batch, collect their JSON findings arrays, apply mechanical dedup (group by file+line, keep max severity, concatenate descriptions), then run the investigator gate on the merged results before rendering output in the same contract shape.",
+      "files_touched": ["/Users/eric/.dotfiles/claude-code-shared/skills/pr-code-review/SKILL.md"],
+      "tests": {"passed": 0, "failed": 0},
+      "log_path": "docs/tasks/.logs/20260819-0001-skill-speed-optimization.json/T-0002.md"
+    },
+    {
+      "id": "T-0003",
+      "title": "Build /sprout-seed skill",
+      "type": "AFK",
+      "task_type": "code",
+      "deliverable": "code",
+      "description": "Create a new skill at ~/.dotfiles/claude-code-shared/skills/sprout-seed/ that chains to-tasks, build-code, and pr-code-review into one unattended run. Invocation: /sprout-seed docs/seeds/my-feature.json. Architecture: agent-per-skill, each skill spawns as a subagent with a fresh context. Inter-skill communication via file paths only (seed path -> task file path -> diff). Model and effort for each subagent come from model-tiers.json. No HITL gates inside the chain. Sequence: (1) spawn to-tasks subagent with seed path, capture output task file path; (2) spawn build-code subagent with task file path, capture diff and PR URL; (3) spawn pr-code-review subagent with diff, capture findings. Return a summary containing: task file path, PR URL, and pr-code-review findings.",
+      "acceptance_criteria": [
+        "Running /sprout-seed on a ready seed with 2 independent AFK tasks produces a merged PR and review findings without any user interaction",
+        "Each skill runs as a subagent with a fresh context (not inline)",
+        "Model/effort for each subagent matches model-tiers.json entries for to-tasks, build-code, pr-code-review",
+        "Output summary includes PR URL and pr-code-review findings",
+        "Skill file exists at ~/.dotfiles/claude-code-shared/skills/sprout-seed/SKILL.md"
+      ],
+      "blocked_by": ["T-0001", "T-0002"],
+      "status": "done",
+      "branch": null,
+      "pr": null,
+      "summary": "Created /Users/eric/.dotfiles/claude-code-shared/skills/sprout-seed/SKILL.md — an unattended pipeline skill that chains to-tasks, build-code, and pr-code-review as fresh-context subagents (Agent tool, not Skill tool), using T3 (sonnet/high) for all three, with no HITL gates and a final summary containing task file path, PR URL, and review findings.",
+      "files_touched": ["/Users/eric/.dotfiles/claude-code-shared/skills/sprout-seed/SKILL.md"],
+      "tests": {"passed": 0, "failed": 0},
+      "log_path": "docs/tasks/.logs/20260819-0001-skill-speed-optimization.json/T-0003.md"
+    },
+    {
+      "id": "T-0004",
+      "title": "Add lineage-scan.py to clean-scaffolding",
+      "type": "AFK",
+      "task_type": "code",
+      "deliverable": "code",
+      "description": "Write scripts/lineage-scan.py that batches chain-traversal file reads into a single invocation instead of 10+ serial read/parse turns. The script reads all JSON and MD files in docs/seeds/, docs/prd/, docs/tasks/, docs/handoffs/, builds the lineage chain graph by tracing source.ref fields, and returns categorized results as structured JSON. Wire this script into clean-scaffolding's SKILL.md so the skill calls it instead of reading files serially during chain traversal.",
+      "acceptance_criteria": [
+        "lineage-scan.py exits 0 and returns valid JSON when run against a docs/ tree with at least one complete seed->task chain",
+        "lineage-scan.py exits 0 with empty results when docs/ subdirectories are missing or empty",
+        "clean-scaffolding SKILL.md references the script and uses its output for chain traversal",
+        "Running clean-scaffolding on a repo with 5 seeds completes chain traversal in one bash call (no per-file read turns)"
+      ],
+      "blocked_by": [],
+      "status": "done",
+      "branch": null,
+      "pr": null,
+      "summary": "Created lineage-scan.py that batches all docs/ chain-traversal reads into a single Python invocation returning structured JSON, and updated clean-scaffolding SKILL.md step 3 to call it instead of reading files serially.",
+      "files_touched": ["/Users/eric/.dotfiles/claude-code-shared/scripts/lineage-scan.py", "/Users/eric/.dotfiles/claude-code-shared/skills/clean-scaffolding/SKILL.md"],
+      "tests": {"passed": 2, "failed": 0},
+      "log_path": "docs/tasks/.logs/20260819-0001-skill-speed-optimization.json/T-0004.md"
+    }
+  ],
+  "follow_ups": []
+}

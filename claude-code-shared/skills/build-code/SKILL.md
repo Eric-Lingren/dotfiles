@@ -72,77 +72,130 @@ Read `branching.strategy` from the JSON:
 - **`"single"`** — check out or create `branching.branch` once before starting the queue. All tasks run on this branch.
 - **`"per-task"`** — create each task's `branch` field value immediately before that task runs.
 
-### 3b. Build the shared context brief (once)
+### 3b. Build the shared context brief and compute waves (once)
 
-Before the loop starts, if the queue is non-empty, spawn the `context-loader` agent once for the whole run:
+Before the loop starts, if the queue is non-empty:
 
+**Spawn context-loader once:**
 ```
 Agent(subagent_type="context-loader", prompt="<project root>")
 ```
-
 Capture its JSON payload as `context_brief`. Reuse this same brief for every `build-runner` spawn in this run — never re-spawn `context-loader` per task.
 
-Initialize `breadcrumb = []` (an empty list of compact receipts from tasks completed so far this run).
+**Initialize breadcrumb:**
+`breadcrumb = []` (compact receipts from tasks completed so far this run, across all waves).
 
-### 4. For each task in the queue
+**Handle HITL tasks upfront:**
+Before computing waves, scan the queue for all tasks with `type == "HITL"`. For each:
+- Set status to `deferred_hitl` in the JSON.
+- Print the task's title, description, and acceptance criteria so the user knows a hands-on action is waiting.
+- Add to the end-of-run report's `deferred_hitl` list.
+- Remove from the AFK queue (HITL tasks are never waved).
 
-#### a. Check blockers
+If another queued task's `blocked_by` names a HITL task, that dependent task will correctly report `blocked` in wave blocker evaluation until a human completes the action; that is expected.
 
-Look up each ID in `blocked_by`. If any blocking task has a status other than `done` or `merged`:
-- Mark the current task `blocked` in the JSON.
-- Determine if any other `not_started` task in the queue depends on this task (i.e. has this task's ID in its `blocked_by`).
-  - **If yes (it is a blocker):** halt the entire run immediately. Report which task is blocked and why. Do not process further tasks.
-  - **If no (standalone):** park it, continue to the next task in the queue, add to the end-of-run summary.
+**Compute waves from the AFK queue:**
 
-#### b. Handle HITL tasks
+A wave is a maximal set of tasks that can run concurrently given the dependency graph. Compute iteratively:
 
-HITL means **hands-only**: a keyboard action the AI cannot perform AFK (e.g. enable a feature flag, add a credential to a secrets manager, configure DNS, seed production data). Decision and design-review tasks are NOT valid HITL tasks — they should never appear in the queue. If they do, treat them as a bug in the task file.
+```
+done_ids = set of task IDs already in status "done" or "merged" in the JSON
+wave_lists = []
+remaining = AFK queue (non-HITL tasks)
 
-If `type` is `"HITL"`: set status to `deferred_hitl` in the JSON, print the task's title, description, and acceptance criteria so the user knows a hands-on action is waiting, and continue to the next task in the queue — independent AFK work never halts for a HITL task, blocker or not. Add it to the end-of-run report's `deferred_hitl` list. If another queued task's `blocked_by` names this HITL task, that dependent task will correctly report `blocked` in step 4a until a human completes the action and flips this task's status to `done`/`merged` by hand; that is expected, not a run halt.
+while remaining is non-empty:
+    wave = [t for t in remaining
+            if all(b in done_ids for b in t.blocked_by)]
+    if wave is empty:
+        # Cycle or unresolvable dependency — mark all remaining tasks "blocked" and stop
+        break
+    wave_lists.append(wave)
+    done_ids |= {t.id for t in wave}
+    remaining = [t for t in remaining if t not in wave]
+```
 
-#### c. Execute AFK tasks
+Tasks with `blocked_by = []` (or whose blockers are all already `done`/`merged`) enter **Wave 1**. Wave N+1 contains tasks whose blockers all appear in waves 1..N. Maximum 4 tasks execute concurrently within any wave.
+
+### 4. Execute waves sequentially; tasks within each wave run in parallel
+
+For each wave in `wave_lists`:
+
+#### a. Blocker pre-check (wave entry)
+
+Before launching any task in the wave, re-read the JSON to confirm each task's `blocked_by` IDs are all `done` or `merged`. If any blocker is not satisfied:
+- Mark that task `blocked` in the JSON.
+- If any other queued task in a later wave depends on this task, halt the entire run immediately. Report which task is blocked and why. Do not process further waves.
+- Otherwise, park it (add to end-of-run summary) and exclude it from this wave's spawn set.
+
+#### b. Launch the wave concurrently (cap: 4)
+
+For each task in the wave (up to 4 at a time — if the wave has more than 4 tasks, process in batches of 4):
 
 1. Update task status to `in_progress` in the JSON.
-2. If `branching.strategy` is `"per-task"`, derive and create the task's branch now:
+2. If `branching.strategy` is `"per-task"`, derive the task's branch name now (do NOT check it out yet — the worktree handles isolation):
    - Read `export_url` from the task object (may be `null` or absent).
    - If `export_url` is a GitHub issue URL (matches `https://github.com/<org>/<repo>/issues/<N>`), extract `<N>` (the last path segment as an integer). Insert a `gh-<N>` segment immediately after the task-ID segment in the branch name. For example: `feat/t-0023-gh-42-bootstrap-auth-schema`. Also set `GITHUB_CLOSES=<N>` in the environment so `gxpush` appends `Closes #<N>` to the PR body automatically.
-   - If `export_url` is `null`, absent, or does not match a GitHub issue URL, skip both steps silently (no `gh-N` segment, no `GITHUB_CLOSES`).
-   - Create and check out the derived branch.
-3. Spawn exactly one `build-runner` agent for this task:
+   - If `export_url` is `null`, absent, or does not match a GitHub issue URL, skip both steps silently.
+3. Spawn one `build-runner` agent per task, all in a **single Agent tool call** (so they run concurrently):
 
 ```
-Agent(subagent_type="build-runner", prompt="<task object JSON, context_brief, breadcrumb, taskfile_basename, project_root>")
+Agent(subagent_type="build-runner", isolation="worktree",
+      prompt="<task object JSON, context_brief, breadcrumb, taskfile_basename, project_root>")
 ```
 
-Pass:
+Pass per task:
 - `task` — this task's full object (`id`, `title`, `type`, `description`, `acceptance_criteria`, `browser_verify` if present).
 - `context_brief` — the brief built once in step 3b.
-- `breadcrumb` — the current `breadcrumb` list (receipts from tasks already completed this run).
+- `breadcrumb` — the `breadcrumb` list from **prior waves only** (receipts from tasks that completed in earlier waves). Do NOT include same-wave receipts — concurrent tasks must not depend on each other's output.
 - `taskfile_basename` — basename of the task file.
 - `project_root` — absolute project root path.
 
-build-runner runs the full `/tdd` cycle, the runner-based validation gate, and browser verification (if applicable) internally, and writes the full trace to `docs/tasks/.logs/<taskfile-basename>/<task.id>.md`. build-code never sees that trace — only the receipt below.
+build-runner runs the full `/tdd` cycle, the runner-based validation gate, and browser verification (if applicable) internally within its isolated worktree, and writes the full trace to `docs/tasks/.logs/<taskfile-basename>/<task.id>.md`. build-code never sees that trace — only the receipt.
 
-4. **Collect the receipt.** Parse build-runner's returned JSON: `status`, `summary`, `files_touched`, `tests`, `pr`, `log_path`, `follow_ups`.
+#### c. Collect all receipts for the wave
 
-5. **Write the receipt back into the task JSON item:**
+Wait for all concurrent build-runner agents to complete. For each receipt, parse: `status`, `summary`, `files_touched`, `tests`, `pr`, `log_path`, `follow_ups`.
+
+#### d. Merge worktree branches sequentially
+
+After all tasks in the wave complete (regardless of individual pass/fail), merge each task's worktree branch into the shared branch **one at a time** in task-ID order:
+
+For each task in the wave (in order):
+- If `receipt.status == "failed"`: skip the merge for this task. Its worktree branch is abandoned.
+- If `receipt.status == "done"`: attempt `git merge --no-ff <task-worktree-branch>`.
+  - On success: the merge is committed to the shared branch.
+  - On conflict (`git merge` exits non-zero): run `git merge --abort`. Mark this task `failed` in the JSON. Override `receipt.status = "failed"`. Add a note in the task's `summary`: "Merge conflict during wave integration." Continue to the next task — do not halt.
+
+#### e. Write receipts back into the task JSON
+
+For each task in the wave (after its merge attempt):
+
+1. **Write the receipt:**
    - Set `summary`, `files_touched`, `tests`, `log_path` directly from the receipt.
    - If `receipt.status == "done"`: set task `status` to `done` and `pr` to a suggested `gh pr create` command the user can run (do not run it).
-   - If `receipt.status == "failed"`: set task `status` to `failed` and go to step 6 below — do not append to the breadcrumb.
+   - If `receipt.status == "failed"`: set task `status` to `failed`.
    - Write the updated JSON immediately.
 
-6. **Merge follow-ups.** For each item in `receipt.follow_ups`:
+2. **Merge follow-ups.** For each item in `receipt.follow_ups`:
    - Deduplicate against existing `follow_ups` in the JSON (skip if a similar title already exists).
    - Assign `"id"` by counting existing `follow_ups` and using the next sequential `FU-XXX` (zero-padded to 3 digits).
    - Append with `"source": "discovered"` and `"trigger_task"` set to this task's ID.
-   - Write the updated JSON immediately (same write as step 5).
+   - Write the updated JSON immediately.
 
-7. **Thread the breadcrumb forward.** On success (`receipt.status == "done"`), append a compact entry — `{id, title, summary, files_touched}` — to `breadcrumb` for the caller to pass into every subsequent `build-runner` spawn this run. Never append the full trace; `breadcrumb` stays small for the life of the run.
+3. **Thread the breadcrumb forward.** On success (`receipt.status == "done"`), append a compact entry — `{id, title, summary, files_touched}` — to `breadcrumb`. This breadcrumb is available to all tasks in **subsequent waves** but not to same-wave siblings.
 
-8. If `receipt.status == "failed"`, apply the AFK obstacle policy:
-   - Determine if any other `not_started` task depends on this one (a **blocker** task) or not (a **leaf** task).
-   - **Leaf task failure:** status is already `failed` from step 5. Skip it, continue to the next task, add it to the end-of-run report's `failed` list (with `log_path`). Do not halt.
-   - **Blocker task failure:** halt the entire run immediately. Do not process further tasks. The failure report must frame this as a **scoping signal, not a retry target**: something about this task's acceptance criteria, description, or dependency graph doesn't match reality (an unstated dependency, wrong assumption, or oversized slice), and the recommended next step is to re-grill or re-seed this part of the plan, not to blindly re-run build-code hoping for a different result. Include `log_path` so the user can inspect the full trace before deciding how to re-scope.
+#### f. Apply the AFK obstacle policy for failed tasks
+
+After processing all receipts in the wave:
+
+For each task whose final `status == "failed"`:
+- Determine if any task in a later wave depends on this one (a **blocker** task) or not (a **leaf** task).
+- **Leaf task failure:** add to the end-of-run report's `failed` list (with `log_path`). Do not halt — continue to the next wave.
+- **Blocker task failure:** halt the entire run immediately. Do not process further waves. Frame this as a **scoping signal, not a retry target**: something about this task's acceptance criteria, description, or dependency graph doesn't match reality (an unstated dependency, wrong assumption, or oversized slice), and the recommended next step is to re-grill or re-seed this part of the plan, not to blindly re-run build-code hoping for a different result. Include `log_path` so the user can inspect the full trace before deciding how to re-scope.
+
+#### g. Advance to the next wave
+
+The next wave begins on the merged state left by the current wave. Only tasks whose blockers all ended in `done` status advance to the next wave (the wave algorithm already computed this, but re-confirm at step 4a).
 
 ### 4b. Debug cleanup (only when `producer: "debug"`)
 

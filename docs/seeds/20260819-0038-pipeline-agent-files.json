@@ -1,0 +1,47 @@
+{
+  "schema_version": "4",
+  "producer": "to-seed",
+  "source": {"type": "session", "ref": null},
+  "title": "Pipeline Agent Files for Sprout-Seed Skills",
+  "slug": "pipeline-agent-files",
+  "created": "2026-08-19T00:38:00-07:00",
+  "iteration": 1,
+  "status": "ready",
+  "summary": "Grill session to decide whether to build dedicated agent files for the three skills sprout-seed chains: to-tasks, build-code, and pr-code-review. Currently sprout-seed spawns general-purpose agents for all three, losing tool restriction and model locking. Decided to build thin wrapper agent files in claude-code-shared/agents/ with restrictive tool lists and a one-line body pointing to each skill's SKILL.md. Agent files are canonical (any caller can use them, not just sprout-seed). sprout-seed SKILL.md is updated to spawn by subagent_type name instead of general-purpose.",
+  "problem_statement": "sprout-seed spawns general-purpose agents for to-tasks, build-code, and pr-code-review. General-purpose agents carry the full tool schema set, allow any model override in the prompt, and offer no named subagent_type for clean spawning. This adds unnecessary token overhead from irrelevant tool schemas, permits accidental tool misuse in fully unattended runs, and produces verbose spawn syntax compared to a named type.",
+  "decisions": [
+    "Build thin wrapper agent files for to-tasks, build-code, and pr-code-review in claude-code-shared/agents/. Each file is registration metadata only: frontmatter with name, description, tools, model. Body is one line: 'Follow ~/.dotfiles/claude-code-shared/skills/<name>/SKILL.md exactly.'",
+    "Agent files are canonical — available to any skill that wants to spawn these agents, not restricted to sprout-seed.",
+    "Tool lists are restrictive: to-tasks gets Read, Write, Bash, Agent. build-code gets Read, Write, Edit, Bash, Agent. pr-code-review gets Read, Bash, Agent.",
+    "The canonical to-tasks agent file does not include AskUserQuestion in its tool list. Branch name derives automatically from seed slug without prompting. This is reliable and rarely needs an override. The existing to-tasks SKILL.md retains AskUserQuestion for callers that need interactive behavior.",
+    "Add Edit to build-code's agent file tool list to support targeted task-JSON status updates mid-run. Write overwrites the whole file and risks data loss when waves write concurrently.",
+    "Agent file body is one line pointing to SKILL.md. SKILL.md remains the single source of behavior. No instruction duplication.",
+    "Model is sonnet for all three agent files, matching T3 in model-tiers.json.",
+    "Update sprout-seed SKILL.md to spawn subagent_type='to-tasks', 'build-code', 'pr-code-review' instead of 'general-purpose'. Prompt templates remain for unattended overrides."
+  ],
+  "open_threads": [],
+  "disposed_threads": [],
+  "implementation_decisions": [
+    "Each agent file frontmatter: name (matches skill slug), description (one-line purpose), tools (restrictive list), model (sonnet).",
+    "to-tasks agent file tools: Read, Write, Bash, Agent.",
+    "build-code agent file tools: Read, Write, Edit, Bash, Agent.",
+    "pr-code-review agent file tools: Read, Bash, Agent.",
+    "Agent file body (all three): one line — 'Follow ~/.dotfiles/claude-code-shared/skills/<name>/SKILL.md exactly.'",
+    "sprout-seed SKILL.md prompt templates handle unattended overrides (branch name, gate bypasses). These stay in the prompt, not the agent file.",
+    "Callers needing interactive to-tasks behavior (AskUserQuestion gates) should use the Skill tool inline, not spawn the agent file."
+  ],
+  "further_notes": [
+    "The thin wrapper pattern eliminates the maintenance problem: agent files carry no instructions, so SKILL.md changes do not require updating the agent file.",
+    "The maintenance cost of having two files per skill is real but minimal when the agent body is a single line.",
+    "Other callers (not sprout-seed) that want to spawn build-code or pr-code-review as subagents will benefit from these canonical agent files going forward."
+  ],
+  "next_action": "Run /to-tasks to generate the 3 agent file creation tasks and 1 sprout-seed SKILL.md update task.",
+  "verification": {
+    "iteration": 1,
+    "personas": ["grounding", "accuracy", "completeness", "coherence"],
+    "refutations_upheld": 1,
+    "refutations_screened": 3,
+    "clean": false,
+    "status": "verified"
+  }
+}
