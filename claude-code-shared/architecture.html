@@ -1,0 +1,427 @@
+<title>Claude Code Architecture</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Source+Sans+3:wght@400;600&display=swap">
+
+<style>
+  :root {
+    --font-mono: 'JetBrains Mono', monospace;
+    --font-body: 'Source Sans 3', system-ui, sans-serif;
+    --bg: #0B1222; --bg-s: #141D2F; --bg-e: #1A2540;
+    --tx: #E2E8F0; --tx-m: #94A3B8; --tx-d: #475569;
+    --acc: #F0B429; --acc-d: rgba(240,180,41,0.15);
+    --blu: #60A5FA; --blu-d: rgba(96,165,250,0.12);
+    --red: #F87171; --red-d: rgba(248,113,113,0.1);
+    --grn: #4ADE80; --grn-d: rgba(74,222,128,0.1);
+    --pur: #C084FC; --pur-d: rgba(192,132,252,0.1);
+    --bdr: #1E293B;
+  }
+  @media(prefers-color-scheme:light){:root:not([data-theme="dark"]){
+    --bg:#FAFBFC;--bg-s:#F1F5F9;--bg-e:#E8EDF4;
+    --tx:#1E293B;--tx-m:#64748B;--tx-d:#94A3B8;
+    --acc:#B8860B;--acc-d:rgba(184,134,11,0.08);
+    --blu:#2563EB;--blu-d:rgba(37,99,235,0.06);
+    --red:#DC2626;--red-d:rgba(220,38,38,0.06);
+    --grn:#16A34A;--grn-d:rgba(22,163,74,0.06);
+    --pur:#9333EA;--pur-d:rgba(147,51,234,0.06);
+    --bdr:#E2E8F0;
+  }}
+  :root[data-theme="light"]{
+    --bg:#FAFBFC;--bg-s:#F1F5F9;--bg-e:#E8EDF4;
+    --tx:#1E293B;--tx-m:#64748B;--tx-d:#94A3B8;
+    --acc:#B8860B;--acc-d:rgba(184,134,11,0.08);
+    --blu:#2563EB;--blu-d:rgba(37,99,235,0.06);
+    --red:#DC2626;--red-d:rgba(220,38,38,0.06);
+    --grn:#16A34A;--grn-d:rgba(22,163,74,0.06);
+    --pur:#9333EA;--pur-d:rgba(147,51,234,0.06);
+    --bdr:#E2E8F0;
+  }
+
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:var(--font-body);background:var(--bg);color:var(--tx);overflow:hidden;height:100vh;width:100vw}
+
+  .hdr{position:fixed;top:0;left:0;right:0;z-index:50;background:var(--bg);border-bottom:1px solid var(--bdr);padding:10px 24px;display:flex;align-items:center;gap:24px;flex-wrap:wrap}
+  .hdr h1{font-family:var(--font-mono);font-size:1rem;font-weight:700;white-space:nowrap}
+  .stats{font-family:var(--font-mono);font-size:0.75rem;color:var(--tx-d);white-space:nowrap}
+  .legend{display:flex;gap:16px;font-family:var(--font-mono);font-size:0.7rem;margin-left:auto;flex-wrap:wrap}
+  .legend-item{display:flex;align-items:center;gap:5px;white-space:nowrap}
+  .legend-swatch{width:14px;height:14px;border-radius:3px;border:1.5px solid}
+  .sw-skill{background:var(--bg-s);border-color:var(--blu)}
+  .sw-agent{background:var(--bg-s);border-color:var(--grn)}
+  .sw-contract{background:var(--acc-d);border-color:var(--acc)}
+  .sw-hook{background:var(--bg-s);border-color:var(--red)}
+  .badge-legend{display:inline-flex;align-items:center;gap:3px;padding:1px 5px;border-radius:3px;font-weight:700;font-size:0.6rem}
+  .bl-h{background:var(--grn-d);color:var(--grn)}
+  .bl-s{background:var(--blu-d);color:var(--blu)}
+  .bl-o{background:var(--pur-d);color:var(--pur)}
+
+  .vp{position:fixed;top:48px;left:0;right:0;bottom:0;overflow:hidden;cursor:grab}
+  .vp.dragging{cursor:grabbing}
+  .vp svg{position:absolute;top:0;left:0;transform-origin:0 0;transition:none}
+
+  .ctrl{position:fixed;bottom:20px;right:20px;z-index:50;display:flex;gap:6px}
+  .ctrl button{width:34px;height:34px;border:1px solid var(--bdr);border-radius:6px;background:var(--bg-s);color:var(--tx-m);cursor:pointer;font-family:var(--font-mono);font-size:0.9rem;display:flex;align-items:center;justify-content:center}
+  .ctrl button:hover{border-color:var(--acc);color:var(--acc)}
+  .ctrl .lbl{font-size:0.7rem;padding:0 8px;width:auto}
+
+  .grp{fill:var(--bg);stroke:var(--bdr);stroke-width:1;stroke-dasharray:6 4}
+  .gl{fill:var(--tx-d);font-family:var(--font-mono);font-size:10px;font-weight:700;letter-spacing:0.1em;text-anchor:middle}
+  .sk{fill:var(--bg-s);stroke:var(--blu);stroke-width:1.5}
+  .sn{fill:var(--tx);font-family:var(--font-mono);font-size:10px;font-weight:600;text-anchor:middle;dominant-baseline:central}
+  .ag{fill:var(--bg-s);stroke:var(--grn);stroke-width:1.5}
+  .an{fill:var(--tx);font-family:var(--font-mono);font-size:9.5px;font-weight:500;text-anchor:middle;dominant-baseline:central}
+  .ct{fill:var(--acc-d);stroke:var(--acc);stroke-width:1.5}
+  .cn{fill:var(--acc);font-family:var(--font-mono);font-size:9.5px;font-weight:600;text-anchor:middle;dominant-baseline:central}
+  .hk{fill:var(--bg-s);stroke:var(--red);stroke-width:1}
+  .hn{fill:var(--tx-m);font-family:var(--font-mono);font-size:8px;font-weight:500;text-anchor:middle;dominant-baseline:central}
+  .bH{fill:var(--grn-d);stroke:var(--grn);stroke-width:1}
+  .bS{fill:var(--blu-d);stroke:var(--blu);stroke-width:1}
+  .bO{fill:var(--pur-d);stroke:var(--pur);stroke-width:1}
+  .bt{font-family:var(--font-mono);font-size:8px;font-weight:700;text-anchor:middle;dominant-baseline:central}
+  .btH{fill:var(--grn)}.btS{fill:var(--blu)}.btO{fill:var(--pur)}
+  .ln{stroke:var(--tx-d);stroke-width:1.2;fill:none}
+  .lf{stroke:var(--acc);stroke-width:2;fill:none}
+  .ld{stroke-dasharray:5 4}
+  .sl{fill:var(--tx-d);font-family:var(--font-mono);font-size:8.5px;text-anchor:middle;dominant-baseline:central}
+  .al{fill:var(--acc);font-family:var(--font-mono);font-size:9px;font-weight:600;text-anchor:middle;dominant-baseline:central}
+  .vb{fill:none;stroke:var(--red);stroke-width:1;stroke-dasharray:4 3}
+  .sub{fill:var(--tx-d);font-family:var(--font-body);font-size:9px;text-anchor:start;dominant-baseline:central}
+
+  @media(prefers-reduced-motion:reduce){.vp svg{transition:none}}
+</style>
+
+<header class="hdr">
+  <h1>Claude Code Shared Architecture</h1>
+  <span class="stats">31 Skills &middot; 33+ Agents &middot; 6 Contracts &middot; 13 Hooks &middot; 28 Scripts</span>
+  <div class="legend">
+    <span class="legend-item"><span class="legend-swatch sw-skill"></span>Skill</span>
+    <span class="legend-item"><span class="legend-swatch sw-agent"></span>Agent</span>
+    <span class="legend-item"><span class="legend-swatch sw-contract"></span>Contract</span>
+    <span class="legend-item"><span class="legend-swatch sw-hook"></span>Hook</span>
+    <span class="legend-item"><span class="badge-legend bl-h">H</span>Haiku</span>
+    <span class="legend-item"><span class="badge-legend bl-s">S</span>Sonnet</span>
+    <span class="legend-item"><span class="badge-legend bl-o">O</span>Opus</span>
+  </div>
+</header>
+
+<div class="vp" id="vp">
+<svg viewBox="0 0 2020 1300" id="dia" xmlns="http://www.w3.org/2000/svg">
+<defs>
+  <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 1L8 5L0 9z" fill="var(--tx-d)"/></marker>
+  <marker id="af" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 1L8 5L0 9z" fill="var(--acc)"/></marker>
+</defs>
+
+<g transform="translate(20,20)">
+<rect width="1110" height="355" rx="10" class="grp"/>
+<text x="105" y="20" class="gl">ENTRY POINTS</text>
+<text x="310" y="20" class="gl">DISTILL</text>
+<text x="755" y="20" class="gl">VERIFICATION PANEL</text>
+<rect x="25" y="40" width="155" height="28" rx="5" class="sk"/><text x="102.5" y="54.0" class="sn">grill-me</text>
+<rect x="25" y="78" width="155" height="28" rx="5" class="sk"/><text x="102.5" y="92.0" class="sn">grill-with-docs</text>
+<rect x="25" y="116" width="155" height="28" rx="5" class="sk"/><text x="102.5" y="130.0" class="sn">debug</text>
+<rect x="25" y="154" width="155" height="28" rx="5" class="sk"/><text x="102.5" y="168.0" class="sn">pr-code-review</text>
+<rect x="230" y="68" width="130" height="28" rx="5" class="sk"/><text x="295.0" y="82.0" class="sn">to-seed</text>
+<line x1="180" y1="54" x2="228" y2="76" class="ln" marker-end="url(#a)"/>
+<line x1="180" y1="92" x2="228" y2="79" class="ln" marker-end="url(#a)"/>
+<line x1="180" y1="130" x2="228" y2="82" class="ln" marker-end="url(#a)"/>
+<line x1="180" y1="168" x2="228" y2="85" class="ln" marker-end="url(#a)"/>
+<line x1="360" y1="83" x2="418" y2="83" class="ln" marker-end="url(#a)"/>
+<rect x="420" y="32" width="675" height="312" rx="8" class="vb"/>
+<rect x="435" y="52" width="193" height="26" rx="5" class="ag" style="stroke:var(--red)"/><text x="531" y="65" class="an" style="fill:var(--red)">persona-grounding</text><rect x="593" y="58" width="22" height="14" rx="3" class="bH"/><text x="604" y="66" class="bt btH">H</text>
+<rect x="643" y="52" width="184" height="26" rx="5" class="ag" style="stroke:var(--red)"/><text x="735" y="65" class="an" style="fill:var(--red)">persona-accuracy</text><rect x="792" y="58" width="22" height="14" rx="3" class="bH"/><text x="803" y="66" class="bt btH">H</text>
+<rect x="435" y="88" width="220" height="26" rx="5" class="ag" style="stroke:var(--red)"/><text x="545" y="101" class="an" style="fill:var(--red)">persona-completeness</text><rect x="620" y="94" width="22" height="14" rx="3" class="bH"/><text x="631" y="102" class="bt btH">H</text>
+<rect x="670" y="88" width="193" height="26" rx="5" class="ag" style="stroke:var(--red)"/><text x="766" y="101" class="an" style="fill:var(--red)">persona-coherence</text><rect x="828" y="94" width="22" height="14" rx="3" class="bH"/><text x="839" y="102" class="bt btH">H</text>
+<line x1="580" y1="114" x2="580" y2="136" class="ln" marker-end="url(#a)"/>
+<text x="580" y="148" class="al">refutations[]</text>
+<line x1="580" y1="156" x2="580" y2="172" class="ln" marker-end="url(#a)"/>
+<rect x="490" y="175" width="180" height="26" rx="5" class="ag" style="stroke:var(--pur)"/><text x="565" y="188" class="an" style="fill:var(--pur)">Round 1: Screener</text><rect x="636" y="181" width="22" height="14" rx="3" class="bH"/><text x="647" y="189" class="bt btH">H</text>
+<line x1="580" y1="201" x2="580" y2="216" class="ln" marker-end="url(#a)"/>
+<text x="580" y="228" class="sl">upheld subset</text>
+<line x1="580" y1="236" x2="580" y2="250" class="ln" marker-end="url(#a)"/>
+<rect x="435" y="253" width="130" height="26" rx="5" class="ag" style="stroke:var(--pur)"/><text x="500" y="266" class="an" style="fill:var(--pur)">Judge A</text>
+<rect x="580" y="253" width="130" height="26" rx="5" class="ag" style="stroke:var(--pur)"/><text x="645" y="266" class="an" style="fill:var(--pur)">Judge B</text>
+<rect x="725" y="253" width="130" height="26" rx="5" class="ag" style="stroke:var(--pur)"/><text x="790" y="266" class="an" style="fill:var(--pur)">Judge C</text>
+<text x="640" y="295" class="sl">2-of-3 majority</text>
+<rect x="480" y="305" width="100" height="24" rx="5" style="fill:var(--grn-d);stroke:var(--grn);stroke-width:1.5"/><text x="530" y="317" class="an" style="fill:var(--grn)">Grounded</text><rect x="600" y="305" width="100" height="24" rx="5" style="fill:var(--red-d);stroke:var(--red);stroke-width:1.5"/><text x="650" y="317" class="an" style="fill:var(--red)">Rejected</text>
+<rect x="840" y="150" width="150" height="28" rx="5" class="ct"/><text x="915.0" y="164.0" class="cn">seed.json v4</text>
+<line x1="760" y1="83" x2="838" y2="160" class="lf ld" marker-end="url(#af)"/>
+</g>
+
+<g transform="translate(1160,20)">
+<rect width="840" height="355" rx="10" class="grp"/>
+<text x="420" y="20" class="gl">INVESTIGATE</text>
+<rect x="20" y="42" width="119" height="28" rx="5" class="sk"/><text x="79.5" y="56.0" class="sn">investigate</text>
+<rect x="154" y="42" width="110" height="28" rx="5" class="sk"/><text x="209.0" y="56.0" class="sn">pr-revise</text>
+<rect x="279" y="42" width="146" height="28" rx="5" class="sk"/><text x="352.0" y="56.0" class="sn">pr-code-review</text>
+<rect x="560" y="42" width="165" height="26" rx="5" class="ag"/><text x="642.5" y="55.0" class="an">answer-composer</text><rect x="690" y="48.0" width="22" height="14" rx="3" class="bS"/><text x="701" y="56.0" class="bt btS">S</text>
+<line x1="90" y1="70" x2="350" y2="108" class="ln" marker-end="url(#a)"/><line x1="252" y1="70" x2="370" y2="108" class="ln" marker-end="url(#a)"/><line x1="410" y1="70" x2="390" y2="108" class="ln" marker-end="url(#a)"/>
+<rect x="270" y="110" width="220" height="32" rx="5" class="ag" style="stroke:var(--pur)"/><text x="365" y="126" class="an" style="fill:var(--pur)">investigator</text><rect x="447" y="118" width="28" height="14" rx="3" class="bO"/><text x="461" y="126" class="bt btO">O</text>
+<line x1="310" y1="142" x2="100" y2="178" class="ln" marker-end="url(#a)"/>
+<line x1="345" y1="142" x2="260" y2="178" class="ln" marker-end="url(#a)"/>
+<line x1="380" y1="142" x2="420" y2="178" class="ln" marker-end="url(#a)"/>
+<line x1="415" y1="142" x2="580" y2="178" class="ln" marker-end="url(#a)"/>
+<line x1="450" y1="142" x2="740" y2="178" class="ln" marker-end="url(#a)"/>
+<rect x="25" y="180" width="150" height="26" rx="5" class="ag"/><text x="100" y="193" class="an" style="font-size:8.5px">investigator-code</text><rect x="145" y="186" width="22" height="14" rx="3" class="bH"/><text x="156" y="194" class="bt btH">H</text>
+<rect x="185" y="180" width="150" height="26" rx="5" class="ag"/><text x="260" y="193" class="an" style="font-size:8.5px">investigator-web</text><rect x="305" y="186" width="22" height="14" rx="3" class="bH"/><text x="316" y="194" class="bt btH">H</text>
+<rect x="345" y="180" width="150" height="26" rx="5" class="ag"/><text x="420" y="193" class="an" style="font-size:8.5px">investigator-github</text><rect x="465" y="186" width="22" height="14" rx="3" class="bH"/><text x="476" y="194" class="bt btH">H</text>
+<rect x="505" y="180" width="150" height="26" rx="5" class="ag"/><text x="580" y="193" class="an" style="font-size:8.5px">investigator-linear</text><rect x="625" y="186" width="22" height="14" rx="3" class="bH"/><text x="636" y="194" class="bt btH">H</text>
+<rect x="665" y="180" width="150" height="26" rx="5" class="ag"/><text x="740" y="193" class="an" style="font-size:8.5px">investigator-notion</text><rect x="785" y="186" width="22" height="14" rx="3" class="bH"/><text x="796" y="194" class="bt btH">H</text>
+<line x1="100" y1="206" x2="330" y2="248" class="ln" style="stroke:var(--blu)" marker-end="url(#a)"/>
+<line x1="260" y1="206" x2="365" y2="248" class="ln" style="stroke:var(--blu)" marker-end="url(#a)"/>
+<line x1="420" y1="206" x2="400" y2="248" class="ln" style="stroke:var(--blu)" marker-end="url(#a)"/>
+<line x1="580" y1="206" x2="435" y2="248" class="ln" style="stroke:var(--blu)" marker-end="url(#a)"/>
+<line x1="740" y1="206" x2="470" y2="248" class="ln" style="stroke:var(--blu)" marker-end="url(#a)"/>
+<rect x="260" y="250" width="280" height="28" rx="5" class="ct"/><text x="400.0" y="264.0" class="cn">investigation-result.json</text>
+<line x1="540" y1="264" x2="610" y2="264" class="ln" marker-end="url(#a)"/><line x1="640" y1="68" x2="640" y2="258" class="ln ld"/>
+</g>
+
+<g transform="translate(20,405)">
+<rect width="580" height="310" rx="10" class="grp"/>
+<text x="290" y="20" class="gl">PLAN</text>
+<rect x="20" y="42" width="120" height="28" rx="5" class="sk"/><text x="80.0" y="56.0" class="sn">to-spec</text>
+<rect x="155" y="42" width="120" height="28" rx="5" class="sk"/><text x="215.0" y="56.0" class="sn">to-tasks</text>
+<rect x="290" y="42" width="128" height="28" rx="5" class="sk"/><text x="354.0" y="56.0" class="sn">to-e2e-tasks</text>
+<rect x="20" y="82" width="120" height="28" rx="5" class="sk"/><text x="80.0" y="96.0" class="sn">prototype</text>
+<rect x="155" y="82" width="120" height="28" rx="5" class="sk"/><text x="215.0" y="96.0" class="sn">sprout-seed</text>
+<rect x="295" y="82" width="155" height="26" rx="5" class="ag"/><text x="372.5" y="95.0" class="an">context-loader</text><rect x="415" y="88.0" width="22" height="14" rx="3" class="bH"/><text x="426" y="96.0" class="bt btH">H</text>
+<line x1="80" y1="70" x2="80" y2="155" class="ln" marker-end="url(#a)"/><line x1="217" y1="70" x2="300" y2="155" class="ln" marker-end="url(#a)"/><line x1="365" y1="70" x2="340" y2="155" class="ln" marker-end="url(#a)"/>
+<rect x="20" y="158" width="130" height="28" rx="5" class="ct"/><text x="85.0" y="172.0" class="cn">spec (HTML)</text>
+<rect x="190" y="158" width="180" height="28" rx="5" class="ct"/><text x="280.0" y="172.0" class="cn">task.json v1</text>
+<path d="M82 110 L82 135 Q82 145 72 145 L40 145 Q30 145 30 135 L30 96" class="ln ld" marker-end="url(#a)"/><text x="20" y="150" class="sl" style="text-anchor:start;font-size:7.5px">reseed</text>
+<text x="290" y="210" class="sub">Consumed by: build-code, dispatch-tasks</text>
+<text x="290" y="228" class="sub">prototype loops back to to-seed on confirmed approach</text>
+<line x1="80" y1="184" x2="190" y2="184" class="ln ld" marker-end="url(#a)"/><text x="135" y="196" class="sl">feeds</text>
+</g>
+
+<g transform="translate(630,405)">
+<rect width="500" height="310" rx="10" class="grp"/>
+<text x="250" y="20" class="gl">EXECUTE</text>
+<rect x="100" y="42" width="140" height="28" rx="5" class="sk"/><text x="170.0" y="56.0" class="sn">build-code</text>
+<rect x="260" y="42" width="100" height="28" rx="5" class="sk"/><text x="310.0" y="56.0" class="sn">tdd</text>
+<line x1="170" y1="70" x2="230" y2="98" class="ln" marker-end="url(#a)"/><line x1="310" y1="70" x2="270" y2="98" class="ln" marker-end="url(#a)"/>
+<rect x="150" y="100" width="200" height="26" rx="5" class="ag"/><text x="250.0" y="113.0" class="an">build-runner</text><rect x="315" y="106.0" width="22" height="14" rx="3" class="bS"/><text x="326" y="114.0" class="bt btS">S</text>
+<line x1="200" y1="130" x2="80" y2="160" class="ln" marker-end="url(#a)"/><line x1="240" y1="130" x2="210" y2="160" class="ln" marker-end="url(#a)"/><line x1="280" y1="130" x2="330" y2="160" class="ln" marker-end="url(#a)"/><line x1="310" y1="130" x2="430" y2="160" class="ln" marker-end="url(#a)"/>
+<rect x="15" y="163" width="120" height="24" rx="4" class="ag"/><text x="75" y="175" class="an" style="font-size:9px">lint-runner</text><rect x="110" y="167" width="20" height="14" rx="3" class="bH"/><text x="120" y="175" class="bt btH">H</text>
+<rect x="150" y="163" width="120" height="24" rx="4" class="ag"/><text x="210" y="175" class="an" style="font-size:9px">test-runner</text><rect x="245" y="167" width="20" height="14" rx="3" class="bH"/><text x="255" y="175" class="bt btH">H</text>
+<rect x="285" y="163" width="120" height="24" rx="4" class="ag"/><text x="345" y="175" class="an" style="font-size:9px">browser-chk</text><rect x="380" y="167" width="20" height="14" rx="3" class="bH"/><text x="390" y="175" class="bt btH">H</text>
+<rect x="415" y="163" width="70" height="24" rx="4" class="ag"/><text x="450" y="175" class="an" style="font-size:9px">e2e</text><rect x="460" y="167" width="20" height="14" rx="3" class="bH"/><text x="470" y="175" class="bt btH">H</text>
+<rect x="15" y="42" width="75" height="55" rx="6" fill="none" stroke="var(--acc)" stroke-width="1" stroke-dasharray="3 2"/><text x="52" y="55" class="sl" style="fill:var(--acc);font-size:7.5px">TDD CYCLE</text><text x="52" y="67" class="sl" style="fill:var(--red);font-size:8px">Red</text><text x="52" y="78" class="sl" style="fill:var(--grn);font-size:8px">Green</text><text x="52" y="89" class="sl" style="fill:var(--blu);font-size:8px">Refactor</text>
+<line x1="250" y1="187" x2="250" y2="218" class="ln" style="stroke:var(--grn)" marker-end="url(#a)"/>
+<rect x="130" y="220" width="210" height="28" rx="5" class="ct"/><text x="235.0" y="234.0" class="cn">runner-result.json v1</text>
+</g>
+
+<g transform="translate(1160,405)">
+<rect width="840" height="310" rx="10" class="grp"/>
+<text x="420" y="20" class="gl">EXPORT</text>
+<rect x="20" y="42" width="146" height="28" rx="5" class="sk"/><text x="93.0" y="56.0" class="sn">dispatch-tasks</text>
+<rect x="181" y="42" width="155" height="28" rx="5" class="sk"/><text x="258.5" y="56.0" class="sn">tasks-to-linear</text>
+<rect x="351" y="42" width="100" height="28" rx="5" class="sk"/><text x="401.0" y="56.0" class="sn">relay</text>
+<line x1="100" y1="70" x2="100" y2="100" class="ln" marker-end="url(#a)"/>
+<rect x="20" y="103" width="160" height="26" rx="5" class="ag"/><text x="100.0" y="116.0" class="an">export-tasks</text><rect x="145" y="109.0" width="22" height="14" rx="3" class="bS"/><text x="156" y="117.0" class="bt btS">S</text>
+<line x1="60" y1="129" x2="60" y2="155" class="ln" marker-end="url(#a)"/><line x1="100" y1="129" x2="225" y2="155" class="ln" marker-end="url(#a)"/><line x1="140" y1="129" x2="390" y2="155" class="ln" marker-end="url(#a)"/>
+<rect x="15" y="158" width="160" height="24" rx="4" class="ag"/><text x="95" y="170" class="an" style="font-size:9px">export-tasks-gh</text><rect x="142" y="162" width="22" height="14" rx="3" class="bH"/><text x="153" y="170" class="bt btH">H</text>
+<rect x="190" y="158" width="175" height="24" rx="4" class="ag"/><text x="277" y="170" class="an" style="font-size:9px">export-tasks-linear</text><rect x="332" y="162" width="22" height="14" rx="3" class="bH"/><text x="343" y="170" class="bt btH">H</text>
+<rect x="380" y="158" width="175" height="24" rx="4" class="ag"/><text x="467" y="170" class="an" style="font-size:9px">export-tasks-notion</text><rect x="522" y="162" width="22" height="14" rx="3" class="bH"/><text x="533" y="170" class="bt btH">H</text>
+<text x="100" y="205" class="sl" style="fill:var(--tx-d)">EGRESS ADAPTERS (copy-only)</text>
+<rect x="15" y="215" width="130" height="24" rx="4" class="ag"/><text x="80" y="227" class="an" style="font-size:9px">post-github</text><rect x="112" y="219" width="22" height="14" rx="3" class="bS"/><text x="123" y="227" class="bt btS">S</text>
+<rect x="160" y="215" width="125" height="24" rx="4" class="ag"/><text x="222" y="227" class="an" style="font-size:9px">post-linear</text><rect x="252" y="219" width="22" height="14" rx="3" class="bS"/><text x="263" y="227" class="bt btS">S</text>
+<rect x="300" y="215" width="120" height="24" rx="4" class="ag"/><text x="360" y="227" class="an" style="font-size:9px">post-slack</text><rect x="387" y="219" width="22" height="14" rx="3" class="bS"/><text x="398" y="227" class="bt btS">S</text>
+<rect x="560" y="158" width="190" height="28" rx="5" class="ct"/><text x="655.0" y="172.0" class="cn">egress-result.json</text>
+<text x="655" y="200" class="sl">GitHub Issues</text>
+<text x="655" y="214" class="sl">Linear</text>
+<text x="655" y="228" class="sl">Notion</text>
+<text x="655" y="242" class="sl">Slack</text>
+</g>
+
+<g transform="translate(20,745)">
+<rect width="580" height="250" rx="10" class="grp"/>
+<text x="290" y="20" class="gl">IMPROVE</text>
+<rect x="20" y="42" width="137" height="28" rx="5" class="sk"/><text x="88.5" y="56.0" class="sn">improve-skill</text>
+<rect x="172" y="42" width="173" height="28" rx="5" class="sk"/><text x="258.5" y="56.0" class="sn">improve-component</text>
+<rect x="360" y="42" width="146" height="28" rx="5" class="sk"/><text x="433.0" y="56.0" class="sn">register-skill</text>
+<rect x="20" y="82" width="281" height="28" rx="5" class="sk"/><text x="160.5" y="96.0" class="sn">improve-codebase-architecture</text>
+<rect x="316" y="82" width="263" height="28" rx="5" class="sk"/><text x="447.5" y="96.0" class="sn">improve-directory-structure</text>
+<line x1="90" y1="70" x2="220" y2="138" class="ln" marker-end="url(#a)"/>
+<rect x="140" y="140" width="180" height="26" rx="5" class="ag"/><text x="230.0" y="153.0" class="an">architecture-auditor</text><rect x="285" y="146.0" width="22" height="14" rx="3" class="bS"/><text x="296" y="154.0" class="bt btS">S</text>
+<text x="290" y="195" class="sub">Produces audit reports, feeds back into to-tasks pipeline</text>
+</g>
+
+<g transform="translate(630,745)">
+<rect width="500" height="250" rx="10" class="grp"/>
+<text x="250" y="20" class="gl">LEARN</text>
+<text x="250" y="36" class="sl">from all skills (universal tail)</text>
+<rect x="20" y="55" width="175" height="26" rx="5" class="ag"/><text x="107.5" y="68.0" class="an">capture-learning</text><rect x="160" y="61.0" width="22" height="14" rx="3" class="bS"/><text x="171" y="69.0" class="bt btS">S</text>
+<line x1="107" y1="81" x2="107" y2="105" class="ln" marker-end="url(#a)"/>
+<rect x="20" y="108" width="195" height="26" rx="5" class="ag"/><text x="117.5" y="121.0" class="an">learn-ground-judge</text><rect x="180" y="114.0" width="22" height="14" rx="3" class="bH"/><text x="191" y="122.0" class="bt btH">H</text>
+<rect x="270" y="55" width="175" height="26" rx="5" class="ag"/><text x="357.5" y="68.0" class="an">attribution-tracer</text><rect x="410" y="61.0" width="22" height="14" rx="3" class="bS"/><text x="421" y="69.0" class="bt btS">S</text>
+<line x1="357" y1="81" x2="357" y2="105" class="ln" marker-end="url(#a)"/>
+<rect x="260" y="108" width="200" height="26" rx="5" class="ag"/><text x="360.0" y="121.0" class="an">artifact-ground-judge</text><rect x="425" y="114.0" width="22" height="14" rx="3" class="bS"/><text x="436" y="122.0" class="bt btS">S</text>
+<line x1="250" y1="134" x2="250" y2="162" class="ln" style="stroke:var(--pur)" marker-end="url(#a)"/><rect x="100" y="165" width="280" height="26" rx="5" class="ct" style="stroke:var(--pur);fill:var(--pur-d)"/><text x="240" y="178" class="cn" style="fill:var(--pur)">unified-learnings.jsonl</text>
+<text x="250" y="210" class="sub" style="text-anchor:middle">Correction events fed back to improve future runs</text>
+</g>
+
+<g transform="translate(1160,745)">
+<rect width="840" height="250" rx="10" class="grp"/>
+<text x="420" y="20" class="gl">UTILITY</text>
+<rect x="20" y="42" width="110" height="28" rx="5" class="sk"/><text x="75.0" y="56.0" class="sn">find-work</text>
+<rect x="210" y="42" width="173" height="28" rx="5" class="sk"/><text x="296.5" y="56.0" class="sn">clean-scaffolding</text>
+<rect x="400" y="42" width="110" height="28" rx="5" class="sk"/><text x="455.0" y="56.0" class="sn">handoff</text>
+<rect x="590" y="42" width="110" height="28" rx="5" class="sk"/><text x="645.0" y="56.0" class="sn">offload</text>
+<rect x="20" y="78" width="110" height="28" rx="5" class="sk"/><text x="75.0" y="92.0" class="sn">how-to</text>
+<rect x="210" y="78" width="110" height="28" rx="5" class="sk"/><text x="265.0" y="92.0" class="sn">tldr-tech</text>
+<rect x="400" y="78" width="110" height="28" rx="5" class="sk"/><text x="455.0" y="92.0" class="sn">worktree</text>
+<rect x="590" y="78" width="182" height="28" rx="5" class="sk"/><text x="681.0" y="92.0" class="sn">cc-usage-analytics</text>
+<rect x="20" y="114" width="182" height="28" rx="5" class="sk"/><text x="111.0" y="128.0" class="sn">run-task-followups</text>
+<text x="420" y="170" class="sub" style="text-anchor:middle">Standalone skills. Each connects to learning tail.</text>
+<text x="420" y="186" class="sub" style="text-anchor:middle">handoff produces seed handoff docs. find-work searches for work items.</text>
+</g>
+
+<g transform="translate(20,1025)">
+<rect width="1980" height="255" rx="10" class="grp"/>
+<text x="990" y="20" class="gl">INFRASTRUCTURE</text>
+<text x="100" y="42" class="sl" style="fill:var(--red);text-anchor:start;font-weight:700;letter-spacing:0.08em">HOOKS (13 BLOCKING GATES)</text>
+<rect x="20" y="55" width="145" height="22" rx="4" class="hk"/><text x="92.5" y="66.0" class="hn">block-data-exfil</text>
+<rect x="175" y="55" width="145" height="22" rx="4" class="hk"/><text x="247.5" y="66.0" class="hn">block-destructive-fs</text>
+<rect x="330" y="55" width="145" height="22" rx="4" class="hk"/><text x="402.5" y="66.0" class="hn">block-destructive-git</text>
+<rect x="485" y="55" width="145" height="22" rx="4" class="hk"/><text x="557.5" y="66.0" class="hn">block-destructive-sed</text>
+<rect x="640" y="55" width="145" height="22" rx="4" class="hk"/><text x="712.5" y="66.0" class="hn">block-destructive-sql</text>
+<rect x="795" y="55" width="145" height="22" rx="4" class="hk"/><text x="867.5" y="66.0" class="hn">block-edit-on-trunk</text>
+<rect x="950" y="55" width="145" height="22" rx="4" class="hk"/><text x="1022.5" y="66.0" class="hn">block-package-publish</text>
+<rect x="20" y="85" width="145" height="22" rx="4" class="hk"/><text x="92.5" y="96.0" class="hn">block-remote-exec</text>
+<rect x="175" y="85" width="145" height="22" rx="4" class="hk"/><text x="247.5" y="96.0" class="hn">block-var-keyword</text>
+<rect x="330" y="85" width="145" height="22" rx="4" class="hk"/><text x="402.5" y="96.0" class="hn">lint-edited-file</text>
+<rect x="485" y="85" width="145" height="22" rx="4" class="hk"/><text x="557.5" y="96.0" class="hn">stop-hook</text>
+<rect x="640" y="85" width="145" height="22" rx="4" class="hk"/><text x="712.5" y="96.0" class="hn">test-hook</text>
+<rect x="795" y="85" width="145" height="22" rx="4" class="hk"/><text x="867.5" y="96.0" class="hn">tier-advisor</text>
+<text x="100" y="130" class="sl" style="fill:var(--tx-m);text-anchor:start;font-weight:700;letter-spacing:0.08em">KEY SCRIPTS (28 TOTAL)</text>
+<rect x="20" y="142" width="177.5" height="20" rx="3" fill="var(--bg-s)" stroke="var(--bdr)" stroke-width="1"/><text x="108.75" y="152.0" class="hn">cc-usage-benchmark.py</text>
+<rect x="207.5" y="142" width="147.5" height="20" rx="3" fill="var(--bg-s)" stroke="var(--bdr)" stroke-width="1"/><text x="281.25" y="152.0" class="hn">cc-usage-nudge.sh</text>
+<rect x="365.0" y="142" width="222.5" height="20" rx="3" fill="var(--bg-s)" stroke="var(--bdr)" stroke-width="1"/><text x="476.25" y="152.0" class="hn">claude_tooling_extractor.py</text>
+<rect x="597.5" y="142" width="125.0" height="20" rx="3" fill="var(--bg-s)" stroke="var(--bdr)" stroke-width="1"/><text x="660.0" y="152.0" class="hn">context-bar.sh</text>
+<rect x="732.5" y="142" width="305.0" height="20" rx="3" fill="var(--bg-s)" stroke="var(--bdr)" stroke-width="1"/><text x="885.0" y="152.0" class="hn">dependency-graph-findings.example.json</text>
+<rect x="1047.5" y="142" width="230.0" height="20" rx="3" fill="var(--bg-s)" stroke="var(--bdr)" stroke-width="1"/><text x="1162.5" y="152.0" class="hn">dependency-graph-findings.py</text>
+<rect x="1287.5" y="142" width="132.5" height="20" rx="3" fill="var(--bg-s)" stroke="var(--bdr)" stroke-width="1"/><text x="1353.75" y="152.0" class="hn">doc-filename.sh</text>
+<rect x="1430.0" y="142" width="230.0" height="20" rx="3" fill="var(--bg-s)" stroke="var(--bdr)" stroke-width="1"/><text x="1545.0" y="152.0" class="hn">filter-session-transcript.py</text>
+<text x="100" y="185" class="sl" style="fill:var(--pur);text-anchor:start;font-weight:700;letter-spacing:0.08em">KEY RESOURCES (15 TOTAL)</text>
+<rect x="20" y="197" width="192.5" height="20" rx="3" fill="var(--pur-d)" stroke="var(--pur)" stroke-width="1"/><text x="116.25" y="207.0" class="hn" style="fill:var(--pur)">app-launch-detection.md</text>
+<rect x="222.5" y="197" width="185.0" height="20" rx="3" fill="var(--pur-d)" stroke="var(--pur)" stroke-width="1"/><text x="315.0" y="207.0" class="hn" style="fill:var(--pur)">attribution-capture.md</text>
+<rect x="417.5" y="197" width="177.5" height="20" rx="3" fill="var(--pur-d)" stroke="var(--pur)" stroke-width="1"/><text x="506.25" y="207.0" class="hn" style="fill:var(--pur)">branching-strategy.md</text>
+<rect x="605.0" y="197" width="192.5" height="20" rx="3" fill="var(--pur-d)" stroke="var(--pur)" stroke-width="1"/><text x="701.25" y="207.0" class="hn" style="fill:var(--pur)">browser-check-result.md</text>
+<rect x="807.5" y="197" width="185.0" height="20" rx="3" fill="var(--pur-d)" stroke="var(--pur)" stroke-width="1"/><text x="900.0" y="207.0" class="hn" style="fill:var(--pur)">hitl-steps-runbooks.md</text>
+<rect x="1002.5" y="197" width="162.5" height="20" rx="3" fill="var(--pur-d)" stroke="var(--pur)" stroke-width="1"/><text x="1083.75" y="207.0" class="hn" style="fill:var(--pur)">learning-capture.md</text>
+<rect x="1175.0" y="197" width="140.0" height="20" rx="3" fill="var(--pur-d)" stroke="var(--pur)" stroke-width="1"/><text x="1245.0" y="207.0" class="hn" style="fill:var(--pur)">model-tiers.json</text>
+<rect x="1325.0" y="197" width="125.0" height="20" rx="3" fill="var(--pur-d)" stroke="var(--pur)" stroke-width="1"/><text x="1387.5" y="207.0" class="hn" style="fill:var(--pur)">model-tiers.md</text>
+</g>
+
+<g id="connections">
+  <path d="M300 375 L300 393 L300 403" class="lf" marker-end="url(#af)" fill="none"/>
+  <text x="320" y="393" class="al" style="text-anchor:start">seed.json</text>
+
+  <line x1="600" y1="560" x2="628" y2="560" class="lf" marker-end="url(#af)"/>
+  <text x="614" y="550" class="al" style="font-size:8px">task.json</text>
+
+  <path d="M500 715 L500 728 L1160 728 L1160 715" class="lf ld" marker-end="url(#af)" fill="none"/>
+  <text x="830" y="722" class="al">task.json (dispatch path)</text>
+
+  <path d="M880 715 L880 743" class="lf ld" marker-end="url(#af)" fill="none"/>
+  <text x="895" y="734" class="al" style="text-anchor:start;font-size:8px">results</text>
+
+  <text x="625" y="778" class="al" style="font-size:9px;text-anchor:end">all skills &#8594;</text>
+
+  <path d="M630 870 L10 870 L10 200 L18 200" class="lf ld" marker-end="url(#af)" fill="none"/>
+  <text x="10" y="540" class="al" transform="rotate(-90, 10, 540)" style="font-size:8px">feedback loop</text>
+
+  <path d="M1580 375 L1580 393 L1135 393 L1135 743" class="ln ld" marker-end="url(#a)" fill="none"/>
+  <text x="1280" y="387" class="sl" style="font-size:8px">attribution path</text>
+</g>
+
+</svg>
+</div>
+
+<div class="ctrl">
+  <button id="zi" title="Zoom in">+</button>
+  <button id="zo" title="Zoom out">&minus;</button>
+  <button id="zr" class="lbl" title="Reset view">Fit</button>
+</div>
+
+<script>
+(function(){
+  const vp = document.getElementById('vp');
+  const svg = document.getElementById('dia');
+  let scale = 1, px = 0, py = 0;
+  let dragging = false, sx, sy, spx, spy;
+
+  function fit() {
+    const vw = vp.clientWidth, vh = vp.clientHeight;
+    const sw = 2020, sh = 1300;
+    scale = Math.min(vw / sw, vh / sh) * 0.98;
+    px = (vw - sw * scale) / 2;
+    py = (vh - sh * scale) / 2;
+    apply();
+  }
+
+  function apply() {
+    svg.style.transform = 'translate(' + px + 'px,' + py + 'px) scale(' + scale + ')';
+  }
+
+  function zoom(d, cx, cy) {
+    const ns = Math.max(0.15, Math.min(3, scale * d));
+    const r = ns / scale;
+    px = cx - (cx - px) * r;
+    py = cy - (cy - py) * r;
+    scale = ns;
+    apply();
+  }
+
+  vp.addEventListener('wheel', function(e) {
+    e.preventDefault();
+    zoom(e.deltaY < 0 ? 1.12 : 0.89, e.clientX, e.clientY - 48);
+  }, {passive: false});
+
+  vp.addEventListener('mousedown', function(e) {
+    if (e.button !== 0) return;
+    dragging = true; sx = e.clientX; sy = e.clientY; spx = px; spy = py;
+    vp.classList.add('dragging');
+  });
+
+  window.addEventListener('mousemove', function(e) {
+    if (!dragging) return;
+    px = spx + (e.clientX - sx);
+    py = spy + (e.clientY - sy);
+    apply();
+  });
+
+  window.addEventListener('mouseup', function() {
+    dragging = false;
+    vp.classList.remove('dragging');
+  });
+
+  let ts = 0, td = 0;
+  vp.addEventListener('touchstart', function(e) {
+    if (e.touches.length === 1) {
+      sx = e.touches[0].clientX; sy = e.touches[0].clientY; spx = px; spy = py;
+    } else if (e.touches.length === 2) {
+      td = Math.hypot(e.touches[1].clientX - e.touches[0].clientX, e.touches[1].clientY - e.touches[0].clientY);
+      ts = scale;
+    }
+  });
+
+  vp.addEventListener('touchmove', function(e) {
+    e.preventDefault();
+    if (e.touches.length === 1) {
+      px = spx + (e.touches[0].clientX - sx);
+      py = spy + (e.touches[0].clientY - sy);
+      apply();
+    } else if (e.touches.length === 2) {
+      const nd = Math.hypot(e.touches[1].clientX - e.touches[0].clientX, e.touches[1].clientY - e.touches[0].clientY);
+      scale = Math.max(0.15, Math.min(3, ts * (nd / td)));
+      apply();
+    }
+  }, {passive: false});
+
+  document.getElementById('zi').addEventListener('click', function() { zoom(1.25, vp.clientWidth / 2, vp.clientHeight / 2); });
+  document.getElementById('zo').addEventListener('click', function() { zoom(0.8, vp.clientWidth / 2, vp.clientHeight / 2); });
+  document.getElementById('zr').addEventListener('click', fit);
+
+  fit();
+  window.addEventListener('resize', fit);
+})();
+</script>

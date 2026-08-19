@@ -1,0 +1,1366 @@
+<title>Treating AI Like Untrusted Code</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Source+Sans+3:ital,wght@0,300;0,400;0,600;0,700;1,400&display=swap">
+
+<style>
+  :root {
+    --font-mono: 'JetBrains Mono', 'SF Mono', 'Fira Code', monospace;
+    --font-body: 'Source Sans 3', 'Source Sans Pro', system-ui, sans-serif;
+
+    --bg: #0B1222;
+    --bg-surface: #141D2F;
+    --bg-elevated: #1A2540;
+    --text: #E2E8F0;
+    --text-muted: #94A3B8;
+    --text-dim: #475569;
+    --accent: #F0B429;
+    --accent-dim: rgba(240, 180, 41, 0.15);
+    --blue: #60A5FA;
+    --blue-dim: rgba(96, 165, 250, 0.15);
+    --red: #F87171;
+    --red-dim: rgba(248, 113, 113, 0.12);
+    --green: #4ADE80;
+    --green-dim: rgba(74, 222, 128, 0.12);
+    --purple: #C084FC;
+    --purple-dim: rgba(192, 132, 252, 0.12);
+    --border: #1E293B;
+  }
+
+  @media (prefers-color-scheme: light) {
+    :root:not([data-theme="dark"]) {
+      --bg: #FAFBFC;
+      --bg-surface: #F1F5F9;
+      --bg-elevated: #E8EDF4;
+      --text: #1E293B;
+      --text-muted: #64748B;
+      --text-dim: #94A3B8;
+      --accent: #B8860B;
+      --accent-dim: rgba(184, 134, 11, 0.1);
+      --blue: #2563EB;
+      --blue-dim: rgba(37, 99, 235, 0.08);
+      --red: #DC2626;
+      --red-dim: rgba(220, 38, 38, 0.08);
+      --green: #16A34A;
+      --green-dim: rgba(22, 163, 74, 0.08);
+      --purple: #9333EA;
+      --purple-dim: rgba(147, 51, 234, 0.08);
+      --border: #E2E8F0;
+    }
+  }
+
+  :root[data-theme="light"] {
+    --bg: #FAFBFC;
+    --bg-surface: #F1F5F9;
+    --bg-elevated: #E8EDF4;
+    --text: #1E293B;
+    --text-muted: #64748B;
+    --text-dim: #94A3B8;
+    --accent: #B8860B;
+    --accent-dim: rgba(184, 134, 11, 0.1);
+    --blue: #2563EB;
+    --blue-dim: rgba(37, 99, 235, 0.08);
+    --red: #DC2626;
+    --red-dim: rgba(220, 38, 38, 0.08);
+    --green: #16A34A;
+    --green-dim: rgba(22, 163, 74, 0.08);
+    --purple: #9333EA;
+    --purple-dim: rgba(147, 51, 234, 0.08);
+    --border: #E2E8F0;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: var(--font-body);
+    background: var(--bg);
+    color: var(--text);
+    overflow: hidden;
+    height: 100vh;
+    width: 100vw;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* Progress bar */
+  .progress {
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 3px;
+    background: var(--accent);
+    transition: width 0.4s ease;
+    z-index: 100;
+  }
+
+  /* Slide container */
+  .deck {
+    position: relative;
+    width: 100vw;
+    height: 100vh;
+  }
+
+  .slide {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.4s ease;
+    padding: 60px 80px;
+  }
+
+  .slide.active {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .slide-inner {
+    max-width: 1000px;
+    width: 100%;
+  }
+
+  /* Typography */
+  h1 {
+    font-family: var(--font-mono);
+    font-size: 2.8rem;
+    font-weight: 700;
+    line-height: 1.15;
+    text-wrap: balance;
+    margin-bottom: 1.5rem;
+    letter-spacing: -0.02em;
+  }
+
+  h2 {
+    font-family: var(--font-body);
+    font-size: 1.6rem;
+    font-weight: 300;
+    color: var(--text-muted);
+    line-height: 1.4;
+    text-wrap: balance;
+  }
+
+  h3 {
+    font-family: var(--font-mono);
+    font-size: 1.1rem;
+    font-weight: 500;
+    color: var(--accent);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 0.5rem;
+  }
+
+  .accent { color: var(--accent); }
+  .blue { color: var(--blue); }
+  .red { color: var(--red); }
+  .green { color: var(--green); }
+  .purple { color: var(--purple); }
+  .muted { color: var(--text-muted); }
+  .dim { color: var(--text-dim); }
+  .mono { font-family: var(--font-mono); }
+
+  /* Title slide */
+  .slide-title {
+    text-align: center;
+  }
+
+  .slide-title h1 {
+    font-size: 3.2rem;
+    margin-bottom: 1rem;
+  }
+
+  .slide-title h2 {
+    font-size: 1.5rem;
+    margin-bottom: 3rem;
+  }
+
+  .slide-title .author {
+    font-size: 1rem;
+    color: var(--text-dim);
+    font-family: var(--font-mono);
+  }
+
+  /* Quote callout */
+  .quote {
+    font-family: var(--font-mono);
+    font-size: 2.2rem;
+    font-weight: 700;
+    line-height: 1.3;
+    margin-bottom: 0.5rem;
+  }
+
+  .quote-sub {
+    font-family: var(--font-mono);
+    font-size: 1.3rem;
+    font-weight: 400;
+    color: var(--text-muted);
+    font-style: italic;
+    margin-bottom: 2rem;
+  }
+
+  .body-text {
+    font-size: 1.35rem;
+    line-height: 1.6;
+    color: var(--text-muted);
+    max-width: 700px;
+    margin-bottom: 2rem;
+  }
+
+  /* Fix callout */
+  .fix {
+    display: flex;
+    align-items: baseline;
+    gap: 0.75rem;
+    padding: 1rem 1.25rem;
+    background: var(--bg-surface);
+    border-left: 3px solid var(--green);
+    border-radius: 0 6px 6px 0;
+    margin-top: 1.5rem;
+  }
+
+  .fix-label {
+    font-family: var(--font-mono);
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: var(--green);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    white-space: nowrap;
+  }
+
+  .fix-text {
+    font-size: 1.2rem;
+    color: var(--text);
+  }
+
+  /* Mapping grid */
+  .mapping-grid {
+    display: grid;
+    gap: 1px;
+    background: var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+    margin-top: 1.5rem;
+  }
+
+  .mapping-row {
+    display: grid;
+    grid-template-columns: 1fr 40px 1fr 40px 1fr;
+    align-items: center;
+    background: var(--bg);
+    padding: 1rem 1.25rem;
+  }
+
+  .mapping-row:nth-child(even) {
+    background: var(--bg-surface);
+  }
+
+  .mapping-arrow {
+    text-align: center;
+    color: var(--text-dim);
+    font-size: 1.1rem;
+  }
+
+  .mapping-left {
+    font-size: 1.1rem;
+    color: var(--text-muted);
+  }
+
+  .mapping-mid {
+    font-size: 1.1rem;
+    color: var(--text-muted);
+    font-family: var(--font-mono);
+    font-size: 0.95rem;
+  }
+
+  .mapping-right {
+    font-size: 1.1rem;
+    color: var(--accent);
+    font-family: var(--font-mono);
+    font-size: 0.95rem;
+    font-weight: 500;
+  }
+
+  /* Diagram slides */
+  .diagram-container {
+    width: 100%;
+    max-width: 1000px;
+    margin: 1.5rem auto 0;
+  }
+
+  .diagram-container svg {
+    width: 100%;
+    height: auto;
+  }
+
+  .diagram-caption {
+    text-align: center;
+    color: var(--text-dim);
+    font-size: 0.95rem;
+    margin-top: 1rem;
+    font-family: var(--font-mono);
+  }
+
+  /* Architecture table */
+  .arch-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    margin-top: 1.5rem;
+    border-radius: 8px;
+    overflow: hidden;
+    border: 1px solid var(--border);
+  }
+
+  .arch-table th {
+    font-family: var(--font-mono);
+    font-size: 0.8rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--accent);
+    background: var(--bg-surface);
+    padding: 0.75rem 1rem;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .arch-table td {
+    padding: 0.7rem 1rem;
+    font-size: 1rem;
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+  }
+
+  .arch-table tr:last-child td {
+    border-bottom: none;
+  }
+
+  .arch-table tr:nth-child(even) td {
+    background: var(--bg-surface);
+  }
+
+  .arch-table td:first-child {
+    font-family: var(--font-mono);
+    font-weight: 500;
+    color: var(--blue);
+    font-size: 0.95rem;
+    white-space: nowrap;
+  }
+
+  .arch-table td:last-child {
+    font-family: var(--font-mono);
+    color: var(--green);
+    font-size: 0.9rem;
+  }
+
+  /* Principle cards */
+  .principles {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    margin-top: 1.5rem;
+  }
+
+  .principle-card {
+    padding: 1.25rem 1.5rem;
+    background: var(--bg-surface);
+    border-radius: 8px;
+    border: 1px solid var(--border);
+  }
+
+  .principle-num {
+    font-family: var(--font-mono);
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: var(--accent);
+    margin-bottom: 0.4rem;
+  }
+
+  .principle-title {
+    font-family: var(--font-mono);
+    font-size: 1.15rem;
+    font-weight: 700;
+    margin-bottom: 0.4rem;
+  }
+
+  .principle-desc {
+    font-size: 1rem;
+    color: var(--text-muted);
+    line-height: 1.4;
+  }
+
+  /* Tips list */
+  .tips-list {
+    list-style: none;
+    margin-top: 1.5rem;
+  }
+
+  .tips-list li {
+    display: flex;
+    align-items: baseline;
+    gap: 1rem;
+    padding: 0.9rem 0;
+    border-bottom: 1px solid var(--border);
+    font-size: 1.2rem;
+  }
+
+  .tips-list li:last-child { border-bottom: none; }
+
+  .tip-marker {
+    font-family: var(--font-mono);
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: var(--accent);
+    white-space: nowrap;
+  }
+
+  /* Local benefits */
+  .benefits {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+    margin-top: 1.5rem;
+  }
+
+  .benefit {
+    display: flex;
+    gap: 1rem;
+    align-items: flex-start;
+    padding: 1rem 1.25rem;
+    background: var(--bg-surface);
+    border-radius: 8px;
+    border: 1px solid var(--border);
+  }
+
+  .benefit-icon {
+    font-family: var(--font-mono);
+    font-size: 1.5rem;
+    color: var(--blue);
+    line-height: 1;
+    flex-shrink: 0;
+  }
+
+  .benefit-title {
+    font-family: var(--font-mono);
+    font-weight: 600;
+    font-size: 1.1rem;
+    margin-bottom: 0.25rem;
+  }
+
+  .benefit-desc {
+    font-size: 1rem;
+    color: var(--text-muted);
+    line-height: 1.4;
+  }
+
+  /* Contract cards */
+  .contracts {
+    display: grid;
+    grid-template-columns: 1fr 40px 1fr 40px 1fr;
+    align-items: center;
+    gap: 0;
+    margin-top: 1.5rem;
+  }
+
+  .contract-card {
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1.25rem;
+  }
+
+  .contract-name {
+    font-family: var(--font-mono);
+    font-weight: 700;
+    font-size: 1rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .contract-fields {
+    list-style: none;
+    font-family: var(--font-mono);
+    font-size: 0.8rem;
+    color: var(--text-muted);
+  }
+
+  .contract-fields li {
+    padding: 0.2rem 0;
+  }
+
+  .contract-fields li::before {
+    content: '';
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    margin-right: 0.5rem;
+    vertical-align: middle;
+  }
+
+  .field-required::before { background: var(--blue); }
+  .field-optional::before { background: var(--text-dim); }
+
+  .contract-arrow {
+    text-align: center;
+    color: var(--text-dim);
+    font-size: 1.4rem;
+  }
+
+  /* Questions slide */
+  .slide-end {
+    text-align: center;
+  }
+
+  .slide-end h1 {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+  }
+
+  .slide-end h2 {
+    font-size: 1.6rem;
+    color: var(--text-muted);
+  }
+
+  /* Setup list */
+  .setup-list {
+    list-style: none;
+    margin: 2rem 0;
+  }
+
+  .setup-list li {
+    font-size: 1.3rem;
+    padding: 0.6rem 0;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  .setup-check {
+    font-family: var(--font-mono);
+    color: var(--green);
+    font-size: 1.1rem;
+    font-weight: 700;
+  }
+
+  .setup-question {
+    font-size: 1.5rem;
+    color: var(--accent);
+    font-family: var(--font-mono);
+    font-weight: 500;
+    margin-top: 1.5rem;
+    font-style: italic;
+  }
+
+  /* Navigation */
+  .nav {
+    position: fixed;
+    bottom: 24px;
+    right: 32px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    z-index: 50;
+  }
+
+  .slide-num {
+    font-family: var(--font-mono);
+    font-size: 0.8rem;
+    color: var(--text-dim);
+  }
+
+  .nav-btn {
+    width: 36px;
+    height: 36px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: var(--bg-surface);
+    color: var(--text-muted);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1rem;
+    transition: all 0.15s ease;
+  }
+
+  .nav-btn:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+
+  .nav-btn:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+
+  /* SVG styles */
+  .d-box {
+    fill: var(--bg-surface);
+    stroke: var(--border);
+    stroke-width: 1.5;
+  }
+
+  .d-box-accent { stroke: var(--accent); }
+  .d-box-blue { stroke: var(--blue); }
+  .d-box-green { stroke: var(--green); }
+  .d-box-red { stroke: var(--red); }
+  .d-box-purple { stroke: var(--purple); }
+
+  .d-text {
+    fill: var(--text);
+    font-family: var(--font-mono);
+    font-size: 13px;
+    font-weight: 500;
+    text-anchor: middle;
+    dominant-baseline: central;
+  }
+
+  .d-text-sm {
+    fill: var(--text-muted);
+    font-family: var(--font-mono);
+    font-size: 10px;
+    text-anchor: middle;
+    dominant-baseline: central;
+  }
+
+  .d-text-label {
+    fill: var(--text-dim);
+    font-family: var(--font-body);
+    font-size: 11px;
+    text-anchor: middle;
+    dominant-baseline: central;
+  }
+
+  .d-line {
+    stroke: var(--text-dim);
+    stroke-width: 1.5;
+    fill: none;
+  }
+
+  .d-line-accent { stroke: var(--accent); }
+  .d-line-blue { stroke: var(--blue); }
+  .d-line-green { stroke: var(--green); }
+
+  .d-badge {
+    font-family: var(--font-mono);
+    font-size: 9px;
+    font-weight: 700;
+    text-anchor: middle;
+    dominant-baseline: central;
+  }
+
+  .d-contract-label {
+    fill: var(--accent);
+    font-family: var(--font-mono);
+    font-size: 10px;
+    font-weight: 500;
+    text-anchor: middle;
+    dominant-baseline: central;
+  }
+
+  .d-phase-label {
+    fill: var(--text-dim);
+    font-family: var(--font-body);
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    text-anchor: middle;
+    dominant-baseline: central;
+  }
+
+  /* Responsive */
+  @media (max-width: 768px) {
+    .slide { padding: 40px 32px; }
+    h1 { font-size: 2rem; }
+    .slide-title h1 { font-size: 2.2rem; }
+    .quote { font-size: 1.6rem; }
+    .body-text { font-size: 1.1rem; }
+    .principles { grid-template-columns: 1fr; }
+    .contracts { grid-template-columns: 1fr; }
+    .contract-arrow { display: none; }
+    .mapping-row {
+      grid-template-columns: 1fr;
+      gap: 0.25rem;
+    }
+    .mapping-arrow { display: none; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .slide, .progress { transition: none; }
+  }
+</style>
+
+<!-- Shared SVG defs -->
+<svg style="position:absolute;width:0;height:0;overflow:hidden">
+  <defs>
+    <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 1 L8 5 L0 9z" fill="var(--text-dim)"/>
+    </marker>
+    <marker id="arr-accent" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 1 L8 5 L0 9z" fill="var(--accent)"/>
+    </marker>
+    <marker id="arr-green" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 1 L8 5 L0 9z" fill="var(--green)"/>
+    </marker>
+    <marker id="arr-red" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 1 L8 5 L0 9z" fill="var(--red)"/>
+    </marker>
+    <marker id="arr-blue" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 1 L8 5 L0 9z" fill="var(--blue)"/>
+    </marker>
+  </defs>
+</svg>
+
+<div class="progress" id="progress"></div>
+
+<div class="deck" id="deck">
+
+  <!-- SLIDE 1: Title -->
+  <div class="slide active" data-slide="1">
+    <div class="slide-inner slide-title">
+      <h3>A talk about engineering discipline</h3>
+      <h1>Treating AI Like<br><span class="accent">Untrusted Code</span></h1>
+      <h2>Your AI is a junior dev with root access.</h2>
+    </div>
+  </div>
+
+  <!-- SLIDE 2: The Setup -->
+  <div class="slide" data-slide="2">
+    <div class="slide-inner">
+      <h1>You Already Do This</h1>
+      <ul class="setup-list">
+        <li><span class="setup-check">&#10003;</span> Validate user input before processing</li>
+        <li><span class="setup-check">&#10003;</span> Review pull requests before merging</li>
+        <li><span class="setup-check">&#10003;</span> Write tests before shipping</li>
+        <li><span class="setup-check">&#10003;</span> Type-check your API contracts</li>
+        <li><span class="setup-check">&#10003;</span> Pin dependency versions</li>
+      </ul>
+      <p class="setup-question">So why does your AI get to skip all of that?</p>
+    </div>
+  </div>
+
+  <!-- SLIDE 3: Context Window Limits -->
+  <div class="slide" data-slide="3">
+    <div class="slide-inner">
+      <p class="quote">"I read the whole codebase."</p>
+      <p class="quote-sub">(It didn't.)</p>
+      <p class="body-text">Would you trust a developer who skimmed 10% of the project and confidently refactored the rest?</p>
+      <p class="body-text">200k tokens sounds like a lot. Your project is 2 million lines. Something gets cut. The model decides what.</p>
+      <div class="fix">
+        <span class="fix-label">Fix</span>
+        <span class="fix-text">Decompose, don't extend. Give each agent only what it needs through typed contracts.</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 4: Yes-Man Syndrome -->
+  <div class="slide" data-slide="4">
+    <div class="slide-inner">
+      <p class="quote">"That looks great!"</p>
+      <p class="quote-sub">(It doesn't.)</p>
+      <p class="body-text">Would you trust a code reviewer who has never left a single comment? Who agrees with every design decision you make?</p>
+      <p class="body-text">Sycophancy is a well-documented failure mode. The model optimizes for approval, not correctness.</p>
+      <div class="fix">
+        <span class="fix-label">Fix</span>
+        <span class="fix-text">Never let the author review their own PR. Separate producer from critic structurally.</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 5: Hallucination -->
+  <div class="slide" data-slide="5">
+    <div class="slide-inner">
+      <p class="quote">Confidently wrong.</p>
+      <p class="quote-sub">Fluently fabricated.</p>
+      <p class="body-text">Would you ship code without tests because the developer said "it works on my machine"?</p>
+      <p class="body-text">An AI can generate a function that reads perfectly, references an API that doesn't exist, and explain why it's correct.</p>
+      <div class="fix">
+        <span class="fix-label">Fix</span>
+        <span class="fix-text">Require evidence. Validate anchors against source. Schema-force structured output over free text.</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 6: Bloat & Drift -->
+  <div class="slide" data-slide="6">
+    <div class="slide-inner">
+      <p class="quote">"I also refactored auth."</p>
+      <p class="quote-sub">(Nobody asked.)</p>
+      <p class="body-text">Would you accept a PR that touched 47 files for a one-line bug fix? That added three new abstractions and a README?</p>
+      <p class="body-text">AI agents drift. They add features. They over-engineer. They optimize for impressive over correct.</p>
+      <div class="fix">
+        <span class="fix-label">Fix</span>
+        <span class="fix-text">One agent, one job. Schema-bound output. If the contract doesn't ask for it, it doesn't ship.</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 7: The Bridge -->
+  <div class="slide" data-slide="7">
+    <div class="slide-inner">
+      <h1>You Already Know<br>the <span class="accent">Solutions</span></h1>
+      <div class="mapping-grid">
+        <div class="mapping-row">
+          <span class="mapping-left">Untrusted input</span>
+          <span class="mapping-arrow">&#8594;</span>
+          <span class="mapping-mid">validate()</span>
+          <span class="mapping-arrow">&#8594;</span>
+          <span class="mapping-right">Schema contracts</span>
+        </div>
+        <div class="mapping-row">
+          <span class="mapping-left">Untrusted dependency</span>
+          <span class="mapping-arrow">&#8594;</span>
+          <span class="mapping-mid">pin versions</span>
+          <span class="mapping-arrow">&#8594;</span>
+          <span class="mapping-right">Typed interfaces</span>
+        </div>
+        <div class="mapping-row">
+          <span class="mapping-left">Untrusted contributor</span>
+          <span class="mapping-arrow">&#8594;</span>
+          <span class="mapping-mid">code review</span>
+          <span class="mapping-arrow">&#8594;</span>
+          <span class="mapping-right">Adversarial panels</span>
+        </div>
+        <div class="mapping-row">
+          <span class="mapping-left">Untrusted runtime</span>
+          <span class="mapping-arrow">&#8594;</span>
+          <span class="mapping-mid">sandboxing</span>
+          <span class="mapping-arrow">&#8594;</span>
+          <span class="mapping-right">Isolated agents</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 8: Pipeline Overview -->
+  <div class="slide" data-slide="8">
+    <div class="slide-inner">
+      <h1>The Pipeline</h1>
+      <div class="diagram-container">
+        <svg viewBox="0 0 960 220" xmlns="http://www.w3.org/2000/svg">
+          <!-- Phase labels -->
+          <text x="100" y="24" class="d-phase-label">CAPTURE</text>
+          <text x="300" y="24" class="d-phase-label">DISTILL</text>
+          <text x="500" y="24" class="d-phase-label">PLAN</text>
+          <text x="700" y="24" class="d-phase-label">BUILD</text>
+          <text x="880" y="24" class="d-phase-label">LEARN</text>
+
+          <!-- Boxes -->
+          <rect x="30" y="50" width="140" height="55" rx="8" class="d-box d-box-accent"/>
+          <text x="100" y="78" class="d-text">Grill</text>
+
+          <rect x="230" y="50" width="140" height="55" rx="8" class="d-box d-box-blue"/>
+          <text x="300" y="78" class="d-text">Seed</text>
+
+          <rect x="430" y="50" width="140" height="55" rx="8" class="d-box d-box-blue"/>
+          <text x="500" y="78" class="d-text">Tasks</text>
+
+          <rect x="630" y="50" width="140" height="55" rx="8" class="d-box d-box-green"/>
+          <text x="700" y="78" class="d-text">Execute</text>
+
+          <rect x="810" y="50" width="140" height="55" rx="8" class="d-box d-box-purple"/>
+          <text x="880" y="78" class="d-text">Learn</text>
+
+          <!-- Arrows between boxes -->
+          <line x1="170" y1="78" x2="228" y2="78" class="d-line" marker-end="url(#arr)"/>
+          <line x1="370" y1="78" x2="428" y2="78" class="d-line" marker-end="url(#arr)"/>
+          <line x1="570" y1="78" x2="628" y2="78" class="d-line" marker-end="url(#arr)"/>
+          <line x1="770" y1="78" x2="808" y2="78" class="d-line" marker-end="url(#arr)"/>
+
+          <!-- Contract labels on arrows -->
+          <text x="199" y="68" class="d-contract-label">seed.json</text>
+          <text x="399" y="68" class="d-contract-label">task.json</text>
+          <text x="599" y="68" class="d-contract-label">result.json</text>
+          <text x="789" y="68" class="d-contract-label">learning.jsonl</text>
+
+          <!-- Descriptions under boxes -->
+          <text x="100" y="128" class="d-text-label">Interview decisions</text>
+          <text x="100" y="142" class="d-text-label">from the human</text>
+
+          <text x="300" y="128" class="d-text-label">Verified IR with</text>
+          <text x="300" y="142" class="d-text-label">adversarial panel</text>
+
+          <text x="500" y="128" class="d-text-label">Decomposed into</text>
+          <text x="500" y="142" class="d-text-label">independent units</text>
+
+          <text x="700" y="128" class="d-text-label">TDD cycle per task</text>
+          <text x="700" y="142" class="d-text-label">with typed results</text>
+
+          <text x="880" y="128" class="d-text-label">Correction events</text>
+          <text x="880" y="142" class="d-text-label">fed back to system</text>
+
+          <!-- Feedback arrow from Learn back to Seed -->
+          <path d="M880 105 L880 190 L300 190 L300 107" class="d-line" style="stroke-dasharray:5,4" marker-end="url(#arr)" fill="none"/>
+          <text x="590" y="182" class="d-text-sm">feedback loop</text>
+        </svg>
+      </div>
+      <p class="diagram-caption">A directed graph, not a monolith. Data flows through typed contracts at every boundary.</p>
+    </div>
+  </div>
+
+  <!-- SLIDE 9: Contracts -->
+  <div class="slide" data-slide="9">
+    <div class="slide-inner">
+      <h1>Contracts at Every <span class="accent">Boundary</span></h1>
+      <div class="contracts">
+        <div class="contract-card" style="border-color: var(--accent);">
+          <div class="contract-name accent">seed.json <span class="dim" style="font-weight:400;font-size:0.8rem">v4</span></div>
+          <ul class="contract-fields">
+            <li class="field-required">decisions[]</li>
+            <li class="field-required">open_threads[]</li>
+            <li class="field-required">disposed_threads[]</li>
+            <li class="field-required">status</li>
+            <li class="field-optional">context{}</li>
+          </ul>
+        </div>
+        <div class="contract-arrow">&#8594;</div>
+        <div class="contract-card" style="border-color: var(--blue);">
+          <div class="contract-name blue">task.json <span class="dim" style="font-weight:400;font-size:0.8rem">v1</span></div>
+          <ul class="contract-fields">
+            <li class="field-required">id</li>
+            <li class="field-required">type</li>
+            <li class="field-required">acceptance_criteria[]</li>
+            <li class="field-required">dependencies[]</li>
+            <li class="field-optional">browser_verify</li>
+          </ul>
+        </div>
+        <div class="contract-arrow">&#8594;</div>
+        <div class="contract-card" style="border-color: var(--green);">
+          <div class="contract-name green">runner-result.json <span class="dim" style="font-weight:400;font-size:0.8rem">v1</span></div>
+          <ul class="contract-fields">
+            <li class="field-required">verdict</li>
+            <li class="field-required">counts{}</li>
+            <li class="field-required">failures[]</li>
+            <li class="field-optional">commit_sha</li>
+            <li class="field-optional">follow_ups[]</li>
+          </ul>
+        </div>
+      </div>
+      <p class="diagram-caption">If the shape is wrong, the pipeline stops. Same reason you use TypeScript.</p>
+    </div>
+  </div>
+
+  <!-- SLIDE 10: TDD / Execute Phase -->
+  <div class="slide" data-slide="10">
+    <div class="slide-inner">
+      <h1>The Build Loop</h1>
+      <div class="diagram-container">
+        <svg viewBox="0 0 860 380" xmlns="http://www.w3.org/2000/svg">
+          <!-- build-runner main box -->
+          <rect x="290" y="10" width="280" height="55" rx="8" class="d-box d-box-blue"/>
+          <text x="430" y="38" class="d-text">build-runner</text>
+          <rect x="460" y="18" width="48" height="18" rx="4" fill="var(--blue-dim)" stroke="var(--blue)" stroke-width="1"/>
+          <text x="484" y="28" class="d-badge" fill="var(--blue)">S</text>
+
+          <!-- Arrow down to TDD -->
+          <line x1="340" y1="65" x2="340" y2="105" class="d-line" marker-end="url(#arr)"/>
+          <!-- Arrow down to verification -->
+          <line x1="530" y1="65" x2="530" y2="105" class="d-line" marker-end="url(#arr)"/>
+
+          <!-- TDD cycle box -->
+          <rect x="200" y="108" width="280" height="145" rx="8" class="d-box" style="stroke:var(--accent)"/>
+          <text x="340" y="130" class="d-text" style="fill:var(--accent);font-size:11px">TDD CYCLE</text>
+
+          <!-- Red -->
+          <rect x="225" y="148" width="90" height="36" rx="6" fill="var(--red-dim)" stroke="var(--red)" stroke-width="1.5"/>
+          <text x="270" y="167" class="d-text" style="fill:var(--red);font-size:12px">Red</text>
+
+          <!-- Arrow Red to Green -->
+          <line x1="317" y1="166" x2="337" y2="166" class="d-line d-line-accent" marker-end="url(#arr-accent)"/>
+
+          <!-- Green -->
+          <rect x="340" y="148" width="90" height="36" rx="6" fill="var(--green-dim)" stroke="var(--green)" stroke-width="1.5"/>
+          <text x="385" y="167" class="d-text" style="fill:var(--green);font-size:12px">Green</text>
+
+          <!-- Arrow Green down to Refactor -->
+          <line x1="385" y1="186" x2="385" y2="204" class="d-line d-line-accent" marker-end="url(#arr-accent)"/>
+
+          <!-- Refactor -->
+          <rect x="310" y="207" width="110" height="36" rx="6" fill="var(--blue-dim)" stroke="var(--blue)" stroke-width="1.5"/>
+          <text x="365" y="226" class="d-text" style="fill:var(--blue);font-size:12px">Refactor</text>
+
+          <!-- Loop arrow from Refactor back to Red -->
+          <path d="M310 225 L260 225 L260 186 L270 186" class="d-line d-line-accent" fill="none" style="stroke-dasharray:4,3"/>
+
+          <!-- Verification column -->
+          <rect x="510" y="108" width="180" height="145" rx="8" class="d-box" style="stroke:var(--green)"/>
+          <text x="600" y="130" class="d-text" style="fill:var(--green);font-size:11px">VERIFICATION</text>
+
+          <!-- lint-runner -->
+          <rect x="530" y="148" width="140" height="28" rx="5" fill="var(--bg-elevated)" stroke="var(--border)" stroke-width="1"/>
+          <text x="575" y="163" class="d-text" style="font-size:11px">lint-runner</text>
+          <rect x="636" y="152" width="26" height="16" rx="3" fill="var(--green-dim)" stroke="var(--green)" stroke-width="1"/>
+          <text x="649" y="161" class="d-badge" fill="var(--green)">H</text>
+
+          <!-- test-runner -->
+          <rect x="530" y="183" width="140" height="28" rx="5" fill="var(--bg-elevated)" stroke="var(--border)" stroke-width="1"/>
+          <text x="575" y="198" class="d-text" style="font-size:11px">test-runner</text>
+          <rect x="636" y="187" width="26" height="16" rx="3" fill="var(--green-dim)" stroke="var(--green)" stroke-width="1"/>
+          <text x="649" y="196" class="d-badge" fill="var(--green)">H</text>
+
+          <!-- browser-checker -->
+          <rect x="530" y="218" width="140" height="28" rx="5" fill="var(--bg-elevated)" stroke="var(--border)" stroke-width="1"/>
+          <text x="575" y="233" class="d-text" style="font-size:11px">browser-chk</text>
+          <rect x="636" y="222" width="26" height="16" rx="3" fill="var(--green-dim)" stroke="var(--green)" stroke-width="1"/>
+          <text x="649" y="231" class="d-badge" fill="var(--green)">H</text>
+
+          <!-- Arrow down to result -->
+          <line x1="430" y1="255" x2="430" y2="300" class="d-line d-line-green" marker-end="url(#arr-green)"/>
+
+          <!-- Result -->
+          <rect x="320" y="305" width="220" height="45" rx="8" class="d-box d-box-green"/>
+          <text x="430" y="330" class="d-text" style="fill:var(--green)">runner-result.json</text>
+
+          <!-- Legend -->
+          <rect x="720" y="148" width="26" height="16" rx="3" fill="var(--green-dim)" stroke="var(--green)" stroke-width="1"/>
+          <text x="733" y="157" class="d-badge" fill="var(--green)">H</text>
+          <text x="754" y="158" class="d-text-sm" style="text-anchor:start">Haiku</text>
+
+          <rect x="720" y="172" width="26" height="16" rx="3" fill="var(--blue-dim)" stroke="var(--blue)" stroke-width="1"/>
+          <text x="733" y="181" class="d-badge" fill="var(--blue)">S</text>
+          <text x="754" y="182" class="d-text-sm" style="text-anchor:start">Sonnet</text>
+
+          <rect x="720" y="196" width="26" height="16" rx="3" fill="var(--purple-dim)" stroke="var(--purple)" stroke-width="1"/>
+          <text x="733" y="205" class="d-badge" fill="var(--purple)">O</text>
+          <text x="754" y="206" class="d-text-sm" style="text-anchor:start">Opus</text>
+        </svg>
+      </div>
+      <p class="diagram-caption">Agents don't get to skip tests. Red-green-refactor is baked into the build loop.</p>
+    </div>
+  </div>
+
+  <!-- SLIDE 11: Adversary Panel -->
+  <div class="slide" data-slide="11">
+    <div class="slide-inner">
+      <h1>Ground the <span class="accent">Scope</span> First</h1>
+      <p class="body-text" style="margin-bottom:0.5rem">A grill session interviews decisions from the human. <span class="mono" style="font-size:0.95em">to-seed</span> distills them into a structured spec. Then four independent critics try to break it.</p>
+      <div class="diagram-container">
+        <svg viewBox="0 0 760 430" xmlns="http://www.w3.org/2000/svg">
+          <!-- Draft seed -->
+          <rect x="280" y="10" width="200" height="45" rx="8" class="d-box d-box-accent"/>
+          <text x="380" y="27" class="d-text" style="font-size:11px;fill:var(--text-muted)">grill &#8594; to-seed</text>
+          <text x="380" y="43" class="d-text">Draft Seed</text>
+
+          <!-- Arrow down -->
+          <line x1="380" y1="55" x2="380" y2="85" class="d-line" marker-end="url(#arr)"/>
+
+          <!-- Critics container -->
+          <rect x="60" y="88" width="640" height="80" rx="8" fill="none" stroke="var(--red)" stroke-width="1" stroke-dasharray="4,3"/>
+          <text x="380" y="106" class="d-text" style="fill:var(--red);font-size:11px">4 INDEPENDENT CRITICS</text>
+
+          <!-- Persona boxes -->
+          <rect x="80" y="118" width="130" height="36" rx="6" fill="var(--red-dim)" stroke="var(--red)" stroke-width="1.5"/>
+          <text x="145" y="137" class="d-text" style="font-size:11px;fill:var(--red)">Grounding</text>
+
+          <rect x="230" y="118" width="130" height="36" rx="6" fill="var(--red-dim)" stroke="var(--red)" stroke-width="1.5"/>
+          <text x="295" y="137" class="d-text" style="font-size:11px;fill:var(--red)">Accuracy</text>
+
+          <rect x="380" y="118" width="145" height="36" rx="6" fill="var(--red-dim)" stroke="var(--red)" stroke-width="1.5"/>
+          <text x="452" y="137" class="d-text" style="font-size:11px;fill:var(--red)">Completeness</text>
+
+          <rect x="545" y="118" width="130" height="36" rx="6" fill="var(--red-dim)" stroke="var(--red)" stroke-width="1.5"/>
+          <text x="610" y="137" class="d-text" style="font-size:11px;fill:var(--red)">Coherence</text>
+
+          <!-- Arrow down to refutations -->
+          <line x1="380" y1="170" x2="380" y2="200" class="d-line d-line-accent" marker-end="url(#arr-accent)"/>
+          <text x="380" y="192" class="d-contract-label">refutations[]</text>
+
+          <!-- Arrow down to screener -->
+          <line x1="380" y1="205" x2="380" y2="235" class="d-line" marker-end="url(#arr)"/>
+
+          <!-- Round 1 screener -->
+          <rect x="260" y="238" width="240" height="40" rx="8" class="d-box" style="stroke:var(--purple)"/>
+          <text x="380" y="260" class="d-text" style="font-size:12px">Round 1: Screener</text>
+          <rect x="460" y="244" width="26" height="16" rx="3" fill="var(--green-dim)" stroke="var(--green)" stroke-width="1"/>
+          <text x="473" y="253" class="d-badge" fill="var(--green)">H</text>
+
+          <!-- Arrow down -->
+          <line x1="380" y1="278" x2="380" y2="305" class="d-line" marker-end="url(#arr)"/>
+          <text x="380" y="296" class="d-text-sm">upheld subset</text>
+
+          <!-- Judge panel container -->
+          <rect x="120" y="308" width="520" height="70" rx="8" fill="none" stroke="var(--purple)" stroke-width="1" stroke-dasharray="4,3"/>
+          <text x="380" y="326" class="d-text" style="fill:var(--purple);font-size:11px">ROUND 2: PANEL (2-of-3 MAJORITY)</text>
+
+          <!-- 3 judges -->
+          <rect x="150" y="338" width="120" height="30" rx="5" fill="var(--purple-dim)" stroke="var(--purple)" stroke-width="1.5"/>
+          <text x="210" y="354" class="d-text" style="font-size:11px;fill:var(--purple)">Judge A</text>
+
+          <rect x="310" y="338" width="120" height="30" rx="5" fill="var(--purple-dim)" stroke="var(--purple)" stroke-width="1.5"/>
+          <text x="370" y="354" class="d-text" style="font-size:11px;fill:var(--purple)">Judge B</text>
+
+          <rect x="470" y="338" width="120" height="30" rx="5" fill="var(--purple-dim)" stroke="var(--purple)" stroke-width="1.5"/>
+          <text x="530" y="354" class="d-text" style="font-size:11px;fill:var(--purple)">Judge C</text>
+
+          <!-- Arrow down to verdict -->
+          <line x1="380" y1="380" x2="380" y2="405" class="d-line" marker-end="url(#arr)"/>
+
+          <!-- Verdict -->
+          <rect x="250" y="400" width="120" height="28" rx="6" fill="var(--green-dim)" stroke="var(--green)" stroke-width="1.5"/>
+          <text x="310" y="416" class="d-text" style="font-size:11px;fill:var(--green)">Grounded</text>
+
+          <rect x="390" y="400" width="120" height="28" rx="6" fill="var(--red-dim)" stroke="var(--red)" stroke-width="1.5"/>
+          <text x="450" y="416" class="d-text" style="font-size:11px;fill:var(--red)">Rejected</text>
+        </svg>
+      </div>
+      <p class="diagram-caption">Decisions are captured, distilled, then stress-tested before a single line of code is written.</p>
+    </div>
+  </div>
+
+  <!-- SLIDE 12: Investigator Fan-out -->
+  <div class="slide" data-slide="12">
+    <div class="slide-inner">
+      <h1>Trust, But <span class="blue">Verify</span></h1>
+      <p class="body-text" style="margin-bottom:0.5rem">Don't trust one search. Fan out across sources. Aggregate evidence. Require citations.</p>
+      <div class="diagram-container">
+        <svg viewBox="0 0 800 300" xmlns="http://www.w3.org/2000/svg">
+          <!-- Query -->
+          <rect x="290" y="5" width="220" height="40" rx="8" class="d-box d-box-accent"/>
+          <text x="400" y="27" class="d-text" style="font-size:12px">Query / Claim</text>
+
+          <!-- Arrow down -->
+          <line x1="400" y1="45" x2="400" y2="72" class="d-line" marker-end="url(#arr)"/>
+
+          <!-- Orchestrator -->
+          <rect x="260" y="75" width="280" height="48" rx="8" class="d-box d-box-purple"/>
+          <text x="400" y="100" class="d-text">Investigator</text>
+          <rect x="490" y="83" width="34" height="18" rx="4" fill="var(--purple-dim)" stroke="var(--purple)" stroke-width="1"/>
+          <text x="507" y="93" class="d-badge" fill="var(--purple)">O</text>
+
+          <!-- Fan-out arrows -->
+          <line x1="300" y1="123" x2="100" y2="165" class="d-line" marker-end="url(#arr)"/>
+          <line x1="350" y1="123" x2="260" y2="165" class="d-line" marker-end="url(#arr)"/>
+          <line x1="400" y1="123" x2="400" y2="165" class="d-line" marker-end="url(#arr)"/>
+          <line x1="450" y1="123" x2="540" y2="165" class="d-line" marker-end="url(#arr)"/>
+          <line x1="500" y1="123" x2="690" y2="165" class="d-line" marker-end="url(#arr)"/>
+
+          <!-- Leaf agents -->
+          <rect x="30" y="168" width="130" height="36" rx="6" fill="var(--bg-elevated)" stroke="var(--border)" stroke-width="1.5"/>
+          <text x="95" y="188" class="d-text" style="font-size:11px">Code</text>
+
+          <rect x="195" y="168" width="130" height="36" rx="6" fill="var(--bg-elevated)" stroke="var(--border)" stroke-width="1.5"/>
+          <text x="260" y="188" class="d-text" style="font-size:11px">Web</text>
+
+          <rect x="345" y="168" width="130" height="36" rx="6" fill="var(--bg-elevated)" stroke="var(--border)" stroke-width="1.5"/>
+          <text x="410" y="188" class="d-text" style="font-size:11px">GitHub</text>
+
+          <rect x="490" y="168" width="130" height="36" rx="6" fill="var(--bg-elevated)" stroke="var(--border)" stroke-width="1.5"/>
+          <text x="555" y="188" class="d-text" style="font-size:11px">Linear</text>
+
+          <rect x="640" y="168" width="130" height="36" rx="6" fill="var(--bg-elevated)" stroke="var(--border)" stroke-width="1.5"/>
+          <text x="705" y="188" class="d-text" style="font-size:11px">Notion</text>
+
+          <!-- Haiku badges -->
+          <rect x="124" y="174" width="26" height="16" rx="3" fill="var(--green-dim)" stroke="var(--green)" stroke-width="1"/>
+          <text x="137" y="183" class="d-badge" fill="var(--green)">H</text>
+          <rect x="289" y="174" width="26" height="16" rx="3" fill="var(--green-dim)" stroke="var(--green)" stroke-width="1"/>
+          <text x="302" y="183" class="d-badge" fill="var(--green)">H</text>
+          <rect x="439" y="174" width="26" height="16" rx="3" fill="var(--green-dim)" stroke="var(--green)" stroke-width="1"/>
+          <text x="452" y="183" class="d-badge" fill="var(--green)">H</text>
+          <rect x="584" y="174" width="26" height="16" rx="3" fill="var(--green-dim)" stroke="var(--green)" stroke-width="1"/>
+          <text x="597" y="183" class="d-badge" fill="var(--green)">H</text>
+          <rect x="734" y="174" width="26" height="16" rx="3" fill="var(--green-dim)" stroke="var(--green)" stroke-width="1"/>
+          <text x="747" y="183" class="d-badge" fill="var(--green)">H</text>
+
+          <!-- Fan-in arrows -->
+          <line x1="100" y1="204" x2="300" y2="248" class="d-line d-line-blue" marker-end="url(#arr-blue)"/>
+          <line x1="260" y1="204" x2="340" y2="248" class="d-line d-line-blue" marker-end="url(#arr-blue)"/>
+          <line x1="400" y1="204" x2="400" y2="248" class="d-line d-line-blue" marker-end="url(#arr-blue)"/>
+          <line x1="555" y1="204" x2="470" y2="248" class="d-line d-line-blue" marker-end="url(#arr-blue)"/>
+          <line x1="705" y1="204" x2="510" y2="248" class="d-line d-line-blue" marker-end="url(#arr-blue)"/>
+
+          <!-- Result -->
+          <rect x="230" y="250" width="340" height="40" rx="8" class="d-box d-box-blue"/>
+          <text x="400" y="272" class="d-text" style="fill:var(--blue);font-size:12px">investigation-result { verdict, evidence[] }</text>
+        </svg>
+      </div>
+      <p class="diagram-caption">Opus decomposes. Haiku searches. Evidence is aggregated and cited.</p>
+    </div>
+  </div>
+
+  <!-- SLIDE 13: Clean Architecture Mapping -->
+  <div class="slide" data-slide="13">
+    <div class="slide-inner">
+      <h1>Familiar Principles, <span class="blue">New Domain</span></h1>
+      <table class="arch-table">
+        <thead>
+          <tr>
+            <th>Principle</th>
+            <th>Traditional Application</th>
+            <th>AI Agent Equivalent</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>SRP</td>
+            <td>One class, one responsibility</td>
+            <td>One agent, one task</td>
+          </tr>
+          <tr>
+            <td>Interface Segregation</td>
+            <td>Typed API contracts</td>
+            <td>JSON schemas at every boundary</td>
+          </tr>
+          <tr>
+            <td>Dependency Inversion</td>
+            <td>Depend on abstractions</td>
+            <td>Agents depend on contracts, not each other</td>
+          </tr>
+          <tr>
+            <td>Fail Fast</td>
+            <td>Type errors at compile time</td>
+            <td>Schema validation stops bad data</td>
+          </tr>
+          <tr>
+            <td>TDD</td>
+            <td>Red-green-refactor</td>
+            <td>Build loop bakes in test cycle</td>
+          </tr>
+          <tr>
+            <td>Tracer Bullets</td>
+            <td>End-to-end skeleton first</td>
+            <td>Prototype one task before full pipeline</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- SLIDE 14: Local Execution -->
+  <div class="slide" data-slide="14">
+    <div class="slide-inner">
+      <h1>Why <span class="blue">Local</span> Matters</h1>
+      <div class="benefits">
+        <div class="benefit">
+          <div class="benefit-icon">&#9679;</div>
+          <div>
+            <div class="benefit-title">Full filesystem access</div>
+            <div class="benefit-desc">Agents read real project state, not a snapshot. Fewer hallucinations because ground truth is always one grep away.</div>
+          </div>
+        </div>
+        <div class="benefit">
+          <div class="benefit-icon">&#9679;</div>
+          <div>
+            <div class="benefit-title">No sandbox tax</div>
+            <div class="benefit-desc">No VM boot, no container overhead, no file sync delays. TDD loops run at native speed.</div>
+          </div>
+        </div>
+        <div class="benefit">
+          <div class="benefit-icon">&#9679;</div>
+          <div>
+            <div class="benefit-title">Git as state machine</div>
+            <div class="benefit-desc">Worktrees for parallel agent isolation. Stash, commit, branch. Free concurrency primitives you already know.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 15: Principles You Can Steal -->
+  <div class="slide" data-slide="15">
+    <div class="slide-inner">
+      <h1>Steal These</h1>
+      <div class="principles">
+        <div class="principle-card">
+          <div class="principle-num">01</div>
+          <div class="principle-title">Decompose, don't extend</div>
+          <div class="principle-desc">Many agents with small contexts beat one agent with a big context. Microservices, not monolith.</div>
+        </div>
+        <div class="principle-card">
+          <div class="principle-num">02</div>
+          <div class="principle-title">Adversarial by default</div>
+          <div class="principle-desc">Never let the agent that wrote something verify it. Separate producer and critic. 2-of-3 majority beats single pass.</div>
+        </div>
+        <div class="principle-card">
+          <div class="principle-num">03</div>
+          <div class="principle-title">Schema over prose</div>
+          <div class="principle-desc">JSON contracts between agents, not free text. If the shape is wrong, the pipeline stops.</div>
+        </div>
+        <div class="principle-card">
+          <div class="principle-num">04</div>
+          <div class="principle-title">Tier your compute</div>
+          <div class="principle-desc">Grep doesn't need Opus. Match model cost to task complexity. Haiku for reads, Sonnet for reasoning, Opus for decomposition.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 16: Quick Wins / Tips -->
+  <div class="slide" data-slide="16">
+    <div class="slide-inner">
+      <h1>Quick Wins</h1>
+      <ul class="tips-list">
+        <li>
+          <span class="tip-marker">verbosity</span>
+          <span>System prompt plugins can cut token output 40%. Less output means less drift, lower cost, faster loops.</span>
+        </li>
+        <li>
+          <span class="tip-marker">tiering</span>
+          <span>Use Haiku for mechanical reads and greps. Sonnet for reasoning. Opus only for complex decomposition. Most work is Haiku-shaped.</span>
+        </li>
+        <li>
+          <span class="tip-marker">hooks</span>
+          <span>Pre-execution hooks catch destructive commands before they run. Guardrails, not guidelines. 13 blocking gates in this system.</span>
+        </li>
+        <li>
+          <span class="tip-marker">contracts</span>
+          <span>Treat every agent output as untrusted input to the next stage. Validate the shape. Reject bad data early.</span>
+        </li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- SLIDE 17: Questions -->
+  <div class="slide" data-slide="17">
+    <div class="slide-inner slide-end">
+      <h3>Let's talk</h3>
+      <h1>Disagree with<br>something? <span class="accent">Good.</span></h1>
+      <h2>This is how I solved it. You might solve it differently.</h2>
+    </div>
+  </div>
+
+</div>
+
+<!-- Navigation -->
+<nav class="nav">
+  <button class="nav-btn" id="prev" aria-label="Previous slide">&#8592;</button>
+  <span class="slide-num" id="counter">1 / 17</span>
+  <button class="nav-btn" id="next" aria-label="Next slide">&#8594;</button>
+</nav>
+
+<script>
+  const slides = document.querySelectorAll('.slide');
+  const total = slides.length;
+  const progress = document.getElementById('progress');
+  const counter = document.getElementById('counter');
+  let current = 0;
+
+  function goTo(n) {
+    if (n < 0 || n >= total) return;
+    slides[current].classList.remove('active');
+    current = n;
+    slides[current].classList.add('active');
+    progress.style.width = ((current + 1) / total * 100) + '%';
+    counter.textContent = (current + 1) + ' / ' + total;
+  }
+
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'ArrowRight' || e.key === ' ') { e.preventDefault(); goTo(current + 1); }
+    if (e.key === 'ArrowLeft') { e.preventDefault(); goTo(current - 1); }
+    if (e.key === 'Home') { e.preventDefault(); goTo(0); }
+    if (e.key === 'End') { e.preventDefault(); goTo(total - 1); }
+  });
+
+  document.getElementById('prev').addEventListener('click', function() { goTo(current - 1); });
+  document.getElementById('next').addEventListener('click', function() { goTo(current + 1); });
+
+  let touchStartX = 0;
+  document.addEventListener('touchstart', function(e) { touchStartX = e.touches[0].clientX; });
+  document.addEventListener('touchend', function(e) {
+    const dx = e.changedTouches[0].clientX - touchStartX;
+    if (Math.abs(dx) > 50) { dx < 0 ? goTo(current + 1) : goTo(current - 1); }
+  });
+
+  progress.style.width = (1 / total * 100) + '%';
+</script>

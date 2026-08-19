@@ -356,6 +356,16 @@ Registered: <name> (<skill|agent>)
   Learning: tail-block ✓  producers-list ✓              (skill only)
 ```
 
+### 5. Regenerate architecture diagram
+
+Run the architecture diagram generator to keep `architecture.html` in sync:
+
+```bash
+python3 ~/.dotfiles/claude-code-shared/scripts/gen-architecture.py
+```
+
+If it prints warnings about unclassified items, update the `SKILL_GROUPS` or `AGENT_GROUPS` config at the top of `gen-architecture.py` to classify the newly registered skill or agent, then re-run.
+
 <!-- learning-capture:start -->
 Read and execute `~/.dotfiles/claude-code-shared/resources/learning-capture.md`.
 This skill's slug is `register-skill`.
