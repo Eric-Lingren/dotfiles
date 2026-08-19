@@ -69,6 +69,8 @@ Spend disproportionate effort here. **Be aggressive. Be creative. Refuse to give
 
 ### Ways to construct one — try them in roughly this order
 
+**Delegate the search.** Before writing the loop, you need to locate the code path, find existing tests, and map the module. These are read-only lookups. Spawn `caveman:cavecrew-investigator` (Haiku) for them. Keep the results. Write the loop yourself on the session model.
+
 1. **Failing test** at whatever seam reaches the bug — unit, integration, e2e.
 2. **Curl / HTTP script** against a running dev server.
 3. **CLI invocation** with a fixture input, diffing stdout against a known-good snapshot.
@@ -135,6 +137,8 @@ Suite command: <command used>
 Do not add any instrumentation until this is captured.
 
 Each probe must map to a specific prediction from Phase 2. **Change one variable at a time.**
+
+**Delegate the search.** Locating call sites, tracing data flow, finding config values, and mapping module boundaries are read-only lookups. Spawn `caveman:cavecrew-investigator` (Haiku) for each search before adding instrumentation yourself.
 
 Tool preference:
 

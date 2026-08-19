@@ -37,6 +37,11 @@ printf '%s\n' "$DIGEST_TEXT" > "$DIGEST"
   echo "TIER ADHERENCE"
   echo "================================================================"
   "$PY" "$SCRIPT" --adherence
+  echo
+  echo "================================================================"
+  echo "SKILL LATENCY"
+  echo "================================================================"
+  "$PY" "$SCRIPT" --latency --min-n 3
 } > "$OUT" 2>&1
 
 echo "wrote $OUT"

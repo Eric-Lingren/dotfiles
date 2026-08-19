@@ -17,6 +17,7 @@ Benchmark (`scripts/cc-usage-benchmark.py`):
 - One profile: add `--profile office` or `--profile personal`
 - Weekly model trend (mix + est cost): append `--trend`
 - Tier adherence (expected vs actual model per skill): append `--adherence`
+- Per-skill wall-clock latency + parallelism shape: append `--latency` (add `--min-n 3` to drop rare skills)
 
 Weekly report (`scripts/weekly-usage-report.sh`):
 - Regenerate now: `bash ~/.dotfiles/claude-code-shared/scripts/weekly-usage-report.sh`

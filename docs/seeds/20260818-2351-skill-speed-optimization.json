@@ -1,0 +1,93 @@
+{
+  "schema_version": "4",
+  "producer": "to-seed",
+  "source": {
+    "type": "session",
+    "ref": null
+  },
+  "title": "Skill Speed Optimization",
+  "slug": "skill-speed-optimization",
+  "created": "2026-08-18T23:51:00-07:00",
+  "iteration": 1,
+  "status": "ready",
+  "summary": "Speed optimization of the Claude Code skill pipeline. Built a latency benchmark into cc-usage-benchmark.py, patched debug delegation, and grilled the design for parallelizing build-code (wave-based), pr-code-review (dimension-parallel), and a new /sprout-seed orchestrator that chains to-tasks, build-code, and pr-code-review into a single unattended run. Also scoped a clean-scaffolding lineage-scan script as a low-priority win.",
+  "problem_statement": "Skills run too slowly. build-code takes 1235s median (serial task execution, fanout 1.00). pr-code-review takes 346s (serial dimension scanning). No latency tracking existed in the weekly usage report. Debug's delegation rule was dead text (zero agents spawned across 28 runs). No orchestrator exists to chain skills without manual re-invocation.",
+  "decisions": [
+    "Build a --latency flag into cc-usage-benchmark.py that reports per-skill wall-clock, parallelism shape (fanout), and no-delegation detection. Wire it into the weekly report and cc-usage-analytics skill.",
+    "Fix debug's dead delegation rule by inserting concrete callouts to caveman:cavecrew-investigator at Phase 1 (before loop construction) and Phase 3 (before instrumentation). Serial delegation, not batch.",
+    "Parallelize build-code using wave-based execution computed from the blocked_by dependency graph. Tasks with no unmet blockers run concurrently in a wave. Prior-wave receipts are passed to later waves but same-wave breadcrumbs are dropped.",
+    "Cap build-code concurrent tasks at 4 per wave. Conservative to avoid resource contention. Tunable upward later.",
+    "Use worktree isolation per task in build-code parallel waves to prevent write conflicts between concurrent tasks.",
+    "Use sequential merge to the shared task branch after each wave completes. If a merge conflict arises, fail that task and continue. Wave 2 starts on the merged state.",
+    "Leave to-seed alone. 754s median is acceptable. Verification rounds (4 personas, screener, 3-judge panel) are what make seeds reliable. Cutting them would risk weaker seeds cascading into bad task files.",
+    "Keep debug hypothesis testing serial with delegated searches. Debugging is inherently exploratory. Parallel hypothesis testing wastes work when H1 confirms early or reshapes H3.",
+    "Do not build a general-purpose cross-skill orchestrator. The inter-skill HITL checkpoints are load-bearing for quality. Instead, build /sprout-seed as a specific, opinionated chain (to-tasks, build-code, pr-code-review) where the quality data justifies running unattended.",
+    "Build /sprout-seed as a specific skill that chains to-tasks, build-code, and pr-code-review into one unattended run. Agent-per-skill architecture: each skill runs as a subagent with a fresh context, communicating through typed file artifacts (seed JSON, task JSON, diff).",
+    "No HITL gates inside /sprout-seed. to-tasks decomposition quality is reliable (2.2% failure rate, neither failure was a decomposition problem, 92.8 behavioral eval score). pr-code-review at the end catches code bugs.",
+    "Each skill in /sprout-seed runs at its declared model/effort tier from model-tiers.json. Agent-per-skill architecture handles model switching naturally.",
+    "Name the orchestrator /sprout-seed. Extends the seed metaphor: grill-me -> to-seed -> sprout-seed. Specific to the seed-to-code transformation, not a general orchestrator.",
+    "Parallelize pr-code-review by dimension. 5 dimension agents run concurrently: correctness (sonnet), security (sonnet), performance (haiku), conventions (haiku), test coverage (haiku).",
+    "Use mechanical dedup for pr-code-review findings. Group by file:line, keep higher severity, concatenate descriptions. No reconciliation agent needed.",
+    "Do not parallelize dispatch-tasks. It is a thin router (37s own overhead). The 305s is dominated by build-code. Revisit after build-code waves ship.",
+    "Optimize clean-scaffolding by writing a lineage-scan.py script that batches the chain-traversal file reads into one call. Replaces 10+ serial read/parse turns with one bash invocation. Low priority.",
+    "Latency benchmark uses passive inclusion in the weekly report. No regression alerts or target tracking until new baselines stabilize after optimizations ship."
+  ],
+  "open_threads": [],
+  "disposed_threads": [],
+  "implementation_decisions": [
+    "build-code wave computation: group tasks by blocked_by graph. Wave 1 = tasks with empty or all-done blockers. Wave N+1 = tasks whose blockers all completed in waves 1..N.",
+    "build-code worktree isolation: each task in a wave gets isolation: 'worktree' on its agent spawn. Worktrees are auto-removed if unchanged.",
+    "build-code merge: after wave completes, merge each task's worktree branch into the shared branch sequentially. Merge conflict = fail that task, continue with remaining.",
+    "pr-code-review dimension agents: each gets the same diff but a dimension-specific prompt. Structured findings with file, line, severity, description.",
+    "pr-code-review dedup: group findings by (file, line). If duplicates, keep max severity, concatenate descriptions from different dimensions.",
+    "/sprout-seed invocation: /sprout-seed docs/seeds/my-feature.json. Reads seed, spawns to-tasks agent, feeds task file to build-code agent, feeds diff to pr-code-review agent. Returns summary with PR link and review findings.",
+    "/sprout-seed agent-per-skill: each skill spawned as a subagent with model/effort from model-tiers.json. Inter-skill communication via file paths only (seed path -> task file path -> diff).",
+    "clean-scaffolding lineage-scan.py: reads all JSON/MD files in docs/seeds/, docs/prd/, docs/tasks/, docs/handoffs/, builds chain graph by source.ref tracing, returns categorized results as structured JSON."
+  ],
+  "testing_decisions": [
+    "Validate debug delegation by checking that cavecrew-investigator agents actually spawn in future debug sessions. The latency report's 'NO DELEGATION' section will surface this.",
+    "Validate build-code waves on a task file with zero blocked_by entries first (simplest case, all tasks in wave 1).",
+    "Validate pr-code-review parallel dimensions produce equivalent or better findings than the current serial approach by comparing findings on the same diff."
+  ],
+  "risks_and_tradeoffs": [
+    "Build-code same-wave tasks are blind to each other. May produce redundant utility code. Cleanup problem, not correctness problem.",
+    "Build-code cap of 4 may underutilize machines with many cores. Tunable upward after validating stability.",
+    "pr-code-review cross-dimension findings (e.g. a correctness bug that is also a security vulnerability) may get reported twice. Mechanical dedup handles this. Cross-dimension miss risk is low because each dimension prompt covers adjacent concerns.",
+    "/sprout-seed runs fully unattended. A bad seed will produce bad tasks and bad code. Mitigated by: to-tasks 2.2% failure rate, pr-code-review final gate, user reviews PR at the end.",
+    "Latency benchmark uses timestamp gaps with idle-cap heuristic (300s). Idle gaps shorter than 300s are counted as work time. Long human pauses are capped. Imperfect but directionally useful."
+  ],
+  "evidence": [
+    "Latency profiling: build-code 1235s median (18 runs), to-seed 754s (28 runs), debug 444s (28 runs), pr-code-review 346s (26 runs).",
+    "Parallelism data: build-code 91 agents, 91 hops, fanout 1.00 (strictly serial). to-seed 174 agents, 76 hops, fanout 2.29 (already batched).",
+    "Debug delegation: zero agents spawned across 28 runs despite preamble rule mandating delegation.",
+    "Task file analysis: 117 tasks across 8 files, 42 blocked. 5 of 8 files have zero blocked_by (all tasks independent). Biggest file: 66 tasks, 19 in wave 1.",
+    "to-tasks quality: 2.2% failure rate (2/92 tasks). Neither failure was a decomposition problem. Eval scores: 92.8 behavioral, 71 structural.",
+    "Agent blocking time: build-runner median 38.4s, p90 805s. Persona agents ~2s (async launch, not actual work time)."
+  ],
+  "success_metrics": [
+    "build-code median latency drops from 1235s to <400s on task files with independent tasks",
+    "pr-code-review median latency drops from 346s to <120s",
+    "Debug sessions show non-zero cavecrew-investigator agent spawns in the latency report",
+    "/sprout-seed completes seed-to-reviewed-PR in a single unattended invocation",
+    "Weekly latency report surfaces regressions passively"
+  ],
+  "next_action": "Run /to-tasks on this seed to produce the implementation task file.",
+  "further_notes": [
+    "The --latency flag and debug delegation patches are already shipped in this session. The seed captures only the remaining unbuilt work.",
+    "Reserve /orchestrate as a name for a future general-purpose skill chainer if other recurring chains emerge.",
+    "to-tasks internal parallelism (30 agents at fanout 1.00) is a future optimization target if /sprout-seed reveals it as the bottleneck."
+  ],
+  "verification": {
+    "iteration": 1,
+    "personas": [
+      "grounding",
+      "accuracy",
+      "completeness",
+      "coherence"
+    ],
+    "refutations_upheld": 0,
+    "refutations_screened": 3,
+    "clean": true,
+    "status": "verified"
+  }
+}

@@ -10,6 +10,7 @@ Reads session JSONL transcripts and produces benchmark distributions:
   - slash command / skill usage
   - git branch work-type mix
   - per-request intent classification (heuristic)
+  - per-skill wall-clock latency + parallelism shape (--latency)
 
 Heuristic only. No network, no LLM. Transparent + tunable.
 
@@ -22,6 +23,7 @@ Usage:
   cc-usage-bench.py --profile office
   cc-usage-bench.py --profile personal
   cc-usage-bench.py --roots /path/a /path/b   # override roots
+  cc-usage-bench.py --latency --min-n 3      # slowest skills + parallelism
 """
 import argparse
 import datetime
@@ -736,6 +738,245 @@ def digest_report(roots, config_path):
     print()
 
 
+# ---------------------------------------------------------------------------
+# latency: per-skill wall-clock + parallelism shape
+# ---------------------------------------------------------------------------
+# Transcripts carry no tool durations, so timing comes from record timestamps.
+# Per invocation we report:
+#   work_s - sum of gaps between consecutive records, each gap capped at
+#            IDLE_CAP. The cap discards human away-from-keyboard time while
+#            keeping agent wait time, which is the part worth optimising.
+# Subagent turns are absent from these files (no isSidechain records), so an
+# agent's cost shows up only as the gap its spawn leaves on the main thread.
+# A skill invoked by another skill is folded into the outer skill's span, so
+# these are entry-point totals, not per-skill self time.
+IDLE_CAP = 300.0
+
+ASYNC_RESULT_RE = re.compile(r"Async agent launched", re.I)
+# User-role records that are machinery, not a human request. A background
+# agent finishing arrives as <task-notification>; treating either of these as
+# a new prompt would chop a span into one-turn fragments.
+NON_PROMPT_RE = re.compile(r"<task-notification>|<system-reminder>", re.I)
+SKILLS_DIR = os.path.expanduser("~/.dotfiles/claude-code-shared/skills")
+
+
+def known_skills(config_path):
+    """Real skill names, so /model, /effort and friends do not pollute the table."""
+    names = set()
+    try:
+        cfg = json.load(open(config_path))
+        names |= set(cfg.get("skills", {}))
+    except Exception:
+        pass
+    try:
+        names |= {d for d in os.listdir(SKILLS_DIR)
+                  if os.path.isfile(os.path.join(SKILLS_DIR, d, "SKILL.md"))}
+    except Exception:
+        pass
+    return names
+
+
+def _ts(s):
+    try:
+        return datetime.datetime.fromisoformat(s.replace("Z", "+00:00"))
+    except Exception:
+        return None
+
+
+def _gap(a, b, cap):
+    ta, tb = _ts(a), _ts(b)
+    if not ta or not tb:
+        return 0.0
+    return min(max((tb - ta).total_seconds(), 0.0), cap)
+
+
+def _skill_tool_use(msg):
+    for c in (msg.get("content") or []):
+        if isinstance(c, dict) and c.get("type") == "tool_use" and c.get("name") == "Skill":
+            return str((c.get("input") or {}).get("skill", "")).lower() or None
+    return None
+
+
+def _result_is_async(c):
+    cc = c.get("content")
+    txt = cc if isinstance(cc, str) else json.dumps(cc)
+    return bool(ASYNC_RESULT_RE.search(txt))
+
+
+def _new_span(skill, t0, prev):
+    # One assistant message is written to the transcript as one record per
+    # content block, so a batched spawn looks like N records sharing a
+    # message.id. Turns and hops are counted over ids, not records, or every
+    # batch would read as N serial steps.
+    return {"skill": skill, "t0": t0, "prev": prev, "week": _iso_week(t0),
+            "work": 0.0, "tools": 0, "agents": 0, "agents_async": 0,
+            "agents_done": 0, "out": 0, "models": Counter(),
+            "turn_ids": set(), "hop_ids": set()}
+
+
+def compute_latency(roots, config_path, idle_cap=IDLE_CAP):
+    """Per-skill invocation spans. Returns {skill: [span, ...]}."""
+    known = known_skills(config_path)
+    spans = defaultdict(list)
+
+    for name, root in roots.items():
+        for f in sorted(glob(os.path.join(root, "*", "*.jsonl"))):
+            try:
+                recs = [json.loads(l) for l in open(f) if l.strip()]
+            except Exception:
+                continue
+            recs = [d for d in recs if d.get("timestamp") and not d.get("isSidechain")]
+            recs.sort(key=lambda d: d["timestamp"])
+            cur = None
+            last_human = None     # most recent human keystroke, caveat rows included
+            pending = set()       # open Agent tool_use ids
+
+            def flush(cur):
+                if cur is not None and cur["work"] > 0:
+                    cur["turns"] = len(cur["turn_ids"])
+                    cur["agent_hops"] = len(cur["hop_ids"])
+                    spans[cur["skill"]].append(cur)
+
+            for d in recs:
+                now = d["timestamp"]
+                if cur is not None:
+                    cur["work"] += _gap(cur["prev"], now, idle_cap)
+                    cur["prev"] = now
+                t = d.get("type")
+
+                if t == "user":
+                    if d.get("isMeta"):
+                        continue
+                    c = d.get("message", {}).get("content")
+                    if is_tool_result_turn(c):
+                        for x in (c or []):
+                            if isinstance(x, dict) and x.get("type") == "tool_result" \
+                               and x.get("tool_use_id") in pending:
+                                pending.discard(x["tool_use_id"])
+                                if cur is not None and _result_is_async(x):
+                                    cur["agents_async"] += 1
+                        continue
+                    raw = c if isinstance(c, str) else text_of(c)
+                    cmd = slash_cmd(raw if isinstance(c, str) else json.dumps(c))
+                    if NON_PROMPT_RE.search(raw):
+                        if cur is not None and "<task-notification>" in raw.lower():
+                            cur["agents_done"] += 1
+                        continue
+                    last_human = now
+                    # A slash-command echo is wrapped in a caveat block. It is
+                    # still a keystroke (so it anchors t0) but never starts a
+                    # span on its own; the Skill tool_use that follows does.
+                    if is_noise(raw, cmd):
+                        continue
+                    # Short acks ("y", "go", "b") are HITL gates inside a run,
+                    # not a new request. They keep the current span open.
+                    if is_continuation(raw) and cur is not None and not cmd:
+                        continue
+                    flush(cur)
+                    cur = None
+                    sk = detect_skill(raw, cmd)
+                    if sk in known:
+                        cur = _new_span(sk, now, now)
+
+                elif t == "assistant":
+                    m = d.get("message", {})
+                    if cur is None:
+                        sk = _skill_tool_use(m)
+                        if sk in known:
+                            t0 = last_human or now
+                            cur = _new_span(sk, t0, now)
+                            cur["work"] = _gap(t0, now, idle_cap)
+                    if cur is None:
+                        continue
+                    mid = m.get("id") or d.get("uuid")
+                    first_block = mid not in cur["turn_ids"]
+                    cur["turn_ids"].add(mid)
+                    fam = model_family(m.get("model"))
+                    if fam in ("opus", "sonnet", "haiku"):
+                        cur["models"][fam] += 1
+                    if first_block:
+                        cur["out"] += (m.get("usage") or {}).get("output_tokens", 0) or 0
+                    for c in (m.get("content") or []):
+                        if not isinstance(c, dict) or c.get("type") != "tool_use":
+                            continue
+                        cur["tools"] += 1
+                        if c.get("name") == "Agent":
+                            cur["agents"] += 1
+                            cur["hop_ids"].add(mid)
+                            pending.add(c.get("id"))
+            flush(cur)
+
+    return spans
+
+
+def _med(v):
+    v = sorted(v)
+    n = len(v)
+    if not n:
+        return 0.0
+    return v[n // 2] if n % 2 else (v[n // 2 - 1] + v[n // 2]) / 2.0
+
+
+def _p90(v):
+    v = sorted(v)
+    return v[min(len(v) - 1, int(len(v) * 0.9))] if v else 0.0
+
+
+def print_latency(spans, min_n=1, idle_cap=IDLE_CAP):
+    rows = [(k, v) for k, v in spans.items() if len(v) >= min_n]
+    if not rows:
+        print("  no skill invocations found")
+        return
+    rows.sort(key=lambda kv: -_med([s["work"] for s in kv[1]]))
+
+    print("=" * 78)
+    print(f"SKILL LATENCY  (work_s drops human idle; each gap capped at {int(idle_cap)}s)")
+    print("=" * 78)
+    print(f"  {'skill':26s} {'n':>4} {'med_s':>7} {'p90_s':>7} {'turns':>6} "
+          f"{'tools':>6} {'agents':>7} {'out_tok':>8}")
+    for k, v in rows:
+        w = [s["work"] for s in v]
+        print(f"  {k:26s} {len(v):4d} {_med(w):7.0f} {_p90(w):7.0f} "
+              f"{_med([s['turns'] for s in v]):6.0f} "
+              f"{_med([s['tools'] for s in v]):6.0f} "
+              f"{_med([s['agents'] for s in v]):7.0f} "
+              f"{_med([s['out'] for s in v]):8.0f}")
+    print()
+
+    # fanout = agents launched per spawning turn. 1.0 means each agent got its
+    # own turn (serial). Higher means they were batched into one message.
+    par = [(k, v) for k, v in rows if sum(s["agents"] for s in v)]
+    if par:
+        print("=" * 78)
+        print("PARALLELISM  (hops = turns that spawned agents = serial depth)")
+        print("=" * 78)
+        print(f"  {'skill':26s} {'agents':>7} {'hops':>6} {'fanout':>7} {'async%':>7}  verdict")
+        for k, v in par:
+            ag = sum(s["agents"] for s in v)
+            hp = sum(s["agent_hops"] for s in v)
+            asy = sum(s["agents_async"] for s in v)
+            fo = ag / hp if hp else 0.0
+            print(f"  {k:26s} {ag:7d} {hp:6d} {fo:7.2f} {pct(asy, ag).strip():>7}  "
+                  f"{'serial: batch these' if fo < 1.5 else 'batched'}")
+        print()
+
+    # Skills burning many turns with no delegation are the extraction targets.
+    solo = [(k, v) for k, v in rows
+            if not sum(s["agents"] for s in v) and _med([s["turns"] for s in v]) >= 10]
+    if solo:
+        print("=" * 78)
+        print("NO DELEGATION  (>=10 median turns, zero agents spawned)")
+        print("=" * 78)
+        for k, v in solo:
+            print(f"  {k:26s} {len(v):4d} runs   {_med([s['turns'] for s in v]):3.0f} turns   "
+                  f"{_med([s['work'] for s in v]):5.0f}s median")
+        print()
+
+
+def latency_report(roots, config_path, min_n=1, idle_cap=IDLE_CAP):
+    print_latency(compute_latency(roots, config_path, idle_cap), min_n, idle_cap)
+
+
 def main():
     ap = argparse.ArgumentParser(description="Claude Code usage benchmark across profiles.")
     ap.add_argument("--profile", choices=list(PROFILES) + ["all"], default="all",
@@ -745,6 +986,12 @@ def main():
                     help="weekly model-mix + est cost trend (shows the shift over time)")
     ap.add_argument("--adherence", action="store_true",
                     help="per-skill expected (config) vs actual model used")
+    ap.add_argument("--latency", action="store_true",
+                    help="per-skill wall-clock latency + parallelism shape")
+    ap.add_argument("--min-n", type=int, default=1,
+                    help="--latency: drop skills with fewer than N invocations")
+    ap.add_argument("--idle-cap", type=float, default=IDLE_CAP,
+                    help="--latency: per-gap cap in seconds used to drop human idle")
     ap.add_argument("--digest", action="store_true",
                     help="TL;DR delta header (writes weekly snapshot as a side effect)")
     ap.add_argument("--config", default=TIER_CONFIG, help="path to model-tiers.json")
@@ -765,6 +1012,9 @@ def main():
         return
     if args.adherence:
         adherence_report(roots, args.config)
+        return
+    if args.latency:
+        latency_report(roots, args.config, args.min_n, args.idle_cap)
         return
 
     per = {}
