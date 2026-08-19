@@ -46,7 +46,8 @@ Rules:
 - Separate thoughts with periods or commas only
 - Concise, no run-on sentences"
 
-BODY=$(CLAUDE_CONFIG_DIR="${GX_CLAUDE_CONFIG:-$HOME/.cch}" command claude -p "$PROMPT")
+CLAUDE_BIN=$(gx_claude_bin)
+BODY=$(CLAUDE_CONFIG_DIR="${GX_CLAUDE_CONFIG:-$HOME/.cch}" "$CLAUDE_BIN" -p "$PROMPT")
 
 if $STDOUT_MODE; then
   echo "$BODY"

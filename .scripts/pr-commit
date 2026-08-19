@@ -28,7 +28,8 @@ Stat: $DIFF_STAT
 Diff:
 $DIFF_BODY"
 
-MSG=$(CLAUDE_CONFIG_DIR="${GX_CLAUDE_CONFIG:-$HOME/.cch}" command claude -p "$PROMPT" 2>/dev/null)
+CLAUDE_BIN=$(gx_claude_bin)
+MSG=$(CLAUDE_CONFIG_DIR="${GX_CLAUDE_CONFIG:-$HOME/.cch}" "$CLAUDE_BIN" -p "$PROMPT" 2>/dev/null)
 
 if [[ -z "$MSG" ]]; then
   echo "Failed to generate commit message." >&2

@@ -324,9 +324,13 @@ fi
 
 PR_JSON=$(gh pr view --json number,url,body 2>/dev/null)
 
-# No PR yet: create one only when --pr was passed.
+# No PR yet: create one when --pr was passed or pr_auto_create policy is set.
 if [[ -z "$PR_JSON" ]]; then
-  if $MODE_PR; then
+  SHOULD_CREATE=$MODE_PR
+  if [[ "${GX_PR_AUTO_CREATE:-false}" == "true" && "$BRANCH" != "$BASE" ]]; then
+    SHOULD_CREATE=true
+  fi
+  if $SHOULD_CREATE; then
     echo ""
     echo "Creating PR..."
     PR_BODY=$(generate_pr_body)

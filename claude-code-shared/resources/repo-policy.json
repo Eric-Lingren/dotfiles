@@ -11,6 +11,7 @@
     "account": "cco",
     "base_branch": "main",
     "pr_draft": true,
+    "pr_auto_create": true,
     "domain": "standard-metrics",
     "worktree_links": ["app/.env", "local_settings.py"],
     "exclude": ["docs", "docs/adr/", "docs/prototype/", "docs/browser-checks/", "docs/seeds/", "docs/tasks/", "docs/handoffs/", "docs/prd/", "docs/archive/", "docs/offload-output/", ".gitignore"]

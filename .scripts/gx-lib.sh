@@ -76,6 +76,7 @@ if key in data:
     print(e.get('account', 'cch'))
     print('true' if e.get('pr_draft', False) else 'false')
     print(json.dumps(e.get('worktree_links', [])))
+    print('true' if e.get('pr_auto_create', False) else 'false')
 else:
     sys.exit(1)
 " 2>/dev/null)
@@ -97,6 +98,7 @@ else:
   GX_CLAUDE_CONFIG="$(_gx_account_to_config "$(echo "$entry" | sed -n '4p')")"
   GX_PR_DRAFT=$(echo "$entry" | sed -n '5p')
   GX_WORKTREE_LINKS_JSON=$(echo "$entry" | sed -n '6p')
+  GX_PR_AUTO_CREATE=$(echo "$entry" | sed -n '7p')
   return 0
 }
 
@@ -114,6 +116,21 @@ except Exception:
 for p in paths:
     print(p)
 "
+}
+
+# Resolve the claude binary for the active account.
+# Uses the dedicated npm install under the config dir (e.g. ~/.cco → ~/.cco-npm/bin/claude).
+# Falls back to whatever `command claude` finds if the dedicated binary is missing.
+gx_claude_bin() {
+  local cfg="${GX_CLAUDE_CONFIG:-$HOME/.cch}"
+  local dedicated="${cfg}-npm/bin/claude"
+  if [[ -x "$dedicated" ]]; then
+    echo "$dedicated"
+  else
+    local found
+    found=$(type -P claude 2>/dev/null)
+    echo "${found:-claude}"
+  fi
 }
 
 # Return exclude patterns as a newline-separated list (for use with grep/find).
