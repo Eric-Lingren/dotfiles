@@ -94,164 +94,161 @@ When you form a finding, cite the **new-file line number** derived this way, not
 
 If the changed line is a removal (a `-` line) with no replacement, cite the nearest surrounding context line in the new file instead, and note it was removed.
 
-## Step 2: Understand context
+## Step 2: Spawn dimension agents in parallel
 
-Before writing a single comment, read the files surrounding each changed section. A line that looks wrong in isolation may be correct in context. Likewise, a line that looks fine may conflict with a neighboring invariant.
+Spawn all five dimension agents in a **single parallel batch** — one Agent tool call per dimension, all sent in the same message. Do not wait for any agent to finish before launching the next. Pass each agent: (a) the full diff text from Step 1, (b) the CLAUDE.md content if present, and (c) the dimension-specific prompt below.
 
-Review **every line** — not just the lines that look suspicious. A thorough review catches the things that look fine at a glance.
+### Finding format (all dimensions)
 
-## Step 3: Evaluate design
+Each agent must return findings as a JSON array. Each element:
 
-Before filing individual findings, assess the change holistically:
+```json
+{
+  "file": "path/to/file.ts",
+  "line": 42,
+  "severity": "bug|risk|nit|q",
+  "dimension": "correctness|security|performance|conventions|test-coverage",
+  "description": "One-sentence problem statement. One-sentence fix."
+}
+```
 
-- **Design** — Is the overall approach well-designed? Does it fit the existing architecture, or does it introduce an awkward seam?
-- **User impact** — Does the functionality actually serve the users of this code (callers, end users, or both)? Are edge cases handled correctly from their perspective?
-- **Complexity** — Is the code as simple as it can be for what it does? Flag any unnecessary indirection, over-abstraction, or premature generalization.
-- **YAGNI** — Is the developer building things they might need in the future but don't need now? Flag speculative features as 🔵 nit.
-- **Parallel safety** — If the code involves concurrency, async operations, or shared mutable state, verify it's safe: no race conditions, no missing awaits, no stale closure captures.
-- **Naming** — Are identifiers (variables, functions, types, files) clear and unambiguous? A name that requires a comment to explain is a bad name.
-- **Comments** — Comments should explain *why*, not *what*. Flag comments that just restate the code as 🔵 nit. Flag missing "why" comments where the intent is non-obvious as 🟡 risk.
+Positive observations (praise) use `severity: "praise"`. Line 0 means file-level.
 
-## Step 3a: Design smell baseline
+---
 
-On top of the design questions above, run the diff against this fixed set of Fowler code smells (_Refactoring_, ch.3). It applies even when the repo documents nothing. Two rules bind it:
+### Dimension: correctness (model: sonnet)
 
-- **The repo overrides.** A documented project convention (CLAUDE.md, CONTRIBUTING, etc.) always wins. Where it endorses something the baseline would flag, suppress the smell.
-- **Always a judgement call.** Each smell is a labelled heuristic ("possible Feature Envy"), never a hard violation. Skip anything tooling already enforces. Most map to 🔵 nit; raise to 🟡 risk only when the smell makes the code fragile or hard to change safely; use ❓ when you're unsure it's really a smell in context.
+You are performing the correctness dimension of a parallel code review. Return only a JSON array of findings — no prose, no markdown, just the raw array.
 
-Each smell reads *what it is* → *how to fix*; match it against the diff:
+Review scope:
+- Read the files surrounding each changed section. A line that looks wrong in isolation may be correct in context; a line that looks fine may conflict with a neighboring invariant. Review every line.
+- **Design holistically:** overall approach, user impact, complexity (unnecessary indirection/over-abstraction/premature generalization), YAGNI (speculative features → nit), parallel safety (race conditions, missing awaits, stale closures), naming clarity, comment quality (why not what).
+- **Fowler code smells:** Mysterious Name, Duplicated Code, Feature Envy, Data Clumps, Primitive Obsession, Repeated Switches, Shotgun Surgery, Divergent Change, Speculative Generality, Message Chains, Middle Man, Refused Bequest. Documented project conventions override the baseline. Each smell is a judgement call — label as "possible X". Most map to nit; raise to risk only when fragile.
+- **Severity labels:** `bug` (broken behavior), `risk` (works today but fragile), `nit` (style/naming/minor), `q` (genuine question — unsure if a problem).
+- Acknowledge genuinely praiseworthy code with `severity: "praise"`.
+- Tone: ask open-ended questions before strong statements; offer alternatives; assume you may be missing context; reserve `bug` for things you are confident are broken.
 
-- **Mysterious Name** — a function, variable, or type whose name doesn't reveal what it does or holds. → rename it; if no honest name comes, the design's murky. (Overlaps Step 3 "Naming" — file once, don't double-report.)
-- **Duplicated Code** — the same logic shape appears in more than one hunk or file in the change. → extract the shared shape, call it from both.
-- **Feature Envy** — a method that reaches into another object's data more than its own. → move the method onto the data it envies.
-- **Data Clumps** — the same few fields or params keep travelling together (a type wanting to be born). → bundle them into one type, pass that.
-- **Primitive Obsession** — a primitive or string standing in for a domain concept that deserves its own type. → give the concept its own small type.
-- **Repeated Switches** — the same `switch`/`if`-cascade on the same type recurs across the change. → replace with polymorphism, or one map both sites share.
-- **Shotgun Surgery** — one logical change forces scattered edits across many files in the diff. → gather what changes together into one module.
-- **Divergent Change** — one file or module is edited for several unrelated reasons. → split so each module changes for one reason.
-- **Speculative Generality** — abstraction, parameters, or hooks added for needs the spec doesn't have. → delete it; inline back until a real need shows. (Overlaps Step 3 "YAGNI" — file once.)
-- **Message Chains** — long `a.b().c().d()` navigation the caller shouldn't depend on. → hide the walk behind one method on the first object.
-- **Middle Man** — a class or function that mostly just delegates onward. → cut it, call the real target direct.
-- **Refused Bequest** — a subclass or implementer that ignores or overrides most of what it inherits. → drop the inheritance, use composition.
+---
 
-## Step 4: Categorize findings
+### Dimension: security (model: sonnet)
 
-Group every finding into one of four buckets:
+You are performing the security dimension of a parallel code review. Return only a JSON array of findings — no prose, no markdown, just the raw array.
 
-| Label | Meaning |
-|-------|---------|
-| 🔴 **bug** | Broken behavior, will cause a defect or incident |
-| 🟡 **risk** | Works today but fragile — race condition, missing null check, swallowed error, data loss edge case |
-| 🔵 **nit** | Style, naming, minor cleanup. Author can ignore without consequence |
-| ❓ **q** | Genuine question — you're uncertain whether this is a problem |
-
-A finding with no label is treated as a bug. Don't omit the label.
-
-## Step 4a: Format comments
-
-One finding per line. Format: `<file>:L<line>: <label>: <problem>. <fix>.`
-
-**Drop:**
-- "I noticed...", "You might want to consider...", "Perhaps..."
-- Restating what the code does — the reviewer can read the diff
-- Any hedging — if uncertain, use ❓
-
-**Acknowledge good work (required, not optional):**
-Genuine praise belongs in the review. If you see a well-designed abstraction, a clever fix, or unusually clean test coverage, call it out explicitly. Keep it brief and specific — one line, tied to a file and line range. Don't manufacture compliments, but don't suppress real ones either. A review with zero positive findings when praiseworthy code is present is an incomplete review.
-
-**Keep:**
-- Exact line numbers
-- Exact symbol names in backticks
-- Concrete fix, not "refactor this"
-- The *why* only when the fix isn't obvious
-
-Note: Tone (below) governs posture — when and how to raise something. The resolved voice profile (Step 1a) governs prose style — how the sentences sound. They compose, not compete.
-
-## Tone
-
-A good review asks open-ended questions before making strong statements. Offer alternatives and possible workarounds — don't just point at a problem and demand a fix. Assume you might be missing context and ask for clarification rather than issuing a correction.
-
-Be empathetic. The author spent real time and effort on this change. Be kind and unassuming. Applaud genuinely elegant solutions. A review that only surfaces problems is an incomplete review.
-
-**In practice:**
-
-- Prefer questions: "Could this be null here if the request fails?" over "This will be null and crash."
-- Offer alternatives: "One option would be X — not sure if that fits your constraints though."
-- Acknowledge effort: if a hard problem was solved cleanly, say so.
-- When something looks wrong but might not be: "I might be missing context here — what happens if Y?"
-- Reserve strong language (🔴 bug) for things you're confident are broken. Use ❓ liberally.
-
-## Step 5: TypeScript / React checklist
-
-Run through this for every changed file:
-
-- [ ] No `@ts-ignore` or `@ts-expect-error`
-- [ ] No unconstrained `any` — prefer `unknown` + type guard
-- [ ] No default exports — named exports only
-- [ ] No class components — functional only
-- [ ] No `==` equality — use `===`
-- [ ] No `~~` floor trick — use `Math.floor()`
-- [ ] No `+value` coercion — use `Number(value)` or `parseInt`
-- [ ] Multi-arg functions that could take a single options object — flag as nit
-- [ ] Booleans that represent more than two states — suggest enum
-
-## Step 6: Style / formatting checklist
-
-- [ ] Single quotes, no semicolons, trailing commas, 2-space indent
-- [ ] camelCase variables/functions, PascalCase components/types, kebab-case files, SCREAMING_SNAKE_CASE constants
-- [ ] No single-letter variable names — including loop counters and `map`/`filter`/`forEach`/`reduce` callback params. Require descriptive names (`i` → `index`, `e` → `event`, `x` → `row`, `acc` is allowed). Flag every occurrence in the changed lines, not just the first.
-- [ ] No magic numbers — named constants instead
-
-## Step 7: Design system checklist (frontend only)
-
-- [ ] Spacing uses `theme.space()` — not raw `px`/`rem` numbers
-- [ ] Non-spacing lengths use `theme.unit()` — not raw numbers
-- [ ] No inline Styled Components — use existing DS primitives or preferably `shadcn`
-- [ ] New UI checks `/src/design-system` before inventing a component
-- [ ] New domain-aware UI checks `/src/shared-ui` before writing one-off
-
-## Step 8: Testing checklist
-
-- [ ] New behavior has a test
-- [ ] Tests use `renderSM` and Testing Library queries (role > text > testId)
-- [ ] Network calls use MSW, not internal function stubs
-
-## Step 9: Security checklist
-
-Run this checklist against **every changed file**, not just files that appear security-related.
+Review scope — run against **every changed file**:
 
 **Injection & input validation**
-- [ ] No user input concatenated into SQL, shell commands, or HTML — use parameterized queries and escaping
-- [ ] All external data validated server-side using allowlists, not blocklists
-- [ ] Data encoded for its target context (HTML entities for DOM, parameterized for SQL)
-- [ ] No `dangerouslySetInnerHTML` without explicit sanitization
+- No user input concatenated into SQL, shell commands, or HTML
+- All external data validated server-side with allowlists
+- Data encoded for target context (HTML entities, parameterized SQL)
+- No `dangerouslySetInnerHTML` without explicit sanitization
 
 **Authentication & session management**
-- [ ] Sessions created server-side with strong random identifiers — not derived from user input
-- [ ] Sessions fully invalidated on logout — not just cleared client-side
-- [ ] No auth state stored in client-controllable locations (localStorage tokens used as sole auth, spoofable headers)
+- Sessions created server-side with strong random identifiers
+- Sessions fully invalidated on logout (not just cleared client-side)
+- No auth state in client-controllable locations
 
 **Access control**
-- [ ] Authorization checks happen on every request using server-side session state
-- [ ] No reliance on client-supplied roles, flags, or IDs to gate access
-- [ ] Sensitive operations don't assume the caller is authorized because they reached the endpoint
+- Authorization checks on every request using server-side session state
+- No reliance on client-supplied roles/flags/IDs to gate access
+- Sensitive operations don't assume caller is authorized just because they reached the endpoint
 
 **Cryptography**
-- [ ] No hardcoded secrets, tokens, or credentials in source
-- [ ] No weak algorithms — no MD5, SHA1, or DES for security purposes
-- [ ] Key material not logged, exposed in errors, or stored in plaintext
+- No hardcoded secrets, tokens, or credentials in source
+- No weak algorithms (MD5, SHA1, DES) for security purposes
+- Key material not logged, exposed in errors, or stored in plaintext
 
 **Error handling**
-- [ ] Errors fail closed — deny by default, not allow by default
-- [ ] No stack traces, internal paths, or system details in error responses to clients
-- [ ] Sensitive data not included in log lines (passwords, tokens, PII)
+- Errors fail closed (deny by default)
+- No stack traces/internal paths/system details in client responses
+- Sensitive data not in log lines (passwords, tokens, PII)
 
 **Supply chain**
-- [ ] New third-party dependencies are from maintained, reputable sources
-- [ ] No packages with known CVEs introduced (check via `npm audit` / `yarn audit`)
-- [ ] Dependency version ranges are not dangerously wide (e.g. `*` or `>=0.0.0`)
+- New third-party dependencies from maintained, reputable sources
+- No packages with known CVEs
+- Dependency version ranges not dangerously wide (`*` or `>=0.0.0`)
 
-## Step 10: Pre-submit claim verification (investigator gate)
+Use severity `bug` for confirmed vulnerabilities, `risk` for likely-exploitable patterns, `nit` for hygiene issues, `q` when uncertain.
+
+---
+
+### Dimension: performance (model: haiku)
+
+You are performing the performance dimension of a parallel code review. Return only a JSON array of findings — no prose, no markdown, just the raw array.
+
+Review scope:
+- N+1 query patterns or loops that hit a database/network per iteration
+- Missing memoization on expensive pure computations called in render hot paths
+- Unnecessary re-renders (unstable references passed as props/deps)
+- Large synchronous operations blocking the event loop
+- Unbounded data structures (arrays/maps that grow without eviction)
+- Missing pagination/streaming on large result sets
+- Inefficient data-structure choices (linear scan where a set/map is warranted)
+
+Only flag real performance risks — not micro-optimizations. Use `risk` for patterns that will cause problems at scale, `nit` for minor inefficiencies, `q` when uncertain.
+
+---
+
+### Dimension: conventions (model: haiku)
+
+You are performing the conventions dimension of a parallel code review. Return only a JSON array of findings — no prose, no markdown, just the raw array.
+
+Review scope:
+
+**TypeScript / React**
+- No `@ts-ignore` or `@ts-expect-error`
+- No unconstrained `any` — prefer `unknown` + type guard
+- No default exports — named exports only
+- No class components — functional only
+- No `==` equality — use `===`
+- No `~~` floor trick — use `Math.floor()`
+- No `+value` coercion — use `Number(value)` or `parseInt`
+- Multi-arg functions that could take a single options object — flag as nit
+- Booleans that represent more than two states — suggest enum
+
+**Style / formatting**
+- Single quotes, no semicolons, trailing commas, 2-space indent
+- camelCase variables/functions, PascalCase components/types, kebab-case files, SCREAMING_SNAKE_CASE constants
+- No single-letter variable names (including loop counters and callback params); flag every occurrence
+- No magic numbers — named constants instead
+
+**Design system (frontend only)**
+- Spacing uses `theme.space()` — not raw `px`/`rem` numbers
+- Non-spacing lengths use `theme.unit()` — not raw numbers
+- No inline Styled Components — use existing DS primitives or `shadcn`
+- New UI checks `/src/design-system` before inventing a component
+- New domain-aware UI checks `/src/shared-ui` before writing one-off
+
+All findings here are `nit` unless the violation causes a type error or runtime breakage (then `risk` or `bug`).
+
+---
+
+### Dimension: test-coverage (model: haiku)
+
+You are performing the test-coverage dimension of a parallel code review. Return only a JSON array of findings — no prose, no markdown, just the raw array.
+
+Review scope:
+- New behavior has a test
+- Tests use `renderSM` and Testing Library queries (role > text > testId)
+- Network calls use MSW, not internal function stubs
+- Happy path, error path, and edge cases are each covered
+- Tests are not testing implementation details (internal function calls, state shape) — they test observable behavior
+
+Use `risk` when new behavior has no test coverage, `nit` for coverage gaps in edge cases, `q` when you are unsure whether a test is needed.
+
+---
+
+## Step 3: Dedup findings
+
+After all five dimension agents return, apply mechanical dedup to their combined JSON arrays:
+
+1. **Group by (file, line).** Findings with the same `file` and `line` values are duplicates regardless of dimension.
+2. **Keep max severity.** Severity rank: `bug` > `risk` > `q` > `nit` > `praise`. Retain the highest-ranked severity for the group.
+3. **Concatenate descriptions.** If multiple dimensions flagged the same location, join their descriptions with a space. Prefix each description with the dimension name in brackets, e.g. `[correctness] Problem A. Fix A. [security] Problem B. Fix B.` — but only when more than one dimension contributed.
+4. **No reconciliation agent.** This is a mechanical merge — no additional agent spawned.
+
+Produce a single flat array of deduped findings. Proceed to the investigator gate with this array.
+
+## Step 4: Pre-submit claim verification (investigator gate)
 
 **This gate is non-optional.** Every finding that contains a factual claim must pass through it before being included in the output or posted as a PR comment. There is no bypass path.
 
@@ -278,9 +275,9 @@ The investigator returns one of four verdicts. Apply this gate filter to each fi
 
 ### Scope: which findings require the gate
 
-Run the gate on findings that make a verifiable factual assertion about the code (🔴 bug, 🟡 risk, and any ❓ q that asserts a specific fact). For each such finding, spawn one investigator call before output.
+Run the gate on findings that make a verifiable factual assertion about the code (`bug`, `risk`, and any `q` that asserts a specific fact). For each such finding, spawn one investigator call before output.
 
-Pure style/naming nits (🔵 nit) that make no factual claim about runtime behavior may skip the gate.
+Pure style/naming `nit` findings that make no factual claim about runtime behavior may skip the gate.
 
 ---
 
@@ -290,9 +287,21 @@ pr-code-review does not write task files. If a future variant writes a task JSON
 
 ## Output format
 
+**Severity-to-emoji mapping** (for rendering deduped findings from the JSON array):
+
+| JSON severity | Display |
+|---------------|---------|
+| `bug`         | 🔴 **bug** |
+| `risk`        | 🟡 **risk** |
+| `nit`         | 🔵 **nit** |
+| `q`           | ❓ **q** |
+| `praise`      | (inline, no count) |
+
 Start with a one-line summary: `N findings: X 🔴 Y 🟡 Z 🔵 W ❓`
 
-Then list findings grouped by file starting with with **FILE :** : <FILE_PATH> and in order of severity. End with a **Verdict**: `Approve` / `Request changes` / `Needs discussion`.
+Then list findings grouped by file starting with **FILE:** `<FILE_PATH>` and in order of severity. End with a **Verdict**: `Approve` / `Request changes` / `Needs discussion`.
+
+Finding line format: `<file>:L<line>: <label>: <description>`
 
 Write nothing that doesn't belong in a comment thread. No preamble, no "Overall this looks great."
 

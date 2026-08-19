@@ -37,18 +37,43 @@ This prints the full grouped file list and a total to the terminal.
 
 ### 3. Lineage analysis
 
-Read every JSON file in `docs/seeds/`, `docs/prd/`, and `docs/tasks/`. Read every `.md` file in `docs/handoffs/` (extracting `Source ref:` from the header for provenance). Build a lineage chain for each root artifact:
+Run the lineage scanner to get a complete chain map in one call — do NOT read seed/task/handoff files individually during the scan phase:
 
-**Walk the chain:**
-1. A root artifact has `source: null` or `source.type = "session"` (no upstream document).
-2. A child artifact has `source.ref` pointing to a file in the chain (e.g. a task file whose `source.ref` is a seed basename, or a PRD whose `prd-provenance` source.ref is a seed).
-3. For handoff `.md` files: extract the upstream seed basename from the `**Source ref:** \`<basename>\`` header line.
-4. Group artifacts into chains: `{root, children[]}`. An artifact not referenced by anyone is a standalone chain of one.
+```bash
+python3 ~/.dotfiles/claude-code-shared/scripts/lineage-scan.py --root <project-root>
+```
 
-**Check completeness (consumed):**
-For each chain, a chain is "fully consumed" when:
-- If the chain includes task files: every task in every task file within the chain has `status: "done"` or `status: "merged"`. Any task with `status: "not_started"`, `"in_progress"`, or `"blocked"` means the chain is NOT consumed.
-- If the chain has no task files (seed + optional PRD only, no tasks generated yet): the chain is consumed only if the user explicitly says it was discarded or never progressed. Otherwise treat as not consumed.
+Use the JSON output for all chain traversal. The output shape is:
+
+```json
+{
+  "chains": [
+    {
+      "seed": "20260606-foo.json",
+      "prd": null,
+      "tasks": "20260606-bar.json",
+      "handoff": null,
+      "status": "complete|partial"
+    }
+  ],
+  "orphans": {
+    "seeds": [],
+    "tasks": [],
+    "handoffs": []
+  },
+  "stats": {
+    "total_seeds": 1,
+    "total_tasks": 1,
+    "complete_chains": 1,
+    "partial_chains": 0
+  }
+}
+```
+
+**Interpret the output:**
+- `status: "complete"` — every task in the chain's task file has `status: "done"` or `status: "merged"`. Ready to archive.
+- `status: "partial"` — tasks still in progress, not started, or no task file yet. Not consumed.
+- `orphans` — artifacts whose `source.ref` points to a seed not present in `docs/seeds/`. Treat as partial (never archive).
 
 **A partial chain is NEVER archived.** If artifact B references artifact A via `source.ref`, and A would be archived but B would not (because B is outside the archive scope), refuse and explain the dangling ref.
 
