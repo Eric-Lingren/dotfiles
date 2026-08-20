@@ -733,7 +733,7 @@
         <li><span class="setup-check">&#10003;</span> Validate user input before processing</li>
         <li><span class="setup-check">&#10003;</span> Review pull requests before merging</li>
         <li><span class="setup-check">&#10003;</span> Write tests before shipping</li>
-        <li><span class="setup-check">&#10003;</span> Type-check your API contracts</li>
+        <li><span class="setup-check">&#10003;</span> Typecheck your API contracts</li>
         <li><span class="setup-check">&#10003;</span> Pin dependency versions</li>
       </ul>
       <p class="setup-question">So why does your AI get to skip all of that?</p>
@@ -760,7 +760,7 @@
       <p class="quote">"That looks great!"</p>
       <p class="quote-sub">(It doesn't.)</p>
       <p class="body-text">Would you trust a code reviewer who has never left a single comment? Who agrees with every design decision you make?</p>
-      <p class="body-text">Sycophancy is a well-documented failure mode. The model optimizes for approval, not correctness.</p>
+      <p class="body-text">Sycophancy is a well documented failure mode. The model optimizes for approval, not correctness.</p>
       <div class="fix">
         <span class="fix-label">Fix</span>
         <span class="fix-text">Never let the author review their own PR. Separate producer from critic structurally.</span>
@@ -777,7 +777,7 @@
       <p class="body-text">An AI can generate a function that reads perfectly, references an API that doesn't exist, and explain why it's correct.</p>
       <div class="fix">
         <span class="fix-label">Fix</span>
-        <span class="fix-text">Require evidence. Validate anchors against source. Schema-force structured output over free text.</span>
+        <span class="fix-text">Require evidence. Validate anchors against source. Force structured output through schemas, not free text.</span>
       </div>
     </div>
   </div>
@@ -787,11 +787,11 @@
     <div class="slide-inner">
       <p class="quote">"I also refactored auth."</p>
       <p class="quote-sub">(Nobody asked.)</p>
-      <p class="body-text">Would you accept a PR that touched 47 files for a one-line bug fix? That added three new abstractions and a README?</p>
-      <p class="body-text">AI agents drift. They add features. They over-engineer. They optimize for impressive over correct.</p>
+      <p class="body-text">Would you accept a PR that touched 47 files for a single line bug fix? That added three new abstractions and a README?</p>
+      <p class="body-text">AI agents drift. They add features. They overengineer. They optimize for impressive over correct.</p>
       <div class="fix">
         <span class="fix-label">Fix</span>
-        <span class="fix-text">One agent, one job. Schema-bound output. If the contract doesn't ask for it, it doesn't ship.</span>
+        <span class="fix-text">One agent, one job. Contract bound output. If the contract doesn't ask for it, it doesn't ship.</span>
       </div>
     </div>
   </div>
@@ -813,7 +813,7 @@
           <span class="mapping-arrow">&#8594;</span>
           <span class="mapping-mid">pin versions</span>
           <span class="mapping-arrow">&#8594;</span>
-          <span class="mapping-right">Typed interfaces</span>
+          <span class="mapping-right">Versioned contracts</span>
         </div>
         <div class="mapping-row">
           <span class="mapping-left">Untrusted contributor</span>
@@ -941,8 +941,86 @@
     </div>
   </div>
 
-  <!-- SLIDE 10: TDD / Execute Phase -->
+  <!-- SLIDE 10: Adversary Panel -->
   <div class="slide" data-slide="10">
+    <div class="slide-inner">
+      <h1>Ground the <span class="accent">Scope</span> First</h1>
+      <p class="body-text" style="margin-bottom:0.5rem">A <span class="mono">grill</span> session interviews decisions from the human. <span class="mono" style="font-size:0.95em">to-seed</span> distills them into a structured spec. Then four independent critics try to break it.</p>
+      <div class="diagram-container">
+        <svg viewBox="0 0 760 430" xmlns="http://www.w3.org/2000/svg">
+          <!-- Draft seed -->
+          <rect x="280" y="10" width="200" height="45" rx="8" class="d-box d-box-accent"/>
+          <text x="380" y="27" class="d-text" style="font-size:11px;fill:var(--text-muted)">grill &#8594; to-seed</text>
+          <text x="380" y="43" class="d-text">Draft Seed</text>
+
+          <!-- Arrow down -->
+          <line x1="380" y1="55" x2="380" y2="85" class="d-line" marker-end="url(#arr)"/>
+
+          <!-- Critics container -->
+          <rect x="60" y="88" width="640" height="80" rx="8" fill="none" stroke="var(--red)" stroke-width="1" stroke-dasharray="4,3"/>
+          <text x="380" y="106" class="d-text" style="fill:var(--red);font-size:11px">4 INDEPENDENT CRITICS</text>
+
+          <!-- Persona boxes -->
+          <rect x="80" y="118" width="130" height="36" rx="6" fill="var(--red-dim)" stroke="var(--red)" stroke-width="1.5"/>
+          <text x="145" y="137" class="d-text" style="font-size:11px;fill:var(--red)">Grounding</text>
+
+          <rect x="230" y="118" width="130" height="36" rx="6" fill="var(--red-dim)" stroke="var(--red)" stroke-width="1.5"/>
+          <text x="295" y="137" class="d-text" style="font-size:11px;fill:var(--red)">Accuracy</text>
+
+          <rect x="380" y="118" width="145" height="36" rx="6" fill="var(--red-dim)" stroke="var(--red)" stroke-width="1.5"/>
+          <text x="452" y="137" class="d-text" style="font-size:11px;fill:var(--red)">Completeness</text>
+
+          <rect x="545" y="118" width="130" height="36" rx="6" fill="var(--red-dim)" stroke="var(--red)" stroke-width="1.5"/>
+          <text x="610" y="137" class="d-text" style="font-size:11px;fill:var(--red)">Coherence</text>
+
+          <!-- Arrow down to refutations -->
+          <line x1="380" y1="170" x2="380" y2="200" class="d-line d-line-accent" marker-end="url(#arr-accent)"/>
+          <text x="380" y="192" class="d-contract-label">refutations[]</text>
+
+          <!-- Arrow down to screener -->
+          <line x1="380" y1="205" x2="380" y2="235" class="d-line" marker-end="url(#arr)"/>
+
+          <!-- Round 1 screener -->
+          <rect x="260" y="238" width="240" height="40" rx="8" class="d-box" style="stroke:var(--purple)"/>
+          <text x="380" y="260" class="d-text" style="font-size:12px">Round 1: Screener</text>
+          <rect x="460" y="244" width="26" height="16" rx="3" fill="var(--green-dim)" stroke="var(--green)" stroke-width="1"/>
+          <text x="473" y="253" class="d-badge" fill="var(--green)">H</text>
+
+          <!-- Arrow down -->
+          <line x1="380" y1="278" x2="380" y2="305" class="d-line" marker-end="url(#arr)"/>
+          <text x="380" y="296" class="d-text-sm">upheld subset</text>
+
+          <!-- Judge panel container -->
+          <rect x="120" y="308" width="520" height="70" rx="8" fill="none" stroke="var(--purple)" stroke-width="1" stroke-dasharray="4,3"/>
+          <text x="380" y="326" class="d-text" style="fill:var(--purple);font-size:11px">ROUND 2: PANEL (2-of-3 MAJORITY)</text>
+
+          <!-- 3 judges -->
+          <rect x="150" y="338" width="120" height="30" rx="5" fill="var(--purple-dim)" stroke="var(--purple)" stroke-width="1.5"/>
+          <text x="210" y="354" class="d-text" style="font-size:11px;fill:var(--purple)">Judge A</text>
+
+          <rect x="310" y="338" width="120" height="30" rx="5" fill="var(--purple-dim)" stroke="var(--purple)" stroke-width="1.5"/>
+          <text x="370" y="354" class="d-text" style="font-size:11px;fill:var(--purple)">Judge B</text>
+
+          <rect x="470" y="338" width="120" height="30" rx="5" fill="var(--purple-dim)" stroke="var(--purple)" stroke-width="1.5"/>
+          <text x="530" y="354" class="d-text" style="font-size:11px;fill:var(--purple)">Judge C</text>
+
+          <!-- Arrow down to verdict -->
+          <line x1="380" y1="380" x2="380" y2="405" class="d-line" marker-end="url(#arr)"/>
+
+          <!-- Verdict -->
+          <rect x="250" y="400" width="120" height="28" rx="6" fill="var(--green-dim)" stroke="var(--green)" stroke-width="1.5"/>
+          <text x="310" y="416" class="d-text" style="font-size:11px;fill:var(--green)">Grounded</text>
+
+          <rect x="390" y="400" width="120" height="28" rx="6" fill="var(--red-dim)" stroke="var(--red)" stroke-width="1.5"/>
+          <text x="450" y="416" class="d-text" style="font-size:11px;fill:var(--red)">Rejected</text>
+        </svg>
+      </div>
+      <p class="diagram-caption">Decisions are captured, distilled, then stress tested before a single line of code is written.</p>
+    </div>
+  </div>
+
+  <!-- SLIDE 11: TDD / Execute Phase -->
+  <div class="slide" data-slide="11">
     <div class="slide-inner">
       <h1>The Build Loop</h1>
       <div class="diagram-container">
@@ -1026,85 +1104,7 @@
           <text x="754" y="206" class="d-text-sm" style="text-anchor:start">Opus</text>
         </svg>
       </div>
-      <p class="diagram-caption">Agents don't get to skip tests. Red-green-refactor is baked into the build loop.</p>
-    </div>
-  </div>
-
-  <!-- SLIDE 11: Adversary Panel -->
-  <div class="slide" data-slide="11">
-    <div class="slide-inner">
-      <h1>Ground the <span class="accent">Scope</span> First</h1>
-      <p class="body-text" style="margin-bottom:0.5rem">A grill session interviews decisions from the human. <span class="mono" style="font-size:0.95em">to-seed</span> distills them into a structured spec. Then four independent critics try to break it.</p>
-      <div class="diagram-container">
-        <svg viewBox="0 0 760 430" xmlns="http://www.w3.org/2000/svg">
-          <!-- Draft seed -->
-          <rect x="280" y="10" width="200" height="45" rx="8" class="d-box d-box-accent"/>
-          <text x="380" y="27" class="d-text" style="font-size:11px;fill:var(--text-muted)">grill &#8594; to-seed</text>
-          <text x="380" y="43" class="d-text">Draft Seed</text>
-
-          <!-- Arrow down -->
-          <line x1="380" y1="55" x2="380" y2="85" class="d-line" marker-end="url(#arr)"/>
-
-          <!-- Critics container -->
-          <rect x="60" y="88" width="640" height="80" rx="8" fill="none" stroke="var(--red)" stroke-width="1" stroke-dasharray="4,3"/>
-          <text x="380" y="106" class="d-text" style="fill:var(--red);font-size:11px">4 INDEPENDENT CRITICS</text>
-
-          <!-- Persona boxes -->
-          <rect x="80" y="118" width="130" height="36" rx="6" fill="var(--red-dim)" stroke="var(--red)" stroke-width="1.5"/>
-          <text x="145" y="137" class="d-text" style="font-size:11px;fill:var(--red)">Grounding</text>
-
-          <rect x="230" y="118" width="130" height="36" rx="6" fill="var(--red-dim)" stroke="var(--red)" stroke-width="1.5"/>
-          <text x="295" y="137" class="d-text" style="font-size:11px;fill:var(--red)">Accuracy</text>
-
-          <rect x="380" y="118" width="145" height="36" rx="6" fill="var(--red-dim)" stroke="var(--red)" stroke-width="1.5"/>
-          <text x="452" y="137" class="d-text" style="font-size:11px;fill:var(--red)">Completeness</text>
-
-          <rect x="545" y="118" width="130" height="36" rx="6" fill="var(--red-dim)" stroke="var(--red)" stroke-width="1.5"/>
-          <text x="610" y="137" class="d-text" style="font-size:11px;fill:var(--red)">Coherence</text>
-
-          <!-- Arrow down to refutations -->
-          <line x1="380" y1="170" x2="380" y2="200" class="d-line d-line-accent" marker-end="url(#arr-accent)"/>
-          <text x="380" y="192" class="d-contract-label">refutations[]</text>
-
-          <!-- Arrow down to screener -->
-          <line x1="380" y1="205" x2="380" y2="235" class="d-line" marker-end="url(#arr)"/>
-
-          <!-- Round 1 screener -->
-          <rect x="260" y="238" width="240" height="40" rx="8" class="d-box" style="stroke:var(--purple)"/>
-          <text x="380" y="260" class="d-text" style="font-size:12px">Round 1: Screener</text>
-          <rect x="460" y="244" width="26" height="16" rx="3" fill="var(--green-dim)" stroke="var(--green)" stroke-width="1"/>
-          <text x="473" y="253" class="d-badge" fill="var(--green)">H</text>
-
-          <!-- Arrow down -->
-          <line x1="380" y1="278" x2="380" y2="305" class="d-line" marker-end="url(#arr)"/>
-          <text x="380" y="296" class="d-text-sm">upheld subset</text>
-
-          <!-- Judge panel container -->
-          <rect x="120" y="308" width="520" height="70" rx="8" fill="none" stroke="var(--purple)" stroke-width="1" stroke-dasharray="4,3"/>
-          <text x="380" y="326" class="d-text" style="fill:var(--purple);font-size:11px">ROUND 2: PANEL (2-of-3 MAJORITY)</text>
-
-          <!-- 3 judges -->
-          <rect x="150" y="338" width="120" height="30" rx="5" fill="var(--purple-dim)" stroke="var(--purple)" stroke-width="1.5"/>
-          <text x="210" y="354" class="d-text" style="font-size:11px;fill:var(--purple)">Judge A</text>
-
-          <rect x="310" y="338" width="120" height="30" rx="5" fill="var(--purple-dim)" stroke="var(--purple)" stroke-width="1.5"/>
-          <text x="370" y="354" class="d-text" style="font-size:11px;fill:var(--purple)">Judge B</text>
-
-          <rect x="470" y="338" width="120" height="30" rx="5" fill="var(--purple-dim)" stroke="var(--purple)" stroke-width="1.5"/>
-          <text x="530" y="354" class="d-text" style="font-size:11px;fill:var(--purple)">Judge C</text>
-
-          <!-- Arrow down to verdict -->
-          <line x1="380" y1="380" x2="380" y2="405" class="d-line" marker-end="url(#arr)"/>
-
-          <!-- Verdict -->
-          <rect x="250" y="400" width="120" height="28" rx="6" fill="var(--green-dim)" stroke="var(--green)" stroke-width="1.5"/>
-          <text x="310" y="416" class="d-text" style="font-size:11px;fill:var(--green)">Grounded</text>
-
-          <rect x="390" y="400" width="120" height="28" rx="6" fill="var(--red-dim)" stroke="var(--red)" stroke-width="1.5"/>
-          <text x="450" y="416" class="d-text" style="font-size:11px;fill:var(--red)">Rejected</text>
-        </svg>
-      </div>
-      <p class="diagram-caption">Decisions are captured, distilled, then stress-tested before a single line of code is written.</p>
+      <p class="diagram-caption">Agents don't get to skip tests. The TDD cycle is baked into the build loop.</p>
     </div>
   </div>
 
@@ -1214,7 +1214,7 @@
           </tr>
           <tr>
             <td>TDD</td>
-            <td>Red-green-refactor</td>
+            <td>Red, green, refactor</td>
             <td>Build loop bakes in test cycle</td>
           </tr>
           <tr>
@@ -1260,6 +1260,7 @@
   <!-- SLIDE 15: Principles You Can Steal -->
   <div class="slide" data-slide="15">
     <div class="slide-inner">
+      <h3>Principles</h3>
       <h1>Steal These</h1>
       <div class="principles">
         <div class="principle-card">
@@ -1270,7 +1271,7 @@
         <div class="principle-card">
           <div class="principle-num">02</div>
           <div class="principle-title">Adversarial by default</div>
-          <div class="principle-desc">Never let the agent that wrote something verify it. Separate producer and critic. 2-of-3 majority beats single pass.</div>
+          <div class="principle-desc">Never let the agent that wrote something verify it. Separate producer and critic. 2 of 3 majority beats single pass.</div>
         </div>
         <div class="principle-card">
           <div class="principle-num">03</div>
@@ -1289,7 +1290,8 @@
   <!-- SLIDE 16: Quick Wins / Tips -->
   <div class="slide" data-slide="16">
     <div class="slide-inner">
-      <h1>Quick Wins</h1>
+      <h3>In practice</h3>
+      <h1>Steal These</h1>
       <ul class="tips-list">
         <li>
           <span class="tip-marker">verbosity</span>
@@ -1297,11 +1299,11 @@
         </li>
         <li>
           <span class="tip-marker">tiering</span>
-          <span>Use Haiku for mechanical reads and greps. Sonnet for reasoning. Opus only for complex decomposition. Most work is Haiku-shaped.</span>
+          <span>Route 80% of agent work to Haiku. Same quality for reads and greps at a fraction of Opus cost. Save the big models for decomposition.</span>
         </li>
         <li>
           <span class="tip-marker">hooks</span>
-          <span>Pre-execution hooks catch destructive commands before they run. Guardrails, not guidelines. 13 blocking gates in this system.</span>
+          <span>Hooks catch destructive commands before they run. Guardrails, not guidelines. 13 blocking gates in this system.</span>
         </li>
         <li>
           <span class="tip-marker">contracts</span>
