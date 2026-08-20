@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
 """
-gen-architecture.py -- Regenerate architecture.html from the live directory.
+gen-architecture.py -- Regenerate architecture_map.html from the live directory.
 
 Scans claude-code-shared/ for skills, agents, hooks, scripts, resources.
 Reads model-tiers.json and registry.json for tier assignments.
-Writes a complete architecture.html with the same visual style and pan/zoom.
+Writes a complete architecture_map.html with the same visual style and pan/zoom.
 
 Usage:
-  python3 gen-architecture.py              # regenerate architecture.html
+  python3 gen-architecture.py              # regenerate architecture_map.html
   python3 gen-architecture.py --check      # report unclassified items, exit 1 if any
   python3 gen-architecture.py --out /path  # write to a different file
 """
@@ -19,7 +19,7 @@ import sys
 from pathlib import Path
 
 BASE = Path(__file__).resolve().parent.parent  # claude-code-shared/
-OUT_DEFAULT = BASE / "architecture.html"
+OUT_DEFAULT = BASE / "architecture_map.html"
 
 # ─── GROUP CONFIG ───────────────────────────────────────────────────────────
 # Each item maps to a group. Items not listed here trigger --check warnings.
