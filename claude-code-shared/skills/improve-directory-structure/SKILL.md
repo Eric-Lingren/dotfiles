@@ -89,31 +89,25 @@ directory. State explicitly which shape it matches (claude-tooling repo or gener
 tree) and which extractor you'll use. If it doesn't match either shape, decline plainly
 and stop — do not run the scanner "just to see."
 
-### 2. Load project context
+### 2. Load context and build dependency graph (parallel)
 
-Spawn the `context-loader` agent (`subagent_type: context-loader`, repo root). Use
-`vocabulary` terms throughout your analysis and candidate write-ups — name clusters and
-proposed destinations the way the project's own `CONTEXT.md` names its nouns (e.g. this
-repo's own vocabulary: Skill, Agent, Contract, Hook, Resource, Registry, Pipeline stage,
-Tier), not generic architecture jargon. From `adrs[]`, deep-read the full text of any ADR
-relevant to the area you're analyzing via its `path` — a decision recorded there is not
-up for re-litigation. Do not glob `docs/adr/` directly.
+Fire both in the same turn — they are independent:
 
-### 3. Build the dependency graph
+**context-loader** (`subagent_type: context-loader`, repo root) — captures vocabulary and ADR decisions.
 
-Run the scanner with the extractor chosen in step 1:
-
+**Scanner** (Bash) — run with the extractor chosen in step 1:
 ```bash
 python3 ~/.dotfiles/claude-code-shared/scripts/scanner.py --extractor <claude-tooling|generic-code> [root] --out /tmp/graph-<slug>.json
 ```
 
-Then capture a reference-integrity baseline **before** proposing anything — this is the
-same check every downstream reorg task will be gated on, so know its current state up
-front:
-
+Wait for both to complete, then capture the reference-integrity baseline:
 ```bash
 python3 ~/.dotfiles/claude-code-shared/scripts/scanner.py --check [--extractor <name>] [root]
 ```
+
+Use `vocabulary` terms from context-loader throughout your analysis and candidate write-ups — name clusters and proposed destinations the way the project's own `CONTEXT.md` names its nouns (e.g. this repo's own vocabulary: Skill, Agent, Contract, Hook, Resource, Registry, Pipeline stage, Tier), not generic architecture jargon. From `adrs[]`, deep-read the full text of any ADR relevant to the area you're analyzing via its `path` — a decision recorded there is not up for re-litigation. Do not glob `docs/adr/` directly.
+
+### 3. Evaluate the dependency graph
 
 If `--check` already fails on the untouched tree, note the pre-existing dangling
 references/cycles as known debt in your candidate write-up (don't silently attribute them

@@ -72,9 +72,11 @@ Scan the `tasks` array for any entries where `linear_url` is already set. If any
 - **Skip** already-created issues and only create the missing ones
 - **Recreate all** — create fresh issues for everything (does not delete old ones)
 
-### 8. Create issues in dependency order
+### 8. Create issues in dependency waves
 
-Sort tasks so that issues with no `blocked_by` are created first. Build a mapping of `task-id → linear-issue-id` as you go so that `blockedBy` can reference real Linear IDs.
+Compute dependency waves (same logic as build-code): Wave 1 = tasks with no `blocked_by`. Wave 2 = tasks whose blockers are all in Wave 1. And so on.
+
+Within each wave, all tasks are independent. Spawn all agents in a wave in a single parallel batch (one Agent call per task, all in the same message). Collect the full wave's results before starting the next wave. Build the `task-id → linear-issue-id` mapping from each wave's results before spawning the next wave, so `blocked_by_linear_ids` can reference real IDs.
 
 For each task, assemble the full ticket title and description, then spawn the `export-tasks-linear` agent to create the Linear issue.
 

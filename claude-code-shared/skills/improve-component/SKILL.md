@@ -198,11 +198,14 @@ If the user points at a directory, list the files in it and ask which to focus o
 
 ### 2. Read and understand
 
-Read the target file(s) fully. Also:
+Issue all of the following in the same turn (parallel — none depend on each other):
+- Read the target file(s) fully
 - Read direct imports (one level deep) to understand dependencies
 - Read sibling files (`ComponentName.css`, `ComponentName.types.ts`, `ComponentName.utils.ts`)
 - Read the test file if one exists
-- **Load project context**: Spawn the `context-loader` agent (`subagent_type: context-loader`, repo root). Use `vocabulary` terms throughout your analysis for domain concepts. From `adrs[]`, deep-read full text only for those whose `path` is relevant to this component's area — they explain intentional trade-offs that look like violations. Do not glob `docs/adr/` directly. From `sources[]`, deep-read any typed sources relevant to this component (e.g. `design-system`, `brand-colors`, `brand-typography`).
+- **Spawn `context-loader`** (`subagent_type: context-loader`, repo root)
+
+Wait for all reads and the context-loader result before step 3. Use `vocabulary` terms throughout your analysis for domain concepts. From `adrs[]`, deep-read full text only for those whose `path` is relevant to this component's area — they explain intentional trade-offs that look like violations. Do not glob `docs/adr/` directly. From `sources[]`, deep-read any typed sources relevant to this component (e.g. `design-system`, `brand-colors`, `brand-typography`).
 
 Understand what the component does before evaluating how it's structured. An ADR may explain why a principle appears violated.
 

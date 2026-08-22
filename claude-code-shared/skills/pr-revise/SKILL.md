@@ -252,6 +252,8 @@ Apply all stated overrides before proceeding.
 
 For each claim-bearing item — primarily `bug`-class items, plus any `change` or `diligence` item that makes a verifiable factual assertion — spawn the `investigator` agent using the Agent tool. Pass the reviewer's claim text as the `claim` input, along with `cwd` (the repo root) so the investigator can search the codebase.
 
+**Spawn all claim-bearing investigators in a single batch (one Agent call per claim, all in the same message).** Do not wait for one investigator to finish before spawning the next. Collect all results together before applying verdict-to-action mapping.
+
 The investigator is the Opus-tier orchestrator defined in `agents/investigator.md`. It decomposes the claim into sub-claims, routes each to the correct leaf agent (code, web, GitHub, Linear, Notion), and returns a schema-valid `investigation-result` per `contracts/investigation-result-schema.json`.
 
 Non-claim-bearing items (`question`, `nit`, `discuss`) do not require investigator invocation. Present the claim text and URL to the user for manual review; collect a `reviewed` verdict and any reclassification before proceeding.

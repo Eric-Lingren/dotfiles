@@ -49,9 +49,15 @@ This skill is _informed_ by the project's domain model. The domain language give
 
 ### 1. Explore
 
-**Load project context first**: Spawn the `context-loader` agent (`subagent_type: context-loader`, repo root). Use `vocabulary` terms throughout your analysis. From `adrs[]`, deep-read full text of any ADRs relevant to the area you are exploring via their `path` — decisions recorded there are not up for re-litigation. Do not glob `docs/adr/` directly.
+**Spawn both agents in the same turn (parallel):**
+- `context-loader` (`subagent_type: context-loader`, repo root) — captures vocabulary and ADR decisions.
+- `Explore` (`subagent_type: Explore`) — walks the codebase for friction signals.
 
-Then use the Agent tool with `subagent_type=Explore` to walk the codebase. Don't follow rigid heuristics — explore organically and note where you experience friction:
+They are independent. Fire both at once and wait for both results before step 2.
+
+Use `vocabulary` terms from the context-loader payload throughout your analysis. From `adrs[]`, deep-read full text of any ADRs relevant to the area you are exploring via their `path` — decisions recorded there are not up for re-litigation. Do not glob `docs/adr/` directly.
+
+When exploring with Explore, don't follow rigid heuristics — explore organically and note where you experience friction:
 
 - Where does understanding one concept require bouncing between many small modules?
 - Where are modules **shallow** — interface nearly as complex as the implementation?

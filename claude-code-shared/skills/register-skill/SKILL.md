@@ -219,7 +219,7 @@ python3 claude-code-shared/scripts/sync-model-tiers.py --apply
 
 ### 2f. Skill path — verify
 
-Run these checks:
+Run all three checks in the same turn (parallel — none depend on each other's output):
 
 ```bash
 # 1. Tier-advisor resolves the skill

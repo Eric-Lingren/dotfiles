@@ -59,28 +59,26 @@ Record these for use in task descriptions so generated tests follow existing pat
 
 ### 2. Read context
 
-Gather three sources of information:
+Fire all of the following in the same turn as the step 1 Playwright config scan (parallel — all are independent):
 
-**a. Project vocabulary and ADRs.** Spawn the `context-loader` agent (`subagent_type: context-loader`, repo root as working directory). It returns `vocabulary` (domain terms, inlined) and `adrs` (one-line decisions + paths). Use `vocabulary` terms in workflow names and test scenario descriptions. If the payload's `missing` list is non-empty, proceed without domain vocabulary.
+**a. Project vocabulary and ADRs.** Spawn the `context-loader` agent (`subagent_type: context-loader`, repo root as working directory).
 
-**b. The source artifact.** Look for an existing task JSON in `docs/tasks/` for the current branch. If found, read its `source` field:
+**b. The diff and commit log** (two Bash calls in the same turn):
+```
+git diff $(git merge-base HEAD origin/main)..HEAD
+git log $(git merge-base HEAD origin/main)..HEAD --oneline
+```
+
+Wait for context-loader, diff, and commit log results before step 2c.
+
+**c. The source artifact.** Look for an existing task JSON in `docs/tasks/` for the current branch. If found, read its `source` field:
 - When `source.type` is `"seed"` or `"prd"` and `source.ref` is non-null: load the artifact at `source.ref` for context (seed or PRD respectively).
 - When `source.type` is `"session"` (ref null): fall through to the prompt-or-skip path below.
 - When multiple task files exist: ask the user which one corresponds to the current work.
 
 If no task JSON exists, or the source cannot be resolved, ask the user to provide the seed/PRD path directly or skip context.
 
-**c. The diff.** Get all changes on this branch:
-
-```
-git diff $(git merge-base HEAD origin/main)..HEAD
-```
-
-Also gather the commit log for context:
-
-```
-git log $(git merge-base HEAD origin/main)..HEAD --oneline
-```
+Use `vocabulary` terms from context-loader in workflow names and test scenario descriptions. If the payload's `missing` list is non-empty, proceed without domain vocabulary.
 
 ### 3. Two-pass workflow discovery
 

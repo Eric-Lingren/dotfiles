@@ -111,9 +111,12 @@ Record the source type and path for provenance stamping:
 - Seed JSON file → `source = {"type": "seed", "ref": "<file-path>"}`
 - HTML/MD PRD file → `source = {"type": "prd", "ref": "<file-path>"}`
 
+**Pre-flight: fire context-loader now, in parallel with any remaining step-1 gate checks.**
+Spawn the `context-loader` agent (`subagent_type: context-loader`, repo root as working directory) immediately after the source file is confirmed. Do not wait for it — continue with any step-1 quality-gate or schema-gate prompts while it runs. Collect the result at the start of step 3.
+
 ### 2. Load project context
 
-Spawn the `context-loader` agent (`subagent_type: context-loader`, repo root as working directory). It returns `vocabulary` (domain terms, inlined) and `adrs` (one-line decisions + paths). Use `vocabulary` terms in task titles and descriptions. If the payload's `missing` list is non-empty, proceed with terms from the conversation context.
+Context-loader was pre-fired in step 1. Collect its result here if not yet complete. It returns `vocabulary` (domain terms, inlined) and `adrs` (one-line decisions + paths). Use `vocabulary` terms in task titles and descriptions. If the payload's `missing` list is non-empty, proceed with terms from the conversation context.
 
 ### 3. Draft vertical slices
 

@@ -39,26 +39,14 @@ If no `input-content` was provided, compress the current conversation to a brief
 - Keep it under 400 words — enough context for a cold agent to run the skill without this session.
 - Always include the current git branch: run `git branch --show-current` and append `Current branch: <result>` to the brief. Skills like `to-seed` use this to skip their interactive branch prompt.
 
-### 2. Look up model and effort from model-tiers.json
+### 2. Look up model and effort, and read the target SKILL.md (parallel)
 
-Read `~/.dotfiles/claude-code-shared/resources/model-tiers.json`.
+Issue both reads in the same turn — they are independent:
 
-Find the tier for `target-skill` in the `skills` section. If the skill is not listed, use
-the `default` tier.
+- Read `~/.dotfiles/claude-code-shared/resources/model-tiers.json` to resolve the tier for `target-skill` (fall back to `default` if not listed). Resolve `model` and `effort` from the `tiers` section.
+- Read `~/.dotfiles/claude-code-shared/skills/<target-skill>/SKILL.md`. If the file is not found, stop and report the missing path. Do not guess alternate locations.
 
-Resolve the tier to `model` and `effort` values from the `tiers` section.
-
-Example: `"to-seed": "T3"` resolves to `model: "sonnet"`, `effort: "high"`.
-
-### 3. Read the target skill's SKILL.md
-
-Before spawning, read the target skill's full SKILL.md from the local filesystem:
-
-```
-~/.dotfiles/claude-code-shared/skills/<target-skill>/SKILL.md
-```
-
-If the file is not found, stop and report the missing path to the user. Do not guess alternate locations.
+Wait for both reads before step 4.
 
 ### 4. Spawn the remote agent
 

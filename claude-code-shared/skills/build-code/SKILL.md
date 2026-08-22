@@ -54,6 +54,13 @@ Route the chosen path through resolve-ref.sh before reading (see `resources/reso
 
 Read the chosen JSON file.
 
+**Pre-flight: fire context-loader in the background now.**
+Check whether context sources exist:
+```bash
+[ -f CONTEXT.md ] || ls docs/adr/*.md 2>/dev/null | head -1
+```
+If exit 0, spawn the `context-loader` agent immediately — do not wait for it yet. Continue to steps 2 and 3 while it runs. If exit non-zero, skip the spawn and use the inline fallback in step 3b.
+
 ### 2. Determine the run queue
 
 If a specific task ID was given:
@@ -76,11 +83,16 @@ Read `branching.strategy` from the JSON:
 
 Before the loop starts, if the queue is non-empty:
 
-**Spawn context-loader once:**
+**Collect context-loader result (pre-fired in step 1):**
+
+If context-loader was spawned in step 1, collect its result now and capture the JSON payload as `context_brief`. If it is still running, wait for it here before proceeding.
+
+If it was not spawned (no context sources found), set `context_brief` to the inline fallback:
+```json
+{"found":{"context_md":false,"adrs":false,"extra_sources":false},"vocabulary":[],"adrs":[],"sources":[],"missing":["CONTEXT.md","docs/adr/"]}
 ```
-Agent(subagent_type="context-loader", prompt="<project root>")
-```
-Capture its JSON payload as `context_brief`. Reuse this same brief for every `build-runner` spawn in this run — never re-spawn `context-loader` per task.
+
+Reuse this same `context_brief` for every `build-runner` spawn in this run — never re-spawn `context-loader` per task.
 
 **Initialize breadcrumb:**
 `breadcrumb = []` (compact receipts from tasks completed so far this run, across all waves).
