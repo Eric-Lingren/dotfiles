@@ -12,6 +12,7 @@
     "base_branch": "main",
     "pr_draft": true,
     "pr_auto_create": true,
+    "issue_tracker": "linear",
     "domain": "standard-metrics",
     "worktree_links": ["app/.env", "local_settings.py"],
     "exclude": ["docs", "docs/adr/", "docs/prototype/", "docs/browser-checks/", "docs/seeds/", "docs/tasks/", "docs/handoffs/", "docs/prd/", "docs/archive/", "docs/offload-output/", ".gitignore"]
@@ -21,6 +22,8 @@
     "account": "cch",
     "base_branch": "main",
     "domain": "spawned-sapien",
+    "pr_auto_create": true,
+    "issue_tracker": "github",
     "exclude": ["docs/prototype/", "docs/browser-checks/", "docs/offload-output/"]
   },
   "Eric-Lingren/ericlingren": {

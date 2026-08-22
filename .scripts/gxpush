@@ -337,11 +337,21 @@ if [[ -z "$PR_JSON" ]]; then
     [[ -z "$PR_BODY" ]] && PR_BODY="(no description generated)"
     BODY_FILE=$(gx_tmpfile)
     printf '%s\n' "$PR_BODY" > "$BODY_FILE"
+    NEW_PR_URL=""
+    NEW_PR_NUMBER=""
     if [[ "${GX_PR_DRAFT:-false}" == "true" ]]; then
       echo "  [draft — repo policy requires draft PRs for this repo]"
-      gh pr create --title "$BRANCH_SLUG" --body-file "$BODY_FILE" --draft
+      NEW_PR_URL=$(gh pr create --title "$BRANCH_SLUG" --body-file "$BODY_FILE" --draft)
     else
-      gh pr create --title "$BRANCH_SLUG" --body-file "$BODY_FILE"
+      NEW_PR_URL=$(gh pr create --title "$BRANCH_SLUG" --body-file "$BODY_FILE")
+    fi
+    echo "$NEW_PR_URL"
+    if [[ -n "$PR_BODY" ]]; then
+      NEW_PR_NUMBER=$(gh pr view --json number -q '.number' 2>/dev/null)
+      if [[ -n "$NEW_PR_NUMBER" ]]; then
+        gh pr comment "$NEW_PR_NUMBER" --body "$PR_BODY"
+        echo "  comment: posted to PR #$NEW_PR_NUMBER"
+      fi
     fi
   fi
   echo "Done."

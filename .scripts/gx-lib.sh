@@ -47,6 +47,7 @@ gx_load_policy() {
     GX_EXCLUDE_JSON="[]"
     GX_WORKTREE_LINKS_JSON="[]"
     GX_CLAUDE_CONFIG="$(_gx_account_to_config cch)"
+    GX_ISSUE_TRACKER="github"
     return 1
   fi
 
@@ -59,6 +60,7 @@ gx_load_policy() {
     GX_EXCLUDE_JSON="[]"
     GX_WORKTREE_LINKS_JSON="[]"
     GX_CLAUDE_CONFIG="$(_gx_account_to_config cch)"
+    GX_ISSUE_TRACKER="github"
     return 1
   fi
 
@@ -77,6 +79,7 @@ if key in data:
     print('true' if e.get('pr_draft', False) else 'false')
     print(json.dumps(e.get('worktree_links', [])))
     print('true' if e.get('pr_auto_create', False) else 'false')
+    print(e.get('issue_tracker', 'github'))
 else:
     sys.exit(1)
 " 2>/dev/null)
@@ -88,6 +91,7 @@ else:
     GX_EXCLUDE_JSON="[]"
     GX_WORKTREE_LINKS_JSON="[]"
     GX_CLAUDE_CONFIG="$(_gx_account_to_config cch)"
+    GX_ISSUE_TRACKER="github"
     return 1
   fi
 
@@ -99,6 +103,7 @@ else:
   GX_PR_DRAFT=$(echo "$entry" | sed -n '5p')
   GX_WORKTREE_LINKS_JSON=$(echo "$entry" | sed -n '6p')
   GX_PR_AUTO_CREATE=$(echo "$entry" | sed -n '7p')
+  GX_ISSUE_TRACKER=$(echo "$entry" | sed -n '8p')
   return 0
 }
 

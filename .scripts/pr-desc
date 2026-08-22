@@ -1,7 +1,8 @@
 #!/bin/bash
 # pr-desc — AI-generated GitHub PR description from branch diff
-# What: feeds branch commits and diff to Claude and returns a formatted PR body with Linear ticket link
-# When: before opening a PR on GitHub; --stdout prints to terminal, default copies to clipboard
+# What: feeds branch commits and diff to Claude and returns a formatted PR body
+#       with a Linear ticket link (Quaester-Web) or GitHub issue link (all others)
+# When: before opening a PR; --stdout prints to terminal, default copies to clipboard
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/gx-lib.sh"
@@ -13,12 +14,37 @@ for arg in "$@"; do
 done
 
 BRANCH=$(git rev-parse --abbrev-ref HEAD)
-TICKET=$(echo "$BRANCH" | grep -oE '[A-Za-z]+-[0-9]+' | tr '[:lower:]' '[:upper:]')
-LINEAR_URL="https://linear.app/standard-metrics/issue/$TICKET"
-LINEAR_LINK="Linear Ticket: [$TICKET]($LINEAR_URL)"
+BRANCH_SLUG=$(echo "$BRANCH" | tr '/' '-')
 BASE="${GX_BASE_BRANCH:-main}"
 COMMITS=$(git log "$BASE"...HEAD --oneline)
 DIFF=$(git diff "$BASE"...HEAD | head -n 300)
+
+# Build issue link based on tracker type
+ISSUE_LINK=""
+if [[ "${GX_ISSUE_TRACKER:-github}" == "linear" ]]; then
+  TICKET=$(echo "$BRANCH" | grep -oE '[A-Za-z]+-[0-9]+' | tr '[:lower:]' '[:upper:]')
+  if [[ -n "$TICKET" ]]; then
+    LINEAR_URL="https://linear.app/standard-metrics/issue/$TICKET"
+    ISSUE_LINK="Linear Ticket: [$TICKET]($LINEAR_URL)"
+  fi
+else
+  ISSUE_NUM=""
+  if [[ -n "${GITHUB_CLOSES:-}" ]]; then
+    ISSUE_NUM="$GITHUB_CLOSES"
+  elif [[ "$BRANCH_SLUG" =~ gh-([0-9]+) ]]; then
+    ISSUE_NUM="${BASH_REMATCH[1]}"
+  fi
+  if [[ -n "$ISSUE_NUM" ]]; then
+    REMOTE_URL=$(git remote get-url origin 2>/dev/null)
+    REPO_PATH=$(gx_normalize_url "$REMOTE_URL")
+    GITHUB_ISSUE_URL="https://github.com/$REPO_PATH/issues/$ISSUE_NUM"
+    ISSUE_LINK="GitHub Issue: [#$ISSUE_NUM]($GITHUB_ISSUE_URL)"
+  fi
+fi
+
+ISSUE_LINE=""
+[[ -n "$ISSUE_LINK" ]] && ISSUE_LINE="
+$ISSUE_LINK"
 
 PROMPT="Branch: $BRANCH
 Commits:
@@ -30,8 +56,7 @@ $DIFF
 ---
 Write a concise GitHub PR description in this exact format:
 
-### <short descriptive title>
-$LINEAR_LINK
+### <short descriptive title>$ISSUE_LINE
 
 <2-3 sentences: what was broken or missing, and what this PR does to fix it>
 

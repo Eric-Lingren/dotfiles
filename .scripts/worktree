@@ -18,7 +18,8 @@ USAGE
   wt <branch> [base]  resolve or create a worktree
   wt ls               list worktrees for the current repo
   wt ls --all         list all worktrees across all repos
-  wt rm <branch>      remove a worktree (keeps the branch intact)
+  wt stop <branch>    kill processes running from a worktree
+  wt rm <branch>      stop processes + remove a worktree (keeps the branch)
   wt rm <branch> --force  remove even with uncommitted or unpushed changes
   wt -h, wt --help    show this help
 
@@ -134,9 +135,13 @@ cmd_ls() {
 # ─── rm subcommand ─────────────────────────────────────────────────────────────
 
 cmd_rm() {
-  local branch="${1:-}"
-  local force=false
-  [[ "${2:-}" == "--force" ]] && force=true
+  local branch="" force=false
+  for rm_arg in "$@"; do
+    case "$rm_arg" in
+      --force) force=true ;;
+      *) branch="$rm_arg" ;;
+    esac
+  done
 
   if [[ -z "$branch" ]]; then
     echo "ERROR: wt rm requires a branch argument" >&2
@@ -168,10 +173,68 @@ cmd_rm() {
     exit 1
   fi
 
+  # Kill running processes before removal
+  stop_worktree_processes "$wt_path"
+
   # Remove and prune
-  git worktree remove "$wt_path"
+  local rm_flags=()
+  $force && rm_flags+=(--force)
+  if ! git worktree remove "${rm_flags[@]}" "$wt_path"; then
+    echo "ERROR: git worktree remove failed" >&2
+    exit 1
+  fi
   git worktree prune
   echo "Removed worktree for branch '$branch'" >&2
+}
+
+# ─── Process cleanup ─────────────────────────────────────────────────────────
+
+# Kills processes whose command line contains the worktree path.
+# Catches orphaned dev servers, webpack, Celery workers, etc.
+#
+# $1 worktree dir.
+stop_worktree_processes() {
+  local wt_dir="$1"
+  local pids
+
+  pids=$(pgrep -f "$wt_dir" 2>/dev/null | grep -v "^$$\$" || true)
+  if [[ -z "$pids" ]]; then
+    return 0
+  fi
+
+  echo "stopping processes running from $wt_dir..." >&2
+  echo "$pids" | xargs kill 2>/dev/null || true
+  sleep 1
+
+  # SIGKILL stragglers
+  pids=$(pgrep -f "$wt_dir" 2>/dev/null | grep -v "^$$\$" || true)
+  if [[ -n "$pids" ]]; then
+    echo "force-killing remaining processes..." >&2
+    echo "$pids" | xargs kill -9 2>/dev/null || true
+  fi
+}
+
+# ─── stop subcommand ─────────────────────────────────────────────────────────
+
+cmd_stop() {
+  local branch="${1:-}"
+
+  if [[ -z "$branch" ]]; then
+    echo "ERROR: wt stop requires a branch argument" >&2
+    echo "  Usage: wt stop <branch>" >&2
+    exit 1
+  fi
+
+  resolve_repo
+  local wt_path="$WORKTREE_BASE/$REPO_NAME/$branch"
+
+  if [[ ! -d "$wt_path" ]]; then
+    echo "ERROR: worktree not found: $wt_path" >&2
+    exit 1
+  fi
+
+  stop_worktree_processes "$wt_path"
+  echo "Stopped all processes for worktree '$branch'" >&2
 }
 
 # ─── Dependency install ───────────────────────────────────────────────────────
@@ -290,6 +353,11 @@ case "$CMD" in
   ls)
     shift
     cmd_ls "$@"
+    exit 0
+    ;;
+  stop)
+    shift
+    cmd_stop "$@"
     exit 0
     ;;
   rm)
