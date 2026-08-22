@@ -24,6 +24,7 @@
     "domain": "spawned-sapien",
     "pr_auto_create": true,
     "issue_tracker": "github",
+    "worktree_links": [".env.local"],
     "exclude": ["docs/prototype/", "docs/browser-checks/", "docs/offload-output/"]
   },
   "Eric-Lingren/ericlingren": {
