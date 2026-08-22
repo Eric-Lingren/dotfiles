@@ -26,6 +26,16 @@ JSON verdict returned by `lint-runner` and `test-runner` agents. The caller (run
 
 **Never emit `skipped` or `error` as status values.** Use `warn` when no tests apply. Use `fail` when a command crashes. Use `deps-missing` when the runner binary or dependencies are absent.
 
+## duration_ms field
+
+Wall-clock milliseconds from command start to verdict construction. Runners capture a timestamp before running the command and compute the delta when building the verdict. This powers per-stage timing in build-code analytics without requiring trace log parsing.
+
+```json
+"duration_ms": 4230
+```
+
+Always an integer. Includes command execution, output parsing, and schema validation. Does not include agent cold-start (that is visible in transcript timestamps).
+
 ## Counts object
 
 ```json
@@ -88,6 +98,7 @@ Each failed test case (test-runner only):
   "workspace": "client",
   "command": "vitest run --reporter=json",
   "summary": "2 failed, 10 passed, 1 skipped; 3 typecheck errors",
+  "duration_ms": 4230,
   "counts": {"passed": 10, "failed": 2, "skipped": 1},
   "violations": [
     {

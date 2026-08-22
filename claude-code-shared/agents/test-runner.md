@@ -57,6 +57,14 @@ Before running anything, verify the test runner binary is present:
    Fill all other required fields with zero/null values as appropriate.
 4. **If node_modules itself is missing:** same — return `deps-missing`.
 
+### 0b. Start the timer
+
+Before running any command, capture the current epoch milliseconds:
+```bash
+START_MS=$(python3 -c "import time; print(int(time.time()*1000))")
+```
+Use this to compute `duration_ms` in the verdict.
+
 ### 1. Resolve which command to run
 
 If `touched_files` is non-empty AND `test_affected_command` is non-null:
@@ -216,6 +224,12 @@ Pattern: `^(.+):(\d+): (error|warning|note): (.+)$`
 
 ### 5. Build and return the verdict
 
+Compute `duration_ms`:
+```bash
+END_MS=$(python3 -c "import time; print(int(time.time()*1000))")
+DURATION_MS=$((END_MS - START_MS))
+```
+
 Combine test results and typecheck violations:
 
 ```json
@@ -226,6 +240,7 @@ Combine test results and typecheck violations:
   "workspace": "client",
   "command": "vitest related src/auth.ts --reporter=json --maxWorkers=75%",
   "summary": "2 failed, 10 passed, 1 skipped; 3 typecheck errors",
+  "duration_ms": 4230,
   "counts": { "passed": 10, "failed": 2, "skipped": 1 },
   "violations": [
     {

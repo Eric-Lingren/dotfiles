@@ -16,6 +16,7 @@ The caller passes all context in the prompt. Expect:
 - `breadcrumb` — an array of compact receipts from previously completed tasks in this run (id, title, summary, files_touched). Use this only as background — do not re-verify or redo prior tasks.
 - `taskfile_basename` — basename of the task file (e.g. `20260709-1341-dispatch-execution-isolation.json`), used to build the log path.
 - `project_root` — absolute path to the project root.
+- `tooling_manifest` — JSON array from `detect_tooling.py`, one entry per workspace with resolved lint/format/typecheck/test/test_affected/e2e commands. Pre-computed once by build-code. Do not re-run detection.
 
 ## Process
 
@@ -74,13 +75,10 @@ If `/tdd` cannot complete (stuck, acceptance criteria unmeetable, blocked on mis
 
 ### 3. Runner-based validation gate
 
-1. **Detect tooling:**
-   ```bash
-   python3 ~/.dotfiles/claude-code-shared/scripts/tooling-detection/detect_tooling.py <project_root>
-   ```
+1. **Use the tooling manifest** passed by the caller as `tooling_manifest`. Do not run `detect_tooling.py`. The caller already ran it once for the entire run.
 2. **Map touched workspaces** from `git diff --name-only` against the manifest's workspace roots.
-3. **Spawn lint-runner** (Agent tool) per touched workspace, in parallel. **Spawn test-runner** (Agent tool) per touched workspace, one at a time (serial).
-4. **Auto-fix pass:** if a lint-runner verdict has `counts.fixable > 0`, run the fix variant of that lint command, then re-spawn lint-runner once for that workspace.
+3. **Spawn all runners in a single parallel Agent call.** For each touched workspace, spawn one lint-runner AND one test-runner in the same Agent tool invocation. All runners are read-only. No conflicts between them. This replaces the previous sequential lint-then-test flow.
+4. **Auto-fix pass:** if any lint-runner verdict has `counts.fixable > 0`, run the fix variant of that lint command via Bash, then run the lint check command via Bash and parse the JSON output inline. Do not re-spawn a lint-runner agent for the re-check. If the re-check still shows errors, treat as a `fail` verdict for that workspace.
 5. Append every verdict to the trace log.
 6. **Gate decision:**
    - `pass` or `warn`: continue.

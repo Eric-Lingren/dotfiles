@@ -255,6 +255,26 @@ print(f'OK: {skill} -> {profile} -> {path}')
 
 Confirm the skill's entry exists in `voice-routing.json`'s `skills` map, that the profile name it points to exists as a key in `profiles`, and that `profiles.<name>.file` resolves to an existing file under `claude-code-shared/resources/voice-profiles/`. If any assertion fails, fix the `voice-routing.json` entry (typo'd profile name or missing profile file) before proceeding.
 
+### 2h. Skill path — add to benchmark intent CMD set
+
+The usage analytics classifier (`cc-usage-benchmark.py`) maps slash commands to intent buckets. A skill missing from these sets lands in the "other" bucket in usage reports.
+
+Open `claude-code-shared/scripts/cc-usage-benchmark.py` and locate the CMD set definitions near the top (search for `# ---- intent classification ----`). Add the new skill name to the appropriate set:
+
+| Intent bucket | CMD set variable | When to use |
+|---|---|---|
+| planning | `PLAN_CMDS` | Planning, design, spec generation |
+| testing | `TEST_CMDS` | Test writing, e2e |
+| review | `REVIEW_CMDS` | Code review, PR revision, audits |
+| refactor | `REFAC_CMDS` | Refactoring, cleanup, skill improvement |
+| research | `RESEARCH_CMDS` | Research, investigation, analytics |
+| feature-code | `RUNTASK_CMDS` | Task execution, building, dispatching |
+| bugfix | `BUGFIX_CMDS` | Debugging |
+| git-ops | `GITOPS_CMDS` | Git operations, worktrees |
+| feature-code | `DELEGATE_CMDS` | Delegation, handoff |
+
+If no bucket fits, ask the user which one best describes the skill's primary intent.
+
 ### 2g. Skill path — learning capture integration
 
 Stamp the new skill with the managed learning-capture tail block and register it as a learning producer.

@@ -52,6 +52,14 @@ If `command` is `null` or not provided, return immediately:
 }
 ```
 
+### 1b. Start the timer
+
+Before running any command, capture the current epoch milliseconds:
+```bash
+START_MS=$(python3 -c "import time; print(int(time.time()*1000))")
+```
+Use this to compute `duration_ms` in the verdict.
+
 ### 2. Run the command
 
 ```bash
@@ -151,6 +159,12 @@ If the output is not valid JSON or does not match any known format, return `stat
 
 ### 4. Build and return the verdict
 
+Compute `duration_ms`:
+```bash
+END_MS=$(python3 -c "import time; print(int(time.time()*1000))")
+DURATION_MS=$((END_MS - START_MS))
+```
+
 Construct the verdict object:
 
 ```json
@@ -161,6 +175,7 @@ Construct the verdict object:
   "workspace": "client",
   "command": "biome check --reporter=json .",
   "summary": "0 errors, 0 warnings",
+  "duration_ms": 1250,
   "counts": { "errors": 0, "warnings": 0, "fixable": 0 },
   "violations": [],
   "skipped_reason": null

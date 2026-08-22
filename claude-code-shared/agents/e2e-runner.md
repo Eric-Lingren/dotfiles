@@ -77,6 +77,14 @@ If no `webServer` property is found in the config and no server appears to be ru
 }
 ```
 
+### 2b. Start the timer
+
+Before running any command, capture the current epoch milliseconds:
+```bash
+START_MS=$(python3 -c "import time; print(int(time.time()*1000))")
+```
+Use this to compute `duration_ms` in the verdict.
+
 ### 3. Run the command
 
 ```bash
@@ -151,6 +159,12 @@ If the output is not parseable JSON and the exit code is non-zero, set `status: 
 
 ### 5. Build and return the verdict
 
+Compute `duration_ms`:
+```bash
+END_MS=$(python3 -c "import time; print(int(time.time()*1000))")
+DURATION_MS=$((END_MS - START_MS))
+```
+
 ```json
 {
   "schema_version": "1",
@@ -159,6 +173,7 @@ If the output is not parseable JSON and the exit code is non-zero, set `status: 
   "workspace": ".",
   "command": "playwright test --reporter=json",
   "summary": "2 failed, 10 passed, 1 skipped",
+  "duration_ms": 12450,
   "counts": { "passed": 10, "failed": 2, "skipped": 1 },
   "violations": [],
   "failures": [

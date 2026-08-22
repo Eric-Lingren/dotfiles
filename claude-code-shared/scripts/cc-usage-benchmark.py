@@ -123,12 +123,23 @@ def branch_prefix(b):
     return b.split("/")[0].lower() if "/" in b else b.lower()
 
 # ---- intent classification ----
-PLAN_CMDS   = {"to-spec", "to-prd", "grill-me", "grill-with-docs", "to-tasks", "prototype", "plan"}
+# When registering a new skill, add it to the matching CMD set here.
+# See register-skill step 2h.
+PLAN_CMDS   = {"to-spec", "to-prd", "grill-me", "grill-with-docs", "to-tasks",
+               "prototype", "plan", "sprout-seed", "to-seed", "find-work"}
 TEST_CMDS   = {"tdd", "to-e2e-tests"}
-REVIEW_CMDS = {"review", "code-review", "pr-code-review", "security-review", "caveman-review"}
-REFAC_CMDS  = {"improve-component", "improve-codebase-architecture", "simplify"}
-RESEARCH_CMDS = {"how-to", "deep-research", "tldr-tech"}
-RUNTASK_CMDS = {"run-tasks", "run-task-followups", "tasks-to-linear"}
+REVIEW_CMDS = {"review", "code-review", "pr-code-review", "security-review",
+               "caveman-review", "relay", "pr-revise", "frontend-review"}
+REFAC_CMDS  = {"improve-component", "improve-codebase-architecture", "simplify",
+               "improve-skill", "register-skill", "clean-scaffolding",
+               "improve-directory-structure"}
+RESEARCH_CMDS = {"how-to", "deep-research", "tldr-tech", "investigate",
+                 "cc-usage-analytics"}
+RUNTASK_CMDS = {"run-tasks", "run-task-followups", "tasks-to-linear",
+                "build-code", "dispatch-tasks"}
+BUGFIX_CMDS  = {"debug"}
+GITOPS_CMDS  = {"worktree", "caveman-commit"}
+DELEGATE_CMDS = {"offload", "handoff"}
 
 TEST_BASH = re.compile(r"\b(pytest|jest|vitest|playwright|npm (run )?test|yarn test|go test|cargo test|rspec|mocha|tox|unittest)\b", re.I)
 GIT_COMMIT_BASH = re.compile(r"\bgit (commit|push|merge|rebase|cherry-pick)\b", re.I)
@@ -146,6 +157,9 @@ def classify(prompt, cmd, tools, bash_cmds, thinking_tokens, branch, edits, writ
     if cmd in REFAC_CMDS: labels.add("refactor")
     if cmd in RESEARCH_CMDS: labels.add("research")
     if cmd in RUNTASK_CMDS: labels.add("feature-code")
+    if cmd in BUGFIX_CMDS: labels.add("bugfix")
+    if cmd in GITOPS_CMDS: labels.add("git-ops")
+    if cmd in DELEGATE_CMDS: labels.add("feature-code")
 
     # bash-driven
     if any(TEST_BASH.search(b) for b in bash_cmds): labels.add("testing")

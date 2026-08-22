@@ -135,19 +135,24 @@ If you find a seam, write the test regardless of what the acceptance criteria sa
 
 ### 1. Planning
 
+**AFK mode detection:** If the seed prompt contains `Type: AFK`, you are running inside build-runner with no human present. In AFK mode:
+- Skip all user confirmation steps below. Do not ask questions or wait for approval.
+- Derive the plan from `acceptance_criteria` in the seed. Treat each criterion as a behavior to test.
+- Check existing test coverage, then proceed directly to the tracer bullet (step 2).
+
 When exploring the codebase, use the project's domain glossary so that test names and interface vocabulary match the project's language, and respect ADRs in the area you're touching.
 
 Before writing any code:
 
 - [ ] **Check existing test coverage** for the code being changed. If coverage is missing, plan characterization tests first.
-- [ ] Confirm with user what interface changes are needed (skip if characterization mode)
-- [ ] Confirm with user which behaviors to test (prioritize)
+- [ ] Confirm with user what interface changes are needed (skip if characterization mode or AFK mode)
+- [ ] Confirm with user which behaviors to test (prioritize) (skip if AFK mode)
 - [ ] Identify opportunities for [deep modules](resources/deep-modules.md) (small interface, deep implementation)
 - [ ] Design interfaces for [testability](resources/interface-design.md)
 - [ ] List the behaviors to test (not implementation steps)
-- [ ] Get user approval on the plan
+- [ ] Get user approval on the plan (skip if AFK mode)
 
-Ask: "What should the public interface look like? Which behaviors are most important to test?" (For characterization mode, skip the interface question. Ask only: "Which behaviors are most important to cover?")
+Ask: "What should the public interface look like? Which behaviors are most important to test?" (For characterization mode, skip the interface question. Ask only: "Which behaviors are most important to cover?" For AFK mode, skip all questions.)
 
 **You can't test everything.** Confirm with the user exactly which behaviors matter most. Focus testing effort on critical paths and complex logic, not every possible edge case.
 

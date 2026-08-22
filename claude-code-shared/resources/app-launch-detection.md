@@ -55,11 +55,12 @@ Ordered discovery:
 Ordered discovery:
 
 1. **`playwright.config.*`** — read `use.storageState` from the project Playwright config.
-2. **Known auth-state files** — check these paths in order:
+2. **Admin path detection** — if `url_path` starts with `/admin` (e.g. `/admin/research/...`), check `playwright/.auth/admin.json` first. If it exists, use it. Skip to step 3 on miss.
+3. **Known auth-state files** — check these paths in order:
    - `playwright/.auth/user.json`
    - `.auth/storage-state.json`
    - `e2e/.auth/user.json`
-3. **Not found** → run unauthenticated. Report in the check result: `"Auth: unauthenticated (no storageState found)"`. Do not block.
+4. **Not found** → run unauthenticated. Report in the check result: `"Auth: unauthenticated (no storageState found)"`. Do not block.
 
 ---
 

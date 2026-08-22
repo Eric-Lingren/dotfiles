@@ -94,6 +94,12 @@ If it was not spawned (no context sources found), set `context_brief` to the inl
 
 Reuse this same `context_brief` for every `build-runner` spawn in this run — never re-spawn `context-loader` per task.
 
+**Detect tooling (once for the entire run):**
+```bash
+python3 ~/.dotfiles/claude-code-shared/scripts/tooling-detection/detect_tooling.py <project_root>
+```
+Capture the JSON array as `tooling_manifest`. Reuse it for every `build-runner` spawn. Do not re-run detection per task.
+
 **Initialize breadcrumb:**
 `breadcrumb = []` (compact receipts from tasks completed so far this run, across all waves).
 
@@ -152,12 +158,13 @@ For each task in the wave (up to 4 at a time — if the wave has more than 4 tas
 
 ```
 Agent(subagent_type="build-runner", isolation="worktree",
-      prompt="<task object JSON, context_brief, breadcrumb, taskfile_basename, project_root>")
+      prompt="<task object JSON, context_brief, tooling_manifest, breadcrumb, taskfile_basename, project_root>")
 ```
 
 Pass per task:
 - `task` — this task's full object (`id`, `title`, `type`, `description`, `acceptance_criteria`, `browser_verify` if present).
 - `context_brief` — the brief built once in step 3b.
+- `tooling_manifest` — the manifest built once in step 3b.
 - `breadcrumb` — the `breadcrumb` list from **prior waves only** (receipts from tasks that completed in earlier waves). Do NOT include same-wave receipts — concurrent tasks must not depend on each other's output.
 - `taskfile_basename` — basename of the task file.
 - `project_root` — absolute project root path.
