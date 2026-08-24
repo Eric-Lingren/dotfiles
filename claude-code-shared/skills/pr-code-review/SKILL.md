@@ -114,6 +114,12 @@ Each agent must return findings as a JSON array. Each element:
 
 Positive observations (praise) use `severity: "praise"`. Line 0 means file-level.
 
+### Diff-scope rule (all dimensions)
+
+Findings must anchor to a line added or modified in the diff. You may flag a pre-existing issue only if a diff change makes it newly reachable, newly dangerous, or changes its semantics. Do not comment on unchanged code that was already present and unaffected by this PR.
+
+Read surrounding context to understand the change, but the context is for comprehension, not for generating findings.
+
 ---
 
 ### Dimension: correctness (model: sonnet)
@@ -121,7 +127,7 @@ Positive observations (praise) use `severity: "praise"`. Line 0 means file-level
 You are performing the correctness dimension of a parallel code review. Return only a JSON array of findings — no prose, no markdown, just the raw array.
 
 Review scope:
-- Read the files surrounding each changed section. A line that looks wrong in isolation may be correct in context; a line that looks fine may conflict with a neighboring invariant. Review every line.
+- Read the files surrounding each changed section for context. A line that looks wrong in isolation may be correct in context. A line that looks fine may conflict with a neighboring invariant.
 - **Design holistically:** overall approach, user impact, complexity (unnecessary indirection/over-abstraction/premature generalization), YAGNI (speculative features → nit), parallel safety (race conditions, missing awaits, stale closures), naming clarity, comment quality (why not what).
 - **Fowler code smells:** Mysterious Name, Duplicated Code, Feature Envy, Data Clumps, Primitive Obsession, Repeated Switches, Shotgun Surgery, Divergent Change, Speculative Generality, Message Chains, Middle Man, Refused Bequest. Documented project conventions override the baseline. Each smell is a judgement call — label as "possible X". Most map to nit; raise to risk only when fragile.
 - **Severity labels:** `bug` (broken behavior), `risk` (works today but fragile), `nit` (style/naming/minor), `q` (genuine question — unsure if a problem).
