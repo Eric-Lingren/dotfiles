@@ -195,5 +195,83 @@
         }
       }
     }
+  },
+  "2026-W34": {
+    "adherence": {
+      "match": 27,
+      "n": 36,
+      "overall_pct": 75.0,
+      "skills": {
+        "build-code": {
+          "exp": "sonnet",
+          "mix": {
+            "opus": 2,
+            "sonnet": 3
+          }
+        },
+        "cc-usage-analytics": {
+          "exp": "sonnet",
+          "mix": {
+            "opus": 1
+          }
+        },
+        "clean-scaffolding": {
+          "exp": "haiku",
+          "mix": {
+            "opus": 1,
+            "sonnet": 2
+          }
+        },
+        "handoff": {
+          "exp": "sonnet",
+          "mix": {
+            "sonnet": 1
+          }
+        },
+        "investigate": {
+          "exp": "haiku",
+          "mix": {
+            "sonnet": 1
+          }
+        },
+        "offload": {
+          "exp": "sonnet",
+          "mix": {
+            "sonnet": 4
+          }
+        },
+        "pr-code-review": {
+          "exp": "sonnet",
+          "mix": {
+            "sonnet": 4
+          }
+        },
+        "register-skill": {
+          "exp": "sonnet",
+          "mix": {
+            "opus": 1
+          }
+        },
+        "to-seed": {
+          "exp": "sonnet",
+          "mix": {
+            "sonnet": 1
+          }
+        },
+        "to-tasks": {
+          "exp": "sonnet",
+          "mix": {
+            "sonnet": 13
+          }
+        },
+        "worktree": {
+          "exp": "sonnet",
+          "mix": {
+            "opus": 1,
+            "sonnet": 1
+          }
+        }
+      }
+    }
   }
 }

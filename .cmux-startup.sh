@@ -8,16 +8,6 @@ fi
 touch "$LOCKFILE"
 trap 'rm -f "$LOCKFILE"' EXIT
 
-wait_for_surface() {
-  local id="$1"
-  local i=0
-  while [ $i -lt 20 ]; do
-    cmux tree --workspace "$WS" 2>/dev/null | grep -q "$id" && return 0
-    sleep 0.3
-    i=$((i + 1))
-  done
-  echo "ERROR: Timed out waiting for $id" >&2; return 1
-}
 
 # Retry identify
 for i in $(seq 1 10); do
@@ -38,19 +28,3 @@ cmux rename-workspace --workspace "$WS" "Quaestor Dev Env"
 cmux rename-tab --surface "$S1" "Dev"
 cmux send --surface "$S1" "source ~/.zshrc && cd ~/Documents/dev/Quaestor-Web && dev start"
 cmux send-key --surface "$S1" Return
-
-# Top-right: Storybook (split right from Dev)
-S2=$(cmux new-split right --surface "$S1" --workspace "$WS" | grep -o 'surface:[0-9]*' | head -1)
-[ -z "$S2" ] && { echo "ERROR: S2 split failed" >&2; exit 1; }
-wait_for_surface "$S2"
-cmux rename-tab --surface "$S2" "Storybook"
-cmux send --surface "$S2" "source ~/.zshrc && cd ~/Documents/dev/Quaestor-Web/client && yarn storybook"
-cmux send-key --surface "$S2" Return
-
-# Bottom-right: Celery (split down from Storybook)
-S3=$(cmux new-split down --surface "$S2" --workspace "$WS" | grep -o 'surface:[0-9]*' | head -1)
-[ -z "$S3" ] && { echo "ERROR: S3 split failed" >&2; exit 1; }
-wait_for_surface "$S3"
-cmux rename-tab --surface "$S3" "Celery"
-cmux send --surface "$S3" "source ~/.zshrc && cd ~/Documents/dev/Quaestor-Web/app && runcelery"
-cmux send-key --surface "$S3" Return

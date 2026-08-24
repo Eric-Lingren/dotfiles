@@ -58,6 +58,7 @@ alias cursor="/Applications/Cursor.app/Contents/Resources/app/bin/cursor"
 alias reload="source ~/.zshrc"
 alias ls='eza --color=always --icons'
 alias runcelery="celery -A task.celery worker --loglevel=info -Q user_waiting,notifications,integrations,longtasks,whenever,celery,email_parsing,doc_parsing"
+alias celery="celery -A task.celery worker --loglevel=info -Q user_waiting,notifications,integrations,longtasks,whenever,celery,email_parsing,doc_parsing"
 
 
 # ─────────────────────────────────────────#
