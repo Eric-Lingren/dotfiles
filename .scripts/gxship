@@ -1,0 +1,99 @@
+#!/usr/bin/env bash
+# gxship — rebase and ship a pre-built worktree
+# What: reads .worktree-meta.json, prompts to ship, rebases onto base branch, calls gxpush --auto --pr
+# When: from inside a pre-built worktree that is ready to ship
+
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/gx-lib.sh"
+
+META_FILE=".worktree-meta.json"
+
+# Allow tests to override gxpush path
+GXPUSH="${GXPUSH:-$SCRIPT_DIR/gxpush}"
+
+# ─── Check we're inside a worktree ───────────────────────────────────────────
+
+if [[ ! -f "$META_FILE" ]]; then
+  echo "ERROR: Not inside a gx worktree — .worktree-meta.json not found in current directory." >&2
+  exit 1
+fi
+
+# ─── Read meta ────────────────────────────────────────────────────────────────
+
+META_STATUS=$(GX_META_FILE="$META_FILE" python3 -c "
+import json, os
+d = json.load(open(os.environ['GX_META_FILE']))
+print(d.get('status', ''))
+")
+
+# Load repo policy to get GX_BASE_BRANCH; fall back gracefully if not in a repo
+gx_load_policy 2>/dev/null || true
+BASE="${GX_BASE_BRANCH:-main}"
+
+# ─── Update meta status helper ───────────────────────────────────────────────
+
+update_meta_status() {
+  local new_status="$1"
+  GX_META_FILE="$META_FILE" GX_NEW_STATUS="$new_status" python3 -c "
+import json, os
+meta_file = os.environ['GX_META_FILE']
+new_status = os.environ['GX_NEW_STATUS']
+with open(meta_file, 'r') as f:
+    meta = json.load(f)
+meta['status'] = new_status
+with open(meta_file, 'w') as f:
+    json.dump(meta, f, indent=2)
+    f.write('\n')
+"
+}
+
+# ─── Print descriptive message ────────────────────────────────────────────────
+
+echo "Will rebase onto $BASE, push to GitHub, create a PR, and trigger Linear to move the ticket to In Progress via auto-link."
+echo ""
+
+# ─── Prompt based on status ──────────────────────────────────────────────────
+
+if [[ "$META_STATUS" == "building" ]]; then
+  printf "Ship? [Y/n] -- Ready but later? [r] "
+else
+  printf "Ship? [Y/n] "
+fi
+
+read -r REPLY
+
+# ─── Handle reply ────────────────────────────────────────────────────────────
+
+case "${REPLY:-Y}" in
+  [Yy]|"")
+    # Ship path
+    echo "Fetching origin..."
+    git fetch origin
+
+    echo "Rebasing onto $BASE..."
+    if ! git rebase "origin/$BASE"; then
+      git rebase --abort 2>/dev/null || true
+      echo "Conflict — resolve then re-run gxship" >&2
+      exit 1
+    fi
+
+    update_meta_status "shipped"
+
+    "$GXPUSH" --auto --pr
+    ;;
+  [Rr])
+    update_meta_status "ready"
+    echo "Marked as ready. Run gxship when you want to ship."
+    exit 0
+    ;;
+  [Nn])
+    echo "Aborted."
+    exit 0
+    ;;
+  *)
+    echo "Aborted."
+    exit 0
+    ;;
+esac
