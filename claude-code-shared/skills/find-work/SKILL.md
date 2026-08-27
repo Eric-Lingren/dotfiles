@@ -1,6 +1,6 @@
 ---
 name: find-work
-description: List spike/*, feat/*, and fix/* branches in the current repo with last commit dates. Use when user wants to find previous spikes, feature branches, fix branches, or in-progress research branches.
+description: List active worktrees (and their Linear URLs) powered by gxlist. Falls back to listing spike/*, feat/*, and fix/* branches when gxlist is unavailable. Use when user wants to find previous spikes, feature branches, fix branches, or in-progress research branches.
 model: haiku
 effort: low
 invokedBy: human
@@ -8,7 +8,7 @@ invokedBy: human
 
 # Find Work
 
-List all `spike/*`, `feat/*`, and `fix/*` branches in the current repo to help rediscover previous research or in-progress feature work.
+List active worktrees grouped by state (READY / BUILDING / PICKED), including Linear ticket titles and clickable URLs, powered by the `gxlist` inventory engine.
 
 ## Process
 
@@ -18,9 +18,9 @@ List all `spike/*`, `feat/*`, and `fix/*` branches in the current repo to help r
    bash "$(dirname "$0")/scripts/find-work.sh"
    ```
 
-   The script outputs a table with branch name, last commit date, commit message, and whether a `docs/prd/` directory exists on the branch.
+   The script delegates to `~/.dotfiles/.scripts/gxlist`, which outputs worktrees grouped by state with Linear URLs. Pass `--all` to show worktrees across all repos (not just the current one). If `gxlist` is not installed, the script falls back to listing `spike/*`, `feat/*`, and `fix/*` branches from the current repo.
 
-2. If no branches found, the script prints a message and exits.
+2. If no worktrees (or branches in fallback mode) are found, the script prints a message and exits.
 
 3. Display the script output to the user.
 
