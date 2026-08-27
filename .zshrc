@@ -180,6 +180,25 @@ function gxstart {
   fi
 }
 
+function gxlist {
+  local _gl_is_filter=false
+  for _gl_a in "$@"; do
+    [[ "$_gl_a" == --* ]] && continue
+    _gl_is_filter=true
+    break
+  done
+
+  if [[ "$_gl_is_filter" == true ]]; then
+    local _gl_branch
+    _gl_branch=$("$HOME/.dotfiles/.scripts/gxlist" "$@")
+    if [[ -n "$_gl_branch" ]]; then
+      wt "$_gl_branch"
+    fi
+  else
+    "$HOME/.dotfiles/.scripts/gxlist" "$@"
+  fi
+}
+
 function runserver {
   cd ~/Documents/dev/Quaestor-Web/app
   dev aws-refresh-env

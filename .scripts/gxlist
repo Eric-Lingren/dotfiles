@@ -11,15 +11,28 @@ source "$SCRIPT_DIR/gx-lib.sh"
 # Allow tests to override the worktree root
 WORKTREE_BASE="${WORKTREE_BASE:-$HOME/Documents/dev/worktrees}"
 SHOW_ALL=false
+FILTER_TICKET=""
 
 # ─── Argument parsing ─────────────────────────────────────────────────────────
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --all) SHOW_ALL=true ;;
-    *)
-      echo "Usage: gxlist [--all]" >&2
+    -*)
+      echo "Usage: gxlist [--all] [<linear-url-or-ticket-id>]" >&2
       exit 1
+      ;;
+    *)
+      if [[ "$1" == https://* ]]; then
+        FILTER_TICKET=$(printf '%s' "$1" | grep -oE '[A-Z][A-Z0-9]+-[0-9]+' | tail -1)
+        if [[ -z "$FILTER_TICKET" ]]; then
+          echo "ERROR: could not extract ticket ID from URL '$1'" >&2
+          exit 1
+        fi
+      else
+        FILTER_TICKET="$1"
+      fi
+      SHOW_ALL=true
       ;;
   esac
   shift
@@ -80,14 +93,9 @@ scan_repo_dir() {
     return
   fi
 
-  local subdir
-  while IFS= read -r -d '' subdir; do
-    local meta_file="$subdir/.worktree-meta.json"
-
-    if [[ ! -f "$meta_file" ]]; then
-      echo "WARNING: no .worktree-meta.json in $subdir" >&2
-      continue
-    fi
+  local meta_file subdir
+  while IFS= read -r -d '' meta_file; do
+    subdir=$(dirname "$meta_file")
 
     # Parse and validate the meta file
     local parsed
@@ -126,7 +134,7 @@ PYEOF
     fi
 
     printf '%s\t%s\t%s\t%s\n' "$status" "$ticket_title" "$branch_name" "$linear_url"
-  done < <(find "$repo_dir" -maxdepth 1 -mindepth 1 -type d -print0 2>/dev/null)
+  done < <(find "$repo_dir" -maxdepth 3 -name ".worktree-meta.json" -print0 2>/dev/null)
 }
 
 # ─── Main ─────────────────────────────────────────────────────────────────────
@@ -172,6 +180,36 @@ for dir in "${scan_dirs[@]+"${scan_dirs[@]}"}"; do
     esac
   done < <(scan_repo_dir "$dir")
 done
+
+# Filter mode: find matching worktree and prompt to resume
+if [[ -n "$FILTER_TICKET" ]]; then
+  matched=()
+  for _fe in "${ready[@]+"${ready[@]}"}" "${building[@]+"${building[@]}"}" "${picked[@]+"${picked[@]}"}"; do
+    _bn=$(printf '%s' "$_fe" | cut -f3)
+    if printf '%s' "$_bn" | grep -qi "$FILTER_TICKET"; then
+      matched+=("$_fe")
+    fi
+  done
+
+  if [[ ${#matched[@]} -eq 0 ]]; then
+    echo "No worktree found for '$FILTER_TICKET'." >&2
+    exit 1
+  fi
+
+  _entry="${matched[0]}"
+  _status=$(printf '%s' "$_entry" | cut -f1 | tr '[:lower:]' '[:upper:]')
+  _title=$(printf '%s' "$_entry" | cut -f2)
+  _branch=$(printf '%s' "$_entry" | cut -f3)
+
+  printf '%s  %s\n' "$_status" "$_title" >&2
+  printf 'Branch: %s\n' "$_branch" >&2
+  printf 'Do you want to start this worktree? [Y/n] ' >&2
+  read -r _confirm
+  if [[ -z "$_confirm" || "$_confirm" =~ ^[Yy] ]]; then
+    printf '%s\n' "$_branch"
+  fi
+  exit 0
+fi
 
 # Empty inventory
 total=$(( ${#ready[@]} + ${#building[@]} + ${#picked[@]} ))
