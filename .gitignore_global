@@ -30,3 +30,4 @@ venv/
 .cache/
 
 **/.claude/settings.local.json
+.worktree-meta.json

@@ -76,14 +76,14 @@ gxstart_extract_ticket_id() {
 }
 
 # Fetch issue data from Linear GraphQL API.
-# Prints three lines: identifier, title, type_name (may be empty).
+# Prints three lines: identifier, title, type_name (always empty — Linear removed the type field).
 # Returns 1 on HTTP or API error.
 gxstart_fetch_issue() {
   local ticket_id="$1"
   local api_key="$2"
 
   local query
-  query=$(printf '{"query":"{ issue(id: \\"%s\\") { identifier title type { name } } }"}' "$ticket_id")
+  query=$(printf '{"query":"{ issue(id: \\"%s\\") { identifier title } }"}' "$ticket_id")
 
   local response http_body http_code
   response=$(curl -s -w "\n%{http_code}" \
@@ -116,11 +116,9 @@ if not issue:
     sys.exit(1)
 identifier = issue.get('identifier', '')
 title = issue.get('title', '')
-t = issue.get('type')
-type_name = t['name'] if t else ''
 print(identifier)
 print(title)
-print(type_name)
+print('')
 " || { printf '%s\n' "$http_body" >&2; return 1; }
 }
 

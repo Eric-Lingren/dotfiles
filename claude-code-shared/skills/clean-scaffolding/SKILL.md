@@ -73,7 +73,7 @@ Use the JSON output for all chain traversal. The output shape is:
 **Interpret the output:**
 - `status: "complete"` — every task in the chain's task file has `status: "done"` or `status: "merged"`. Ready to archive.
 - `status: "partial"` — tasks still in progress, not started, or no task file yet. Not consumed.
-- `orphans` — artifacts whose `source.ref` points to a seed not present in `docs/seeds/`. Treat as partial (never archive).
+- `orphans` — artifacts whose `source.ref` points to a seed not present in `docs/seeds/`. If every task in the orphan task file has `status: "done"` or `status: "merged"`, treat as ready to archive. Otherwise treat as partial (do not archive).
 
 **A partial chain is NEVER archived.** If artifact B references artifact A via `source.ref`, and A would be archived but B would not (because B is outside the archive scope), refuse and explain the dangling ref.
 
@@ -81,9 +81,10 @@ Use the JSON output for all chain traversal. The output shape is:
 
 After analysis, categorize each chain:
 
-- **Ready to archive**: fully consumed.
+- **Ready to archive**: fully consumed chains, plus orphan task files where all tasks are done/merged.
 - **Not consumed**: tasks still in progress or not started.
 - **Partial (dangling ref)**: a child artifact references something outside the chain.
+- **Orphan (incomplete)**: orphan task file with tasks not yet done.
 
 Report all categories to the user before asking to confirm.
 

@@ -147,6 +147,39 @@ function wt {
   fi
 }
 
+function gxstart {
+  local _gs_output _gs_exit _gs_target
+  _gs_output=$("$HOME/.dotfiles/.scripts/gxstart" "$@")
+  _gs_exit=$?
+  if [[ $_gs_exit -eq 0 && -n "$_gs_output" ]]; then
+    _gs_target=$(printf '%s' "$_gs_output" | tail -1)
+    cd "$_gs_target"
+    local _gs_branch _gs_label
+    _gs_branch="$(basename "$(dirname "$_gs_target")")/$(basename "$_gs_target")"
+    _gs_label="${_gs_branch#feat/}"
+    _gs_label="${_gs_label#fix/}"
+    _gs_label="${_gs_label#spike/}"
+    _gs_label="🌿 $_gs_label"
+    ZSH_THEME_TERM_TITLE_IDLE="$_gs_label"
+    ZSH_THEME_TERM_TAB_TITLE_IDLE="$_gs_label"
+    local _gs_identity _gs_surface _gs_workspace
+    _gs_identity=$(cmux identify 2>/dev/null)
+    _gs_surface=$(printf '%s' "$_gs_identity" | grep -o 'surface:[0-9]*' | head -1)
+    _gs_workspace=$(printf '%s' "$_gs_identity" | grep -o 'workspace:[0-9]*' | head -1)
+    [[ -n "$_gs_surface" ]] && cmux rename-tab --surface "$_gs_surface" "$_gs_label" 2>/dev/null || true
+    [[ -n "$_gs_workspace" ]] && cmux rename-workspace --workspace "$_gs_workspace" "$_gs_label" 2>/dev/null || true
+    if [[ -n "$_gs_surface" && -n "$_gs_workspace" ]]; then
+      local _gs_split
+      _gs_split=$(cmux new-split right --surface "$_gs_surface" --workspace "$_gs_workspace" 2>/dev/null | grep -o 'surface:[0-9]*' | head -1)
+      if [[ -n "$_gs_split" ]]; then
+        [[ -n "$_gs_label" ]] && cmux rename-tab --surface "$_gs_split" "$_gs_label" 2>/dev/null || true
+        cmux send --surface "$_gs_split" "cd $(printf '%q' "$_gs_target")" 2>/dev/null
+        cmux send-key --surface "$_gs_split" Return 2>/dev/null
+      fi
+    fi
+  fi
+}
+
 function runserver {
   cd ~/Documents/dev/Quaestor-Web/app
   dev aws-refresh-env
