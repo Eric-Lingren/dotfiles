@@ -1,0 +1,138 @@
+{
+  "schema_version": "2",
+  "producer": "to-tasks",
+  "source": {"type": "seed", "ref": "20260826-1801-stealth-worktree-pipeline.json"},
+  "generated_at": "2026-08-26T18:13:00Z",
+  "branching": {
+    "strategy": "single",
+    "branch": "feat/gxstart-pipeline"
+  },
+  "tasks": [
+    {
+      "id": "T-0009",
+      "title": "Implement gxstart — Linear intake and worktree creation",
+      "type": "AFK",
+      "task_type": "code",
+      "deliverable": "code",
+      "description": "Create ~/.dotfiles/.scripts/gxstart. The script accepts a Linear ticket URL or ticket ID as its sole argument. It sources ~/.dotfiles/local/secrets.env to load LINEAR_API_KEY, then makes a single read-only curl call to Linear's GraphQL API to fetch the ticket's title, type (Bug→fix, Feature→feat, Spike→spike, else feat), and identifier (KEY-NUMBER). It generates a branch name in the format <prefix>/KEY-NUMBER-slug (slug derived from the ticket title, lowercased, spaces→hyphens, max 50 chars total). It calls the existing wt engine to create a worktree at ~/Documents/dev/worktrees/<repo-name>/<branch-name>/. It writes .worktree-meta.json into the worktree root with fields: linear_ticket_id, linear_url, ticket_title, branch_name, status (\"picked\"), picked_at (ISO 8601). Finally it adds .worktree-meta.json to ~/.gitignore_global if not already present. Errors: missing LINEAR_API_KEY → print 'LINEAR_API_KEY not set — source ~/.dotfiles/local/secrets.env' and exit 1. Missing arg → print usage and exit 1. Linear API HTTP error → print response and exit 1.",
+      "acceptance_criteria": [
+        "Running gxstart with a Linear URL creates a worktree at ~/Documents/dev/worktrees/<repo>/<branch>/",
+        "Running gxstart with a ticket ID (e.g. KEY-123) also creates a worktree correctly",
+        "Branch name format is <prefix>/KEY-NUMBER-slug matching the Linear ticket type",
+        ".worktree-meta.json exists in the new worktree root with all six required fields",
+        "status field in .worktree-meta.json is 'picked' on creation",
+        ".worktree-meta.json is present in ~/.gitignore_global after first run",
+        "Missing LINEAR_API_KEY exits 1 with a descriptive error",
+        "Tests mock the curl call with a fixture JSON response and assert branch name and meta fields"
+      ],
+      "blocked_by": [],
+      "status": "not_started",
+      "branch": null,
+      "pr": null,
+      "linear_url": null
+    },
+    {
+      "id": "T-0010",
+      "title": "Implement gxlist — worktree inventory dashboard",
+      "type": "AFK",
+      "task_type": "code",
+      "deliverable": "code",
+      "description": "Create ~/.dotfiles/.scripts/gxlist. Default mode: scans ~/Documents/dev/worktrees/<current-repo-name>/ for subdirectories, reads .worktree-meta.json from each, and auto-detects building state by running 'git log origin/<base>..HEAD --oneline' inside the worktree — any local commits ahead of base means building (overrides meta status of 'picked'). Output is grouped into three sections: READY, BUILDING, PICKED. Each line shows: ticket title, branch name, and a clickable Linear URL (OSC 8 hyperlink if the terminal supports it, plain URL otherwise). --all flag: scans all repos under ~/Documents/dev/worktrees/. Worktrees with missing or malformed .worktree-meta.json are skipped with a stderr warning. Empty inventory prints 'No active worktrees.' and exits 0.",
+      "acceptance_criteria": [
+        "Default mode shows only worktrees for the current repo (by dirname match)",
+        "--all flag shows worktrees across all repos in ~/Documents/dev/worktrees/",
+        "A worktree with local commits ahead of base is shown under BUILDING even if meta status is 'picked'",
+        "Output groups entries under READY, BUILDING, PICKED headings",
+        "Each entry includes the Linear URL",
+        "Malformed or missing .worktree-meta.json produces a stderr warning and is skipped",
+        "Tests use fixture worktree directories with pre-written .worktree-meta.json files and mock git log output"
+      ],
+      "blocked_by": ["T-0009"],
+      "status": "not_started",
+      "branch": null,
+      "pr": null,
+      "linear_url": null
+    },
+    {
+      "id": "T-0011",
+      "title": "Implement gxship — rebase and ship a pre-built worktree",
+      "type": "AFK",
+      "task_type": "code",
+      "deliverable": "code",
+      "description": "Create ~/.dotfiles/.scripts/gxship. The script must be run from inside a pre-built worktree (it reads .worktree-meta.json from CWD; exits 1 with a message if not found). Before prompting, it prints a descriptive message: 'Will rebase onto <base>, push to GitHub, create a PR, and trigger Linear to move the ticket to In Progress via auto-link.' Prompt varies by current meta status: if 'building' → 'Ship? [Y/n] -- Ready but later? [r]'; if 'ready' → 'Ship? [Y/n]'. Pressing Enter or Y → ship path: git fetch origin, git rebase origin/<base> (stops on conflict with message 'Conflict — resolve then re-run gxship', exit 1), updates meta status to 'shipped', calls ~/.dotfiles/.scripts/gxpush --auto --pr. Typing 'r' → updates meta status to 'ready', prints 'Marked as ready. Run gxship when you want to ship.', exits 0. Typing 'n' → aborts, exits 0. Script does not write back to Linear at any point.",
+      "acceptance_criteria": [
+        "Running gxship outside a worktree (no .worktree-meta.json in CWD) exits 1 with a clear error",
+        "Descriptive pre-prompt message is printed before any confirmation",
+        "Building-state prompt includes the [r] option; ready-state prompt does not",
+        "'r' input sets meta status to 'ready' and exits 0 without pushing",
+        "Y/enter input triggers fetch, rebase, meta update to 'shipped', and gxpush --auto --pr",
+        "Rebase conflict causes exit 1 with a message directing the user to resolve and re-run",
+        "'n' input aborts cleanly with no changes",
+        "Tests mock gxpush and assert state transitions and prompt routing"
+      ],
+      "blocked_by": ["T-0009"],
+      "status": "not_started",
+      "branch": null,
+      "pr": null,
+      "linear_url": null
+    },
+    {
+      "id": "T-0012",
+      "title": "Extend gxclean with --full cleanup flag",
+      "type": "AFK",
+      "task_type": "code",
+      "deliverable": "code",
+      "description": "Extend ~/.dotfiles/.scripts/gxclean with a --full flag. Before any restructuring, write characterization tests that capture the current behavior: list of merged local branches, prompt, and deletion loop. Then add --full: Pass 1 — run 'git worktree list --porcelain' to find all registered worktrees, for each check if its branch is merged into origin/<base>; for each hit print the worktree path and branch, prompt 'Remove? [Y/n]', and on Y run 'wt rm <path>'. Pass 2 — run 'git fetch --prune origin', list remote-tracking branches with no local counterpart (via git branch -r | grep -v HEAD | grep -v 'origin/<base>'), prompt 'Prune remote <branch>? [Y/n]' for each, and on Y run 'git push origin --delete <branch>'. The existing behavior (no flag) is unchanged. Both passes run sequentially after the existing merged-local-branch pass when --full is supplied.",
+      "acceptance_criteria": [
+        "Characterization tests exist and pass before any code changes (existing behavior coverage)",
+        "Running gxclean with no flags behaves identically to the current implementation",
+        "Running gxclean --full runs both new passes after the existing merged-branch cleanup",
+        "Pass 1 correctly identifies worktrees whose branch is merged and prompts per worktree",
+        "Pass 2 lists and prompts for stale remote-tracking branches",
+        "Declining any prompt (n) skips that item only — other items still proceed",
+        "Tests for --full mock wt rm and git push origin --delete and assert correct invocations"
+      ],
+      "blocked_by": [],
+      "status": "not_started",
+      "branch": null,
+      "pr": null,
+      "linear_url": null
+    },
+    {
+      "id": "T-0013",
+      "title": "Evolve find-work skill to wrap gxlist",
+      "type": "AFK",
+      "task_type": "code",
+      "deliverable": "code",
+      "description": "Update ~/.dotfiles/claude-code-shared/skills/find-work/SKILL.md and scripts/find-work.sh to delegate to gxlist instead of independently scanning branches. The skill becomes a thin wrapper: SKILL.md instructs the model to invoke the shell script, which in turn shells out to ~/.dotfiles/.scripts/gxlist (forwarding any --all flag if present). This mirrors the pattern used by the worktree skill wrapping the wt engine. The skill's behavior from the user's perspective is unchanged: invoking /find-work lists active work, now powered by the richer gxlist inventory (including state grouping and Linear URLs). Remove any branch-scanning logic previously in find-work.sh now covered by gxlist.",
+      "acceptance_criteria": [
+        "find-work.sh delegates to ~/.dotfiles/.scripts/gxlist and forwards --all when provided",
+        "No duplicate branch-scanning logic remains in find-work.sh after the refactor",
+        "SKILL.md updated to reference gxlist as the underlying engine",
+        "The skill still runs correctly when invoked as /find-work in a Claude Code session",
+        "Tests verify that find-work.sh invokes gxlist with the correct arguments"
+      ],
+      "blocked_by": ["T-0010"],
+      "status": "not_started",
+      "branch": null,
+      "pr": null,
+      "linear_url": null
+    }
+  ],
+  "follow_ups": [
+    {
+      "id": "FU-001",
+      "title": "Add LINEAR_API_KEY to ~/.dotfiles/local/secrets.env",
+      "steps": [
+        "In Linear: click your avatar (bottom-left) > Settings > API > Personal API keys > Create key — name it 'gxstart', copy the token (starts with lin_api_)",
+        "Open ~/.dotfiles/local/secrets.env in your editor",
+        "Add this line: export LINEAR_API_KEY=\"lin_api_<your-token-here>\"",
+        "Save the file",
+        "Reload in every active shell: source ~/.dotfiles/local/secrets.env",
+        "Verify: echo $LINEAR_API_KEY — should print the token, not an empty string"
+      ],
+      "trigger_task": "T-0009",
+      "source": "planned"
+    }
+  ]
+}

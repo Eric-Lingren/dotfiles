@@ -217,6 +217,12 @@ Review scope:
 - No single-letter variable names (including loop counters and callback params); flag every occurrence
 - No magic numbers — named constants instead
 
+**Comments**
+- No comments that restate what the code does — well-named identifiers already say that
+- No comments referencing the current task, ticket, or caller ("added for X", "used by Y", "handles the case from issue #123") — those belong in the PR description and rot as the codebase evolves
+- Only comment when the WHY is non-obvious: a hidden constraint, a subtle invariant, a workaround for a specific bug, behavior that would surprise a reader
+- Flag TODO/FIXME/HACK comments that lack a ticket reference — they rot without accountability
+
 **Design system (frontend only)**
 - Spacing uses `theme.space()` — not raw `px`/`rem` numbers
 - Non-spacing lengths use `theme.unit()` — not raw numbers

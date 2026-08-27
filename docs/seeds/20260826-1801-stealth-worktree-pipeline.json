@@ -1,0 +1,113 @@
+{
+  "schema_version": "4",
+  "producer": "to-seed",
+  "source": {"type": "session", "ref": null},
+  "title": "Stealth Worktree Pipeline",
+  "slug": "stealth-worktree-pipeline",
+  "created": "2026-08-26T18:01:00Z",
+  "status": "ready",
+  "iteration": 1,
+  "summary": "Design for a local-first worktree pipeline that lets the user pre-build work from Linear tickets without triggering Linear status changes. Four new gx verbs (gxstart, gxlist, gxship, extended gxclean) form the lifecycle. gxstart queries the Linear API read-only to generate a branch name and create a worktree. Work stays local and invisible until gxship pushes, creates a PR via gxpush, and lets the GitHub-Linear auto-link handle status transitions. A .worktree-meta.json file in each worktree root tracks ticket identity and state (picked, building, ready, shipped). The find-work skill evolves to wrap gxlist as a shell script. All decisions resolved.",
+  "decisions": [
+    "Work stays local-only during pre-build phase. No pushes to GitHub until ship time.",
+    "gxstart accepts a Linear URL or ticket ID, queries the Linear API read-only, generates a branch name, and calls the existing wt engine to create a worktree.",
+    "gxstart is a standalone shell script, not MCP-dependent. Works from any terminal.",
+    "Linear API authentication uses LINEAR_API_KEY stored in ~/.dotfiles/local/secrets.env, following the existing secrets pattern used by Notion scripts.",
+    "Branch names are auto-prefixed with feat/, fix/, or spike/ based on Linear ticket type. Keeps compatibility with find-work and worktree warnings.",
+    "gxship is a wrapper around gxpush. It fetches, rebases onto main, updates worktree meta to shipped, then delegates to gxpush for push and PR creation.",
+    "gxship always requires explicit confirmation before shipping. Capital Y is the default (enter = ship).",
+    "gxship prompt on building state: 'Ship? [Y/n] -- Ready but later? [r]'. On ready state: 'Ship? [Y/n]'.",
+    "gxship displays a descriptive message before the prompt explaining what will happen: rebase onto main, push to GitHub, create PR, trigger Linear to move ticket to In Progress.",
+    "No Linear API writes at any point. Read-only at gxstart. Auto-link handles status at ship time.",
+    "GitHub-Linear auto-link handles the In Progress status transition at ship time. No explicit API calls needed.",
+    "Metadata stored in .worktree-meta.json in each worktree root. Added to global gitignore.",
+    "Four states: picked (gxstart created it), building (auto-detected via local commits ahead of base), ready (marked via gxship 'r' option), shipped (gxship completed).",
+    "picked to building transition is auto-detected by checking local commits ahead of base branch. No manual step needed.",
+    "ready state is set via the 'r' option in the gxship prompt, not a separate gxmark command. Removes a command to remember.",
+    "The inventory command is named gxlist. Current repo by default, --all flag for cross-repo view.",
+    "gxlist output is grouped by state (READY, BUILDING, PICKED) and includes clickable Linear URLs for each item.",
+    "find-work skill evolves to wrap gxlist shell script. Same pattern as worktree skill wrapping the wt engine.",
+    "gxclean extended with --full flag to clean worktrees for merged/deleted branches and stale remote branches, in addition to current local merged branch cleanup.",
+    "Manual ship timing only. No scheduling or automation. User runs gxship when they decide.",
+    "gxstart requires being cd'd into the target repo. Same pattern as wt.",
+    "gxship auto-rebases onto latest main (or policy base branch) before pushing. Stops on conflicts."
+  ],
+  "open_threads": [],
+  "disposed_threads": [],
+  "verification": {
+    "iteration": 1,
+    "personas": ["grounding", "accuracy", "completeness", "coherence"],
+    "refutations_upheld": 0,
+    "refutations_screened": 2,
+    "clean": true,
+    "status": "verified"
+  },
+  "next_action": "Run /to-tasks to generate the implementation task breakdown for the four gx verbs and find-work evolution.",
+  "problem_statement": "Copying a branch name from Linear's UI triggers a workspace automation that moves the ticket to In Progress and adds it to the current cycle. This creates visible activity trail (status thrashing) when the user pre-builds work and then moves tickets back. The team can see this activity, undermining the goal of trickling out deliveries at a consistent pace.",
+  "solution": "A four-verb local-first pipeline: gxstart (intake from Linear API without UI interaction), gxlist (inventory dashboard), gxship (push + PR when ready), and extended gxclean (cleanup). Work stays completely local and invisible until explicitly shipped. Metadata in .worktree-meta.json tracks state per worktree.",
+  "evidence": "Linear activity log screenshot showing repeated 'moved to In Progress, then back to Backlog' entries visible to the entire team within minutes of each other.",
+  "implementation_decisions": [
+    "gxstart lives at ~/.dotfiles/.scripts/gxstart alongside other gx verbs.",
+    "gxstart sources LINEAR_API_KEY from ~/.dotfiles/local/secrets.env using the same conditional source pattern as the Notion scripts.",
+    "gxstart uses a curl call to Linear's GraphQL endpoint to fetch ticket title, type, and project key. No SDK needed.",
+    "Branch name format: <prefix>/KEY-NUMBER-slug, matching the existing Linear-generated convention observed in the codebase (e.g. feat/KEY-1234-migrate-experiences).",
+    ".worktree-meta.json schema includes: linear_ticket_id, linear_url, ticket_title, branch_name, status, picked_at timestamp.",
+    "gxlist scans ~/Documents/dev/worktrees/<repo>/ and reads .worktree-meta.json from each worktree. Auto-detects building state via git log checking local commits ahead of base.",
+    "gxship wraps gxpush. Sequence: read meta, fetch origin, rebase onto base, update meta status, call gxpush.",
+    "gxclean --full adds two passes: scan worktrees for merged branches and offer wt rm, then optionally prune remote branches via git push origin --delete."
+  ],
+  "out_of_scope": [
+    {
+      "text": "Linear API writes (status changes, ticket assignment, cycle management)",
+      "rationale": "Stealth is the core requirement. Any Linear write creates visible activity. Auto-link at ship time is sufficient."
+    },
+    {
+      "text": "Automated ship scheduling or delivery queuing",
+      "rationale": "User wants manual control over ship timing. Automation adds complexity for minimal gain."
+    },
+    {
+      "text": "Multi-repo support for gxstart (repo flag)",
+      "rationale": "Requires being cd'd into target repo, same pattern as wt. Rare case doesn't justify the complexity."
+    },
+    {
+      "text": "MCP-based Linear access for gxstart",
+      "rationale": "Decided on standalone shell script with API token. MCP only available inside Claude sessions, which is too constraining."
+    }
+  ],
+  "risks_and_tradeoffs": [
+    "Local-only work has no remote backup. If the machine dies, pre-built work is lost. Acceptable risk per user decision.",
+    "Pre-built branches may accumulate merge conflicts with main over time. gxship's auto-rebase catches this at ship time, but late conflicts could require rework.",
+    "The LINEAR_API_KEY is a personal token with read access. If the user's Linear permissions change, gxstart breaks silently."
+  ],
+  "user_stories": [
+    {
+      "actor": "developer",
+      "feature": "pick up a Linear ticket and create a local worktree without triggering any Linear status change",
+      "benefit": "I can pre-build work invisibly and ship it later on my own schedule"
+    },
+    {
+      "actor": "developer",
+      "feature": "see a grouped inventory of all my local pre-built worktrees with their state and clickable Linear links",
+      "benefit": "I can quickly find what's ready to ship and navigate to the ticket for context"
+    },
+    {
+      "actor": "developer",
+      "feature": "ship pre-built work with a single command that rebases, pushes, and creates a PR",
+      "benefit": "shipping is fast and the Linear status transition happens naturally via auto-link"
+    },
+    {
+      "actor": "developer",
+      "feature": "mark work as ready without shipping it immediately",
+      "benefit": "I can distinguish finished-but-unshipped work from work still in progress"
+    },
+    {
+      "actor": "developer",
+      "feature": "clean up merged worktrees, local branches, and remote branches in one command",
+      "benefit": "I don't accumulate stale worktrees and branches across repos"
+    }
+  ],
+  "further_notes": [
+    "The existing find-work skill (Haiku model, lists spike/feat/fix branches) is replaced by gxlist. The skill becomes a thin wrapper.",
+    "The gx verb family after this work: gxcheck, gxclean (extended), gxlist (new), gxmove, gxpush, gxship (new), gxstart (new), gxsync."
+  ]
+}
