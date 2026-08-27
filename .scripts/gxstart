@@ -1,0 +1,223 @@
+#!/usr/bin/env bash
+# gxstart — Linear intake and worktree creation
+# What: accepts a Linear ticket URL or ID, fetches ticket from Linear API, creates a worktree, writes .worktree-meta.json
+# When: beginning work on a Linear ticket; sets up branch, worktree, and intake metadata in one step
+
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/gx-lib.sh"
+
+LINEAR_GRAPHQL="${LINEAR_GRAPHQL:-https://api.linear.app/graphql}"
+WORKTREE_SCRIPT="${WORKTREE_SCRIPT:-$SCRIPT_DIR/worktree}"
+
+# ─── Branch name helpers ──────────────────────────────────────────────────────
+
+# Map Linear issue type name to git branch prefix.
+# Bug→fix, Feature→feat, Spike→spike, anything else→feat
+gxstart_type_to_prefix() {
+  local type_name="$1"
+  case "$type_name" in
+    Bug)     echo "fix" ;;
+    Feature) echo "feat" ;;
+    Spike)   echo "spike" ;;
+    *)       echo "feat" ;;
+  esac
+}
+
+# Build a branch name from prefix, identifier, and title.
+# Format: <prefix>/<IDENTIFIER>-<slug>  max 50 chars total.
+# Slug: title lowercased, non-alphanumeric runs → single hyphen, leading/trailing hyphens stripped.
+gxstart_branch_name() {
+  local prefix="$1"
+  local identifier="$2"
+  local title="$3"
+
+  local slug
+  slug=$(printf '%s' "$title" | python3 -c "
+import sys, re
+title = sys.stdin.read().strip()
+slug = title.lower()
+slug = re.sub(r'[^a-z0-9]+', '-', slug)
+slug = slug.strip('-')
+print(slug)
+")
+
+  # <prefix>/<IDENTIFIER>- is the fixed portion; truncate slug to fit within 50 total chars
+  local fixed="${prefix}/${identifier}-"
+  local max_slug=$(( 50 - ${#fixed} ))
+  if [[ $max_slug -lt 1 ]]; then
+    max_slug=1
+  fi
+
+  # Truncate and strip any trailing hyphens left by the cut
+  slug=$(printf '%s' "$slug" | cut -c1-"$max_slug" | sed 's/-*$//')
+
+  echo "${fixed}${slug}"
+}
+
+# ─── Linear API fetch ─────────────────────────────────────────────────────────
+
+# Extract ticket ID (e.g. KEY-123) from a Linear URL or bare identifier.
+gxstart_extract_ticket_id() {
+  local input="$1"
+  local ticket_id=""
+
+  if [[ "$input" == https://* ]]; then
+    ticket_id=$(printf '%s' "$input" | grep -oE '[A-Z][A-Z0-9]+-[0-9]+' | tail -1)
+  else
+    # Accept bare identifier KEY-123 (uppercase letters+digits, hyphen, digits)
+    if printf '%s' "$input" | grep -qE '^[A-Z][A-Z0-9]+-[0-9]+$'; then
+      ticket_id="$input"
+    fi
+  fi
+
+  printf '%s' "$ticket_id"
+}
+
+# Fetch issue data from Linear GraphQL API.
+# Prints three lines: identifier, title, type_name (may be empty).
+# Returns 1 on HTTP or API error.
+gxstart_fetch_issue() {
+  local ticket_id="$1"
+  local api_key="$2"
+
+  local query
+  query=$(printf '{"query":"{ issue(id: \\"%s\\") { identifier title type { name } } }"}' "$ticket_id")
+
+  local response http_body http_code
+  response=$(curl -s -w "\n%{http_code}" \
+    -X POST \
+    -H "Content-Type: application/json" \
+    -H "Authorization: $api_key" \
+    --data "$query" \
+    "$LINEAR_GRAPHQL")
+
+  http_body=$(printf '%s\n' "$response" | sed '$d')
+  http_code=$(printf '%s\n' "$response" | tail -n 1)
+
+  if [[ "$http_code" != "200" ]]; then
+    echo "Linear API error (HTTP $http_code):" >&2
+    printf '%s\n' "$http_body" >&2
+    return 1
+  fi
+
+  # Check for GraphQL-level errors and emit identifier/title/type_name
+  printf '%s' "$http_body" | python3 -c "
+import json, sys
+d = json.load(sys.stdin)
+if d.get('errors'):
+    for e in d['errors']:
+        print(e.get('message','unknown error'), file=sys.stderr)
+    sys.exit(1)
+issue = d.get('data', {}).get('issue')
+if not issue:
+    print('ERROR: no issue returned for this ticket ID', file=sys.stderr)
+    sys.exit(1)
+identifier = issue.get('identifier', '')
+title = issue.get('title', '')
+t = issue.get('type')
+type_name = t['name'] if t else ''
+print(identifier)
+print(title)
+print(type_name)
+" || { printf '%s\n' "$http_body" >&2; return 1; }
+}
+
+# ─── Main ─────────────────────────────────────────────────────────────────────
+
+# When GXSTART_SOURCED=true, only define functions and return (don't run main).
+[[ "${GXSTART_SOURCED:-false}" == "true" ]] && return 0
+
+# Load secrets
+[ -f "$HOME/.dotfiles/local/secrets.env" ] && source "$HOME/.dotfiles/local/secrets.env"
+
+# Usage check
+if [[ -z "${1:-}" ]]; then
+  echo "Usage: gxstart <linear-url-or-ticket-id>" >&2
+  echo "  Example: gxstart https://linear.app/my-org/issue/KEY-123" >&2
+  echo "           gxstart KEY-123" >&2
+  exit 1
+fi
+
+# API key check
+if [[ -z "${LINEAR_API_KEY:-}" ]]; then
+  echo "LINEAR_API_KEY not set — source ~/.dotfiles/local/secrets.env"
+  exit 1
+fi
+
+INPUT="$1"
+
+# Extract ticket ID
+TICKET_ID=$(gxstart_extract_ticket_id "$INPUT")
+if [[ -z "$TICKET_ID" ]]; then
+  echo "ERROR: Could not extract a valid ticket ID (e.g. KEY-123) from '$INPUT'" >&2
+  exit 1
+fi
+
+# Fetch from Linear
+ISSUE_DATA=$(gxstart_fetch_issue "$TICKET_ID" "$LINEAR_API_KEY") || exit 1
+
+IDENTIFIER=$(printf '%s\n' "$ISSUE_DATA" | sed -n '1p')
+TICKET_TITLE=$(printf '%s\n' "$ISSUE_DATA" | sed -n '2p')
+TYPE_NAME=$(printf '%s\n' "$ISSUE_DATA" | sed -n '3p')
+
+if [[ -z "$IDENTIFIER" ]]; then
+  echo "ERROR: Linear returned no identifier for '$TICKET_ID'" >&2
+  exit 1
+fi
+
+# Build branch name
+PREFIX=$(gxstart_type_to_prefix "$TYPE_NAME")
+BRANCH_NAME=$(gxstart_branch_name "$PREFIX" "$IDENTIFIER" "$TICKET_TITLE")
+
+# Determine Linear URL
+if [[ "$INPUT" == https://* ]]; then
+  LINEAR_URL="$INPUT"
+else
+  LINEAR_URL="https://linear.app/issue/$TICKET_ID"
+fi
+
+# Create worktree (pipe "y" to auto-confirm branch creation)
+WORKTREE_PATH=$(printf 'y\n' | "$WORKTREE_SCRIPT" "$BRANCH_NAME" --no-install --no-links 2>/dev/null)
+
+if [[ -z "$WORKTREE_PATH" || ! -d "$WORKTREE_PATH" ]]; then
+  echo "ERROR: worktree creation failed for branch '$BRANCH_NAME'" >&2
+  exit 1
+fi
+
+# Write .worktree-meta.json
+PICKED_AT=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+
+WORKTREE_PATH="$WORKTREE_PATH" \
+LINEAR_TICKET_ID="$IDENTIFIER" \
+LINEAR_URL_VAL="$LINEAR_URL" \
+TICKET_TITLE_VAL="$TICKET_TITLE" \
+BRANCH_NAME_VAL="$BRANCH_NAME" \
+PICKED_AT_VAL="$PICKED_AT" \
+python3 << 'PYEOF'
+import json, os
+meta = {
+    "linear_ticket_id": os.environ["LINEAR_TICKET_ID"],
+    "linear_url":       os.environ["LINEAR_URL_VAL"],
+    "ticket_title":     os.environ["TICKET_TITLE_VAL"],
+    "branch_name":      os.environ["BRANCH_NAME_VAL"],
+    "status":           "picked",
+    "picked_at":        os.environ["PICKED_AT_VAL"],
+}
+path = os.path.join(os.environ["WORKTREE_PATH"], ".worktree-meta.json")
+with open(path, "w") as f:
+    json.dump(meta, f, indent=2)
+    f.write("\n")
+PYEOF
+
+# Add .worktree-meta.json to global gitignore if not already present
+GLOBAL_GITIGNORE="$HOME/.gitignore_global"
+if ! grep -qF ".worktree-meta.json" "$GLOBAL_GITIGNORE" 2>/dev/null; then
+  echo ".worktree-meta.json" >> "$GLOBAL_GITIGNORE"
+fi
+
+echo "Created worktree: $WORKTREE_PATH" >&2
+echo "Branch:           $BRANCH_NAME" >&2
+echo "Ticket:           $IDENTIFIER — $TICKET_TITLE" >&2
+echo "$WORKTREE_PATH"
