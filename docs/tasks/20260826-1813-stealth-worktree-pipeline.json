@@ -26,10 +26,14 @@
         "Tests mock the curl call with a fixture JSON response and assert branch name and meta fields"
       ],
       "blocked_by": [],
-      "status": "not_started",
+      "status": "done",
       "branch": null,
       "pr": null,
-      "linear_url": null
+      "linear_url": null,
+      "summary": "Implemented gxstart script that accepts a Linear ticket URL or bare ID, fetches ticket data from Linear GraphQL API, generates a typed branch name (Bug→fix/Feature→feat/Spike→spike), creates a worktree via the existing wt engine, writes .worktree-meta.json with all six required fields, and appends .worktree-meta.json to ~/.gitignore_global.",
+      "files_touched": [".scripts/gxstart", ".scripts/gxstart.test.sh"],
+      "tests": {"passed": 48, "failed": 0},
+      "log_path": "docs/tasks/.logs/20260826-1813-stealth-worktree-pipeline/T-0009.md"
     },
     {
       "id": "T-0010",
@@ -48,10 +52,14 @@
         "Tests use fixture worktree directories with pre-written .worktree-meta.json files and mock git log output"
       ],
       "blocked_by": ["T-0009"],
-      "status": "not_started",
+      "status": "done",
       "branch": null,
       "pr": null,
-      "linear_url": null
+      "linear_url": null,
+      "summary": "Implemented gxlist — a worktree inventory dashboard that scans ~/Documents/dev/worktrees/<repo>/ for subdirectories, reads .worktree-meta.json from each, auto-detects building state via git log commits ahead of base branch, and outputs entries grouped under READY/BUILDING/PICKED with OSC 8 clickable Linear URLs. --all flag scans all repos.",
+      "files_touched": [".scripts/gxlist", ".scripts/gxlist.test.sh"],
+      "tests": {"passed": 32, "failed": 0},
+      "log_path": "docs/tasks/.logs/20260826-1813-stealth-worktree-pipeline/T-0010.md"
     },
     {
       "id": "T-0011",
@@ -71,10 +79,14 @@
         "Tests mock gxpush and assert state transitions and prompt routing"
       ],
       "blocked_by": ["T-0009"],
-      "status": "not_started",
+      "status": "done",
       "branch": null,
       "pr": null,
-      "linear_url": null
+      "linear_url": null,
+      "summary": "Implemented gxship script that reads .worktree-meta.json, prints a descriptive pre-prompt message, routes prompts by status (building shows [r] option, ready does not), handles Y/Enter/r/n input with correct status transitions, detects rebase conflicts via git exit code and aborts with a clear re-run message, and calls gxpush via an overridable GXPUSH env var for testability.",
+      "files_touched": [".scripts/gxship", ".scripts/gxship.test.sh"],
+      "tests": {"passed": 28, "failed": 0},
+      "log_path": null
     },
     {
       "id": "T-0012",
@@ -93,10 +105,14 @@
         "Tests for --full mock wt rm and git push origin --delete and assert correct invocations"
       ],
       "blocked_by": [],
-      "status": "not_started",
+      "status": "done",
       "branch": null,
       "pr": null,
-      "linear_url": null
+      "linear_url": null,
+      "summary": "Extended gxclean with --full flag: Pass 1 removes merged worktrees (per-worktree prompts via wt rm), Pass 2 prunes stale remote-tracking branches (git push origin --delete). Used separate file descriptors for loop iteration so interactive read -r prompts always consume from user stdin. 14 tests across characterization and --full scenarios, 34 assertions, all passing.",
+      "files_touched": [".scripts/gxclean", ".scripts/gxclean.test.sh"],
+      "tests": {"passed": 34, "failed": 0},
+      "log_path": "docs/tasks/.logs/20260826-1813-stealth-worktree-pipeline/T-0012.md"
     },
     {
       "id": "T-0013",
@@ -113,10 +129,14 @@
         "Tests verify that find-work.sh invokes gxlist with the correct arguments"
       ],
       "blocked_by": ["T-0010"],
-      "status": "not_started",
+      "status": "done",
       "branch": null,
       "pr": null,
-      "linear_url": null
+      "linear_url": null,
+      "summary": "Rewrote find-work.sh to delegate to ~/.dotfiles/.scripts/gxlist (exec with all args forwarded) with a graceful fallback to the old branch-scanning table when gxlist is absent. Updated SKILL.md to describe the gxlist-powered inventory with state grouping and Linear URLs.",
+      "files_touched": ["claude-code-shared/skills/find-work/SKILL.md", "claude-code-shared/skills/find-work/scripts/find-work.sh", "claude-code-shared/skills/find-work/scripts/find-work.test.sh"],
+      "tests": {"passed": 9, "failed": 0},
+      "log_path": "docs/tasks/.logs/20260826-1813-stealth-worktree-pipeline/T-0013.md"
     }
   ],
   "follow_ups": [
