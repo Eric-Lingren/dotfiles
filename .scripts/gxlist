@@ -1,0 +1,217 @@
+#!/usr/bin/env bash
+# gxlist — worktree inventory dashboard
+# What: scans worktree directories, reads .worktree-meta.json, auto-detects building state
+# When: reviewing active worktrees by status (READY / BUILDING / PICKED)
+
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/gx-lib.sh"
+
+# Allow tests to override the worktree root
+WORKTREE_BASE="${WORKTREE_BASE:-$HOME/Documents/dev/worktrees}"
+SHOW_ALL=false
+
+# ─── Argument parsing ─────────────────────────────────────────────────────────
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --all) SHOW_ALL=true ;;
+    *)
+      echo "Usage: gxlist [--all]" >&2
+      exit 1
+      ;;
+  esac
+  shift
+done
+
+# ─── Current repo detection ───────────────────────────────────────────────────
+
+# Returns the basename of the current git repo's top-level dir.
+# Tests can override via GXLIST_CURRENT_REPO env var.
+gxlist_current_repo() {
+  if [[ -n "${GXLIST_CURRENT_REPO:-}" ]]; then
+    echo "$GXLIST_CURRENT_REPO"
+    return
+  fi
+  local toplevel
+  toplevel=$(git rev-parse --show-toplevel 2>/dev/null || true)
+  if [[ -z "$toplevel" ]]; then
+    echo ""
+    return
+  fi
+  basename "$toplevel"
+}
+
+# ─── Building detection ───────────────────────────────────────────────────────
+
+# Returns 0 (true) if the worktree has local commits ahead of origin/<base_branch>.
+# The `git` command can be overridden in tests by defining a `git` bash function
+# before sourcing or calling this function.
+gxlist_is_building() {
+  local worktree_path="$1"
+  local base_branch="$2"
+
+  local count
+  count=$(git -C "$worktree_path" log "origin/${base_branch}..HEAD" --oneline 2>/dev/null | wc -l | tr -d ' ')
+  [[ "$count" -gt 0 ]]
+}
+
+# ─── OSC 8 hyperlink ──────────────────────────────────────────────────────────
+
+# Emit an OSC 8 terminal hyperlink. Modern terminals (iTerm2, Kitty, etc.)
+# render it as a clickable link; others fall back to displaying plain text.
+gxlist_hyperlink() {
+  local url="$1"
+  local text="$2"
+  printf '\033]8;;%s\033\\%s\033]8;;\033\\' "$url" "$text"
+}
+
+# ─── Scan one repo directory ──────────────────────────────────────────────────
+
+# Scans subdirectories of repo_dir, reads .worktree-meta.json from each,
+# auto-detects building status, and emits tab-separated records:
+#   <status>\t<ticket_title>\t<branch_name>\t<linear_url>
+scan_repo_dir() {
+  local repo_dir="$1"
+  local base_branch="${GX_BASE_BRANCH:-main}"
+
+  if [[ ! -d "$repo_dir" ]]; then
+    return
+  fi
+
+  local subdir
+  while IFS= read -r -d '' subdir; do
+    local meta_file="$subdir/.worktree-meta.json"
+
+    if [[ ! -f "$meta_file" ]]; then
+      echo "WARNING: no .worktree-meta.json in $subdir" >&2
+      continue
+    fi
+
+    # Parse and validate the meta file
+    local parsed
+    if ! parsed=$(python3 - "$meta_file" <<'PYEOF' 2>/dev/null
+import json, sys
+path = sys.argv[1]
+try:
+    with open(path) as f:
+        d = json.load(f)
+    for k in ('linear_ticket_id', 'linear_url', 'ticket_title', 'branch_name', 'status'):
+        if k not in d:
+            raise KeyError(f"missing key: {k}")
+    print(d['ticket_title'])
+    print(d['branch_name'])
+    print(d['linear_url'])
+    print(d['status'])
+except (json.JSONDecodeError, KeyError, OSError) as e:
+    print(str(e), file=sys.stderr)
+    sys.exit(1)
+PYEOF
+); then
+      echo "WARNING: malformed .worktree-meta.json in $subdir" >&2
+      continue
+    fi
+
+    local ticket_title branch_name linear_url status
+    ticket_title=$(printf '%s\n' "$parsed" | sed -n '1p')
+    branch_name=$(printf '%s\n' "$parsed" | sed -n '2p')
+    linear_url=$(printf '%s\n' "$parsed" | sed -n '3p')
+    status=$(printf '%s\n' "$parsed" | sed -n '4p')
+
+    # Upgrade status to 'building' if there are local commits ahead of base,
+    # regardless of what the meta file says (overrides 'picked' in particular).
+    if gxlist_is_building "$subdir" "$base_branch"; then
+      status="building"
+    fi
+
+    printf '%s\t%s\t%s\t%s\n' "$status" "$ticket_title" "$branch_name" "$linear_url"
+  done < <(find "$repo_dir" -maxdepth 1 -mindepth 1 -type d -print0 2>/dev/null)
+}
+
+# ─── Main ─────────────────────────────────────────────────────────────────────
+
+# When GXLIST_SOURCED=true, only define functions and return (for test sourcing).
+[[ "${GXLIST_SOURCED:-false}" == "true" ]] && return 0
+
+# Load policy for GX_BASE_BRANCH; tolerate failures (e.g. outside a git repo).
+GX_BASE_BRANCH="${GX_BASE_BRANCH:-main}"
+gx_load_policy 2>/dev/null || true
+
+# Determine which directories to scan
+scan_dirs=()
+if [[ "$SHOW_ALL" == "true" ]]; then
+  if [[ -d "$WORKTREE_BASE" ]]; then
+    while IFS= read -r -d '' d; do
+      scan_dirs+=("$d")
+    done < <(find "$WORKTREE_BASE" -maxdepth 1 -mindepth 1 -type d -print0 2>/dev/null)
+  fi
+else
+  local_repo=$(gxlist_current_repo)
+  if [[ -z "$local_repo" ]]; then
+    echo "ERROR: not inside a git repository; use --all to scan all repos" >&2
+    exit 1
+  fi
+  scan_dirs=("$WORKTREE_BASE/$local_repo")
+fi
+
+# Collect entries by status bucket
+ready=()
+building=()
+picked=()
+
+for dir in "${scan_dirs[@]+"${scan_dirs[@]}"}"; do
+  while IFS= read -r line; do
+    [[ -z "$line" ]] && continue
+    local_status=$(printf '%s' "$line" | cut -f1)
+    case "$local_status" in
+      ready)    ready+=("$line") ;;
+      building) building+=("$line") ;;
+      shipped)  ;;  # shipped worktrees are excluded from the dashboard
+      *)        picked+=("$line") ;;  # 'picked' and any unknown status
+    esac
+  done < <(scan_repo_dir "$dir")
+done
+
+# Empty inventory
+total=$(( ${#ready[@]} + ${#building[@]} + ${#picked[@]} ))
+if [[ "$total" -eq 0 ]]; then
+  echo "No active worktrees."
+  exit 0
+fi
+
+# Format and print one entry line
+print_entry() {
+  local line="$1"
+  local ticket_title branch_name linear_url
+  ticket_title=$(printf '%s' "$line" | cut -f2)
+  branch_name=$(printf '%s' "$line" | cut -f3)
+  linear_url=$(printf '%s' "$line" | cut -f4)
+
+  local url_part
+  url_part=$(gxlist_hyperlink "$linear_url" "$linear_url")
+
+  printf '  %s  [%s]  %s\n' "$ticket_title" "$branch_name" "$url_part"
+}
+
+# Print grouped sections
+if [[ ${#ready[@]} -gt 0 ]]; then
+  echo "READY"
+  for entry in "${ready[@]}"; do
+    print_entry "$entry"
+  done
+fi
+
+if [[ ${#building[@]} -gt 0 ]]; then
+  echo "BUILDING"
+  for entry in "${building[@]}"; do
+    print_entry "$entry"
+  done
+fi
+
+if [[ ${#picked[@]} -gt 0 ]]; then
+  echo "PICKED"
+  for entry in "${picked[@]}"; do
+    print_entry "$entry"
+  done
+fi
