@@ -209,10 +209,37 @@ with open(path, "w") as f:
     f.write("\n")
 PYEOF
 
-# Add .worktree-meta.json to global gitignore if not already present
+# Write CLAUDE.md into the worktree so Claude always offers the right ship options
+WORKTREE_CLAUDE_MD="$WORKTREE_PATH/CLAUDE.md"
+if [[ ! -f "$WORKTREE_CLAUDE_MD" ]]; then
+  cat > "$WORKTREE_CLAUDE_MD" << 'CLAUDEMD'
+# Worktree: ship options
+
+This directory is a git worktree managed by the gx pipeline.
+
+When wrapping up work (code done, tests pass), always present these options explicitly before pushing anything:
+
+1. **Just commit locally** — commit only, no push, no PR. User will run `gxship` when ready.
+2. **Commit and push branch** — push the branch to origin but do NOT open a PR.
+3. **Commit, push, and open PR** — full ship via `gxship`.
+
+Never push or open a PR without the user explicitly choosing option 2 or 3.
+CLAUDEMD
+fi
+
+# Add gxstart-managed files to global gitignore if not already present
 GLOBAL_GITIGNORE="$HOME/.gitignore_global"
 if ! grep -qF ".worktree-meta.json" "$GLOBAL_GITIGNORE" 2>/dev/null; then
   echo ".worktree-meta.json" >> "$GLOBAL_GITIGNORE"
+fi
+# Exclude the worktree CLAUDE.md locally (per-worktree, not global gitignore)
+WT_GITFILE="$WORKTREE_PATH/.git"
+if [[ -f "$WT_GITFILE" ]]; then
+  WT_GITDIR=$(sed 's/^gitdir: //' "$WT_GITFILE")
+  if [[ -d "$WT_GITDIR" ]]; then
+    mkdir -p "$WT_GITDIR/info"
+    grep -qF "CLAUDE.md" "$WT_GITDIR/info/exclude" 2>/dev/null || echo "CLAUDE.md" >> "$WT_GITDIR/info/exclude"
+  fi
 fi
 
 echo "Created worktree: $WORKTREE_PATH" >&2

@@ -1,0 +1,25 @@
+#!/usr/bin/env bash
+# gxready — mark the current worktree as ready to ship
+# What: updates .worktree-meta.json status to "ready" so gxlist shows READY instead of BUILDING
+# When: code is done and committed locally; you'll run gxship later
+
+set -euo pipefail
+
+META_FILE=".worktree-meta.json"
+
+if [[ ! -f "$META_FILE" ]]; then
+  echo "ERROR: no .worktree-meta.json in current directory — run from inside a worktree" >&2
+  exit 1
+fi
+
+python3 - "$META_FILE" << 'PYEOF'
+import json, sys
+path = sys.argv[1]
+with open(path) as f:
+    d = json.load(f)
+d["status"] = "ready"
+with open(path, "w") as f:
+    json.dump(d, f, indent=2)
+    f.write("\n")
+print(f"Marked {d.get('linear_ticket_id', '?')} as ready.")
+PYEOF

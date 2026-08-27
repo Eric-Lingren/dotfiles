@@ -56,11 +56,7 @@ echo ""
 
 # ─── Prompt based on status ──────────────────────────────────────────────────
 
-if [[ "$META_STATUS" == "building" ]]; then
-  printf "Ship? [Y/n] -- Ready but later? [r] "
-else
-  printf "Ship? [Y/n] "
-fi
+printf "Ship now [Y/n]  or mark ready for later [r]? "
 
 read -r REPLY
 

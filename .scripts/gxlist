@@ -127,9 +127,9 @@ PYEOF
     linear_url=$(printf '%s\n' "$parsed" | sed -n '3p')
     status=$(printf '%s\n' "$parsed" | sed -n '4p')
 
-    # Upgrade status to 'building' if there are local commits ahead of base,
-    # regardless of what the meta file says (overrides 'picked' in particular).
-    if gxlist_is_building "$subdir" "$base_branch"; then
+    # Auto-upgrade 'picked' to 'building' when local commits exist.
+    # Never downgrade an explicit 'ready' status — user set that intentionally.
+    if [[ "$status" != "ready" ]] && gxlist_is_building "$subdir" "$base_branch"; then
       status="building"
     fi
 
@@ -218,38 +218,38 @@ if [[ "$total" -eq 0 ]]; then
   exit 0
 fi
 
-# Format and print one entry line
+# Format and print one entry (2 lines: title row, branch row)
 print_entry() {
   local line="$1"
-  local ticket_title branch_name linear_url
+  local ticket_title branch_name linear_url ticket_id
   ticket_title=$(printf '%s' "$line" | cut -f2)
   branch_name=$(printf '%s' "$line" | cut -f3)
   linear_url=$(printf '%s' "$line" | cut -f4)
+  ticket_id=$(printf '%s' "$branch_name" | grep -oE '[A-Z][A-Z0-9]+-[0-9]+' | head -1)
+  [[ -z "$ticket_id" ]] && ticket_id="?"
 
-  local url_part
-  url_part=$(gxlist_hyperlink "$linear_url" "$linear_url")
+  local link
+  link=$(gxlist_hyperlink "$linear_url" "↗")
 
-  printf '  %s  [%s]  %s\n' "$ticket_title" "$branch_name" "$url_part"
+  # Line 1: ticket ID + title
+  printf '  \033[1m%-10s\033[0m  %s\n' "$ticket_id" "$ticket_title"
+  # Line 2: branch + link, indented to align under title
+  printf '  %-10s  %s  %s\n' "" "$branch_name" "$link"
+}
+
+# Print a section with a bold header and blank lines between entries
+print_section() {
+  local header="$1"; shift
+  printf '\033[1m%s\033[0m\n' "$header"
+  local first=true
+  for entry in "$@"; do
+    $first || echo ""
+    first=false
+    print_entry "$entry"
+  done
 }
 
 # Print grouped sections
-if [[ ${#ready[@]} -gt 0 ]]; then
-  echo "READY"
-  for entry in "${ready[@]}"; do
-    print_entry "$entry"
-  done
-fi
-
-if [[ ${#building[@]} -gt 0 ]]; then
-  echo "BUILDING"
-  for entry in "${building[@]}"; do
-    print_entry "$entry"
-  done
-fi
-
-if [[ ${#picked[@]} -gt 0 ]]; then
-  echo "PICKED"
-  for entry in "${picked[@]}"; do
-    print_entry "$entry"
-  done
-fi
+[[ ${#ready[@]} -gt 0 ]]    && print_section "READY"    "${ready[@]}"
+[[ ${#building[@]} -gt 0 ]] && { [[ ${#ready[@]} -gt 0 ]] && echo ""; print_section "BUILDING" "${building[@]}"; }
+[[ ${#picked[@]} -gt 0 ]]   && { [[ $(( ${#ready[@]} + ${#building[@]} )) -gt 0 ]] && echo ""; print_section "PICKED"   "${picked[@]}"; }
