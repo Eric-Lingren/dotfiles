@@ -196,6 +196,10 @@
       },
       "description": "Array of task objects to execute in order."
     },
+    "local_only": {
+      "type": "boolean",
+      "description": "When true, build-code skips the push/PR step entirely after all tasks complete. Useful for in-place schema changes, config updates, or tasks that should not be pushed automatically. Optional — omit for normal push/PR behavior."
+    },
     "source_branch": {
       "type": "string",
       "description": "Source branch this e2e task file was generated from. Written by to-e2e-tasks only. Optional."
