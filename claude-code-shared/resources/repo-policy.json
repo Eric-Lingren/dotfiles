@@ -4,7 +4,7 @@
     "account": "cch",
     "base_branch": "main",
     "domain": "personal",
-    "exclude": ["docs/prototype/", "docs/browser-checks/", "docs/offload-output/"]
+    "exclude": ["docs/prototype/", "docs/browser-checks/", "docs/offload-output/", "docs/tasks/.sprout/", "docs/tasks/*-revisions-r*.json"]
   },
   "Quaestor-Technologies/Quaestor-Web": {
     "label": "quaestor-web",
@@ -25,13 +25,13 @@
     "pr_auto_create": true,
     "issue_tracker": "github",
     "worktree_links": [".env.local"],
-    "exclude": ["docs/prototype/", "docs/browser-checks/", "docs/offload-output/"]
+    "exclude": ["docs/prototype/", "docs/browser-checks/", "docs/offload-output/", "docs/tasks/.sprout/", "docs/tasks/*-revisions-r*.json"]
   },
   "Eric-Lingren/ericlingren": {
     "label": "ericlingren",
     "account": "cch",
     "base_branch": "main",
     "domain": "personal",
-    "exclude": ["docs/browser-checks/", "docs/offload-output/"]
+    "exclude": ["docs/browser-checks/", "docs/offload-output/", "docs/tasks/.sprout/", "docs/tasks/*-revisions-r*.json"]
   }
 }
