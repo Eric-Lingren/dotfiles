@@ -56,9 +56,16 @@ _matches_exclude() {
   local f="$1"
   while IFS= read -r pat; do
     [[ -z "$pat" ]] && continue
+    # Prefix match: pattern is a directory prefix (e.g. "docs/tasks/")
     if [[ "$f" == "$pat"* || "$f" == *"/$pat"* ]]; then
       return 0
     fi
+    # Glob match: pattern contains wildcards (e.g. "docs/tasks/*-revisions-r*.json")
+    # Use case with unquoted $pat so bash expands * as a glob
+    # shellcheck disable=SC2254
+    case "$f" in
+      $pat) return 0 ;;
+    esac
   done <<< "$GX_EXCLUDE_PATS"
   return 1
 }
