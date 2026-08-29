@@ -169,6 +169,10 @@ Pass per task:
 - `taskfile_basename` — basename of the task file.
 - `project_root` — absolute project root path.
 
+**When `local_only: true` is set at the task file root**, include this explicit instruction in every build-runner prompt:
+
+> "Do NOT push or create a PR. The task file has `local_only: true` — all changes must remain as local commits only."
+
 build-runner runs the full `/tdd` cycle, the runner-based validation gate, and browser verification (if applicable) internally within its isolated worktree, and writes the full trace to `docs/tasks/.logs/<taskfile-basename>/<task.id>.md`. build-code never sees that trace — only the receipt.
 
 #### c. Collect all receipts for the wave
@@ -284,6 +288,8 @@ python3 ~/.dotfiles/claude-code-shared/scripts/print-skill-next-steps.py build-c
 Append that output under the Next steps header. Do not hardcode skill names.
 
 ### 7. Offer to push and open a PR
+
+**Skip this step entirely if `local_only: true` is set at the task file root.** Do not ask the user about pushing, do not run gxpush, and do not open a PR. Print this note in place of the push prompt: `"local_only: true — push and PR skipped."` Then proceed directly to the learning-capture block.
 
 After printing the summary, ask the user: **"Push and open a PR?"**
 
