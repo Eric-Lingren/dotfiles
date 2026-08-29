@@ -1,0 +1,59 @@
+{
+  "schema_version": "4",
+  "producer": "to-seed",
+  "source": {
+    "type": "session",
+    "ref": null
+  },
+  "title": "Sprout-Seed v2: Context Management, Local-Only Mode, and Review Output",
+  "slug": "sprout-seed-v2",
+  "created": "2026-08-28T16:41:00Z",
+  "iteration": 1,
+  "summary": "Overhaul the sprout-seed pipeline to fix three problems: context bloat from accumulating full subagent output in the orchestrator, unwanted GitHub side-effects (PR creation, comments, tagging) during unattended runs, and missing structured review output. The orchestrator stays single-session but reads only compact handoff files instead of full subagent text. All runs are fully local (no push, no PR). gxpush defaults to draft PRs globally. The code review phase produces a task file with a new review_finding task type, enabling iterative revision loops. Single-pass execution with manual re-run for iterations.",
+  "status": "ready",
+  "decisions": [
+    "Use file-based handoff between phases. Each subagent writes output to docs/tasks/.sprout/<phase>.json. Orchestrator reads only handoff files, not full Agent return text.",
+    "Remove dead git diff main...HEAD call from orchestrator (SKILL.md:133). pr-code-review fetches its own diff.",
+    "Remove duplicate pr-code-review findings embed (SKILL.md:185).",
+    "Handoff files validated against contracts on both sides: subagent validates on write, orchestrator validates on read.",
+    "Extend task-schema.json with review_finding task type rather than creating entirely new schemas. Reuse runner-result-schema.json for build phase status.",
+    "Create one small new schema for sprout handoff metadata only (phase, paths, status, errors).",
+    "sprout-seed runs fully local. No push, no PR creation. Everything stays on local branch until user explicitly pushes.",
+    "Set GX_PR_DRAFT=true as global default in gxpush. PRs are always draft unless explicitly overridden.",
+    "build-code skips push/PR step via both task file field (local_only: true) and prompt instruction (belt and suspenders).",
+    "Exclude both docs/tasks/.sprout/ and revision task files (docs/tasks/<slug>-revisions-r<N>.json) from push in repo-policy.json. Not via gitignore since user lacks maintenance rights in all repos.",
+    "pr-code-review output mode determined by caller context injection in the subagent prompt. No flags. All modes produce a task file. Caller context determines downstream consumption: sprout-seed feeds task file to build-code, standalone code-review feeds task file to dispatch-tasks for inline printing.",
+    "All review output modes produce a task file. Downstream consumer differs: self-review feeds build-code, review-others feeds dispatch-tasks for inline printing, clarification feeds dispatch-tasks. Scales into relay when ready.",
+    "review_finding severity reuses existing pr-code-review vocabulary: bug, risk, nit, q, praise. No new terms needed.",
+    "review_finding category aligns with existing pr-code-review dimensions: correctness, security, performance, conventions, test-coverage.",
+    "Single-pass execution. No auto-loop. User decides whether to iterate by re-running sprout-seed or build-code on the revision task file.",
+    "End-of-run output is compact receipt (seed path, task file, branch, review file) plus inline findings summary (severity, file:line, one-liner).",
+    "Scope includes: sprout-seed skill changes, pr-code-review output contract changes, task-schema.json extension, gxpush draft default, repo-policy.json update."
+  ],
+  "open_threads": [],
+  "disposed_threads": [],
+  "next_action": "Run /to-tasks to decompose this seed into implementable task slices.",
+  "problem_statement": "The sprout-seed pipeline has two critical issues: (1) context bloat causes failures on large-scope seeds because the orchestrator accumulates full subagent text output plus inline git diff despite having JSON file handoffs, and (2) the pipeline creates real PRs, pushes to GitHub, and posts comments during unattended runs, violating the moratorium on external posting. Additionally, the review phase produces unstructured text output instead of a task file for iterative revision.",
+  "solution": "Surgical cleanup of the orchestrator to read only compact handoff files instead of capturing full subagent output. Fully local execution mode with no remote interaction. Global draft-PR default in gxpush. New review_finding task type in task-schema.json enabling structured review output that feeds back into build-code for iterative passes.",
+  "implementation_decisions": [
+    "Each sprout-seed phase writes to docs/tasks/.sprout/<phase>.json (e.g., phase-1-tasks.json, phase-2-build.json, phase-3-review.json).",
+    "Handoff metadata schema is new but minimal. Existing task-schema.json extended with review_finding type. runner-result-schema.json reused for build status.",
+    "review_finding schema shape: task_type, id (RF-NNN), title, severity (bug|risk|nit|q|praise), category (correctness|security|performance|conventions|test-coverage), file, line, description, suggested_fix, context (optional code snippet), status.",
+    "build-code task file gains local_only boolean field. When true, step 7 (push/PR) is skipped entirely.",
+    "gxpush modified to default GX_PR_DRAFT=true. Non-draft requires explicit opt-out.",
+    "repo-policy.json updated to exclude both docs/tasks/.sprout/ and revision task files from push operations."
+  ],
+  "risks_and_tradeoffs": [
+    "Prompt-based mode injection (caller tells pr-code-review what output to produce) is less rigid than schema enforcement. Mitigated by also having the task file field as structural backup.",
+    "Global draft-PR default changes behavior for all gxpush callers. Intended effect since user never wants non-draft PRs opened without explicit permission.",
+    "review_finding tasks reuse the same task file schema, which means build-code must handle the new type. If a review_finding is accidentally routed to a build-runner, it would attempt to implement a fix rather than just reporting."
+  ],
+  "verification": {
+    "iteration": 1,
+    "personas": ["grounding", "accuracy", "completeness", "coherence"],
+    "refutations_upheld": 0,
+    "refutations_screened": 3,
+    "clean": true,
+    "status": "verified"
+  }
+}

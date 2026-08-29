@@ -125,8 +125,26 @@
           },
           "task_type": {
             "type": "string",
-            "enum": ["code", "triage", "reply"],
-            "description": "Runner selector. 'code': routed to build-code (inline-skill). 'triage': routed to export-tasks (spawn-agent). 'reply': routed to relay (inline-skill) — a PR-reply item that posts a threaded response after its blocking code fix lands. Optional — omit for legacy files."
+            "enum": ["code", "triage", "reply", "review_finding"],
+            "description": "Runner selector. 'code': routed to build-code (inline-skill). 'triage': routed to export-tasks (spawn-agent). 'reply': routed to relay (inline-skill) — a PR-reply item that posts a threaded response after its blocking code fix lands. 'review_finding': a code-review finding harvested by pr-code-review; carries severity, category, suggested_fix, and context fields. Optional — omit for legacy files."
+          },
+          "severity": {
+            "type": "string",
+            "enum": ["bug", "risk", "nit", "q", "praise"],
+            "description": "Review-finding only. Severity classification. 'bug': correctness defect. 'risk': potential failure or security concern. 'nit': minor style or quality issue. 'q': question or clarification request. 'praise': positive observation. Present only when task_type is 'review_finding'."
+          },
+          "category": {
+            "type": "string",
+            "enum": ["correctness", "security", "performance", "conventions", "test-coverage"],
+            "description": "Review-finding only. Thematic category of the finding. Present only when task_type is 'review_finding'."
+          },
+          "suggested_fix": {
+            "type": "string",
+            "description": "Review-finding only. Prose or code describing the recommended remediation. Present only when task_type is 'review_finding'."
+          },
+          "context": {
+            "type": "string",
+            "description": "Review-finding only. Optional code snippet or surrounding context that anchors the finding to a specific location. Present only when task_type is 'review_finding'."
           },
           "domain": {
             "type": "string",
@@ -195,6 +213,10 @@
         }
       },
       "description": "Array of task objects to execute in order."
+    },
+    "local_only": {
+      "type": "boolean",
+      "description": "When true, build-code skips the push/PR step entirely after all tasks complete. Useful for in-place schema changes, config updates, or tasks that should not be pushed automatically. Optional — omit for normal push/PR behavior."
     },
     "source_branch": {
       "type": "string",

@@ -25,16 +25,14 @@ the current model. Delegate only the menial searching.
 
 ## Contract
 
-**Format (optional output):** task file — see `contracts/task-contract.md` (schema_version: `"1"`)
-**Role:** conditional producer (produces a task file only when the user promotes findings to tasks)
+**Format:** task file — `contracts/task-schema.json` (schema_version: `"2"`)
+**Role:** always produces a task file with `review_finding` entries after the investigator gate (Step 5)
 
-**HITL vetting required before task output:** After review findings are displayed, present each finding as a numbered checklist. Prompt the user: "Which findings should become tasks? Select by number." Only selected findings are promoted to tasks. Validate the final output:
-```bash
-bash ~/.dotfiles/claude-code-shared/scripts/validate-schema.sh \
-  --instance ~/.dotfiles/claude-code-shared/contracts/task-schema.json \
-  <output-path>
-```
-On non-zero exit: STOP. Report stderr to the user. Do not write the file.
+**Caller-context output modes (injected into the subagent prompt by the caller — no flags on this skill):**
+- `sprout-seed` caller: the task file is fed to `build-code` for automated revision
+- standalone `code-review` caller: the task file is fed to `dispatch-tasks` for inline printing
+
+Both modes produce the same task file. The caller reads the `task_file_path:` line from output and routes accordingly.
 
 ---
 
@@ -107,8 +105,10 @@ Each agent must return findings as a JSON array. Each element:
   "file": "path/to/file.ts",
   "line": 42,
   "severity": "bug|risk|nit|q",
-  "dimension": "correctness|security|performance|conventions|test-coverage",
-  "description": "One-sentence problem statement. One-sentence fix."
+  "category": "correctness|security|performance|conventions|test-coverage",
+  "description": "One-sentence problem statement.",
+  "suggested_fix": "One-sentence recommended fix.",
+  "context": "Optional: a brief code snippet anchoring the finding. Omit this key entirely if not useful."
 }
 ```
 
@@ -255,7 +255,7 @@ After all five dimension agents return, apply mechanical dedup to their combined
 
 1. **Group by (file, line).** Findings with the same `file` and `line` values are duplicates regardless of dimension.
 2. **Keep max severity.** Severity rank: `bug` > `risk` > `q` > `nit` > `praise`. Retain the highest-ranked severity for the group.
-3. **Concatenate descriptions.** If multiple dimensions flagged the same location, join their descriptions with a space. Prefix each description with the dimension name in brackets, e.g. `[correctness] Problem A. Fix A. [security] Problem B. Fix B.` — but only when more than one dimension contributed.
+3. **Concatenate descriptions.** If multiple dimensions flagged the same location, join their descriptions with a space. Prefix each description with the category name in brackets, e.g. `[correctness] Problem A. [security] Problem B.` — but only when more than one dimension contributed. Use the primary category (highest severity contributor) as the merged finding's `category` field.
 4. **No reconciliation agent.** This is a mechanical merge — no additional agent spawned.
 
 Produce a single flat array of deduped findings. Proceed to the investigator gate with this array.
@@ -293,9 +293,69 @@ Pure style/naming `nit` findings that make no factual claim about runtime behavi
 
 ---
 
+## Step 5: Write task file
+
+After the investigator gate, write all verified findings to a task file with `task_type: "review_finding"` entries.
+
+**ID assignment:** Call `next-task-id.sh` once to get the first available ID, then increment numerically for each additional finding:
+```bash
+FIRST_ID=$(bash ~/.dotfiles/claude-code-shared/scripts/next-task-id.sh docs/tasks)
+```
+
+**Shape of each task entry** (one per verified finding):
+```json
+{
+  "id": "T-XXXX",
+  "title": "<category>: <file>:L<line> - <brief description under 15 words>",
+  "type": "AFK",
+  "task_type": "review_finding",
+  "description": "<finding.description>",
+  "acceptance_criteria": ["The issue at <file>:L<line> is resolved per the suggested fix."],
+  "blocked_by": [],
+  "status": "not_started",
+  "branch": null,
+  "pr": null,
+  "severity": "<finding.severity>",
+  "category": "<finding.category>",
+  "suggested_fix": "<finding.suggested_fix>"
+}
+```
+
+Include `"context": "<finding.context>"` only when the finding includes a context snippet. Omit the field entirely when absent.
+
+**Write the tasks array** to a temp file, then call `create-task-envelope.py` to build the validated envelope:
+
+```bash
+# Write the tasks array to a temp file
+python3 -c "import json; json.dump(tasks_array, open('/tmp/pr-review-tasks.json','w'), indent=2)"
+
+# Generate the task file slug
+SLUG="pr-review"
+FILENAME=$(bash ~/.dotfiles/claude-code-shared/scripts/task-filename.sh "$SLUG")
+
+# Build the envelope (validates against task-schema.json automatically)
+python3 ~/.dotfiles/claude-code-shared/scripts/create-task-envelope.py \
+  --producer pr-code-review \
+  --source-type session \
+  --strategy per-task \
+  --tasks-file /tmp/pr-review-tasks.json \
+  --output "docs/tasks/$FILENAME"
+```
+
+On non-zero exit: STOP. Report stderr. Do not print the `task_file_path:` output line.
+
+**Output line (always last in the skill output, after human-readable findings):**
+```
+task_file_path: docs/tasks/<filename>
+```
+
+The caller reads this line to route the task file to `build-code` (sprout-seed mode) or `dispatch-tasks` (standalone mode).
+
+---
+
 ## Provenance
 
-pr-code-review does not write task files. If a future variant writes a task JSON, stamp it with `"producer": "pr-code-review"` and `"source": {"type": "session", "ref": null}` per `contracts/task-schema.json`.
+pr-code-review always writes a task file (Step 5), stamped with `"producer": "pr-code-review"` and `"source": {"type": "session", "ref": null}` per `contracts/task-schema.json`. The caller — not this skill — determines how the task file is consumed (see Contract above).
 
 ## Output format
 
@@ -316,6 +376,8 @@ Then list findings grouped by file starting with **FILE:** `<FILE_PATH>` and in 
 Finding line format: `<file>:L<line>: <label>: <description>`
 
 Write nothing that doesn't belong in a comment thread. No preamble, no "Overall this looks great."
+
+After the human-readable findings block, proceed to Step 5 to write the task file and print the `task_file_path:` line.
 
 <!-- attribution-capture:start -->
 Read and execute `~/.dotfiles/claude-code-shared/resources/attribution-capture.md`.

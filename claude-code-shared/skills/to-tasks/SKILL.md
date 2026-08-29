@@ -263,21 +263,40 @@ Record in the JSON: `{"strategy": "single", "branch": "{confirmed-name}"}`.
 
 Derive the slug from the source artifact filename by stripping the leading timestamp prefix and extension (e.g. `20260511-1423-user-auth-flow.json` → slug `user-auth-flow`). The timestamp prefix format is `YYYYMMDD-HHMM-`.
 
-Run `~/.dotfiles/claude-code-shared/scripts/task-filename.sh <slug>` to generate the filename. Write to `docs/tasks/<filename>` (create the directory if it doesn't exist).
+Run `~/.dotfiles/claude-code-shared/scripts/task-filename.sh <slug>` to generate the filename.
 
 If a file for this slug already exists (any prefix), ask the user whether to:
 - **Overwrite** — replace the file entirely with the new breakdown (re-scan all other files to find the next task ID, excluding this file; keep the existing filename prefix)
 - **Merge** — keep existing task statuses/PRs and add/update task definitions (new tasks continue from the current global max; keep the existing filename prefix)
 
-Read the canonical schema now:
+Read the canonical schema for task entry shape:
 ```bash
 cat ~/.dotfiles/claude-code-shared/contracts/task-schema.json
 ```
-Use that schema exactly. Do not guess field names or structure.
+Use that schema exactly for task entries. Do not guess field names or structure.
 
-Set `"producer": "to-tasks"`.
+Write the tasks array to a temp file, then call `create-task-envelope.py` to build the validated envelope. Set `source.ref` to the seed filename basename only (e.g. `"20260606-1550-foo.json"`), not a relative or absolute path:
 
-Set `source.ref` to the seed filename basename only (e.g. `"20260606-1550-foo.json"`), not a relative or absolute path. Strip the directory prefix when writing this field.
+```bash
+# Write tasks array to temp file
+python3 -c "import json; json.dump(tasks_array, open('/tmp/to-tasks-tasks.json','w'), indent=2)"
+
+# Write follow_ups array to temp file (if any)
+python3 -c "import json; json.dump(follow_ups_array, open('/tmp/to-tasks-followups.json','w'), indent=2)"
+
+# Build the envelope (validates against task-schema.json automatically)
+python3 ~/.dotfiles/claude-code-shared/scripts/create-task-envelope.py \
+  --producer to-tasks \
+  --source-type <seed|prd> \
+  --source-ref "<basename>" \
+  --strategy single \
+  --branch "<confirmed-branch-name>" \
+  --tasks-file /tmp/to-tasks-tasks.json \
+  --follow-ups-file /tmp/to-tasks-followups.json \
+  --output "docs/tasks/<filename>"
+```
+
+On non-zero exit: STOP. Report stderr to the user.
 
 After writing, output a single line:
 

@@ -26,9 +26,11 @@ The argument is the path to a ready (non-draft) seed file.
 ## Architecture
 
 Each skill runs as a **fresh-context subagent** spawned with the Agent tool —
-never the Skill tool inline. Context flows only through file paths and text
-captured from each agent's output. The session model orchestrates; it never
-holds an agent's full trace.
+never the Skill tool inline. Context flows only through handoff files written to
+`docs/tasks/.sprout/` — the orchestrator never captures or stores a subagent's
+full return text. Between phases, the orchestrator reads the compact handoff JSON
+and validates it against
+`~/.dotfiles/claude-code-shared/contracts/sprout-handoff-schema.json`.
 
 Model and effort for each subagent come from
 `~/.dotfiles/claude-code-shared/resources/model-tiers.json`:
@@ -49,6 +51,12 @@ tell the user to resolve open threads before running sprout-seed.
 Derive a branch name from the seed filename slug using the conventions in
 `~/.dotfiles/claude-code-shared/resources/branching-strategy.md` (typically
 `feat/<slug>`).
+
+Create the handoff directory:
+
+```bash
+mkdir -p docs/tasks/.sprout
+```
 
 ### Step 1: to-tasks — generate the task file
 
@@ -75,22 +83,53 @@ these overrides for unattended operation:
 - Use the branch name above without prompting (skip the "Branch name?" question).
 - If the seed has verification.status "degraded", auto-confirm the quality-gate
   override and continue (do not stop for user input).
-- After writing the task file, output exactly one line in the format:
-    docs created here: docs/tasks/<filename>
-  This is the only line from your output that the orchestrator will parse.
+- After writing the task file, write the following handoff file to
+  docs/tasks/.sprout/phase-1-tasks.json:
+    {
+      "phase": "phase-1-tasks",
+      "paths": ["<task_file_path>"],
+      "status": "success",
+      "errors": []
+    }
+  On failure, write:
+    {
+      "phase": "phase-1-tasks",
+      "paths": [],
+      "status": "failed",
+      "errors": ["<error description>"]
+    }
 
 All other to-tasks steps run normally.
 ```
 
-Capture the agent's output. Parse the task file path from the line:
-```
-docs created here: docs/tasks/<filename>
+After the agent completes, read and validate the handoff file:
+
+```bash
+cat docs/tasks/.sprout/phase-1-tasks.json
 ```
 
-If the line is absent or the file does not exist on disk, stop and report:
-> Step 1 failed: to-tasks did not produce a task file path. Check the agent output above.
+Validate against the schema at
+`~/.dotfiles/claude-code-shared/contracts/sprout-handoff-schema.json`:
+check that `phase`, `paths`, `status`, and `errors` are all present, that
+`status` is one of `"success"`, `"failed"`, or `"skipped"`, and that `paths`
+and `errors` are arrays of strings. Use jq:
 
-### Step 2: build-code — execute all tasks and open a PR
+```bash
+jq -e '
+  (.phase | type) == "string" and
+  (.paths | type) == "array" and
+  (.status | test("^(success|failed|skipped)$")) and
+  (.errors | type) == "array"
+' docs/tasks/.sprout/phase-1-tasks.json
+```
+
+If the file is absent, invalid, or `status` is `"failed"`, stop and report:
+> Step 1 failed: phase-1-tasks.json is missing, invalid, or reports failure.
+> errors: <errors array from handoff>
+
+Extract the task file path from `paths[0]`.
+
+### Step 2: build-code — execute all tasks locally
 
 Spawn a **fresh** `build-code` agent using the Agent tool:
 
@@ -113,31 +152,41 @@ Follow ~/.dotfiles/claude-code-shared/skills/build-code/SKILL.md exactly, with
 these overrides for unattended operation:
 - Use the task file path above directly (skip the "Which task file?" question).
 - Run all not_started tasks (task ID selection: leave blank / run all).
-- After the run-complete summary, auto-confirm "Push and open a PR?" — do not
-  wait for user input. Run gxpush --pr automatically.
-- After gxpush completes, output exactly one line in the format:
-    PR URL: <url>
-  This is the only line from your output that the orchestrator will parse for
-  the PR URL.
+- Do NOT push or create a PR. All changes stay as local commits only. Skip
+  Step 7 entirely. The human decides when to push via gxship or gxpush.
+- After the run-complete summary, write the following handoff file to
+  docs/tasks/.sprout/phase-2-build.json:
+    {
+      "phase": "phase-2-build",
+      "paths": ["<task_file_path>"],
+      "status": "success",
+      "errors": []
+    }
+  On blocker-task failure (halted run), write:
+    {
+      "phase": "phase-2-build",
+      "paths": [],
+      "status": "failed",
+      "errors": ["build-code halted due to blocker task failure"]
+    }
 
 All other build-code steps run normally (wave execution, lint/test gates, etc.).
 ```
 
-Capture the agent's output. Parse the PR URL from the line:
-```
-PR URL: <url>
-```
+After the agent completes, read and validate the handoff file:
 
-Also capture the diff at this point:
 ```bash
-git diff main...HEAD
+jq -e '
+  (.phase | type) == "string" and
+  (.paths | type) == "array" and
+  (.status | test("^(success|failed|skipped)$")) and
+  (.errors | type) == "array"
+' docs/tasks/.sprout/phase-2-build.json
 ```
 
-If build-code reports any blocker-task failure (halted run), stop and report:
-> Step 2 failed: build-code halted due to a blocker task failure. PR not created. Review the build-code output above to re-scope the failing task before re-running.
-
-If the PR URL line is absent, stop and report:
-> Step 2 failed: build-code did not output a PR URL. The push may have failed. Review the build-code output above.
+If the file is absent, invalid, or `status` is `"failed"`, stop and report:
+> Step 2 failed: phase-2-build.json is missing, invalid, or reports failure.
+> errors: <errors array from handoff>
 
 ### Step 3: pr-code-review — review the diff
 
@@ -155,20 +204,49 @@ Agent(
 ```
 You are running the pr-code-review skill in fully unattended mode.
 
-The PR for this branch is already open at: <pr_url>
+There is no PR yet. Gather the diff against the merge base with the main branch:
+  git diff $(git merge-base HEAD origin/main)..HEAD
 
-Follow ~/.dotfiles/claude-code-shared/skills/pr-code-review/SKILL.md exactly.
-Gather the diff via `gh pr diff` using the PR number from the URL above.
+Follow ~/.dotfiles/claude-code-shared/skills/pr-code-review/SKILL.md exactly,
+using the local diff above instead of gh pr diff.
 Run all five dimension agents in parallel, dedup, run the investigator gate, and
-return the full formatted findings.
+write the full formatted findings to docs/tasks/.sprout/phase-3-review-findings.md.
 
-Do not ask about promoting findings to tasks — output the findings only.
+After writing the findings file, write the following handoff file to
+docs/tasks/.sprout/phase-3-review.json:
+  {
+    "phase": "phase-3-review",
+    "paths": ["docs/tasks/.sprout/phase-3-review-findings.md"],
+    "status": "success",
+    "errors": []
+  }
+On error or no findings, write:
+  {
+    "phase": "phase-3-review",
+    "paths": [],
+    "status": "failed",
+    "errors": ["<error description>"]
+  }
+
+Do not ask about promoting findings to tasks.
 ```
 
-Capture the agent's full findings output.
+After the agent completes, read and validate the handoff file:
 
-If the pr-code-review agent errors or returns no findings block, stop and report:
-> Step 3 failed: pr-code-review did not return findings. Review the agent output above.
+```bash
+jq -e '
+  (.phase | type) == "string" and
+  (.paths | type) == "array" and
+  (.status | test("^(success|failed|skipped)$")) and
+  (.errors | type) == "array"
+' docs/tasks/.sprout/phase-3-review.json
+```
+
+If the file is absent, invalid, or `status` is `"failed"`, stop and report:
+> Step 3 failed: phase-3-review.json is missing, invalid, or reports failure.
+> errors: <errors array from handoff>
+
+Extract the findings file path from `paths[0]`.
 
 ### Step 4: Return the summary
 
@@ -179,20 +257,20 @@ sprout-seed complete
 
 Seed:       <seed_path>
 Task file:  <task_file_path>
-PR:         <pr_url>
+Branch:     <branch_name>
+Review:     <findings_file_path>
 
-── pr-code-review findings ──────────────────────────────────────
-<full pr-code-review output>
-─────────────────────────────────────────────────────────────────
+All changes are local commits. Run gxpush or gxship when ready to push.
 ```
 
-No files are written by the orchestrator beyond what each subagent writes.
+No files are written by the orchestrator itself beyond creating the `.sprout/`
+directory in Step 0. All file output is produced by the phase subagents.
 
 ## Error handling
 
 If any step fails, stop immediately and report which step failed and why. Do not
-attempt the remaining steps. The partial output (task file path, PR URL if
-available) is printed before the error so the user can resume manually if needed.
+attempt the remaining steps. The partial output (task file path, branch name)
+is printed before the error so the user can resume manually if needed.
 
-Each step's agent output is printed verbatim in the conversation before the
-parsed result, so the user always has the full context when something goes wrong.
+On failure, the handoff file for the failed phase is available at
+`docs/tasks/.sprout/<phase>.json` and contains the error details.

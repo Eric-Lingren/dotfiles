@@ -56,9 +56,16 @@ _matches_exclude() {
   local f="$1"
   while IFS= read -r pat; do
     [[ -z "$pat" ]] && continue
+    # Prefix match: pattern is a directory prefix (e.g. "docs/tasks/")
     if [[ "$f" == "$pat"* || "$f" == *"/$pat"* ]]; then
       return 0
     fi
+    # Glob match: pattern contains wildcards (e.g. "docs/tasks/*-revisions-r*.json")
+    # Use case with unquoted $pat so bash expands * as a glob
+    # shellcheck disable=SC2254
+    case "$f" in
+      $pat) return 0 ;;
+    esac
   done <<< "$GX_EXCLUDE_PATS"
   return 1
 }
@@ -339,8 +346,8 @@ if [[ -z "$PR_JSON" ]]; then
     printf '%s\n' "$PR_BODY" > "$BODY_FILE"
     NEW_PR_URL=""
     NEW_PR_NUMBER=""
-    if [[ "${GX_PR_DRAFT:-false}" == "true" ]]; then
-      echo "  [draft — repo policy requires draft PRs for this repo]"
+    if [[ "${GX_PR_DRAFT:-true}" == "true" ]]; then
+      echo "  [draft — set GX_PR_DRAFT=false to create a non-draft PR]"
       NEW_PR_URL=$(gh pr create --title "$BRANCH_SLUG" --body-file "$BODY_FILE" --draft)
     else
       NEW_PR_URL=$(gh pr create --title "$BRANCH_SLUG" --body-file "$BODY_FILE")
