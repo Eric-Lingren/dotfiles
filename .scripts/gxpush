@@ -339,8 +339,8 @@ if [[ -z "$PR_JSON" ]]; then
     printf '%s\n' "$PR_BODY" > "$BODY_FILE"
     NEW_PR_URL=""
     NEW_PR_NUMBER=""
-    if [[ "${GX_PR_DRAFT:-false}" == "true" ]]; then
-      echo "  [draft — repo policy requires draft PRs for this repo]"
+    if [[ "${GX_PR_DRAFT:-true}" == "true" ]]; then
+      echo "  [draft — set GX_PR_DRAFT=false to create a non-draft PR]"
       NEW_PR_URL=$(gh pr create --title "$BRANCH_SLUG" --body-file "$BODY_FILE" --draft)
     else
       NEW_PR_URL=$(gh pr create --title "$BRANCH_SLUG" --body-file "$BODY_FILE")
