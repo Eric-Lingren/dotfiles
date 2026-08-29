@@ -129,7 +129,7 @@ If the file is absent, invalid, or `status` is `"failed"`, stop and report:
 
 Extract the task file path from `paths[0]`.
 
-### Step 2: build-code — execute all tasks and open a PR
+### Step 2: build-code — execute all tasks locally
 
 Spawn a **fresh** `build-code` agent using the Agent tool:
 
@@ -152,13 +152,13 @@ Follow ~/.dotfiles/claude-code-shared/skills/build-code/SKILL.md exactly, with
 these overrides for unattended operation:
 - Use the task file path above directly (skip the "Which task file?" question).
 - Run all not_started tasks (task ID selection: leave blank / run all).
-- After the run-complete summary, auto-confirm "Push and open a PR?" — do not
-  wait for user input. Run gxpush --pr automatically.
-- After gxpush completes, write the following handoff file to
+- Do NOT push or create a PR. All changes stay as local commits only. Skip
+  Step 7 entirely. The human decides when to push via gxship or gxpush.
+- After the run-complete summary, write the following handoff file to
   docs/tasks/.sprout/phase-2-build.json:
     {
       "phase": "phase-2-build",
-      "paths": ["<pr_url>"],
+      "paths": ["<task_file_path>"],
       "status": "success",
       "errors": []
     }
@@ -168,13 +168,6 @@ these overrides for unattended operation:
       "paths": [],
       "status": "failed",
       "errors": ["build-code halted due to blocker task failure"]
-    }
-  On push/PR failure, write:
-    {
-      "phase": "phase-2-build",
-      "paths": [],
-      "status": "failed",
-      "errors": ["gxpush did not produce a PR URL"]
     }
 
 All other build-code steps run normally (wave execution, lint/test gates, etc.).
@@ -195,8 +188,6 @@ If the file is absent, invalid, or `status` is `"failed"`, stop and report:
 > Step 2 failed: phase-2-build.json is missing, invalid, or reports failure.
 > errors: <errors array from handoff>
 
-Extract the PR URL from `paths[0]`.
-
 ### Step 3: pr-code-review — review the diff
 
 Spawn a **fresh** `pr-code-review` agent using the Agent tool:
@@ -213,10 +204,11 @@ Agent(
 ```
 You are running the pr-code-review skill in fully unattended mode.
 
-The PR for this branch is already open at: <pr_url>
+There is no PR yet. Gather the diff against the merge base with the main branch:
+  git diff $(git merge-base HEAD origin/main)..HEAD
 
-Follow ~/.dotfiles/claude-code-shared/skills/pr-code-review/SKILL.md exactly.
-Gather the diff via `gh pr diff` using the PR number from the URL above.
+Follow ~/.dotfiles/claude-code-shared/skills/pr-code-review/SKILL.md exactly,
+using the local diff above instead of gh pr diff.
 Run all five dimension agents in parallel, dedup, run the investigator gate, and
 write the full formatted findings to docs/tasks/.sprout/phase-3-review-findings.md.
 
@@ -265,8 +257,10 @@ sprout-seed complete
 
 Seed:       <seed_path>
 Task file:  <task_file_path>
-PR:         <pr_url>
+Branch:     <branch_name>
 Review:     <findings_file_path>
+
+All changes are local commits. Run gxpush or gxship when ready to push.
 ```
 
 No files are written by the orchestrator itself beyond creating the `.sprout/`
@@ -275,8 +269,8 @@ directory in Step 0. All file output is produced by the phase subagents.
 ## Error handling
 
 If any step fails, stop immediately and report which step failed and why. Do not
-attempt the remaining steps. The partial output (task file path, PR URL if
-available) is printed before the error so the user can resume manually if needed.
+attempt the remaining steps. The partial output (task file path, branch name)
+is printed before the error so the user can resume manually if needed.
 
 On failure, the handoff file for the failed phase is available at
 `docs/tasks/.sprout/<phase>.json` and contains the error details.

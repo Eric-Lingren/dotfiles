@@ -297,12 +297,6 @@ Pure style/naming `nit` findings that make no factual claim about runtime behavi
 
 After the investigator gate, write all verified findings to a task file with `task_type: "review_finding"` entries.
 
-**Task file path:**
-```bash
-TIMESTAMP=$(date -u +%Y%m%d-%H%M)
-TASK_FILE="docs/tasks/${TIMESTAMP}-pr-review.json"
-```
-
 **ID assignment:** Call `next-task-id.sh` once to get the first available ID, then increment numerically for each additional finding:
 ```bash
 FIRST_ID=$(bash ~/.dotfiles/claude-code-shared/scripts/next-task-id.sh docs/tasks)
@@ -312,7 +306,7 @@ FIRST_ID=$(bash ~/.dotfiles/claude-code-shared/scripts/next-task-id.sh docs/task
 ```json
 {
   "id": "T-XXXX",
-  "title": "<category>: <file>:L<line> — <brief description under 15 words>",
+  "title": "<category>: <file>:L<line> - <brief description under 15 words>",
   "type": "AFK",
   "task_type": "review_finding",
   "description": "<finding.description>",
@@ -329,30 +323,30 @@ FIRST_ID=$(bash ~/.dotfiles/claude-code-shared/scripts/next-task-id.sh docs/task
 
 Include `"context": "<finding.context>"` only when the finding includes a context snippet. Omit the field entirely when absent.
 
-**Full task file envelope:**
-```json
-{
-  "schema_version": "2",
-  "producer": "pr-code-review",
-  "source": {"type": "session", "ref": null},
-  "generated_at": "<ISO 8601 timestamp>",
-  "branching": {"strategy": "per-task"},
-  "tasks": [...],
-  "follow_ups": []
-}
+**Write the tasks array** to a temp file, then call `create-task-envelope.py` to build the validated envelope:
+
+```bash
+# Write the tasks array to a temp file
+python3 -c "import json; json.dump(tasks_array, open('/tmp/pr-review-tasks.json','w'), indent=2)"
+
+# Generate the task file slug
+SLUG="pr-review"
+FILENAME=$(bash ~/.dotfiles/claude-code-shared/scripts/task-filename.sh "$SLUG")
+
+# Build the envelope (validates against task-schema.json automatically)
+python3 ~/.dotfiles/claude-code-shared/scripts/create-task-envelope.py \
+  --producer pr-code-review \
+  --source-type session \
+  --strategy per-task \
+  --tasks-file /tmp/pr-review-tasks.json \
+  --output "docs/tasks/$FILENAME"
 ```
 
-**Validation:** After writing, run:
-```bash
-bash ~/.dotfiles/claude-code-shared/scripts/validate-schema.sh \
-  --instance ~/.dotfiles/claude-code-shared/contracts/task-schema.json \
-  <task-file-path>
-```
 On non-zero exit: STOP. Report stderr. Do not print the `task_file_path:` output line.
 
 **Output line (always last in the skill output, after human-readable findings):**
 ```
-task_file_path: <relative path from project root>
+task_file_path: docs/tasks/<filename>
 ```
 
 The caller reads this line to route the task file to `build-code` (sprout-seed mode) or `dispatch-tasks` (standalone mode).
