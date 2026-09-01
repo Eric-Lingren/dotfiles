@@ -212,11 +212,15 @@ using the local diff above instead of gh pr diff.
 Run all five dimension agents in parallel, dedup, run the investigator gate, and
 write the full formatted findings to docs/tasks/.sprout/phase-3-review-findings.md.
 
-After writing the findings file, write the following handoff file to
-docs/tasks/.sprout/phase-3-review.json:
+After writing the findings file, run Step 5 from the pr-code-review skill to
+generate a review_finding task file from the verified findings. Use the slug
+"sprout-review" instead of "pr-review" for the task filename.
+
+Then write the following handoff file to docs/tasks/.sprout/phase-3-review.json:
   {
     "phase": "phase-3-review",
     "paths": ["docs/tasks/.sprout/phase-3-review-findings.md"],
+    "task_file": "<path to generated task file, or null if no findings>",
     "status": "success",
     "errors": []
   }
@@ -224,11 +228,10 @@ On error or no findings, write:
   {
     "phase": "phase-3-review",
     "paths": [],
+    "task_file": null,
     "status": "failed",
     "errors": ["<error description>"]
   }
-
-Do not ask about promoting findings to tasks.
 ```
 
 After the agent completes, read and validate the handoff file:
@@ -238,7 +241,8 @@ jq -e '
   (.phase | type) == "string" and
   (.paths | type) == "array" and
   (.status | test("^(success|failed|skipped)$")) and
-  (.errors | type) == "array"
+  (.errors | type) == "array" and
+  (.task_file | . == null or (type == "string"))
 ' docs/tasks/.sprout/phase-3-review.json
 ```
 
@@ -246,7 +250,7 @@ If the file is absent, invalid, or `status` is `"failed"`, stop and report:
 > Step 3 failed: phase-3-review.json is missing, invalid, or reports failure.
 > errors: <errors array from handoff>
 
-Extract the findings file path from `paths[0]`.
+Extract the findings file path from `paths[0]` and the follow-up task file path from `task_file`.
 
 ### Step 4: Return the summary
 
@@ -259,9 +263,14 @@ Seed:       <seed_path>
 Task file:  <task_file_path>
 Branch:     <branch_name>
 Review:     <findings_file_path>
+Follow-ups: <follow_up_task_file_path or "none">
 
 All changes are local commits. Run gxpush or gxship when ready to push.
 ```
+
+If `task_file` is non-null, include the review finding counts and note that the
+follow-up task file can be run with `/build-code <path>` or `/sprout-seed` to
+iterate on the findings.
 
 No files are written by the orchestrator itself beyond creating the `.sprout/`
 directory in Step 0. All file output is produced by the phase subagents.

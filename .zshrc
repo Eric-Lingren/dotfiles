@@ -114,13 +114,8 @@ function wt {
   if [[ $exit_code -eq 0 && -n "$output" ]]; then
     target=$(printf '%s' "$output" | tail -1)
     cd "$target"
-    local _wt_branch=""
-    for _wt_arg in "$@"; do
-      if [[ "$_wt_arg" != --* && "$_wt_arg" != "ls" && "$_wt_arg" != "rm" && "$_wt_arg" != "-h" && "$_wt_arg" != "--help" ]]; then
-        _wt_branch="$_wt_arg"
-        break
-      fi
-    done
+    local _wt_branch
+    _wt_branch="$(basename "$(dirname "$target")")/$(basename "$target")"
     local _wt_identity _wt_surface _wt_workspace
     _wt_identity=$(cmux identify 2>/dev/null)
     _wt_surface=$(printf '%s' "$_wt_identity" | grep -o 'surface:[0-9]*' | head -1)

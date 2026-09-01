@@ -127,9 +127,16 @@ PYEOF
     linear_url=$(printf '%s\n' "$parsed" | sed -n '3p')
     status=$(printf '%s\n' "$parsed" | sed -n '4p')
 
+    # Auto-detect merged branches → mark shipped (hidden from dashboard)
+    # Branch had tracking configured (was pushed) but remote ref is now gone
+    # → GitHub deleted it after merge (works for squash merges too)
+    local had_tracking
+    had_tracking=$(git config --get "branch.${branch_name}.remote" 2>/dev/null || true)
+    if [[ -n "$had_tracking" ]] && ! git rev-parse --verify "origin/${branch_name}" &>/dev/null; then
+      status="shipped"
     # Auto-upgrade 'picked' to 'building' when local commits exist.
     # Never downgrade an explicit 'ready' status — user set that intentionally.
-    if [[ "$status" != "ready" ]] && gxlist_is_building "$subdir" "$base_branch"; then
+    elif [[ "$status" != "ready" && "$status" != "in-review" ]] && gxlist_is_building "$subdir" "$base_branch"; then
       status="building"
     fi
 
@@ -166,6 +173,7 @@ fi
 # Collect entries by status bucket
 ready=()
 building=()
+in_review=()
 picked=()
 
 for dir in "${scan_dirs[@]+"${scan_dirs[@]}"}"; do
@@ -173,10 +181,11 @@ for dir in "${scan_dirs[@]+"${scan_dirs[@]}"}"; do
     [[ -z "$line" ]] && continue
     local_status=$(printf '%s' "$line" | cut -f1)
     case "$local_status" in
-      ready)    ready+=("$line") ;;
-      building) building+=("$line") ;;
-      shipped)  ;;  # shipped worktrees are excluded from the dashboard
-      *)        picked+=("$line") ;;  # 'picked' and any unknown status
+      ready)     ready+=("$line") ;;
+      building)  building+=("$line") ;;
+      in-review) in_review+=("$line") ;;
+      shipped)   ;;  # shipped worktrees are excluded from the dashboard
+      *)         picked+=("$line") ;;  # 'picked' and any unknown status
     esac
   done < <(scan_repo_dir "$dir")
 done
@@ -184,7 +193,7 @@ done
 # Filter mode: find matching worktree and prompt to resume
 if [[ -n "$FILTER_TICKET" ]]; then
   matched=()
-  for _fe in "${ready[@]+"${ready[@]}"}" "${building[@]+"${building[@]}"}" "${picked[@]+"${picked[@]}"}"; do
+  for _fe in "${ready[@]+"${ready[@]}"}" "${building[@]+"${building[@]}"}" "${in_review[@]+"${in_review[@]}"}" "${picked[@]+"${picked[@]}"}"; do
     _bn=$(printf '%s' "$_fe" | cut -f3)
     if printf '%s' "$_bn" | grep -qi "$FILTER_TICKET"; then
       matched+=("$_fe")
@@ -212,7 +221,7 @@ if [[ -n "$FILTER_TICKET" ]]; then
 fi
 
 # Empty inventory
-total=$(( ${#ready[@]} + ${#building[@]} + ${#picked[@]} ))
+total=$(( ${#ready[@]} + ${#building[@]} + ${#in_review[@]} + ${#picked[@]} ))
 if [[ "$total" -eq 0 ]]; then
   echo "No active worktrees."
   exit 0
@@ -250,6 +259,7 @@ print_section() {
 }
 
 # Print grouped sections
-[[ ${#ready[@]} -gt 0 ]]    && print_section "READY"    "${ready[@]}"
-[[ ${#building[@]} -gt 0 ]] && { [[ ${#ready[@]} -gt 0 ]] && echo ""; print_section "BUILDING" "${building[@]}"; }
-[[ ${#picked[@]} -gt 0 ]]   && { [[ $(( ${#ready[@]} + ${#building[@]} )) -gt 0 ]] && echo ""; print_section "PICKED"   "${picked[@]}"; }
+[[ ${#ready[@]} -gt 0 ]]     && print_section "READY"     "${ready[@]}"
+[[ ${#building[@]} -gt 0 ]]  && { [[ ${#ready[@]} -gt 0 ]] && echo ""; print_section "BUILDING"  "${building[@]}"; }
+[[ ${#in_review[@]} -gt 0 ]] && { [[ $(( ${#ready[@]} + ${#building[@]} )) -gt 0 ]] && echo ""; print_section "IN REVIEW" "${in_review[@]}"; }
+[[ ${#picked[@]} -gt 0 ]]    && { [[ $(( ${#ready[@]} + ${#building[@]} + ${#in_review[@]} )) -gt 0 ]] && echo ""; print_section "PICKED"    "${picked[@]}"; }

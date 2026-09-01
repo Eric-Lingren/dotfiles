@@ -75,7 +75,7 @@ case "${REPLY:-Y}" in
       exit 1
     fi
 
-    update_meta_status "shipped"
+    update_meta_status "in-review"
 
     "$GXPUSH" --auto --pr
     ;;

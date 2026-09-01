@@ -1,10 +1,8 @@
 #!/usr/bin/env bash
-# gxclean — on-demand merged branch cleanup
-# What: lists all local branches merged into origin/<base> and interactively deletes them
-# When: periodically to prune stale local branches; prompts before deleting (type n to abort)
+# gxclean — remove local branches and worktrees for merged work
+# LOCAL ONLY — never touches remote branches or PRs
 # Flags:
-#   --full   after the merged-local-branch pass, also (1) remove merged worktrees and
-#            (2) prune stale remote-tracking branches that have no local counterpart
+#   --no-full   skip worktree removal and ref pruning
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/gx-lib.sh"
@@ -14,163 +12,140 @@ gx_load_policy 2>/dev/null
 BASE="${GX_BASE_BRANCH:-main}"
 CURRENT=$(git rev-parse --abbrev-ref HEAD)
 
-# Parse flags
-FULL=false
+FULL=true
 for arg in "$@"; do
   case "$arg" in
-    --full) FULL=true ;;
+    --no-full) FULL=false ;;
   esac
 done
 
-# ON_BASE warning
 if [[ "$CURRENT" == "$BASE" ]]; then
-  echo "WARN: currently on base branch ($BASE)"
+  echo "⚠  Currently on base branch ($BASE)"
   echo ""
 fi
 
-# Collect merged branches (exclude current and base)
+# ─── Pass 1: Local merged branches ──────────────────────────────
+
+# Collect: merged into base OR tracking set + remote gone (squash merges)
 MERGED_LIST=$(
   git branch --merged "origin/$BASE" 2>/dev/null \
     | grep -v "^\*" \
     | grep -v "^\s*$BASE$" \
-    | sed 's/^[[:space:]]*//' \
+    | sed 's/^[[:space:]+]*//' \
     | grep -v "^$"
 )
 
-if [[ -z "$MERGED_LIST" ]]; then
-  echo "No merged branches to clean up."
-else
-  MERGED_COUNT=$(echo "$MERGED_LIST" | wc -l | tr -d ' ')
+ALL_LOCAL=$(
+  git branch 2>/dev/null \
+    | grep -v "^\*" \
+    | grep -v "^\s*$BASE$" \
+    | sed 's/^[[:space:]+]*//' \
+    | grep -v "^$"
+)
 
-  echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-  echo "  gxclean — merged branches (base: $BASE)"
-  echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-  echo ""
-  echo "MERGED BRANCHES ($MERGED_COUNT):"
+while IFS= read -r branch; do
+  [[ -z "$branch" ]] && continue
+  echo "$MERGED_LIST" | grep -qx "$branch" && continue
+  had_tracking=$(git config --get "branch.$branch.remote" 2>/dev/null || true)
+  if [[ -n "$had_tracking" ]] && ! git rev-parse --verify "origin/$branch" &>/dev/null; then
+    MERGED_LIST="${MERGED_LIST:+$MERGED_LIST
+}$branch"
+  fi
+done <<< "$ALL_LOCAL"
+
+if [[ -z "$MERGED_LIST" ]]; then
+  echo "No merged local branches."
+else
+  BRANCHES=()
   while IFS= read -r branch; do
     [[ -z "$branch" ]] && continue
-    if [[ "$branch" == prototype/* ]]; then
-      echo "  $branch [PRIORITY]"
-    else
-      echo "  $branch"
-    fi
+    BRANCHES+=("$branch")
   done <<< "$MERGED_LIST"
+
+  echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+  echo "  Delete ${#BRANCHES[@]} LOCAL branches (no remote changes)"
+  echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+  for branch in "${BRANCHES[@]}"; do
+    echo "  $branch"
+  done
   echo ""
-  echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-
   printf "Delete all? [Y/n] "
-  read -r CONFIRM
-  if [[ "$CONFIRM" == "n" || "$CONFIRM" == "N" ]]; then
-    echo "Aborted."
+  read -r ans
+  if [[ "$ans" == "n" || "$ans" == "N" ]]; then
+    echo "Skipped."
   else
-    echo ""
-    while IFS= read -r branch; do
-      [[ -z "$branch" ]] && continue
-      git branch -d "$branch" 2>&1
-      if [[ $? -eq 0 ]]; then
-        echo "Deleted: $branch"
+    for branch in "${BRANCHES[@]}"; do
+      if git branch -d "$branch" 2>&1; then
+        echo "  ✓ $branch"
       else
-        echo "Skipped (not fully merged or error): $branch"
+        echo "  ✗ $branch"
       fi
-    done <<< "$MERGED_LIST"
-
-    echo ""
-    echo "Done."
+    done
   fi
 fi
 
-# --full: Pass 1 — remove merged worktrees
+# ─── Pass 2: Merged worktrees (--full only) ─────────────────────
 if [[ "$FULL" == true ]]; then
   echo ""
-  echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-  echo "  gxclean --full — Pass 1: merged worktrees"
-  echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-  echo ""
 
-  # Parse git worktree list --porcelain output.
-  # Each block: worktree <path> / HEAD <sha> / branch refs/heads/<name> / (blank line)
-  # We use fd 3 for the worktree list so that read -r inside the loop still reads
-  # from the user's stdin (fd 0) for interactive prompts.
+  MERGED_WTS=()
+  MERGED_WT_BRANCHES=()
   WORKTREE_PATH=""
   WORKTREE_BRANCH=""
-  FOUND_MERGED_WT=false
 
-  while IFS= read -r line <&3; do
+  while IFS= read -r line; do
     if [[ "$line" == worktree\ * ]]; then
       WORKTREE_PATH="${line#worktree }"
       WORKTREE_BRANCH=""
     elif [[ "$line" == branch\ refs/heads/* ]]; then
       WORKTREE_BRANCH="${line#branch refs/heads/}"
     elif [[ -z "$line" && -n "$WORKTREE_PATH" && -n "$WORKTREE_BRANCH" ]]; then
-      # End of block — check if this branch is merged into origin/<base>
-      IS_MERGED=$(git branch --merged "origin/$BASE" 2>/dev/null \
-        | sed 's/^[[:space:]]*//' \
-        | grep -x "$WORKTREE_BRANCH" || true)
+      IS_MERGED=""
+      wt_had_tracking=$(git config --get "branch.$WORKTREE_BRANCH.remote" 2>/dev/null || true)
+      if [[ -n "$wt_had_tracking" ]] && ! git rev-parse --verify "origin/$WORKTREE_BRANCH" &>/dev/null; then
+        IS_MERGED="yes"
+      elif git merge-base --is-ancestor "$WORKTREE_BRANCH" "origin/$BASE" 2>/dev/null; then
+        IS_MERGED="yes"
+      fi
       if [[ -n "$IS_MERGED" ]]; then
-        FOUND_MERGED_WT=true
-        echo "Worktree: $WORKTREE_PATH  (branch: $WORKTREE_BRANCH)"
-        printf "Remove? [Y/n] "
-        read -r WT_CONFIRM
-        if [[ "$WT_CONFIRM" == "n" || "$WT_CONFIRM" == "N" ]]; then
-          echo "Skipped."
-        else
-          wt rm "$WORKTREE_PATH"
-          echo "Removed: $WORKTREE_PATH"
-        fi
+        MERGED_WTS+=("$WORKTREE_PATH")
+        MERGED_WT_BRANCHES+=("$WORKTREE_BRANCH")
       fi
       WORKTREE_PATH=""
       WORKTREE_BRANCH=""
     fi
-  done 3< <(git worktree list --porcelain 2>/dev/null; echo "")
-  # The trailing echo ensures a final blank line to flush the last block
+  done < <(git worktree list --porcelain 2>/dev/null; echo "")
 
-  if [[ "$FOUND_MERGED_WT" == false ]]; then
-    echo "No merged worktrees to remove."
-  fi
-
-  # --full: Pass 2 — prune stale remote-tracking branches
-  echo ""
-  echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-  echo "  gxclean --full — Pass 2: stale remote branches"
-  echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-  echo ""
-
-  git fetch --prune origin 2>/dev/null
-
-  # Collect local branch names for comparison
-  LOCAL_BRANCHES=$(git branch 2>/dev/null | sed 's/^[[:space:]\*]*//')
-
-  # List remote-tracking branches (except HEAD and base)
-  REMOTE_BRANCHES=$(
-    git branch -r 2>/dev/null \
-      | grep -v "HEAD" \
-      | grep -v "origin/$BASE" \
-      | sed 's/^[[:space:]]*//' \
-      | grep "^origin/" \
-      || true
-  )
-
-  FOUND_STALE=false
-  # Use fd 4 for REMOTE_BRANCHES so read -r inside the loop reads user stdin (fd 0)
-  while IFS= read -r remote_ref <&4; do
-    [[ -z "$remote_ref" ]] && continue
-    # Strip "origin/" prefix to get the short branch name
-    local_name="${remote_ref#origin/}"
-    # Only prompt if there is no matching local branch
-    if ! echo "$LOCAL_BRANCHES" | grep -qx "$local_name"; then
-      FOUND_STALE=true
-      printf "Prune remote %s? [Y/n] " "$remote_ref"
-      read -r PRUNE_CONFIRM
-      if [[ "$PRUNE_CONFIRM" == "n" || "$PRUNE_CONFIRM" == "N" ]]; then
-        echo "Skipped."
-      else
-        git push origin --delete "$local_name"
-        echo "Pruned: $remote_ref"
-      fi
+  if [[ ${#MERGED_WTS[@]} -eq 0 ]]; then
+    echo "No merged worktrees."
+  else
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo "  Remove ${#MERGED_WTS[@]} LOCAL worktrees (no remote changes)"
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    for i in "${!MERGED_WTS[@]}"; do
+      echo "  ${MERGED_WTS[$i]}  (${MERGED_WT_BRANCHES[$i]})"
+    done
+    echo ""
+    printf "Remove all? [Y/n] "
+    read -r ans
+    if [[ "$ans" == "n" || "$ans" == "N" ]]; then
+      echo "Skipped."
+    else
+      for wt_path in "${MERGED_WTS[@]}"; do
+        if wt rm "$wt_path" 2>&1; then
+          echo "  ✓ $wt_path"
+        else
+          echo "  ✗ $wt_path"
+        fi
+      done
     fi
-  done 4<<< "$REMOTE_BRANCHES"
-
-  if [[ "$FOUND_STALE" == false ]]; then
-    echo "No stale remote branches to prune."
   fi
+
+  # Pass 3: Prune stale local tracking refs
+  echo ""
+  git fetch --prune origin 2>/dev/null
+  echo "✓ Pruned stale local tracking refs."
 fi
+
+echo ""
+echo "Done. No remote branches were modified."

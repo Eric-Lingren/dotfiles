@@ -382,6 +382,22 @@ esac
 BRANCH="$CMD"
 BASE_OVERRIDE="${2:-}"
 
+# If the argument is a Linear URL, extract the ticket slug as the branch name
+if [[ "$BRANCH" == https://linear.app/* ]]; then
+  # URL shape: https://linear.app/<org>/issue/<KEY-NNNN>/<description>
+  local_slug="${BRANCH#*\/issue\/}"       # KEY-NNNN/description
+  local_key="${local_slug%%/*}"            # KEY-NNNN
+  local_desc="${local_slug#*/}"            # description
+  local_desc="${local_desc%%\?*}"          # strip query params
+  local_desc="${local_desc%%#*}"           # strip fragment
+  if [[ -n "$local_key" && -n "$local_desc" && "$local_desc" != "$local_key" ]]; then
+    BRANCH="${local_key}-${local_desc}"
+  elif [[ -n "$local_key" ]]; then
+    BRANCH="$local_key"
+  fi
+  unset local_slug local_key local_desc
+fi
+
 # Resolve repo root and name (always the MAIN worktree, see main_worktree_root)
 resolve_repo
 

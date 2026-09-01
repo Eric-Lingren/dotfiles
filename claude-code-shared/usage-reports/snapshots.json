@@ -273,5 +273,53 @@
         }
       }
     }
+  },
+  "2026-W35": {
+    "adherence": {
+      "match": 3,
+      "n": 15,
+      "overall_pct": 20.0,
+      "skills": {
+        "build-code": {
+          "exp": "sonnet",
+          "mix": {
+            "opus": 2,
+            "sonnet": 1
+          }
+        },
+        "clean-scaffolding": {
+          "exp": "haiku",
+          "mix": {
+            "sonnet": 2
+          }
+        },
+        "find-work": {
+          "exp": "haiku",
+          "mix": {
+            "opus": 1,
+            "sonnet": 2
+          }
+        },
+        "pr-code-review": {
+          "exp": "sonnet",
+          "mix": {
+            "opus": 3,
+            "sonnet": 2
+          }
+        },
+        "to-tasks": {
+          "exp": "sonnet",
+          "mix": {
+            "opus": 1
+          }
+        },
+        "worktree": {
+          "exp": "sonnet",
+          "mix": {
+            "opus": 1
+          }
+        }
+      }
+    }
   }
 }
