@@ -321,5 +321,32 @@
         }
       }
     }
+  },
+  "2026-W36": {
+    "adherence": {
+      "match": 4,
+      "n": 8,
+      "overall_pct": 50.0,
+      "skills": {
+        "build-code": {
+          "exp": "sonnet",
+          "mix": {
+            "opus": 3
+          }
+        },
+        "pr-code-review": {
+          "exp": "sonnet",
+          "mix": {
+            "opus": 1
+          }
+        },
+        "to-tasks": {
+          "exp": "sonnet",
+          "mix": {
+            "sonnet": 4
+          }
+        }
+      }
+    }
   }
 }

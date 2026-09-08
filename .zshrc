@@ -97,9 +97,17 @@ source ~/Documents/dev/Quaestor-Web/dev/.zshrc
 # a worktree window is the worktree itself. Without this guard the rc file cds
 # out of it and the terminal reports the main clone instead. cmux reports
 # TERM_PROGRAM=ghostty.
-if [[ "$PWD" == */worktrees/* && "$TERM_PROGRAM" != "vscode" ]]; then
+#
+# GX_WORKTREE_TARGET: set by gxstart/wt before creating a cmux split so the
+# child shell lands in the worktree instead of bouncing to main.
+# _ZSHRC_LOADED: skip the guard on re-source (source ~/.zshrc from a worktree).
+if [[ -n "$GX_WORKTREE_TARGET" ]]; then
+  cd "$GX_WORKTREE_TARGET"
+  unset GX_WORKTREE_TARGET
+elif [[ "$PWD" == */worktrees/* && "$TERM_PROGRAM" != "vscode" && -z "$_ZSHRC_LOADED" ]]; then
   cd ~/Documents/dev/Quaestor-Web
 fi
+_ZSHRC_LOADED=1
 
 
 
@@ -131,6 +139,7 @@ function wt {
       [[ -n "$_wt_workspace" ]] && cmux rename-workspace --workspace "$_wt_workspace" "$_wt_label" 2>/dev/null || true
     fi
     if [[ -n "$_wt_surface" && -n "$_wt_workspace" ]]; then
+      export GX_WORKTREE_TARGET="$target"
       local _wt_split
       _wt_split=$(cmux new-split right --surface "$_wt_surface" --workspace "$_wt_workspace" 2>/dev/null | grep -o 'surface:[0-9]*' | head -1)
       if [[ -n "$_wt_split" ]]; then
@@ -138,6 +147,7 @@ function wt {
         cmux send --surface "$_wt_split" "cd $(printf '%q' "$target")" 2>/dev/null
         cmux send-key --surface "$_wt_split" Return 2>/dev/null
       fi
+      unset GX_WORKTREE_TARGET
     fi
   fi
 }
@@ -164,6 +174,7 @@ function gxstart {
     [[ -n "$_gs_surface" ]] && cmux rename-tab --surface "$_gs_surface" "$_gs_label" 2>/dev/null || true
     [[ -n "$_gs_workspace" ]] && cmux rename-workspace --workspace "$_gs_workspace" "$_gs_label" 2>/dev/null || true
     if [[ -n "$_gs_surface" && -n "$_gs_workspace" ]]; then
+      export GX_WORKTREE_TARGET="$_gs_target"
       local _gs_split
       _gs_split=$(cmux new-split right --surface "$_gs_surface" --workspace "$_gs_workspace" 2>/dev/null | grep -o 'surface:[0-9]*' | head -1)
       if [[ -n "$_gs_split" ]]; then
@@ -171,6 +182,7 @@ function gxstart {
         cmux send --surface "$_gs_split" "cd $(printf '%q' "$_gs_target")" 2>/dev/null
         cmux send-key --surface "$_gs_split" Return 2>/dev/null
       fi
+      unset GX_WORKTREE_TARGET
     fi
   fi
 }

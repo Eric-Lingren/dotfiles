@@ -77,8 +77,11 @@ If `/tdd` cannot complete (stuck, acceptance criteria unmeetable, blocked on mis
 
 1. **Use the tooling manifest** passed by the caller as `tooling_manifest`. Do not run `detect_tooling.py`. The caller already ran it once for the entire run.
 2. **Map touched workspaces** from `git diff --name-only` against the manifest's workspace roots.
-3. **Spawn all runners in a single parallel Agent call.** For each touched workspace, spawn one lint-runner AND one test-runner in the same Agent tool invocation. All runners are read-only. No conflicts between them. This replaces the previous sequential lint-then-test flow.
-4. **Auto-fix pass:** if any lint-runner verdict has `counts.fixable > 0`, run the fix variant of that lint command via Bash, then run the lint check command via Bash and parse the JSON output inline. Do not re-spawn a lint-runner agent for the re-check. If the re-check still shows errors, treat as a `fail` verdict for that workspace.
+3. **Spawn all runners in a single parallel Agent call.** For each touched workspace, spawn one test-runner AND up to two lint-runners in the same Agent tool invocation:
+   - One lint-runner with `check_type: "lint"` and the manifest's `lint` command (if non-null).
+   - One lint-runner with `check_type: "format"` and the manifest's `format` command (if non-null).
+   All runners are read-only. No conflicts between them.
+4. **Auto-fix pass:** if any lint-runner verdict (lint or format) has `counts.fixable > 0`, run the fix variant of that command via Bash, then re-run the check command via Bash and parse the JSON output inline. Do not re-spawn a lint-runner agent for the re-check. If the re-check still shows errors, treat as a `fail` verdict for that workspace.
 5. Append every verdict to the trace log.
 6. **Gate decision:**
    - `pass` or `warn`: continue.

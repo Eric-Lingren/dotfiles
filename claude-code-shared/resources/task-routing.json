@@ -12,6 +12,11 @@
       "mode": "spawn-agent",
       "_meaning": "Triage tasks spawn export-tasks as an isolated agent (mechanical external writes, no interactivity needed)."
     },
+    "review_finding": {
+      "runner": "build-code",
+      "mode": "inline-skill",
+      "_meaning": "Review finding tasks are code fixes surfaced by pr-code-review. They run build-code inline, same as code tasks, and carry extra fields (severity, category, suggested_fix) that build-code ignores but preserves."
+    },
     "reply": {
       "runner": "relay",
       "mode": "inline-skill",

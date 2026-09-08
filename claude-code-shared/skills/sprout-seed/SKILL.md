@@ -58,6 +58,33 @@ Create the handoff directory:
 mkdir -p docs/tasks/.sprout
 ```
 
+#### Ensure `.worktree-meta.json` exists
+
+If `.worktree-meta.json` already exists in the working directory (e.g. from
+`gxstart`), leave it as-is. Otherwise create one so `gxlist` and `gxship` work:
+
+```python
+import json, os, datetime
+meta_path = ".worktree-meta.json"
+if not os.path.exists(meta_path):
+    # Extract ticket ID from branch name (e.g. KEY-2346 from feat/KEY-2346-foo)
+    branch = "<branch_name>"
+    import re
+    match = re.search(r'([A-Z][A-Z0-9]+-\d+)', branch)
+    ticket_id = match.group(1) if match else ""
+    meta = {
+        "linear_ticket_id": ticket_id,
+        "linear_url": f"https://linear.app/issue/{ticket_id}" if ticket_id else "",
+        "ticket_title": "<seed title>",
+        "branch_name": branch,
+        "status": "building",
+        "picked_at": datetime.datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
+    }
+    with open(meta_path, "w") as f:
+        json.dump(meta, f, indent=2)
+        f.write("\n")
+```
+
 ### Step 1: to-tasks — generate the task file
 
 Spawn a **fresh** `to-tasks` agent using the Agent tool (not the Skill tool):
@@ -272,8 +299,9 @@ If `task_file` is non-null, include the review finding counts and note that the
 follow-up task file can be run with `/build-code <path>` or `/sprout-seed` to
 iterate on the findings.
 
-No files are written by the orchestrator itself beyond creating the `.sprout/`
-directory in Step 0. All file output is produced by the phase subagents.
+The orchestrator writes `.worktree-meta.json` (if absent) and creates the
+`.sprout/` directory in Step 0. All other file output is produced by the phase
+subagents.
 
 ## Error handling
 
