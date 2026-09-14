@@ -140,12 +140,18 @@ function wt {
     fi
     if [[ -n "$_wt_surface" && -n "$_wt_workspace" ]]; then
       export GX_WORKTREE_TARGET="$target"
-      local _wt_split
-      _wt_split=$(cmux new-split right --surface "$_wt_surface" --workspace "$_wt_workspace" 2>/dev/null | grep -o 'surface:[0-9]*' | head -1)
-      if [[ -n "$_wt_split" ]]; then
-        [[ -n "$_wt_label" ]] && cmux rename-tab --surface "$_wt_split" "$_wt_label" 2>/dev/null || true
-        cmux send --surface "$_wt_split" "cd $(printf '%q' "$target")" 2>/dev/null
-        cmux send-key --surface "$_wt_split" Return 2>/dev/null
+      local _wt_split_top
+      _wt_split_top=$(cmux new-split right --surface "$_wt_surface" --workspace "$_wt_workspace" 2>/dev/null | grep -o 'surface:[0-9]*' | head -1)
+      if [[ -n "$_wt_split_top" ]]; then
+        cmux rename-tab --surface "$_wt_split_top" "client" 2>/dev/null || true
+        cmux send --surface "$_wt_split_top" "cd $(printf '%q' "$target/clients/web")" 2>/dev/null
+        cmux send-key --surface "$_wt_split_top" Return 2>/dev/null
+        local _wt_split_bottom
+        _wt_split_bottom=$(cmux new-split down --surface "$_wt_split_top" --workspace "$_wt_workspace" 2>/dev/null | grep -o 'surface:[0-9]*' | head -1)
+        if [[ -n "$_wt_split_bottom" ]]; then
+          cmux send --surface "$_wt_split_bottom" "cd $(printf '%q' "$target")" 2>/dev/null
+          cmux send-key --surface "$_wt_split_bottom" Return 2>/dev/null
+        fi
       fi
       unset GX_WORKTREE_TARGET
     fi

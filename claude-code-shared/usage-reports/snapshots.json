@@ -139,27 +139,15 @@
   },
   "2026-W33": {
     "adherence": {
-      "match": 6,
-      "n": 16,
-      "overall_pct": 37.5,
+      "match": 4,
+      "n": 8,
+      "overall_pct": 50.0,
       "skills": {
-        "build-code": {
-          "exp": "sonnet",
-          "mix": {
-            "opus": 1
-          }
-        },
-        "dispatch-tasks": {
-          "exp": "sonnet",
-          "mix": {
-            "sonnet": 2
-          }
-        },
         "investigate": {
           "exp": "haiku",
           "mix": {
             "opus": 1,
-            "sonnet": 6
+            "sonnet": 3
           }
         },
         "pr-revise": {
@@ -171,14 +159,7 @@
         "relay": {
           "exp": "sonnet",
           "mix": {
-            "opus": 1,
             "sonnet": 1
-          }
-        },
-        "run-task-followups": {
-          "exp": "sonnet",
-          "mix": {
-            "opus": 1
           }
         },
         "tasks-to-linear": {
