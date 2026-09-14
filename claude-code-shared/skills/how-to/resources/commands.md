@@ -111,12 +111,12 @@ git config commit.template .gitmessage
 
 ## Frontend
 
-**Start frontend** (from `./client`)
+**Start frontend** (from `./client` or `./clients/web` in pnpm workspace repos)
 ```bash
 pnpm dev
 ```
 
-**Storybook** (from `./client`)
+**Storybook** (from `./client` or `./clients/web`)
 ```bash
 pnpm storybook
 ```

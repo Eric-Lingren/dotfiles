@@ -33,6 +33,8 @@ while IFS= read -r branch; do
     prd="yes"
   elif git ls-tree "$branch" client/docs/prd/ >/dev/null 2>&1; then
     prd="yes"
+  elif git ls-tree "$branch" clients/web/docs/prd/ >/dev/null 2>&1; then
+    prd="yes"
   fi
 
   printf "%-40s %-12s %-40s %s\n" "$branch" "$date" "$msg" "$prd"
