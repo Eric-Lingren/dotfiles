@@ -236,18 +236,11 @@ fi
 
 # Add gxstart-managed files to global gitignore if not already present
 GLOBAL_GITIGNORE="$HOME/.gitignore_global"
-if ! grep -qF ".worktree-meta.json" "$GLOBAL_GITIGNORE" 2>/dev/null; then
-  echo ".worktree-meta.json" >> "$GLOBAL_GITIGNORE"
-fi
-# Exclude the worktree CLAUDE.md locally (per-worktree, not global gitignore)
-WT_GITFILE="$WORKTREE_PATH/.git"
-if [[ -f "$WT_GITFILE" ]]; then
-  WT_GITDIR=$(sed 's/^gitdir: //' "$WT_GITFILE")
-  if [[ -d "$WT_GITDIR" ]]; then
-    mkdir -p "$WT_GITDIR/info"
-    grep -qF "CLAUDE.md" "$WT_GITDIR/info/exclude" 2>/dev/null || echo "CLAUDE.md" >> "$WT_GITDIR/info/exclude"
+for pat in ".worktree-meta.json" "CLAUDE.md"; do
+  if ! grep -qF "$pat" "$GLOBAL_GITIGNORE" 2>/dev/null; then
+    echo "$pat" >> "$GLOBAL_GITIGNORE"
   fi
-fi
+done
 
 echo "Created worktree: $WORKTREE_PATH" >&2
 echo "Branch:           $BRANCH_NAME" >&2
