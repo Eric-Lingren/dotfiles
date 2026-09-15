@@ -210,12 +210,24 @@ if [ ! -t 0 ] && ! $MODE_AUTO; then
   exit 1
 fi
 
-# In push-only mode, skip staging/commit gate
+# In push-only mode, skip staging/commit gate.
+# Also skip if there are already commits ahead of upstream (build agents commit
+# directly, leaving nothing to stage but still needing a push).
 if ! $MODE_PUSH_ONLY; then
-  # Hard stop if nothing to commit
   if [[ -z "$STAGED" && -z "$WILL_ADD_FILTERED" ]]; then
-    echo "Nothing to commit. Aborting."
-    exit 0
+    UPSTREAM=$(git rev-parse --abbrev-ref --symbolic-full-name '@{u}' 2>/dev/null || true)
+    if [[ -n "$UPSTREAM" ]]; then
+      AHEAD=$(git rev-list --count "$UPSTREAM"..HEAD 2>/dev/null || echo 0)
+    else
+      AHEAD=$(git rev-list --count "origin/$BASE"..HEAD 2>/dev/null || echo 0)
+    fi
+    if [[ "$AHEAD" -gt 0 ]]; then
+      echo "Nothing to stage — $AHEAD unpushed commit(s) found. Proceeding to push."
+      MODE_PUSH_ONLY=true
+    else
+      echo "Nothing to commit. Aborting."
+      exit 0
+    fi
   fi
 fi
 
