@@ -46,11 +46,31 @@ if [[ "$CONFIRM" == "n" || "$CONFIRM" == "N" ]]; then
   exit 0
 fi
 
+# Stash dirty working tree if needed
+DIRTY=$(git status --porcelain 2>/dev/null)
+STASHED=false
+if [[ -n "$DIRTY" ]]; then
+  echo "Stashing uncommitted changes before merge..."
+  git stash push -u -m "gxsync: auto-stash before merge"
+  STASHED=true
+fi
+
 echo ""
 git merge "origin/$BASE"
 MERGE_EXIT=$?
 
 if [[ $MERGE_EXIT -ne 0 ]]; then
+  # Merge aborted (dirty tree, no MERGE_HEAD) vs actual conflict
+  if [[ ! -f "$(git rev-parse --git-dir)/MERGE_HEAD" ]]; then
+    echo ""
+    echo "Merge failed (not a conflict). See error above."
+    if [[ "$STASHED" == true ]]; then
+      echo "Restoring stashed changes..."
+      git stash pop
+    fi
+    exit 1
+  fi
+
   echo ""
   echo "Merge conflict detected. Attempting auto-resolution..."
   echo ""
@@ -91,7 +111,7 @@ if [[ $MERGE_EXIT -ne 0 ]]; then
 
     echo "Spawning Claude agent to resolve conflicts..."
     echo ""
-    "$CLAUDE_BIN" --print \
+    CLAUDE_CONFIG_DIR="${GX_CLAUDE_CONFIG:-$HOME/.cch}" "$CLAUDE_BIN" --print \
       -p "You are resolving merge conflicts in a git repository. The following files have merge conflict markers (<<<<<<< ======= >>>>>>>):
 
 $FILE_LIST
@@ -119,9 +139,15 @@ Do not delete functionality from either side unless it is truly redundant. Prefe
     fi
   fi
 
-  # All conflicts auto-resolved. Complete merge.
+  # All conflicts resolved. Complete merge.
   GIT_EDITOR=true git merge --continue
-  echo "All conflicts auto-resolved. Merge complete."
+  echo "All conflicts resolved. Merge complete."
+fi
+
+# Restore stashed changes
+if [[ "$STASHED" == true ]]; then
+  echo "Restoring stashed changes..."
+  git stash pop
 fi
 
 echo ""
