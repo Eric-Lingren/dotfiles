@@ -129,8 +129,8 @@
     },
     "status": {
       "type": "string",
-      "enum": ["captured", "applied"],
-      "description": "Lifecycle state. Optional; set by improve-skill when fix is applied."
+      "enum": ["captured", "applied", "stale", "invalid"],
+      "description": "Lifecycle state. captured=unactioned; applied=fix was applied; stale=no longer relevant; invalid=target file not resolvable."
     }
   },
   "if": {

@@ -23,6 +23,7 @@ All 30 shared skills. Plugin skills (caveman, chrome-devtools) are excluded.
 - `skills/improve-component/`
 - `skills/improve-directory-structure/`
 - `skills/improve-skill/`
+- `skills/improve-skill-learnings/`
 - `skills/investigate/`
 - `skills/prototype/`
 - `skills/register-skill/`
@@ -43,7 +44,8 @@ New skills registered via `register-skill` are added to this list automatically.
 
 ## Consumers
 
-- `skills/improve-skill/` — future consumer; reads `unified-learnings.jsonl`, applies `fix` candidates, and owns promoting recurring `other` cause_label values into named cause values.
+- `skills/improve-skill/` — runs synthetic eval scenarios; does not read unified-learnings.jsonl directly.
+- `skills/improve-skill-learnings/` — primary consumer; reads `unified-learnings.jsonl`, validates learnings via Haiku agents, and applies surviving `fix` candidates to their target files.
 
 ## Schema file
 
