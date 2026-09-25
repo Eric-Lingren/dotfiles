@@ -126,6 +126,18 @@ query($owner: String!, $repo: String!, $number: Int!) {
 
 Pass `-f owner=<owner> -f repo=<repo> -F number=<number>` as variables.
 
+### 3c-capture. Per-comment data capture
+
+For each comment node collected from `reviewThreads` and `comments` (top-level), record these
+three fields alongside the comment for use in the provenance block at Step 8c:
+
+- **`original_comment_body`** — the comment's `body` field verbatim
+- **`original_comment_author`** — the comment's `author.login` value
+- **`thread_database_id`** — the comment's numeric `databaseId` value (the REST-accessible ID)
+
+These are carried forward into every provenance item. They are not displayed in the harvest
+output at Step 3f, but they must be present in memory when the provenance block is assembled.
+
 ### 3d. SSO 403 handling
 
 Inspect the GraphQL response for `errors[].message` containing `Resource not accessible by integration`.
@@ -385,7 +397,10 @@ Build this block and hand it to `/to-seed` (it becomes the seed's `provenance`, 
       "disposition": "<final disposition for bug items, or null>",
       "reply_body": "<the drafted reply for this thread>",
       "reply_url": "<the originating comment URL from Step 3 harvest>",
-      "fix": "<the code scope to change on this PR, or null>"
+      "fix": "<the code scope to change on this PR, or null>",
+      "original_comment_body": "<the verbatim comment body captured at Step 3c-capture>",
+      "original_comment_author": "<the author.login captured at Step 3c-capture>",
+      "thread_database_id": "<the numeric databaseId captured at Step 3c-capture>"
     }
   ]
 }

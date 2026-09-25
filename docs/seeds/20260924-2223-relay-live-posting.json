@@ -1,0 +1,57 @@
+{
+  "schema_version": "4",
+  "producer": "to-seed",
+  "source": {
+    "type": "session",
+    "ref": null
+  },
+  "title": "Relay Live Posting for GitHub",
+  "slug": "relay-live-posting",
+  "created": "2026-09-24T22:23:00Z",
+  "iteration": 1,
+  "status": "ready",
+  "summary": "Wire the relay skill's post-github adapter for live external posting via gh api, while keeping post-linear and post-slack as copy-only stubs. Add original comment context (author + body) to the HITL approval flow by embedding it at task creation time through the pr-revise harvest and to-tasks pipeline. Introduce a two-step approval gate (approve content, then confirm send) and per-task result summaries. Three new fields flow through the seed/task schemas: original_comment_body, original_comment_author, and thread_database_id.",
+  "decisions": [
+    "GitHub adapter goes live first. Linear and Slack adapters remain copy-only stubs.",
+    "Use gh api (REST) for GitHub posting. Covers both flat PR comments and inline review thread replies via in_reply_to.",
+    "Embed original comment body at task creation time in pr-revise harvest, not fetched at relay time.",
+    "Display original comment above the draft reply in the HITL approval flow for reviewer context.",
+    "Posted comment contains draft text only. Original comment is shown only during HITL review, not repeated in the GitHub post.",
+    "Two new optional fields for original comment context on reply tasks: original_comment_body (string) and original_comment_author (string).",
+    "Two-step approval gate: approve content first, then confirm send with target URL displayed. Can be collapsed to single-step later once proven reliable.",
+    "On gh api failure: fail loud, ask user to retry, skip, or abort remaining tasks.",
+    "Remove never clauses and stub banner from post-github only. Egress-result schema already supports the posted status path with no changes needed.",
+    "Add thread_database_id field to carry REST numeric comment id alongside GraphQL node id. Flows pr-revise → seed provenance → to-tasks → relay → post-github.",
+    "Replace NO EXTERNAL CALLS MADE banner with per-task result summary table showing posted/skipped/failed/copy-only counts.",
+    "Two schemas updated: seed-schema.json (provenance item) and task-schema.json (reply task). All new fields are optional and additive.",
+    "Upstream touch points: pr-revise Step 3c (harvest original_comment_body, original_comment_author, thread_database_id into provenance) and to-tasks Step 3c (copy new fields to reply task).",
+    "Post-github agent tools: Bash + Read only. No additional MCP or write tools needed."
+  ],
+  "open_threads": [],
+  "disposed_threads": [],
+  "next_action": "Generate implementation tasks via /to-tasks to produce the ordered work for wiring post-github live.",
+  "implementation_decisions": [
+    "gh api uses the existing gh CLI auth (gho_**** token from keyring, scopes: gist, read:org, repo, workflow).",
+    "URL fragment parsing in post-github determines endpoint: #discussion_* → inline thread reply via in_reply_to, #r-comment-* → top-level PR comment via issues endpoint.",
+    "thread_id_type enum (graphql_node_id | database_id) already exists in seed schema. post-github uses thread_database_id for the in_reply_to parameter on inline threads.",
+    "For top-level PR comments (database_id type), use POST /repos/{owner}/{repo}/issues/{number}/comments.",
+    "For inline review thread replies (graphql_node_id type), use POST /repos/{owner}/{repo}/pulls/{pull}/comments with in_reply_to set to thread_database_id."
+  ],
+  "risks_and_tradeoffs": [
+    "Original comment body may go stale if edited between pr-revise harvest and relay run. Accepted as minimal risk since relay typically runs same session.",
+    "Two-step approval adds friction. Accepted as safety measure for initial live posting rollout, can be collapsed later.",
+    "gh api failure modes include: network errors, expired auth, deleted PRs, permission issues. Handled via fail-loud-ask pattern."
+  ],
+  "further_notes": [
+    "Linear and Slack adapters are explicitly deferred. Same pattern can be applied later: remove never clauses, add API/MCP calls, keep same egress-result contract.",
+    "HITL approval format: original comment by @author above, draft reply below, then approve/edit/skip, then confirm-send with target URL."
+  ],
+  "verification": {
+    "iteration": 1,
+    "personas": ["grounding", "accuracy", "completeness", "coherence"],
+    "refutations_upheld": 0,
+    "refutations_screened": 2,
+    "clean": true,
+    "status": "verified"
+  }
+}

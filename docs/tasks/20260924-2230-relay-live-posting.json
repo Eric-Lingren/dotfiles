@@ -1,0 +1,136 @@
+{
+  "schema_version": "2",
+  "producer": "to-tasks",
+  "source": {
+    "type": "seed",
+    "ref": "20260924-2223-relay-live-posting.json"
+  },
+  "generated_at": "2026-09-25T05:31:21Z",
+  "branching": {
+    "strategy": "single",
+    "branch": "feat/relay-live-posting"
+  },
+  "tasks": [
+    {
+      "id": "T-0028",
+      "title": "Add original comment and thread_database_id fields to schemas",
+      "type": "AFK",
+      "task_type": "code",
+      "description": "Add three new optional fields to seed-schema.json provenance items (original_comment_body, original_comment_author, thread_database_id) and the same three fields to task-schema.json reply task entries. All fields are optional strings. thread_database_id carries the REST numeric comment id alongside the existing GraphQL node id. Validate both schemas pass jsonschema self-validation after the change.",
+      "acceptance_criteria": [
+        "seed-schema.json provenance items include original_comment_body, original_comment_author, and thread_database_id as optional string fields",
+        "task-schema.json reply task entries include the same three optional string fields",
+        "validate-schema.sh passes against both updated schemas with existing seed and task fixture files",
+        "Existing seeds and task files remain valid against the updated schemas (backward compatible)"
+      ],
+      "blocked_by": [],
+      "status": "done",
+      "branch": null,
+      "pr": null,
+      "summary": "Added three optional string fields (original_comment_body, original_comment_author, thread_database_id) to seed-schema.json provenance items and task-schema.json reply task entries. All four validation checks pass.",
+      "files_touched": ["claude-code-shared/contracts/seed-schema.json", "claude-code-shared/contracts/task-schema.json"],
+      "tests": {"passed": 4, "failed": 0},
+      "log_path": "docs/tasks/.logs/20260924-2230-relay-live-posting/T-0028.md"
+    },
+    {
+      "id": "T-0029",
+      "title": "Harvest original comment context and thread_database_id in pr-revise",
+      "type": "AFK",
+      "task_type": "code",
+      "description": "Update pr-revise SKILL.md Step 3c GraphQL harvest to capture the comment body, author login, and databaseId for each review comment and top-level comment. Store these as original_comment_body, original_comment_author, and thread_database_id in the provenance items written at Step 8c. The GraphQL query already fetches body, author.login, and databaseId. This task adds them to the provenance item structure that flows downstream.",
+      "acceptance_criteria": [
+        "pr-revise SKILL.md Step 3c stores original_comment_body from the comment body field",
+        "pr-revise SKILL.md Step 3c stores original_comment_author from author.login",
+        "pr-revise SKILL.md Step 3c stores thread_database_id from databaseId",
+        "Provenance items at Step 8c include all three new fields",
+        "A dry run of pr-revise on a test PR produces a seed with the new provenance fields populated"
+      ],
+      "blocked_by": [
+        "T-0028"
+      ],
+      "status": "done",
+      "branch": null,
+      "pr": null,
+      "summary": "Added Step 3c-capture in pr-revise SKILL.md to store original_comment_body, original_comment_author, and thread_database_id from each harvested comment into provenance items at Step 8c.",
+      "files_touched": ["claude-code-shared/skills/pr-revise/SKILL.md"],
+      "tests": {"passed": 0, "failed": 0},
+      "log_path": "docs/tasks/.logs/20260924-2230-relay-live-posting/T-0029.md"
+    },
+    {
+      "id": "T-0030",
+      "title": "Copy new provenance fields through to-tasks reply task generation",
+      "type": "AFK",
+      "task_type": "code",
+      "description": "Update to-tasks SKILL.md Step 3c to copy original_comment_body, original_comment_author, and thread_database_id from each seed provenance item onto the corresponding reply task in the output JSON. These fields are optional. If absent from the provenance item, omit them from the reply task (backward compatible).",
+      "acceptance_criteria": [
+        "to-tasks Step 3c copies original_comment_body to reply tasks when present in provenance",
+        "to-tasks Step 3c copies original_comment_author to reply tasks when present in provenance",
+        "to-tasks Step 3c copies thread_database_id to reply tasks when present in provenance",
+        "Missing fields in provenance items do not cause errors (graceful omission)",
+        "Output task file validates against task-schema.json"
+      ],
+      "blocked_by": [
+        "T-0028"
+      ],
+      "status": "done",
+      "branch": null,
+      "pr": null,
+      "summary": "Added original_comment_body, original_comment_author, and thread_database_id to the reply task field list in to-tasks SKILL.md Step 3c with copy-if-present semantics.",
+      "files_touched": ["claude-code-shared/skills/to-tasks/SKILL.md"],
+      "tests": {"passed": 0, "failed": 0},
+      "log_path": "docs/tasks/.logs/20260924-2230-relay-live-posting/T-0030.md"
+    },
+    {
+      "id": "T-0031",
+      "title": "Wire post-github adapter for live posting via gh api",
+      "type": "AFK",
+      "task_type": "code",
+      "description": "Replace the copy-only stub in post-github.md with live gh api posting. Remove the never clauses and NO EXTERNAL CALLS MADE banner. Implement two posting paths based on thread_id_type: for database_id (top-level PR comments), POST to /repos/{owner}/{repo}/issues/{number}/comments. For graphql_node_id (inline review threads), POST to /repos/{owner}/{repo}/pulls/{pull}/comments with in_reply_to set to thread_database_id. Parse owner, repo, and PR number from the reply_url. Return egress-result with status: posted, posted: true, and url set to the created comment URL from the gh api response. On failure, return status: failed with the error details.",
+      "acceptance_criteria": [
+        "Never clauses and stub banner are removed from post-github.md",
+        "Top-level PR comments post via gh api to the issues comments endpoint",
+        "Inline review thread replies post via gh api with in_reply_to set to thread_database_id",
+        "Owner, repo, and PR number are parsed from the reply_url",
+        "Successful posts return egress-result with status: posted, posted: true, url: <created comment URL>",
+        "Failed posts return egress-result with status: failed, posted: false",
+        "A dry run against a test PR confirms the gh api call succeeds and returns the correct egress-result shape"
+      ],
+      "blocked_by": [],
+      "status": "done",
+      "branch": null,
+      "pr": null,
+      "summary": "Replaced copy-only stub with live gh api posting. Two paths: issues endpoint for top-level comments, pulls/comments with in_reply_to for inline review threads. Returns egress-result with posted/failed status.",
+      "files_touched": ["claude-code-shared/agents/egress/github/post-github.md"],
+      "tests": {"passed": 0, "failed": 0},
+      "log_path": "docs/tasks/.logs/20260924-2230-relay-live-posting/T-0031.md"
+    },
+    {
+      "id": "T-0032",
+      "title": "Update relay HITL approval flow with original comment, two-step gate, and result summary",
+      "type": "AFK",
+      "task_type": "code",
+      "description": "Update relay SKILL.md to: (1) Display the original comment by @author above the draft reply in the HITL approval step, using original_comment_body and original_comment_author from the task. Gracefully skip when fields are absent. (2) Add a second confirmation step after content approval that shows the target URL and asks to confirm send before delegating to post-github. (3) Replace the NO EXTERNAL CALLS MADE invariant banner with a per-task result summary table showing posted/skipped/failed/copy-only counts. (4) On gh api failure from post-github, show the error and ask the user to retry, skip, or abort remaining tasks.",
+      "acceptance_criteria": [
+        "Original comment displayed above draft when original_comment_body and original_comment_author are present",
+        "Approval flow gracefully skips original comment display when fields are absent",
+        "Second confirmation step shows target URL before delegating to adapter",
+        "Per-task result summary table replaces the old invariant banner",
+        "Summary shows counts for posted, skipped, failed, and copy-only statuses",
+        "On adapter failure, user is prompted to retry, skip, or abort",
+        "A dry run of relay with a task containing original comment fields shows the updated approval flow"
+      ],
+      "blocked_by": [
+        "T-0030",
+        "T-0031"
+      ],
+      "status": "done",
+      "branch": null,
+      "pr": null,
+      "summary": "Updated relay SKILL.md: original comment display above draft, two-step approval with URL confirmation, retry/skip/abort on adapter failure, per-task result summary table replacing NO EXTERNAL CALLS banner.",
+      "files_touched": ["claude-code-shared/skills/relay/SKILL.md"],
+      "tests": {"passed": 7, "failed": 0},
+      "log_path": "docs/tasks/.logs/20260924-2230-relay-live-posting/T-0032.md"
+    }
+  ],
+  "follow_ups": []
+}
