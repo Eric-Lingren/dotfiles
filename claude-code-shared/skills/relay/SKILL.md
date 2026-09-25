@@ -21,9 +21,9 @@ appropriate channel adapter under `agents/egress/`. Channel-specific mechanics �
 commit permalink construction, thread keying, and future live write-back — live in the
 adapter, not here.
 
-**Copy-only status.** relay delegates to copy-only channel adapter stubs — nothing is
-posted until the adapters are wired for live write-back. Today relay assembles each draft,
-presents it for approval, and delegates to the adapter for manual-paste output.
+**Live posting.** The GitHub adapter (`post-github`) posts live via `gh api`. Other channel
+adapters (Linear, Slack) are copy-only stubs until wired for live write-back. relay tracks
+each outcome (posted / skipped / failed / copy-only) and prints a result summary at the end.
 
 ## Contract
 
@@ -67,11 +67,27 @@ by each adapter.
 
 ### 3. Present for final HITL approval
 
-Print each combined draft grouped by thread:
+For each eligible task, build the approval display. If the task carries both
+`original_comment_body` and `original_comment_author`, show the original comment above the
+draft:
 
 ```
-Reply drafts (copy-only — nothing posted yet):
+── T-0002 · Reply: msw hook mocks ──
+Channel: github (post-github)
+Thread: <reply_url>
 
+── Original comment by @<original_comment_author> ──
+"<original_comment_body>"
+
+── Your draft reply ──
+<reply_body>
+Commit reference: <commit SHA — will be formatted as permalink by the adapter>
+```
+
+If either `original_comment_body` or `original_comment_author` is absent, omit the
+original-comment block and show only the draft:
+
+```
 ── T-0002 · Reply: msw hook mocks ──
 Channel: github (post-github)
 Thread: <reply_url>
@@ -81,11 +97,20 @@ Commit reference: <commit SHA — will be formatted as permalink by the adapter>
 ```
 
 Ask the user to approve, edit, or skip each draft. Apply their edits to the printed copy.
-This is the final review gate the reply content gets before it would be posted.
+This is the content review gate — the reply text is locked in here.
+
+**After the user approves the content**, show a second confirmation gate before posting:
+
+```
+This will post to <reply_url>. Proceed? (y/n)
+```
+
+Only proceed to step 4 if the user confirms with `y`. If the user answers `n`, treat this
+task as skipped and record it as `skipped (user declined send)` in the results table.
 
 ### 4. Delegate each approved draft to the channel adapter
 
-For each user-approved reply task, delegate to the resolved channel adapter. Pass:
+For each task that passed both approval gates, delegate to the resolved channel adapter. Pass:
 
 - `draft` — the approved reply_body
 - `target` — the reply_url (GitHub PR comment URL, etc.)
@@ -94,26 +119,49 @@ For each user-approved reply task, delegate to the resolved channel adapter. Pas
 - `thread_id` — the thread node id or database id (present only when task carries it)
 - `thread_id_type` — `"graphql_node_id"` or `"database_id"` (disambiguates thread_id)
 
-The channel adapter handles all channel-specific mechanics: commit permalink construction,
-thread keying, and (when live write-back ships) the actual API call.
+The channel adapter returns a schema-valid egress-result with `status: "posted"`,
+`"copy-only"`, or `"failed"`. Record the result for the step 5 summary.
 
-### 5. No-external-calls banner
-
-After all drafts, print this verbatim so the user can confirm nothing was sent:
+**On failure:** if the egress-result has `status: "failed"`, show the error and prompt the
+user:
 
 ```
-────────────────────────────────────────────────────────────
-NO EXTERNAL CALLS MADE.
-  - 0 GitHub comments posted
-  - 0 threads resolved
-  - 0 task statuses changed
-Copy above is DRAFT only. Review, edit, and paste manually.
-────────────────────────────────────────────────────────────
+Post failed: <error details>
+
+Options:
+  1. Retry
+  2. Skip this task
+  3. Abort remaining tasks
 ```
 
-These counts are literal invariants while relay's channel adapters are copy-only stubs.
-When posting ships, each adapter will post the approved reply, resolve the thread, and
-relay will set the task `status` to `done` with the posted comment URL.
+- **Retry (1):** re-delegate to the same adapter with the same inputs. Repeat until the
+  post succeeds, the user chooses skip, or the user chooses abort.
+- **Skip (2):** record this task as `failed` in the results and continue to the next task.
+- **Abort (3):** stop processing remaining tasks. Record all unprocessed tasks as
+  `skipped (aborted)` in the results.
+
+### 5. Result summary
+
+After all tasks are processed, print a per-task result table followed by totals:
+
+```
+── Relay Results ──
+T-0002 · Reply: msw hook mocks: posted → https://github.com/owner/repo/pull/42#issuecomment-123
+T-0003 · Reply: auth token: skipped (user skipped)
+T-0004 · Reply: cache invalidation: failed → <error message>
+
+Posted: 1 | Skipped: 1 | Failed: 1 | Copy-only: 0
+```
+
+Count each outcome:
+- **posted** — adapter returned `status: "posted"`
+- **skipped** — user skipped at content approval, declined the send confirmation, task was
+  not ready (blocked_by not done), or unprocessed due to abort
+- **failed** — adapter returned `status: "failed"` and user chose skip (or abort triggered)
+- **copy-only** — adapter returned `status: "copy-only"` (non-GitHub channel stubs)
+
+For `copy-only` tasks the draft was printed by the adapter for manual paste; include those
+in the copy-only count and note them in the table as `copy-only → <draft printed above>`.
 
 <!-- learning-capture:start -->
 Read and execute `~/.dotfiles/claude-code-shared/resources/learning-capture.md`.
