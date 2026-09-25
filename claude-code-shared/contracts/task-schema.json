@@ -209,6 +209,18 @@
             "type": "string",
             "enum": ["graphql_node_id", "database_id"],
             "description": "Reply-task only. Disambiguates thread_id. Inline review threads use 'graphql_node_id'; top-level PR comments use 'database_id'. Present only when task_type is 'reply'."
+          },
+          "original_comment_body": {
+            "type": "string",
+            "description": "Reply-task only. Full body text of the original review comment or thread, captured at harvest time."
+          },
+          "original_comment_author": {
+            "type": "string",
+            "description": "Reply-task only. GitHub login of the author of the original review comment."
+          },
+          "thread_database_id": {
+            "type": "string",
+            "description": "Reply-task only. REST numeric comment id (databaseId) for this thread, carried alongside the GraphQL node id in thread_id. Enables REST-based reply posting."
           }
         }
       },
