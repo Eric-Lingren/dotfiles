@@ -3,10 +3,12 @@ name: improve-skill-learnings
 description: >
   Apply captured learnings from unified-learnings.jsonl to their target skill,
   agent, process, or contract files. Shows a ranked table of targets by unactioned
-  learning count, lets the user pick one, validates each learning via Haiku agents,
-  drafts a cohesive diff for user approval, and auto-commits on acceptance. Covers
-  all four improves_type values: skill, agent, process, contract. Use when you want
-  to act on accumulated learnings: "/improve-skill-learnings".
+  learning count, lets the user pick one, validates all learnings for that target
+  upfront via Haiku agents, then presents valid learnings one at a time for
+  cherry-pick, diff approval, and commit. Auto-loops within the selected target
+  until the user stops or the list is empty. Covers all four improves_type values:
+  skill, agent, process, contract. Use when you want to act on accumulated
+  learnings: "/improve-skill-learnings".
 model: sonnet
 effort: high
 invokedBy: human
@@ -113,9 +115,10 @@ name. Wait for the response.
 Collect all captured entries for the selected target (by their `id` values from
 step 1).
 
-## Step 3: Validate learnings via Haiku agents
+## Step 3: Validate all learnings for target upfront
 
 Spawn one Haiku validation agent per learning in a **single parallel Agent call**.
+This runs before showing the picker so stale/invalid entries never appear.
 
 For each learning, construct a `path_candidates` list based on `improves_type`:
 
@@ -158,7 +161,7 @@ Return ONLY the JSON object. No prose.
 Collect all verdicts. The resolved `file_path` from a valid entry is the
 canonical target path for the diff.
 
-## Step 4: Process validation results
+## Step 4: Process validation results and build picker list
 
 For each verdict where `verdict` is `stale` or `invalid`, run:
 
@@ -168,7 +171,7 @@ python3 ~/.dotfiles/claude-code-shared/scripts/update-learning.py \
   --status <stale|invalid>
 ```
 
-Print a validation summary before continuing:
+Print a validation summary:
 
 ```
 Validation complete for <target>:
@@ -180,22 +183,37 @@ Validation complete for <target>:
 If zero valid learnings remain, print:
 
 ```
-All learnings for <target> are stale or invalid — nothing to apply.
+All learnings for <target> are stale or invalid. Nothing to apply.
 ```
 
 Then show the Summary Report (Step 8) and stop.
 
-## Step 5: Draft the unified diff
+Otherwise, proceed to the **pick-one loop** (Steps 5-7).
 
-All valid learnings must share the same `file_path` (the validation agent resolved
-it in step 3). If they somehow resolve to different files, tell the user and ask
-which file to target before proceeding.
+## Step 5: Pick-one loop — show valid learnings and let user choose
 
-Spawn a session-model agent (subagent_type: general-purpose) with this prompt:
+Display the valid learnings as a numbered sub-list. Show only the `problem`
+field per entry (one line each). Example:
 
 ```
-You are drafting a single cohesive unified diff to apply a set of validated
-learnings to a target file.
+Valid learnings for <target> (<N> remaining):
+
+  1. filename versioning double-encoded when internal schema_version exists
+  2. cleanup step uses shell rm, blocked by destructive-fs hook
+  3. accuracy persona silently returns empty on large transcripts
+
+Pick a learning to apply (number), or "done" to stop:
+```
+
+Wait for user response. If "done" or equivalent, jump to Step 8 (summary).
+
+## Step 6: Draft diff for selected learning
+
+Read the target file (resolved `file_path` from validation). Spawn a
+session-model agent (subagent_type: general-purpose) with this prompt:
+
+```
+You are drafting a unified diff to apply ONE learning to a target file.
 
 Target file: {file_path}
 
@@ -204,42 +222,40 @@ Current file content:
 {full content of file_path}
 </file>
 
-Validated learnings ({N} total):
-{for each valid learning: id, problem, lesson, fix}
+Learning to apply:
+  id: {id}
+  problem: {problem}
+  lesson: {lesson}
+  fix: {fix}
 
 Instructions:
-1. Read each learning's `fix` field carefully.
-2. Synthesize all fixes into a single coherent edit. Think about how they
-   interact and produce one unified improvement — not N independent edits.
-3. Produce a standard unified diff (diff -u format) suitable for `patch -p0`.
-4. Be minimal and surgical. Do not rewrite sections unrelated to the learnings.
-5. Include 3 context lines before and after each change hunk.
-6. Return ONLY the diff, starting with "--- " and ending after the last hunk.
+1. Read the learning's `fix` field carefully.
+2. Produce a standard unified diff (diff -u format) suitable for `patch -p0`.
+3. Be minimal and surgical. Do not rewrite sections unrelated to this learning.
+4. Include 3 context lines before and after each change hunk.
+5. Return ONLY the diff, starting with "--- " and ending after the last hunk.
    No prose, no explanation.
 ```
-
-Store the returned diff.
-
-## Step 6: User approval
 
 Present the diff to the user:
 
 ```
 Proposed changes to <file_path>
-(<N> learnings: <comma-separated ids>)
+(learning: <id>)
+Problem: <problem — one line>
 
 <diff content>
 
-Apply these changes? [y/n]
+Apply? [y/n]
 ```
 
 Wait for response.
 
-- `n` or any rejection: Print "Changes rejected. No files modified." and jump to
-  Step 8 (summary only — do not commit or mark applied).
+- `n` or rejection: Print "Skipped." Do NOT mark the learning as applied.
+  Jump back to Step 5 (show remaining list without the skipped one).
 - `y` or acceptance: Proceed to Step 7.
 
-## Step 7: Apply and commit
+## Step 7: Apply, commit, and loop
 
 Write the diff to a temp file and apply it:
 
@@ -256,24 +272,30 @@ with open('$PATCH_FILE', 'w') as f:
 patch -p0 < "$PATCH_FILE"
 ```
 
-If `patch` exits non-zero, report the error and stop. Do not mark entries as
-applied if the patch fails.
+If `patch` exits non-zero, report the error and skip this learning. Jump back
+to Step 5 with the remaining list.
 
-Mark all valid learnings as applied:
+Mark the learning as applied:
 
 ```bash
 python3 ~/.dotfiles/claude-code-shared/scripts/update-learning.py \
   --id <id> --status applied
 ```
 
-(Run once per valid learning — loop or run sequentially.)
-
 Commit:
 
 ```bash
 git add <file_path>
-git commit -m "improve(<target>): apply <N> learnings"
+git commit -m "improve(<target>): apply learning <short problem summary>"
 ```
+
+Keep the commit message subject under 50 chars. Use a truncated version of the
+`problem` field if needed.
+
+**Auto-loop:** Remove the applied learning from the valid list. If valid
+learnings remain, jump back to Step 5 and show the updated list. If none
+remain, print "All valid learnings for <target> applied." and continue to
+Step 8.
 
 ## Step 8: Summary report
 
@@ -312,9 +334,10 @@ Display:
 
 ```
 Summary for <target>:
-  Acted:   N  — committed to <file_path>
-  Stale:   N  — marked stale, skipped
-  Invalid: N  — marked invalid (target file not resolvable), skipped
+  Applied: N  (one commit each)
+  Skipped: N  (user declined)
+  Stale:   N  (marked stale, filtered before picker)
+  Invalid: N  (marked invalid, filtered before picker)
 
 Remaining backlog (<M> total across all targets):
   <slug1>: N learnings
@@ -323,7 +346,7 @@ Remaining backlog (<M> total across all targets):
   (unassigned): N learnings
 ```
 
-If the backlog is empty, print "Backlog clear — no remaining captured learnings."
+If the backlog is empty, print "Backlog clear. No remaining captured learnings."
 
 <!-- learning-capture:start -->
 Read and execute `~/.dotfiles/claude-code-shared/resources/learning-capture.md`.
@@ -338,7 +361,7 @@ print a single concise outcome line so the user sees the result without scrollin
 back. Format:
 
 ```
-<target>: <N> valid (applied), <N> stale, <N> invalid. Backlog: <M> remaining.
+<target>: <N> applied, <N> skipped, <N> stale, <N> invalid. Backlog: <M> remaining.
 ```
 
 This is the LAST thing printed. It must appear after the learning-capture tail
