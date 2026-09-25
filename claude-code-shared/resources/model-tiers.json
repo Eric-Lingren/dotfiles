@@ -55,7 +55,8 @@
     "investigate": "T1",
     "improve-directory-structure": "T4",
     "worktree": "T2",
-    "offload": "T2"
+    "offload": "T2",
+    "ci-fix": "T3"
   },
   "agents": {
     "architecture-auditor": "T3",
@@ -82,6 +83,7 @@
     "debug",
     "improve-codebase-architecture",
     "pr-revise",
-    "improve-directory-structure"
+    "improve-directory-structure",
+    "ci-fix"
   ]
 }
