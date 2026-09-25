@@ -214,6 +214,9 @@ For each entry in `provenance.items[]`, in order:
   - `reply_body`: the item's `reply_body`, **verbatim**
   - `reply_url`: the item's `reply_url`
   - `thread_id` + `thread_id_type`: the item's values, copied through
+  - `original_comment_body`: copy from the item if present; omit if absent
+  - `original_comment_author`: copy from the item if present; omit if absent
+  - `thread_database_id`: copy from the item if present; omit if absent
 
 **If `fix` is null**, emit a `reply` task only (no code task), with `blocked_by: []` and the reply fields above.
 
