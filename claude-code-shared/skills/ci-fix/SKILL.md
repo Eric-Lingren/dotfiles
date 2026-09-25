@@ -146,6 +146,7 @@ For each failing job, classify the failure type from the logs:
 | **migration check** | django check --deploy, migration consistency errors |
 | **build/config error** | pip-compile hash mismatch, nextjs build error, missing env |
 | **dependency error** | pip install failure, npm ci failure |
+| **snapshot/tracking gate** | vitest snapshot mismatch, biome-errors rule count drift, coverage threshold breach |
 | **other** | anything that doesn't fit the above |
 
 Build a diagnosis summary before touching any code:
@@ -170,6 +171,16 @@ insertion, lockfile regeneration).
 Fix all failing jobs in a single pass. Do not commit or push until all fixes are
 applied and verified.
 
+**Hard rule: never weaken a gate to pass CI.** Do not update snapshots,
+tracking lists, rule configs, or thresholds to absorb a new failure. Fix the
+source code that caused the violation. A snapshot update that changes expected
+counts or adds a rule to a tracking budget is not a fix. It buries the failure.
+
+Example: if biome-errors.test.ts fails because a new rule (e.g.
+`noNonNullAssertion`) has violations, find and fix the violating code. Do not
+add the rule to `BIOME_RULES_TO_TRACK` with a nonzero count. Do not update the
+snapshot to accept "new untracked rules."
+
 **Fix approaches by type:**
 
 - **lint**: Apply the auto-fix command for the linter if available (ruff check
@@ -183,6 +194,12 @@ applied and verified.
 - **build/config error**: Fix the config, regenerate lockfiles (pip-compile),
   update env variable references.
 - **dependency error**: Update the requirements or package files.
+- **snapshot/tracking gate**: Find the source violations that caused the gate to
+  trip. Run the relevant linter or checker to list violations. Fix each violation
+  in the source code. Confirm the gate passes with the original snapshot/config
+  unchanged. If the violation count is small (under ~10), fix all of them. If
+  large, stop and report. The gate likely shifted due to a config change, not
+  this branch's code.
 - **other**: Apply judgment; flag as semantic.
 
 **Multi-job conflicts:** If two jobs suggest contradictory fixes, resolve the
