@@ -129,8 +129,8 @@
     },
     "status": {
       "type": "string",
-      "enum": ["captured", "applied"],
-      "description": "Lifecycle state. Optional; set by improve-skill-benchmarks when fix is applied."
+      "enum": ["captured", "applied", "stale", "invalid"],
+      "description": "Lifecycle state. Optional; set by improve-skill-benchmarks when fix is applied. 'stale' = superseded by newer learning; 'invalid' = grounding failed or entry is incorrect."
     }
   },
   "if": {
