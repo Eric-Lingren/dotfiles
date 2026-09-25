@@ -25,6 +25,7 @@ Run the following to load all `status == "captured"` entries. Entries with no
 python3 - <<'PYEOF'
 import json, os
 from collections import defaultdict
+from datetime import datetime, timezone
 
 path = os.path.expanduser(
     "~/.dotfiles/claude-code-shared/learnings/unified-learnings.jsonl"
@@ -49,6 +50,31 @@ for e in entries:
     key = e.get("improves") or "__unassigned__"
     groups[key].append(e)
 
+now = datetime.now(timezone.utc)
+
+def age_str(items):
+    oldest = None
+    for e in items:
+        ts = e.get("timestamp")
+        if ts:
+            try:
+                dt = datetime.fromisoformat(ts.replace("Z", "+00:00"))
+                if oldest is None or dt < oldest:
+                    oldest = dt
+            except (ValueError, TypeError):
+                pass
+    if oldest is None:
+        return "?"
+    days = (now - oldest).days
+    if days < 1:
+        return "<1d"
+    if days < 14:
+        return f"{days}d"
+    weeks = days // 7
+    if weeks < 9:
+        return f"{weeks}w"
+    return f"{days // 30}mo"
+
 sorted_groups = sorted(groups.items(), key=lambda x: -len(x[1]))
 
 print(f"TOTAL={len(entries)}")
@@ -56,19 +82,19 @@ for rank, (target, items) in enumerate(sorted_groups, 1):
     display = target if target != "__unassigned__" else "(unassigned)"
     itype = items[0].get("improves_type", "—")
     ids = ",".join(e["id"] for e in items)
-    print(f"RANK={rank}|TARGET={target}|TYPE={itype}|COUNT={len(items)}|IDS={ids}|DISPLAY={display}")
+    print(f"RANK={rank}|TARGET={target}|TYPE={itype}|COUNT={len(items)}|OLDEST={age_str(items)}|IDS={ids}|DISPLAY={display}")
 PYEOF
 ```
 
 Parse the output into a ranked table:
 
 ```
-Rank | Target              | Type     | Learnings
------|---------------------|----------|----------
-  1  | debug               | skill    | 4
-  2  | to-seed             | skill    | 3
+Rank | Target              | Type     | Learnings | Oldest
+-----|---------------------|----------|-----------|-------
+  1  | debug               | skill    | 4         | 3mo
+  2  | to-seed             | skill    | 3         | 2w
   ...
-  N  | (unassigned)        | —        | 2
+  N  | (unassigned)        | —        | 2         | 5d
 ```
 
 If `TOTAL=0`, print:
@@ -304,3 +330,16 @@ Read and execute `~/.dotfiles/claude-code-shared/resources/learning-capture.md`.
 This skill's slug is `improve-skill-learnings`.
 <!-- skill-done: improve-skill-learnings -->
 <!-- learning-capture:end -->
+
+## Step 9: Final outcome line
+
+After the learning-capture agent finishes (or while it runs in background),
+print a single concise outcome line so the user sees the result without scrolling
+back. Format:
+
+```
+<target>: <N> valid (applied), <N> stale, <N> invalid. Backlog: <M> remaining.
+```
+
+This is the LAST thing printed. It must appear after the learning-capture tail
+block, not before it.
