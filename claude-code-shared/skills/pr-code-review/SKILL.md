@@ -28,15 +28,29 @@ the current model. Delegate only the menial searching.
 **Format:** task file — `contracts/task-schema.json` (schema_version: `"2"`)
 **Role:** always produces a task file with `review_finding` entries after the investigator gate (Step 5)
 
-**Caller-context output modes (injected into the subagent prompt by the caller — no flags on this skill):**
-- `sprout-seed` caller: the task file is fed to `build-code` for automated revision
-- standalone `code-review` caller: the task file is fed to `dispatch-tasks` for inline printing
+**Caller-context output modes:**
+- `sprout-seed` caller: skip Step 0, auto-select `fix` mode (the task file feeds to `build-code`)
+- standalone invocation: Step 0 asks the user
 
-Both modes produce the same task file. The caller reads the `task_file_path:` line from output and routes accordingly.
+Both modes produce the same task file. The mode determines what happens after.
 
 ---
 
 You are performing a thorough code review. Follow this process exactly.
+
+## Step 0: Ask the user what to do with findings
+
+**Skip this step when invoked by `sprout-seed` (auto-select `fix`).**
+
+Before gathering the diff, ask the user:
+
+> What should I do with review findings?
+>
+> 1. **Comment** — post as inline PR review comments (requires a PR)
+> 2. **Fix** — apply code fixes via build-code
+> 3. **Show only** — print findings, take no action
+
+Wait for an answer. Store the choice as `review_mode` for Step 6.
 
 ## Step 1: Gather the diff
 
@@ -378,6 +392,32 @@ Finding line format: `<file>:L<line>: <label>: <description>`
 Write nothing that doesn't belong in a comment thread. No preamble, no "Overall this looks great."
 
 After the human-readable findings block, proceed to Step 5 to write the task file and print the `task_file_path:` line.
+
+## Step 6: Route based on review_mode
+
+After printing findings and writing the task file, act on `review_mode` from Step 0:
+
+### `comment` mode
+
+Post findings as an inline PR review. Requires a PR to exist (from Step 1).
+
+```bash
+gh pr review <number> --comment --body "<formatted findings>"
+```
+
+Format the body using the same output format (severity emojis, file grouping, verdict). Do not post praise-only findings. Each finding becomes one top-level bullet, not an inline per-line comment.
+
+### `fix` mode
+
+Print the `task_file_path:` line, then invoke dispatch-tasks:
+
+```
+Skill("dispatch-tasks", args="<task-file-path>")
+```
+
+### `show` mode
+
+Print the `task_file_path:` line. Take no further action. The user can manually run `/dispatch-tasks <path>` later.
 
 <!-- attribution-capture:start -->
 Read and execute `~/.dotfiles/claude-code-shared/resources/attribution-capture.md`.
