@@ -1,11 +1,11 @@
 ---
-name: improve-skill
+name: improve-skill-benchmarks
 description: >
   Self-improving skill evaluator. Runs a target skill against synthetic scenarios,
   scores output with 5-tier rubric via multi-judge LLM panel, and iteratively improves
   the skill through a learning loop. Also analyzes skill structure for optimization
   opportunities. Use when user says "improve skill", "eval skill", "run evals",
-  "optimize skill", "self-improve", or invokes /improve-skill.
+  "optimize skill", "self-improve", or invokes /improve-skill-benchmarks.
 model: sonnet
 effort: high
 invokedBy: human
@@ -17,7 +17,7 @@ You are running an automated skill improvement loop. Follow this process exactly
 
 ## Arguments
 
-The user provides: `/improve-skill <skill-name>` with optional `--reset` flag.
+The user provides: `/improve-skill-benchmarks <skill-name>` with optional `--reset` flag.
 
 Parse the skill name from ARGUMENTS. If `--reset` is present, delete the runs directory for this skill before proceeding.
 
@@ -30,12 +30,12 @@ If not found, tell the user and stop.
 
 Read the target SKILL.md. Store its full contents for later use.
 
-Derive the runs directory for this skill: `~/.dotfiles/claude-code-shared/skills/improve-skill/runs/<skill-name>/`. All eval artifacts (eval.json, learnings.md, scores.json) live here, not in the target skill's own directory.
+Derive the runs directory for this skill: `~/.dotfiles/claude-code-shared/skills/improve-skill-benchmarks/runs/<skill-name>/`. All eval artifacts (eval.json, learnings.md, scores.json) live here, not in the target skill's own directory.
 
 ## Step 2: Check for existing evals
 
 Run the scaffold script to check/create the runs directory:
-`~/.dotfiles/claude-code-shared/skills/improve-skill/scripts/scaffold-evals.sh <skill-name> [--reset]`
+`~/.dotfiles/claude-code-shared/skills/improve-skill-benchmarks/scripts/scaffold-evals.sh <skill-name> [--reset]`
 
 Then check for `<runs-dir>/eval.json`.
 
@@ -226,6 +226,6 @@ Display results to the user with exactly these 9 sections:
 
 <!-- learning-capture:start -->
 Read and execute `~/.dotfiles/claude-code-shared/resources/learning-capture.md`.
-This skill's slug is `improve-skill`.
-<!-- skill-done: improve-skill -->
+This skill's slug is `improve-skill-benchmarks`.
+<!-- skill-done: improve-skill-benchmarks -->
 <!-- learning-capture:end -->

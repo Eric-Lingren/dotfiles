@@ -130,7 +130,7 @@
     "status": {
       "type": "string",
       "enum": ["captured", "applied"],
-      "description": "Lifecycle state. Optional; set by improve-skill when fix is applied."
+      "description": "Lifecycle state. Optional; set by improve-skill-benchmarks when fix is applied."
     }
   },
   "if": {

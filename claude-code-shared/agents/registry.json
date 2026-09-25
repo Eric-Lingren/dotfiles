@@ -18,7 +18,7 @@
       "model": "sonnet",
       "description": "Read-only agent that audits a target SKILL.md for architecture anti-patterns and agent extraction opportunities. Detects 7 signals (A1-A7). Returns a JSON array of structured finding records.",
       "consumers": [
-        "improve-skill",
+        "improve-skill-benchmarks",
         "register-skill"
       ]
     },
@@ -177,7 +177,7 @@
         "how-to",
         "improve-codebase-architecture",
         "improve-component",
-        "improve-skill",
+        "improve-skill-benchmarks",
         "prototype",
         "register-skill",
         "run-task-followups",
@@ -215,7 +215,7 @@
         "how-to",
         "improve-codebase-architecture",
         "improve-component",
-        "improve-skill",
+        "improve-skill-benchmarks",
         "prototype",
         "register-skill",
         "run-task-followups",

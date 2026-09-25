@@ -131,7 +131,7 @@ TEST_CMDS   = {"tdd", "to-e2e-tests"}
 REVIEW_CMDS = {"review", "code-review", "pr-code-review", "security-review",
                "caveman-review", "relay", "pr-revise", "frontend-review"}
 REFAC_CMDS  = {"improve-component", "improve-codebase-architecture", "simplify",
-               "improve-skill", "register-skill", "clean-scaffolding",
+               "improve-skill-benchmarks", "register-skill", "clean-scaffolding",
                "improve-directory-structure"}
 RESEARCH_CMDS = {"how-to", "deep-research", "tldr-tech", "investigate",
                  "cc-usage-analytics"}

@@ -11,7 +11,7 @@ SKILLS_DIR = SHARED / "skills"
 
 REQUIRED_SKILLS = {
     "to-seed", "to-tasks", "build-code", "debug", "pr-code-review",
-    "grill-me", "grill-with-docs", "improve-skill", "prototype",
+    "grill-me", "grill-with-docs", "improve-skill-benchmarks", "prototype",
     "to-spec", "to-e2e-tasks", "dispatch-tasks", "pr-revise",
 }
 
@@ -114,7 +114,7 @@ class TestKnownEdges:
         assert "to-tasks" in targets
 
     def test_terminal_skills_have_empty_next(self, pipeline):
-        terminal = ["pr-code-review", "improve-skill", "tdd", "handoff"]
+        terminal = ["pr-code-review", "improve-skill-benchmarks", "tdd", "handoff"]
         for slug in terminal:
             entry = pipeline["skills"][slug]
             assert entry["next"] == [], f"{slug}: expected empty next, got {entry['next']}"

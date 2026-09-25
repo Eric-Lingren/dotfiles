@@ -52,10 +52,10 @@ Append each run result to the `runs` array:
           {
             "signal": "A4",
             "finding": "Inline judge prompt encoding a reusable role",
-            "location": "skills/improve-skill/SKILL.md:127",
+            "location": "skills/improve-skill-benchmarks/SKILL.md:127",
             "recommendation": "Extract to agents/skill-judge.md",
             "proposed_agent": "skill-judge",
-            "consumers": ["improve-skill"],
+            "consumers": ["improve-skill-benchmarks"],
             "benefit": "Reusable agent; inline prompt eliminated.",
             "effort": "medium",
             "lifecycle": "NEW"

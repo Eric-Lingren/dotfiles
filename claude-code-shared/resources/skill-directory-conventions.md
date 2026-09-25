@@ -62,7 +62,7 @@ to-spec/
 
 ### Stateful skill
 ```
-improve-skill/
+improve-skill-benchmarks/
 ├── SKILL.md
 ├── scripts/
 │   └── scaffold-evals.sh
@@ -90,4 +90,4 @@ When referencing files across skills, use absolute paths:
 
 ## Enforcement
 
-The `improve-skill` evaluator checks directory hygiene as part of its structural analysis (Step 5). It flags misplaced files and suggests moves with a single confirmation prompt. All references are updated automatically when files move.
+The `improve-skill-benchmarks` evaluator checks directory hygiene as part of its structural analysis (Step 5). It flags misplaced files and suggests moves with a single confirmation prompt. All references are updated automatically when files move.

@@ -33,7 +33,7 @@ SKILL_GROUPS = {
     "EXECUTE": ["build-code", "tdd"],
     "EXPORT": ["dispatch-tasks", "tasks-to-linear", "relay"],
     "IMPROVE": [
-        "improve-skill", "improve-component", "register-skill",
+        "improve-skill-benchmarks", "improve-component", "register-skill",
         "improve-codebase-architecture", "improve-directory-structure",
     ],
     "UTILITY": [
