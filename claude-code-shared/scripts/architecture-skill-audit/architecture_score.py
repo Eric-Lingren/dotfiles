@@ -1,4 +1,4 @@
-"""Architecture audit scoring utilities for the improve-skill Architecture pillar.
+"""Architecture audit scoring utilities for the improve-skill-benchmarks Architecture pillar.
 
 Signals A1-A8: 8-signal denominator as of the A8 addition.
 """

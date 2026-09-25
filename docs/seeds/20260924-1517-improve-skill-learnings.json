@@ -1,0 +1,60 @@
+{
+  "schema_version": "4",
+  "producer": "to-seed",
+  "source": {"type": "session", "ref": null},
+  "title": "improve-skill-learnings: Data-Driven Skill Improvement from Captured Learnings",
+  "slug": "improve-skill-learnings",
+  "created": "2026-09-24T15:17:00Z",
+  "iteration": 1,
+  "status": "ready",
+  "summary": "Build a new skill called improve-skill-learnings that reads the unified-learnings.jsonl file, validates captured learnings against current skill/agent state, and applies cohesive fixes to the target files. The existing improve-skill gets renamed to improve-skill-benchmarks. Both form a sibling pair: benchmarks for synthetic evaluation-driven improvement, learnings for real-world failure-driven improvement. The skill handles all four improves_type values (skill, agent, process, contract), uses Haiku agents for validation and the session model for drafting changes, presents diffs for user approval, auto-commits on approval, and tracks learning status lifecycle through a new update-learning.py script.",
+  "decisions": [
+    "Standalone new skill, not an extension of improve-skill",
+    "Naming pair: improve-skill-benchmarks (rename of current improve-skill) + improve-skill-learnings (new)",
+    "No args invocation. Reads unified-learnings.jsonl directly as sole input source",
+    "One skill improved per invocation. User runs again for the next skill",
+    "Filter: all entries with status == captured (both confirmed and candidate confidence levels)",
+    "Validation via Haiku agent per learning: checks staleness, correctness, and resolves target file path",
+    "Status lifecycle: captured (act on) -> applied | stale | invalid (all three skip on future runs)",
+    "Only status == captured entries enter the pipeline. stale/invalid/applied never re-investigated",
+    "Skill selection: show ranked table of skills by learning count, user picks which to improve. Null improves entries shown separately as unassigned row",
+    "Application mechanism: session-model agent reads all learnings for target skill + current file, drafts cohesive unified diff. User approves or rejects",
+    "Verification is diff review only. No automated benchmark run",
+    "Reporting: summary table (acted/stale/invalid counts) + diff + remaining captured learnings backlog count",
+    "Scope covers all four improves_type values: skill, agent, process, contract",
+    "Validation agent also resolves target file: searches skills/, agents/, resources/, scripts/ directories. If no file found, marks learning as invalid",
+    "Auto-commit after user approves the diff. Descriptive commit message referencing which learnings were applied",
+    "New update-learning.py script for status updates. Takes --id and --status args. Atomic rewrite with fcntl.flock like log-learning.py",
+    "Update learning-schema.json to add stale and invalid to allowed status enum values. Bundled with skill build",
+    "Rename of improve-skill to improve-skill-benchmarks is bundled with this work, not deferred"
+  ],
+  "open_threads": [],
+  "disposed_threads": [],
+  "next_action": "/to-tasks to break this seed into implementable task slices",
+  "implementation_decisions": [
+    "Haiku validation agents run in parallel, one per learning entry",
+    "Session-model agent drafts changes, ensuring consistency regardless of which model the user is running",
+    "update-learning.py reads the full jsonl, finds entry by UUID, updates status field, rewrites atomically with file locking",
+    "learning-schema.json updated to include stale and invalid in status enum alongside captured and applied",
+    "Ranked table groups learnings by improves field, sorted by count descending. Null improves shown as unassigned row at bottom",
+    "Commit message format: improve(<target>): apply N learnings - brief description of changes"
+  ],
+  "risks_and_tradeoffs": [
+    "Candidate-confidence learnings may be incorrect. Haiku validation mitigates but does not eliminate risk. Diff review is the final safety gate",
+    "JSONL rewrite in update-learning.py is not append-only. File locking prevents corruption but the file must be fully rewritten on each status update",
+    "Renaming improve-skill to improve-skill-benchmarks touches many files across the repo (agent listings, settings, skill references, existing learnings data)"
+  ],
+  "further_notes": [
+    "58 learnings currently captured in unified-learnings.jsonl as of 2026-09-24",
+    "Learning schema fields: type, reported_by, improves, improves_type, cause, problem, why_missed, lesson, fix, evidence, confidence, status, schema_version, id, timestamp",
+    "Existing log-learning.py handles writing. capture-learning agent handles end-of-skill capture. This new skill is the consumer side of the loop"
+  ],
+  "verification": {
+    "iteration": 1,
+    "personas": ["grounding", "accuracy", "completeness", "coherence"],
+    "refutations_upheld": 0,
+    "refutations_screened": 0,
+    "clean": true,
+    "status": "verified"
+  }
+}

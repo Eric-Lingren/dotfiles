@@ -258,7 +258,7 @@
           {
             "signal": "A2",
             "finding": "Full file contents read per iteration inside loop accumulates context on session model across iterations",
-            "location": "skills/improve-skill/SKILL.md:30",
+            "location": "skills/improve-skill-benchmarks/SKILL.md:30",
             "recommendation": "Delegate per-iteration reads to an isolated agent context rather than accumulating all content on the session model",
             "proposed_agent": null,
             "consumers": null,
@@ -269,10 +269,10 @@
           {
             "signal": "A3",
             "finding": "Step 5 items 6 and 7 run corpus-wide grep across ~/.dotfiles/claude-code-shared/ inline on session model to detect stale references and misplaced files",
-            "location": "skills/improve-skill/SKILL.md:197",
+            "location": "skills/improve-skill-benchmarks/SKILL.md:197",
             "recommendation": "Extract stale-reference grep and misplaced-file scan to a shell script or delegate to cavecrew-investigator subagent returning compact hit list",
             "proposed_agent": null,
-            "consumers": ["improve-skill"],
+            "consumers": ["improve-skill-benchmarks"],
             "benefit": "Prevents large grep result sets from inflating session context; session model receives only the summarized list of broken references",
             "effort": "low",
             "lifecycle": "NEW"

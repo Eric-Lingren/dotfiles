@@ -1,6 +1,6 @@
 ---
 name: architecture-auditor
-description: Read-only agent that audits a target SKILL.md for architecture anti-patterns and agent extraction opportunities. Detects 8 signals (A1-A8) across three categories: context-blowup risk, extraction candidates, and reuse opportunities. Returns a JSON array of structured finding records. Spawned by the improve-skill Architecture pillar. Also usable from register-skill at registration time.
+description: Read-only agent that audits a target SKILL.md for architecture anti-patterns and agent extraction opportunities. Detects 8 signals (A1-A8) across three categories: context-blowup risk, extraction candidates, and reuse opportunities. Returns a JSON array of structured finding records. Spawned by the improve-skill-benchmarks Architecture pillar. Also usable from register-skill at registration time.
 tools: Read, Grep, Glob, Bash
 model: sonnet
 ---

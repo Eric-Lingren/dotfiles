@@ -8,7 +8,7 @@ source "$SCRIPT_DIR/gx-lib.sh"
 
 gx_load_policy 2>/dev/null
 
-BASE="${GX_BASE_BRANCH:-main}"
+BASE=$("$SCRIPT_DIR/gxbase")
 CURRENT=$(git rev-parse --abbrev-ref HEAD)
 
 if [[ "$CURRENT" == "$BASE" ]]; then
