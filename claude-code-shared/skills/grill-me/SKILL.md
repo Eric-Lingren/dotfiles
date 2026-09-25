@@ -34,6 +34,8 @@ invokedBy: human
 
 Interview me relentlessly about every aspect of this plan until we reach a shared understanding. Walk down each branch of the design tree, resolving dependencies between decisions one-by-one.
 
+**First question (always):** Before diving into the design tree, ask: "Are there any design decisions made outside this thread — verbal, in a doc, offline — that should override what I see here?" Accept any declared prior decisions as settled constraints and do not recommend against them later. If the user overrides a recommendation and cites an offline or out-of-band decision, accept the override without re-litigating.
+
 For each question:
 1. Ask exactly ONE question per turn. One question mark. No sub-questions, no compound "X and Y?" questions, no follow-ups in the same message. Asking multiple questions at once is bewildering.
 2. Provide your recommended answer for the question you ask. State what you think the answer should be and why.
