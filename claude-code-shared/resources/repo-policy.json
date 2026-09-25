@@ -15,7 +15,8 @@
     "issue_tracker": "linear",
     "domain": "standard-metrics",
     "worktree_links": ["app/.env", "local_settings.py"],
-    "exclude": ["docs", "docs/adr/", "docs/prototype/", "docs/browser-checks/", "docs/seeds/", "docs/tasks/", "docs/handoffs/", "docs/prd/", "docs/archive/", "docs/offload-output/", ".gitignore"]
+    "exclude": ["docs", "docs/adr/", "docs/prototype/", "docs/browser-checks/", "docs/seeds/", "docs/tasks/", "docs/handoffs/", "docs/prd/", "docs/archive/", "docs/offload-output/", ".gitignore"],
+    "ci": {"provider": "circleci", "project_slug": "gh/Quaestor-Technologies/Quaestor-Web"}
   },
   "Eric-Lingren/SpawnedSapien": {
     "label": "spawnedsapien",

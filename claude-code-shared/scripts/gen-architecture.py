@@ -26,7 +26,7 @@ OUT_DEFAULT = BASE / "architecture_map.html"
 # Skills, agents, hooks are classified separately.
 
 SKILL_GROUPS = {
-    "ENTRY": ["grill-me", "grill-with-docs", "debug", "pr-code-review"],
+    "ENTRY": ["grill-me", "grill-with-docs", "debug", "ci-fix", "pr-code-review"],
     "DISTILL": ["to-seed"],
     "INVESTIGATE": ["investigate", "pr-revise"],
     "PLAN": ["to-spec", "to-tasks", "to-e2e-tasks", "prototype", "sprout-seed"],

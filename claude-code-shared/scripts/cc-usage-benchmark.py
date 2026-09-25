@@ -138,7 +138,7 @@ RESEARCH_CMDS = {"how-to", "deep-research", "tldr-tech", "investigate",
                  "cc-usage-analytics"}
 RUNTASK_CMDS = {"run-tasks", "run-task-followups", "tasks-to-linear",
                 "build-code", "dispatch-tasks"}
-BUGFIX_CMDS  = {"debug"}
+BUGFIX_CMDS  = {"debug", "ci-fix"}
 GITOPS_CMDS  = {"worktree", "caveman-commit"}
 DELEGATE_CMDS = {"offload", "handoff"}
 

@@ -1,0 +1,103 @@
+{
+  "schema_version": "2",
+  "producer": "to-tasks",
+  "source": {
+    "type": "seed",
+    "ref": "20260924-1315-ci-fix-skill.json"
+  },
+  "generated_at": "2026-09-25T04:10:11Z",
+  "branching": {
+    "strategy": "single",
+    "branch": "feat/ci-fix-skill"
+  },
+  "tasks": [
+    {
+      "id": "T-0024",
+      "title": "Add CI provider config to repo-policy.json",
+      "type": "AFK",
+      "task_type": "code",
+      "description": "Add a `ci` field to the Quaestor-Web entry in repo-policy.json. Shape: `{provider: \"circleci\", project_slug: \"gh/Quaestor-Technologies/Quaestor-Web\"}`. This is the data dependency the ci-fix skill reads to resolve which CI provider and project slug to query. Falls back to .circleci/config.yml detection if absent, but explicit config is preferred.",
+      "acceptance_criteria": [
+        "repo-policy.json Quaestor-Web entry has `ci` field with shape {provider: \"circleci\", project_slug: \"gh/Quaestor-Technologies/Quaestor-Web\"}",
+        "JSON parses without error (jq . < repo-policy.json)"
+      ],
+      "blocked_by": [],
+      "status": "done",
+      "branch": null,
+      "pr": null,
+      "summary": "Added ci field with provider circleci and project_slug gh/Quaestor-Technologies/Quaestor-Web to Quaestor-Web entry in repo-policy.json.",
+      "files_touched": ["claude-code-shared/resources/repo-policy.json"],
+      "tests": {"passed": 0, "failed": 0},
+      "log_path": "docs/tasks/.logs/20260924-2109-ci-fix-skill/T-0024.md"
+    },
+    {
+      "id": "T-0025",
+      "title": "Build ci-fix SKILL.md",
+      "type": "AFK",
+      "task_type": "code",
+      "description": "Create the ci-fix skill at ~/.dotfiles/claude-code-shared/skills/ci-fix/SKILL.md. Full diagnose-fix loop: check CircleCI MCP auth (hard-refuse if not authenticated), detect current branch from git, read repo-policy.json `ci` field for project slug (fall back to .circleci/config.yml), load CircleCI MCP debug-failing-run playbook via list_skills + get_skill, query CircleCI MCP (list_runs by branch -> list_run_workflows -> list_workflow_jobs -> get_job + get_job_logs/list_job_tests for failing jobs), diagnose each failure, apply code fixes, run local verification only for steps not covered by existing hooks (pytest, pyright, vitest, migration checks \u2014 lint/format rely on pre-commit hooks), push via gxpush --auto, output inline summary (mechanical fixes listed briefly, semantic fixes shown with diff and reasoning). Single commit, single push. One shot per invocation. Standard learning-capture tail block with slug ci-fix.",
+      "acceptance_criteria": [
+        "SKILL.md exists at ~/.dotfiles/claude-code-shared/skills/ci-fix/SKILL.md",
+        "Skill hard-refuses with guidance when CircleCI MCP is not authenticated",
+        "Skill reads repo-policy.json ci field for project slug with .circleci/config.yml fallback",
+        "Skill loads debug-failing-run playbook via list_skills + get_skill at start",
+        "CircleCI MCP query chain covers list_runs -> list_run_workflows -> list_workflow_jobs -> get_job_logs",
+        "Local verification runs only for non-hook-covered steps (pytest, pyright, vitest, migration checks)",
+        "Push delegates to gxpush --auto; skill stops and reports if local verification fails",
+        "Inline summary distinguishes mechanical fixes (brief) from semantic fixes (diff + reasoning)",
+        "Learning-capture tail block present with slug ci-fix"
+      ],
+      "blocked_by": [
+        "T-0024"
+      ],
+      "status": "done",
+      "branch": null,
+      "pr": null,
+      "summary": "Created ci-fix SKILL.md with 8-step flow: auth gate, playbook load, branch/slug detection, CI query chain, failure diagnosis, code fixes, local verification, gxpush --auto, and inline summary with mechanical vs semantic distinction.",
+      "files_touched": ["claude-code-shared/skills/ci-fix/SKILL.md"],
+      "tests": {"passed": 0, "failed": 0},
+      "log_path": "docs/tasks/.logs/20260924-2109-ci-fix-skill/T-0025.md"
+    },
+    {
+      "id": "T-0026",
+      "title": "Register ci-fix skill",
+      "type": "AFK",
+      "task_type": "code",
+      "description": "Register the ci-fix skill so /ci-fix is invocable from any session. Add the skill entry with correct path, description, and trigger conditions. Skill name: ci-fix, located at ~/.dotfiles/claude-code-shared/skills/ci-fix/.",
+      "acceptance_criteria": [
+        "/ci-fix appears in the available skills list",
+        "Skill description conveys: diagnose and fix CircleCI pipeline failures on current branch",
+        "Skill can be invoked without load errors"
+      ],
+      "blocked_by": [
+        "T-0025"
+      ],
+      "status": "done",
+      "branch": null,
+      "pr": null,
+      "summary": "Registered ci-fix in model-tiers.json (T3), skill-pipeline.json, learning-contract.md, cc-usage-benchmark.py BUGFIX_CMDS, and gen-architecture.py ENTRY group.",
+      "files_touched": ["claude-code-shared/resources/model-tiers.json", "claude-code-shared/skill-pipeline.json", "claude-code-shared/contracts/learning-contract.md", "claude-code-shared/scripts/cc-usage-benchmark.py", "claude-code-shared/scripts/gen-architecture.py"],
+      "tests": {"passed": 0, "failed": 0},
+      "log_path": "docs/tasks/.logs/20260924-2109-ci-fix-skill/T-0026.md"
+    },
+    {
+      "id": "T-0027",
+      "title": "Auto-monitoring mode: poll CI and auto-fix on failure",
+      "type": "AFK",
+      "task_type": "triage",
+      "domain": "personal",
+      "deliverable": "code",
+      "description": "Auto-monitoring mode: after push, skill polls CI via /loop dynamic mode and auto-fixes on failure. Infrastructure exists (ScheduleWakeup, /loop). Deferred to keep v1 simple as a standalone tool. Can wrap the skill in a polling layer later without changing its internals.\n\nUser confirmed interest. ~270s poll interval stays in cache. Needs trigger from gxpush or manual invocation. Retry cap and stop conditions TBD for that mode.",
+      "acceptance_criteria": [
+        "Item has been exported to its destination by export-tasks"
+      ],
+      "blocked_by": [],
+      "status": "not_started",
+      "branch": null,
+      "pr": null,
+      "seed_ref": "20260924-1315-ci-fix-skill.json",
+      "task_ref": "20260924-2109-ci-fix-skill.json"
+    }
+  ],
+  "follow_ups": []
+}
