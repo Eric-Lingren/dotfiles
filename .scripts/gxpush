@@ -2,7 +2,8 @@
 # gxpush — preview-and-confirm push with flags
 # What: stages files, scans for secrets, generates an AI commit message, pushes to origin, and fills in an empty PR description
 # When: ready to push; flags: --all (blast-radius), --pick (git add -p), --pr (open PR), --push-only, --auto (no prompts),
-#       --no-desc (never touch the PR body), --force-desc (regenerate even when a body exists)
+#       --no-desc (never touch the PR body), --force-desc (regenerate even when a body exists),
+#       --no-verify (skip pre-commit hooks, e.g. after merge conflict resolution)
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/gx-lib.sh"
@@ -19,6 +20,7 @@ MODE_PUSH_ONLY=false
 MODE_AUTO=false
 MODE_NO_DESC=false
 MODE_FORCE_DESC=false
+MODE_NO_VERIFY=false
 
 for arg in "$@"; do
   case "$arg" in
@@ -29,6 +31,7 @@ for arg in "$@"; do
     --auto)       MODE_AUTO=true ;;
     --no-desc)    MODE_NO_DESC=true ;;
     --force-desc) MODE_FORCE_DESC=true ;;
+    --no-verify)  MODE_NO_VERIFY=true ;;
   esac
 done
 
@@ -223,11 +226,10 @@ if ! $MODE_PUSH_ONLY; then
     fi
     if [[ "$AHEAD" -gt 0 ]]; then
       echo "Nothing to stage — $AHEAD unpushed commit(s) found. Proceeding to push."
-      MODE_PUSH_ONLY=true
     else
-      echo "Nothing to commit. Aborting."
-      exit 0
+      echo "Nothing to stage or commit — pushing to sync with origin."
     fi
+    MODE_PUSH_ONLY=true
   fi
 fi
 
@@ -280,7 +282,11 @@ if ! $MODE_PUSH_ONLY; then
     fi
   fi
 
-  git commit -m "$COMMIT_MSG"
+  COMMIT_ARGS=(-m "$COMMIT_MSG")
+  if $MODE_NO_VERIFY; then
+    COMMIT_ARGS+=(--no-verify)
+  fi
+  git commit "${COMMIT_ARGS[@]}"
   if [[ $? -ne 0 ]]; then
     echo "Commit failed. Aborting push."
     exit 1

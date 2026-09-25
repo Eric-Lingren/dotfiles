@@ -179,15 +179,15 @@
   },
   "2026-W34": {
     "adherence": {
-      "match": 27,
-      "n": 36,
-      "overall_pct": 75.0,
+      "match": 7,
+      "n": 12,
+      "overall_pct": 58.3,
       "skills": {
         "build-code": {
           "exp": "sonnet",
           "mix": {
             "opus": 2,
-            "sonnet": 3
+            "sonnet": 1
           }
         },
         "cc-usage-analytics": {
@@ -196,60 +196,22 @@
             "opus": 1
           }
         },
-        "clean-scaffolding": {
-          "exp": "haiku",
-          "mix": {
-            "opus": 1,
-            "sonnet": 2
-          }
-        },
-        "handoff": {
-          "exp": "sonnet",
-          "mix": {
-            "sonnet": 1
-          }
-        },
-        "investigate": {
-          "exp": "haiku",
-          "mix": {
-            "sonnet": 1
-          }
-        },
-        "offload": {
-          "exp": "sonnet",
-          "mix": {
-            "sonnet": 4
-          }
-        },
-        "pr-code-review": {
-          "exp": "sonnet",
-          "mix": {
-            "sonnet": 4
-          }
-        },
         "register-skill": {
           "exp": "sonnet",
           "mix": {
             "opus": 1
           }
         },
-        "to-seed": {
-          "exp": "sonnet",
-          "mix": {
-            "sonnet": 1
-          }
-        },
         "to-tasks": {
           "exp": "sonnet",
           "mix": {
-            "sonnet": 13
+            "sonnet": 6
           }
         },
         "worktree": {
           "exp": "sonnet",
           "mix": {
-            "opus": 1,
-            "sonnet": 1
+            "opus": 1
           }
         }
       }
@@ -325,6 +287,21 @@
           "exp": "sonnet",
           "mix": {
             "sonnet": 4
+          }
+        }
+      }
+    }
+  },
+  "2026-W38": {
+    "adherence": {
+      "match": 0,
+      "n": 1,
+      "overall_pct": 0.0,
+      "skills": {
+        "worktree": {
+          "exp": "sonnet",
+          "mix": {
+            "opus": 1
           }
         }
       }

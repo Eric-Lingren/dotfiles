@@ -1,0 +1,26 @@
+#!/usr/bin/env bash
+# gxbase — resolve the correct base branch for the current feature branch
+# What: checks for an open PR and returns its base branch; falls back to GX_BASE_BRANCH/main
+# When: use before rebase/sync to avoid rebasing onto the wrong branch (e.g. main when PR targets a stacked branch)
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/gx-lib.sh"
+
+gx_load_policy 2>/dev/null
+
+CURRENT=$(git rev-parse --abbrev-ref HEAD)
+POLICY_BASE="${GX_BASE_BRANCH:-main}"
+
+if [[ "$CURRENT" == "$POLICY_BASE" ]]; then
+  echo "$POLICY_BASE"
+  exit 0
+fi
+
+# Check for an open PR targeting a specific base
+PR_BASE=$(gh pr view "$CURRENT" --json baseRefName --jq '.baseRefName' 2>/dev/null)
+
+if [[ -n "$PR_BASE" ]]; then
+  echo "$PR_BASE"
+else
+  echo "$POLICY_BASE"
+fi

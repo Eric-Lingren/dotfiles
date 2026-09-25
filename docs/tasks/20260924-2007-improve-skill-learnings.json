@@ -1,0 +1,94 @@
+{
+  "schema_version": "2",
+  "producer": "to-tasks",
+  "source": {
+    "type": "seed",
+    "ref": "20260924-1517-improve-skill-learnings.json"
+  },
+  "generated_at": "2026-09-25T03:08:36Z",
+  "branching": {
+    "strategy": "single",
+    "branch": "feat/improve-skill-learnings"
+  },
+  "tasks": [
+    {
+      "id": "T-0021",
+      "title": "Update learning schema and build update-learning.py",
+      "type": "AFK",
+      "task_type": "code",
+      "description": "Add 'stale' and 'invalid' to the allowed status enum in learning-schema.json alongside 'captured' and 'applied'. Then build a new update-learning.py script in claude-code-shared/scripts/ that takes --id <uuid> and --status <new_status> arguments, reads unified-learnings.jsonl, finds the entry by UUID, updates its status field, and rewrites the file atomically using fcntl.flock (same locking pattern as log-learning.py). The script should validate the new status against learning-schema.json before writing. Exit 0 on success, exit 1 with stderr on validation or write failure.",
+      "acceptance_criteria": [
+        "learning-schema.json status enum contains: captured, applied, stale, invalid",
+        "update-learning.py accepts --id and --status args",
+        "update-learning.py validates status value against schema before writing",
+        "update-learning.py uses fcntl.flock for atomic file rewrite",
+        "update-learning.py exits 0 on success, 1 on error with stderr message",
+        "update-learning.py correctly finds entry by UUID and updates only the status field",
+        "Manual test: run update-learning.py on a test entry and verify the jsonl file is correctly updated"
+      ],
+      "blocked_by": [],
+      "status": "done",
+      "summary": "Added stale/invalid to learning-schema.json status enum and created update-learning.py with atomic rewrite via fcntl.flock.",
+      "files_touched": ["claude-code-shared/contracts/learning-schema.json", "claude-code-shared/scripts/update-learning.py"],
+      "tests": {"passed": 4, "failed": 0},
+      "log_path": "docs/tasks/.logs/20260924-2007-improve-skill-learnings/T-0021.md",
+      "branch": null,
+      "pr": null
+    },
+    {
+      "id": "T-0022",
+      "title": "Rename improve-skill to improve-skill-benchmarks",
+      "type": "AFK",
+      "task_type": "code",
+      "description": "Rename the skill directory from claude-code-shared/skills/improve-skill/ to claude-code-shared/skills/improve-skill-benchmarks/. Update all references across the repo: agent type listings in .claude/agents/*.md frontmatter, settings.json skill registrations, any SKILL.md files that reference improve-skill by name, CLAUDE.md files, and any improve-skill-specific scripts or resources. Also update any existing learnings in unified-learnings.jsonl where reported_by or improves fields reference 'improve-skill' to use 'improve-skill-benchmarks'. This is a mechanical rename. Characterize the full set of references before renaming to ensure nothing is missed.",
+      "acceptance_criteria": [
+        "skills/improve-skill/ directory no longer exists",
+        "skills/improve-skill-benchmarks/ directory exists with identical content",
+        "grep -r 'improve-skill' across claude-code-shared/ returns zero hits that refer to the old name (only hits for improve-skill-benchmarks and improve-skill-learnings)",
+        "All agent type listings reference improve-skill-benchmarks",
+        "All settings.json entries reference improve-skill-benchmarks",
+        "Existing learnings data updated where improve-skill was the target"
+      ],
+      "blocked_by": [],
+      "status": "done",
+      "summary": "Renamed skills/improve-skill/ to improve-skill-benchmarks/ and updated all 12 external references across settings, agents, contracts, resources, scripts, and pipeline config.",
+      "files_touched": [".claude/settings.local.json", "claude-code-shared/agents/architecture-auditor.md", "claude-code-shared/agents/registry.json", "claude-code-shared/contracts/learning-contract.md", "claude-code-shared/contracts/learning-schema.json", "claude-code-shared/resources/model-tiers.json", "claude-code-shared/resources/skill-directory-conventions.md", "claude-code-shared/scripts/architecture-skill-audit/architecture_score.py", "claude-code-shared/scripts/cc-usage-benchmark.py", "claude-code-shared/scripts/gen-architecture.py", "claude-code-shared/scripts/tests/test_skill_pipeline.py", "claude-code-shared/skill-pipeline.json"],
+      "tests": {"passed": 0, "failed": 0},
+      "log_path": "docs/tasks/.logs/20260924-2007-improve-skill-learnings/T-0022.md",
+      "branch": null,
+      "pr": null
+    },
+    {
+      "id": "T-0023",
+      "title": "Build improve-skill-learnings SKILL.md and register",
+      "type": "AFK",
+      "task_type": "code",
+      "description": "Create the new skill at claude-code-shared/skills/improve-skill-learnings/SKILL.md. The skill reads unified-learnings.jsonl, filters to status == captured entries, groups by improves field, shows a ranked table sorted by count with null-improves shown as unassigned, and lets the user pick a target. For the selected target, it spawns Haiku validation agents (one per learning) to check staleness, correctness, and resolve the target file path (searching skills/, agents/, resources/, scripts/). Invalid or stale learnings get marked via update-learning.py. Surviving learnings are passed to a session-model agent that reads all of them plus the current target file and drafts a cohesive unified diff. The diff is presented for user approval. On approval, changes are applied and auto-committed with a descriptive message. A summary report shows acted/stale/invalid counts plus remaining backlog. The skill covers all four improves_type values (skill, agent, process, contract). Include the standard learning-capture block at the end. Register the skill in settings.json and agent type listings.",
+      "acceptance_criteria": [
+        "SKILL.md exists at claude-code-shared/skills/improve-skill-learnings/SKILL.md",
+        "Skill reads unified-learnings.jsonl and filters to status == captured",
+        "Ranked table displays skills grouped by learning count with unassigned row for null improves",
+        "Haiku validation agents spawned per learning for staleness and file resolution",
+        "Learnings marked stale or invalid via update-learning.py when validation fails",
+        "Session-model agent drafts cohesive diff from validated learnings for the target",
+        "Diff presented for user approval before any edits",
+        "Auto-commit on approval with descriptive message format: improve(<target>): apply N learnings",
+        "Summary report shows acted/stale/invalid counts and remaining backlog",
+        "Skill registered in settings.json and agent type listings",
+        "Learning-capture block included at end of SKILL.md"
+      ],
+      "blocked_by": [
+        "T-0021",
+        "T-0022"
+      ],
+      "status": "done",
+      "summary": "Created improve-skill-learnings SKILL.md with 8-step pipeline. Registered in model-tiers, skill-pipeline, registry, and contracts.",
+      "files_touched": ["claude-code-shared/skills/improve-skill-learnings/SKILL.md", "claude-code-shared/resources/model-tiers.json", "claude-code-shared/skill-pipeline.json", "claude-code-shared/agents/registry.json", "claude-code-shared/contracts/learning-contract.md", "claude-code-shared/scripts/cc-usage-benchmark.py"],
+      "tests": {"passed": 0, "failed": 0},
+      "log_path": "docs/tasks/.logs/20260924-2007-improve-skill-learnings/T-0023.md",
+      "branch": null,
+      "pr": null
+    }
+  ],
+  "follow_ups": []
+}
