@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # gxsync — sync feature branch with base via merge
 # What: fetches origin and merges origin/<base> into the current feature branch, showing ahead/behind counts first
-# When: feature branch is behind main; prompts before merging; exits 1 on conflict with resolution instructions
+# When: feature branch is behind main; prompts before merging; auto-resolves lockfile conflicts, exits 1 only on source conflicts
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/gx-lib.sh"
@@ -52,13 +52,76 @@ MERGE_EXIT=$?
 
 if [[ $MERGE_EXIT -ne 0 ]]; then
   echo ""
-  echo "Merge conflict detected. Resolve conflicts manually, then run git merge --continue."
+  echo "Merge conflict detected. Attempting auto-resolution..."
   echo ""
-  echo "Conflicting files:"
-  git diff --name-only --diff-filter=U | while IFS= read -r f; do
-    echo "  $f"
-  done
-  exit 1
+
+  AUTO_RESOLVED=()
+  UNRESOLVED=()
+
+  while IFS= read -r f; do
+    case "$f" in
+      package-lock.json|yarn.lock|pnpm-lock.json|Gemfile.lock|Pipfile.lock|\
+      poetry.lock|composer.lock|Cargo.lock|go.sum|*.lock)
+        git checkout --theirs -- "$f" 2>/dev/null && git add "$f"
+        AUTO_RESOLVED+=("$f")
+        ;;
+      *)
+        UNRESOLVED+=("$f")
+        ;;
+    esac
+  done < <(git diff --name-only --diff-filter=U)
+
+  if [[ ${#AUTO_RESOLVED[@]} -gt 0 ]]; then
+    echo "Auto-resolved (accepted theirs):"
+    for f in "${AUTO_RESOLVED[@]}"; do
+      echo "  $f"
+    done
+    echo ""
+  fi
+
+  if [[ ${#UNRESOLVED[@]} -gt 0 ]]; then
+    echo "Unresolved source conflicts:"
+    for f in "${UNRESOLVED[@]}"; do
+      echo "  $f"
+    done
+    echo ""
+
+    CLAUDE_BIN=$(gx_claude_bin)
+    FILE_LIST=$(printf '%s\n' "${UNRESOLVED[@]}")
+
+    echo "Spawning Claude agent to resolve conflicts..."
+    echo ""
+    "$CLAUDE_BIN" --print \
+      -p "You are resolving merge conflicts in a git repository. The following files have merge conflict markers (<<<<<<< ======= >>>>>>>):
+
+$FILE_LIST
+
+For each file:
+1. Read the file
+2. Understand both sides of each conflict
+3. Produce the correct merged result that preserves intent from both sides
+4. Write the resolved file (no conflict markers remaining)
+5. Run: git add <file>
+
+Do not delete functionality from either side unless it is truly redundant. Prefer combining both changes when possible. If one side clearly supersedes the other, pick that side." 2>&1
+
+    # Check if conflicts remain
+    STILL_CONFLICTED=$(git diff --name-only --diff-filter=U 2>/dev/null)
+    if [[ -n "$STILL_CONFLICTED" ]]; then
+      echo ""
+      echo "Agent could not resolve all conflicts. Remaining:"
+      echo "$STILL_CONFLICTED" | while IFS= read -r f; do
+        echo "  $f"
+      done
+      echo ""
+      echo "Resolve manually, then run: git merge --continue"
+      exit 1
+    fi
+  fi
+
+  # All conflicts auto-resolved. Complete merge.
+  GIT_EDITOR=true git merge --continue
+  echo "All conflicts auto-resolved. Merge complete."
 fi
 
 echo ""
