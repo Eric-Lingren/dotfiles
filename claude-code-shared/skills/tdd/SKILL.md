@@ -215,6 +215,7 @@ After all tests pass, look for [refactor candidates](resources/refactoring.md):
 [ ] Test uses public interface only
 [ ] Test would survive internal refactor
 [ ] Code is minimal for this test
+[ ] If a TS interface/type/context shape changed: run type-check (yarn type-check or tsc --noEmit), exit 0. Test runners like vitest strip types, so GREEN is not type-safe.
 [ ] No speculative features added
 ```
 
