@@ -277,23 +277,17 @@ Wait for response.
 
 ## Step 7: Apply, commit, and loop
 
-Write the diff to a temp file and apply it:
+Apply each hunk of the approved diff with the Edit tool. Do NOT pipe the diff
+to `patch`. Agent-generated diffs pass through model text output and may
+contain HTML-escaped entities (e.g. `&lt;`, `&gt;`, `&amp;`) that corrupt a
+patch. Use the literal file text as `old_string`/`new_string`, unescaping any
+entities first.
 
-```bash
-PATCH_FILE="/tmp/improve-skill-learnings-<target>.patch"
-# (write diff content to $PATCH_FILE via a Python write — not echo/heredoc)
-python3 -c "
-import sys
-diff = '''<diff content>'''
-with open('$PATCH_FILE', 'w') as f:
-    f.write(diff)
-"
-
-patch -p0 < "$PATCH_FILE"
-```
-
-If `patch` exits non-zero, report the error and skip this learning. Jump back
-to Step 5 with the remaining list.
+If an Edit fails (old_string not found), the diff's context drifted from the
+real file. That is a drafting failure, not a problem with the learning. Re-read
+the file and re-anchor the hunk against the current text once. If it still
+fails, report the error and skip. Leave the learning `captured` (it stays in
+the backlog for a later run). Jump back to Step 5 with the remaining list.
 
 Mark the learning as applied:
 
