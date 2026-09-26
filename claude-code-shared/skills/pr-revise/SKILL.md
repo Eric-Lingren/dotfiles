@@ -322,6 +322,10 @@ The **Action** column shows what Step 8 will capture in the seed for each item a
 
 Prompt the user: "Confirm this categorization and proceed, or override any row before actions fire."
 
+**Bulk options must disclose VERIFIED_FALSE items.** If you offer a sweep option ("agree to all", "accept all removals"), and any item it covers has a VERIFIED_FALSE verdict, name those item numbers in the option text. Add a one-line note that each reviewer's stated reason is factually wrong. Example: "Agree to all removals (note: #2's rationale 'rebase avoids this' is VERIFIED_FALSE)".
+
+If the user still accepts a change on a VERIFIED_FALSE item, find a valid independent reason for it before drafting that item's reply in Step 8. If none exists, ask the user for one.
+
 Apply any final overrides. Then proceed to Step 7.
 
 ---
@@ -381,6 +385,7 @@ Write each `reply_body` now, grounded in the diligence finding:
 - Address the reviewer's actual point; do not restate their comment back at them before answering.
 - Never claim work is done that is not done. A planned-but-unwritten fix reads as "fixing by…", not "fixed". **Do not hand-write a commit SHA** into `reply_body`; relay stitches the fixing commit in at post time once the code task lands.
 - Keep the reviewer's handle out of the body; the thread already targets them.
+- When the user accepted a change on a VERIFIED_FALSE item, the reply cites the independent reason from Step 6. Never repeat or agree with the reviewer's false claim.
 
 Per-class framing: **bug/confirmed_escape** — acknowledge, confirm real, state the fix approach. **bug/not_an_escape** — confirm real, note it's a known facet, point to the fix. **bug/false_flag** — explain with evidence why the code is correct; stay collegial. **change** — state the decision; offer the alternative if they feel strongly. **question** — answer directly from the code. **discuss** — engage the tradeoff, state your lean, name the follow-up; if deferred, say so and point at the tracking item. **nit** — brief accept/decline with a one-line reason.
 
