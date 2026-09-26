@@ -169,6 +169,8 @@ This gate fires every time, for every file, for every behavior. There are no exc
 
 If you find yourself writing implementation code without a RED test, stop immediately. Delete the implementation. Write the test first.
 
+**Confirm RED fails for the expected reason.** When the target is a new file (e.g. an agent or config file), structural tests (file exists, frontmatter) fail in RED. Schema or contract tests that run against fixtures may pass early. That split is expected. A structural test that passes before the file exists is a broken test.
+
 ### 2. Tracer Bullet
 
 Write ONE test that confirms ONE thing about the system:
