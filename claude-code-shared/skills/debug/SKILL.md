@@ -298,6 +298,8 @@ If new failures appear: your cleanup caused a regression. Fix before proceeding.
 Read and execute `~/.dotfiles/claude-code-shared/resources/attribution-capture.md`.
 <!-- attribution-capture:end -->
 
+**Both blocks are mandatory and independent.** Running attribution-capture does NOT discharge learning-capture. After attribution-tracer finishes, still spawn `capture-learning` as the final action of the terminal turn.
+
 <!-- learning-capture:start -->
 Read and execute `~/.dotfiles/claude-code-shared/resources/learning-capture.md`.
 This skill's slug is `debug`.
