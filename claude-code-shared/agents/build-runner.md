@@ -91,6 +91,8 @@ If `/tdd` cannot complete (stuck, acceptance criteria unmeetable, blocked on mis
 
 Follow `~/.dotfiles/claude-code-shared/resources/app-launch-detection.md` to resolve `start_command`, `base_url`, `storageState`, and the Playwright module location.
 
+Check Playwright is available at that location (e.g. `npx playwright --version 2>/dev/null`). If the check fails, skip the rest of this step and start no server. Log `Browser check skipped: Playwright not installed` to the trace, with the install command `npm i -D @playwright/test && npx playwright install chromium`. This is a skip, not a failure. Status stays `"done"` if earlier steps passed.
+
 Health-check the server (`curl -s -o /dev/null -w "%{http_code}" <base_url>`). Start it via `start_command` (background) if it's not already up, polling until healthy (60s cap). Track whether you started it.
 
 Spawn `browser-checker` (Agent tool) with `base_url`, `url_path`, `assertions`, `storageState`, the Playwright module location, a `run_slug` derived from the task id, and `cwd`. Cap at 3 attempts; bail on no-progress (two consecutive identical failing assertions) or after 3 attempts.
@@ -116,6 +118,7 @@ Append a closing summary section to the trace log, then return ONLY this JSON (n
 ```
 
 - `status`: `"done"` on success, `"failed"` if any step above returned failed.
+- `summary`: if step 4 was skipped for missing Playwright, end with `Browser check skipped: Playwright not installed. Install: npm i -D @playwright/test && npx playwright install chromium.`
 - `pr`: always `null` — build-runner never opens PRs; the caller handles that at end-of-run.
 - `follow_ups`: irreducible human-only actions discovered while touching this task's diff, in the same shape as the task file's `follow_ups` array items (`id` omitted — the caller assigns it). Empty array if none. Apply the same discovery rules build-code has always used: never emit a follow-up for testing, verification, QA, cleanup, or anything AFK-doable.
 
