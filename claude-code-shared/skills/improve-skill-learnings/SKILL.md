@@ -156,15 +156,20 @@ Steps:
 2. Read the first file that exists (Read tool).
 3. Does the file ALREADY contain the substance of the fix or lesson?
    If yes → return {"id": "{id}", "verdict": "stale", "reason": "already_applied", "file_path": "<path>"}
-4. Does the step or mechanism the fix changes live in a DIFFERENT file? (e.g. the
+4. Does this file itself perform the action the fix changes (e.g. edit code, spawn
+   the agent, run the command)? If it only delegates that action to another skill
+   or agent (e.g. an orchestrator skill that hands code edits to a runner agent) →
+   return {"id": "{id}", "verdict": "misrouted", "reason": "<delegate file path>",
+   "file_path": "<path>", "suggested_improves": "<slug>", "suggested_improves_type": "<skill|agent|process|contract>"}
+5. Does the step or mechanism the fix changes live in a DIFFERENT file? (e.g. the
    fix edits an evidence-pack step, but this file has none.) Grep
    ~/.dotfiles/claude-code-shared/{skills,agents,resources,contracts} for the
    mechanism's distinctive terms. If exactly one other file clearly owns it →
    return {"id": "{id}", "verdict": "misrouted", "reason": "<owner file path>",
    "file_path": "<path>", "suggested_improves": "<slug>", "suggested_improves_type": "<skill|agent|process|contract>"}
-5. Has the file changed so significantly that the lesson is no longer relevant?
+6. Has the file changed so significantly that the lesson is no longer relevant?
    If yes → return {"id": "{id}", "verdict": "stale", "reason": "no_longer_relevant", "file_path": "<path>"}
-6. Otherwise → return {"id": "{id}", "verdict": "valid", "reason": "ok", "file_path": "<path>"}
+7. Otherwise → return {"id": "{id}", "verdict": "valid", "reason": "ok", "file_path": "<path>"}
 
 Return ONLY the JSON object. No prose.
 ```
