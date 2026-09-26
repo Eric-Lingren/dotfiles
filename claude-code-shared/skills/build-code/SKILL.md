@@ -185,7 +185,11 @@ After all tasks in the wave complete (regardless of individual pass/fail), merge
 
 For each task in the wave (in order):
 - If `receipt.status == "failed"`: skip the merge for this task. Its worktree branch is abandoned.
-- If `receipt.status == "done"`: attempt `git merge --no-ff <task-worktree-branch>`.
+- If `receipt.status == "done"`: first confirm the worktree branch has its own commits:
+  ```bash
+  git log --oneline HEAD..<task-worktree-branch>
+  ```
+  If the output is empty, the fix was left staged or uncommitted in the worktree. Do NOT merge. Mark this task `failed`, override `receipt.status = "failed"`, and add to `summary`: "Worktree branch has no commits. Changes were not committed." Continue to the next task. Otherwise, attempt `git merge --no-ff <task-worktree-branch>`.
   - On success: the merge is committed to the shared branch.
   - On conflict (`git merge` exits non-zero): run `git merge --abort`. Mark this task `failed` in the JSON. Override `receipt.status = "failed"`. Add a note in the task's `summary`: "Merge conflict during wave integration." Continue to the next task — do not halt.
 
