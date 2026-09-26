@@ -272,17 +272,20 @@ Instructions:
    No prose, no explanation.
 ```
 
-Present the diff to the user:
+Present the diff to the user. Keep the header as plain text outside the fence.
+Put the diff in a fence tagged `diff` so added lines render green and removed
+lines red. An untagged fence renders every line the same color.
 
-```
-Proposed changes to <file_path>
-(learning: <id>)
-Problem: <problem — one line>
+````
+**Proposed changes to `<file_path>`**
+Learning <id>: <problem, one line>
 
+```diff
 <diff content>
+```
 
 Apply? [y/n]
-```
+````
 
 Wait for response.
 
