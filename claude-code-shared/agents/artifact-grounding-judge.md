@@ -70,15 +70,19 @@ If `ref` cannot be read:
 Call `log-learning.py` with the draft record (minus server-injected fields: schema_version, id, timestamp — the writer injects those):
 
 ```bash
-echo '<draft JSON without schema_version/id/timestamp>' | python ~/.dotfiles/claude-code-shared/scripts/log-learning.py
+python ~/.dotfiles/claude-code-shared/scripts/log-learning.py <<'JSON'
+<draft JSON without schema_version/id/timestamp>
+JSON
 ```
 
-Print the output from `log-learning.py`.
+Use a quoted heredoc, not `echo '...'`. Record text often contains single quotes.
 
-Then return:
+Then return the verdict with the script's stdout and exit code copied verbatim:
 ```
-{"verdict": "pass", "confidence": "<final>", "reason": "all evidence anchors verified"}
+{"verdict": "pass", "confidence": "<final>", "reason": "all evidence anchors verified", "write_exit": <exit code>, "write_output": "<stdout, e.g. OK: appended ... id=<uuid> ...>"}
 ```
+
+A pass verdict is not a write confirmation. The caller treats a missing `OK:` line in `write_output` as a failed write.
 
 **If verdict is `rejected`:**
 
