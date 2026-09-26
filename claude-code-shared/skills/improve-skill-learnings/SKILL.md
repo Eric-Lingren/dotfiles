@@ -151,9 +151,15 @@ Steps:
 2. Read the first file that exists (Read tool).
 3. Does the file ALREADY contain the substance of the fix or lesson?
    If yes → return {"id": "{id}", "verdict": "stale", "reason": "already_applied", "file_path": "<path>"}
-4. Has the file changed so significantly that the lesson is no longer relevant?
+4. Does the step or mechanism the fix changes live in a DIFFERENT file? (e.g. the
+   fix edits an evidence-pack step, but this file has none.) Grep
+   ~/.dotfiles/claude-code-shared/{skills,agents,resources,contracts} for the
+   mechanism's distinctive terms. If exactly one other file clearly owns it →
+   return {"id": "{id}", "verdict": "misrouted", "reason": "<owner file path>",
+   "file_path": "<path>", "suggested_improves": "<slug>", "suggested_improves_type": "<skill|agent|process|contract>"}
+5. Has the file changed so significantly that the lesson is no longer relevant?
    If yes → return {"id": "{id}", "verdict": "stale", "reason": "no_longer_relevant", "file_path": "<path>"}
-5. Otherwise → return {"id": "{id}", "verdict": "valid", "reason": "ok", "file_path": "<path>"}
+6. Otherwise → return {"id": "{id}", "verdict": "valid", "reason": "ok", "file_path": "<path>"}
 
 Return ONLY the JSON object. No prose.
 ```
@@ -171,13 +177,27 @@ python3 ~/.dotfiles/claude-code-shared/scripts/update-learning.py \
   --status <stale|invalid>
 ```
 
+For each `misrouted` verdict, retarget it so it shows up under its real owner
+(status stays `captured`):
+
+```bash
+python3 ~/.dotfiles/claude-code-shared/scripts/update-learning.py \
+  --id <id> \
+  --improves <suggested_improves> \
+  --improves-type <suggested_improves_type>
+```
+
+Treat any verdict outside `valid|stale|invalid|misrouted` as malformed. Read its
+prose: if it names another owner, handle it as `misrouted`; otherwise as `stale`.
+
 Print a validation summary:
 
 ```
 Validation complete for <target>:
-  Valid:   N
-  Stale:   N  (marked via update-learning.py)
-  Invalid: N  (marked via update-learning.py — file not resolvable)
+  Valid:      N
+  Retargeted: N  (<id> → <new slug>, one per line)
+  Stale:      N  (marked via update-learning.py)
+  Invalid:    N  (marked via update-learning.py — file not resolvable)
 ```
 
 If zero valid learnings remain, print:
@@ -336,6 +356,7 @@ Display:
 Summary for <target>:
   Applied: N  (one commit each)
   Skipped: N  (user declined)
+  Retargeted: N  (moved to correct owner, still captured)
   Stale:   N  (marked stale, filtered before picker)
   Invalid: N  (marked invalid, filtered before picker)
 
@@ -361,7 +382,7 @@ print a single concise outcome line so the user sees the result without scrollin
 back. Format:
 
 ```
-<target>: <N> applied, <N> skipped, <N> stale, <N> invalid. Backlog: <M> remaining.
+<target>: <N> applied, <N> skipped, <N> retargeted, <N> stale, <N> invalid. Backlog: <M> remaining.
 ```
 
 This is the LAST thing printed. It must appear after the learning-capture tail

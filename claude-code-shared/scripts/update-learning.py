@@ -1,13 +1,17 @@
 #!/usr/bin/env python3
-"""update-learning.py — update the status field of an existing learning entry.
+"""update-learning.py — update status and/or target of an existing learning entry.
 
 Finds a learning entry in unified-learnings.jsonl by UUID, validates the new
-status value against learning-schema.json, then atomically rewrites the file.
+values against learning-schema.json, then atomically rewrites the file.
 
 Usage:
-    python update-learning.py --id <uuid> --status <new_status>
+    python update-learning.py --id <uuid> [--status <s>] [--improves <slug>] [--improves-type <t>]
+
+At least one of --status, --improves, --improves-type is required.
+Retarget a misrouted learning: --improves <slug> --improves-type <t> --status captured
 
 Valid status values: captured, applied, stale, invalid
+Valid improves_type values: skill, agent, process, contract
 
 Environment:
     LOG_LEARNING_DEST — override the learnings/ directory (used by tests).
@@ -32,8 +36,8 @@ _dest_override = os.environ.get("LOG_LEARNING_DEST")
 LEARNINGS_DIR = pathlib.Path(_dest_override) if _dest_override else SCRIPT_DIR.parent / "learnings"
 
 
-def _get_valid_statuses():
-    """Extract allowed status values from the schema."""
+def _get_enum(field):
+    """Extract allowed values for a schema property."""
     try:
         schema = json.loads(SCHEMA_PATH.read_text())
     except Exception as e:
@@ -41,34 +45,52 @@ def _get_valid_statuses():
         sys.exit(1)
 
     try:
-        return schema["properties"]["status"]["enum"]
+        return schema["properties"][field]["enum"]
     except (KeyError, TypeError) as e:
-        print(f"ERROR: could not read status enum from schema: {e}", file=sys.stderr)
+        print(f"ERROR: could not read {field} enum from schema: {e}", file=sys.stderr)
         sys.exit(1)
 
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Update the status field of an existing learning entry."
+        description="Update status and/or target of an existing learning entry."
     )
     parser.add_argument("--id", required=True, help="UUID of the learning entry to update.")
-    parser.add_argument("--status", required=True, help="New status value.")
+    parser.add_argument("--status", help="New status value.")
+    parser.add_argument("--improves", help="New target slug (retarget).")
+    parser.add_argument("--improves-type", dest="improves_type", help="New target type.")
     args = parser.parse_args()
 
     entry_id = args.id.strip()
-    new_status = args.status.strip()
 
     if not entry_id:
         print("ERROR: --id must be a non-empty string", file=sys.stderr)
         sys.exit(1)
 
-    # Validate status against schema
-    valid_statuses = _get_valid_statuses()
-    if new_status not in valid_statuses:
-        print(
-            f"ERROR: invalid status '{new_status}'. Must be one of: {', '.join(valid_statuses)}",
-            file=sys.stderr,
-        )
+    updates = {}
+    for field, value in (
+        ("status", args.status),
+        ("improves", args.improves),
+        ("improves_type", args.improves_type),
+    ):
+        if value is None:
+            continue
+        value = value.strip()
+        if not value:
+            print(f"ERROR: --{field.replace('_', '-')} must be non-empty", file=sys.stderr)
+            sys.exit(1)
+        if field != "improves":
+            allowed = _get_enum(field)
+            if value not in allowed:
+                print(
+                    f"ERROR: invalid {field} '{value}'. Must be one of: {', '.join(allowed)}",
+                    file=sys.stderr,
+                )
+                sys.exit(1)
+        updates[field] = value
+
+    if not updates:
+        print("ERROR: pass at least one of --status, --improves, --improves-type", file=sys.stderr)
         sys.exit(1)
 
     # Locate the JSONL file
@@ -105,7 +127,7 @@ def main():
                                 file=sys.stderr,
                             )
                             sys.exit(1)
-                        entry["status"] = new_status
+                        entry.update(updates)
                         found = True
                         updated_lines.append(
                             json.dumps(entry, ensure_ascii=False, separators=(",", ":")) + "\n"
@@ -144,7 +166,8 @@ def main():
         print(f"ERROR: could not update {jsonl_path}: {e}", file=sys.stderr)
         sys.exit(1)
 
-    print(f"OK: updated entry id={entry_id} status -> {new_status} in {jsonl_path}")
+    changes = ", ".join(f"{k} -> {v}" for k, v in updates.items())
+    print(f"OK: updated entry id={entry_id} {changes} in {jsonl_path}")
 
 
 if __name__ == "__main__":
