@@ -420,6 +420,11 @@ Build this block and hand it to `/to-seed` (it becomes the seed's `provenance`, 
 
 Invoke `/to-seed`, passing the full session context plus the provenance block from 8c. `to-seed` writes and validates the seed under `docs/seeds/`.
 
+Before invoking, pass these drafting rules to `/to-seed` along with the context. Check them again on the draft before verification:
+1. **Keep conditionality.** If the user or reviewer left a target open ("make sure the stack is configured"), don't flatten it into one concrete branch or PR.
+2. **Keep open questions open.** A reviewer question with no answer in the thread goes in as an open question, never as an agreed decision.
+3. **Check item numbers.** Any `decisions[]` entry that cites item numbers (overlaps, dependencies) must match the 8c provenance order. Re-read the list before writing the reference.
+
 **Skill boundary:** pr-revise stops after `/to-seed` completes. It does **not** write tasks, invoke `/to-tasks`, `/dispatch-tasks`, `/build-code`, `/relay`, check out a branch, or push. It makes **zero** outward HTTP writes during its own run. The seed is its only output; the downstream tree (`/to-tasks` → `/dispatch-tasks` → build-code + relay) does the rest.
 
 ### 8e. Handoff
