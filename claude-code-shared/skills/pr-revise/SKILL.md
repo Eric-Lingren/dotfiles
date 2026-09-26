@@ -334,7 +334,10 @@ Spawn one `attribution-tracer` subagent with these exact inputs:
 - `issue_description`: the confirmed defect claim text (the reviewer's exact words)
 - `pr_url`: the PR URL from Step 1
 - `branch`: the PR head branch, resolved via `gh pr view <url> --json headRefName --jq '.headRefName'`
-- `transcript_path`: absolute path to the current session transcript
+- `transcript_path`: run `~/.dotfiles/claude-code-shared/scripts/resolve-transcript-path.sh`
+  once before spawning, and pass its output verbatim. It prints an absolute path or
+  `null`. Never pass a placeholder string like `unavailable`. Pass `null` when the
+  script prints `null`.
 
 Attribution fires **once per `confirmed_escape` item**, not once per session. Each item gets its own attribution-tracer call.
 
