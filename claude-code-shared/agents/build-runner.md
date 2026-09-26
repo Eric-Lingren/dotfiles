@@ -60,6 +60,12 @@ For refactoring or restructuring tasks: check if the code being changed has exis
 
 For new code: follow the standard RED-GREEN-REFACTOR loop.
 
+## Coverage check
+
+If an acceptance criterion says "each" or "every" and the fix lives in a shared mechanism, enumerate all instances by search (list files in the target dir or grep). Do not assume the shared mechanism covers them all.
+Record the enumerated list in your output, marking how each instance routes through the shared mechanism.
+If any instance bypasses it, fix that instance directly. Otherwise the criterion is unmet.
+
 ## Project context
 
 {context_brief}
