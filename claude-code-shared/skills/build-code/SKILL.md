@@ -149,6 +149,7 @@ Before launching any task in the wave, re-read the JSON to confirm each task's `
 
 For each task in the wave (up to 4 at a time — if the wave has more than 4 tasks, process in batches of 4):
 
+0. Record the shared branch tip once per wave: `wave_base=$(git rev-parse HEAD)`. Step 4d uses it to detect diverged worktrees.
 1. Update task status to `in_progress` in the JSON.
 2. If `branching.strategy` is `"per-task"`, derive the task's branch name now (do NOT check it out yet — the worktree handles isolation):
    - Read `export_url` from the task object (may be `null` or absent).
@@ -185,7 +186,15 @@ After all tasks in the wave complete (regardless of individual pass/fail), merge
 
 For each task in the wave (in order):
 - If `receipt.status == "failed"`: skip the merge for this task. Its worktree branch is abandoned.
-- If `receipt.status == "done"`: first confirm the worktree branch has its own commits:
+- If `receipt.status == "done"`: first check the worktree forked from this wave's base:
+  ```bash
+  git merge-base --is-ancestor "$wave_base" <task-worktree-branch>
+  ```
+  If this exits non-zero, the worktree branched from somewhere else (e.g. an advanced `main`). Do NOT merge, since `--no-ff` would pull in unrelated history. Cherry-pick only the task's own commits instead:
+  `git cherry-pick $(git rev-list --reverse <task-worktree-branch> ^HEAD ^main)`.
+  On cherry-pick conflict, run `git cherry-pick --abort` and treat it like a merge conflict (below).
+  After a clean cherry-pick that touched any `package.json`, run `python3 ~/.dotfiles/claude-code-shared/scripts/check-json-dupe-keys.py <each touched package.json>`. On non-zero exit, fix the duplicate keys and amend before the next task.
+  If it exits 0, confirm the worktree branch has its own commits:
   ```bash
   git log --oneline HEAD..<task-worktree-branch>
   ```
