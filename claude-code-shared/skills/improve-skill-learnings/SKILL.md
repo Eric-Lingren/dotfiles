@@ -237,6 +237,11 @@ Wait for user response. If "done" or equivalent, jump to Step 8 (summary).
 Read the target file (resolved `file_path` from validation). Spawn a
 session-model agent (subagent_type: general-purpose) with this prompt:
 
+**Always spawn the drafting agent. Drafting the diff inline in your own turn is
+a process violation, because the drafter works from the file and the learning
+alone, without this session's context and assumptions. You may add extra
+constraints to its prompt (style rules, which section to touch), not the diff.**
+
 ```
 You are drafting a unified diff to apply ONE learning to a target file.
 
