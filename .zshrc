@@ -230,24 +230,27 @@ function migrate {
 
 
 
-# ─────────────────────────────────────────#
-# CLAUDE CODE — multi-account aliases      #                                         
-# ─────────────────────────────────────────#
- 
-alias cco="CLAUDE_CONFIG_DIR=$HOME/.cco $HOME/.cco-npm/bin/claude"
-alias cch="CLAUDE_CONFIG_DIR=$HOME/.cch $HOME/.cch-npm/bin/claude"
 
-# Per-instance updaters (isolated npm prefixes, zero cross-pollution)
-alias cch-update="npm install -g --prefix $HOME/.cch-npm @anthropic-ai/claude-code@latest"
-alias cco-update="npm install -g --prefix $HOME/.cco-npm @anthropic-ai/claude-code@latest"
-alias cch-doctor="CLAUDE_CONFIG_DIR=$HOME/.cch $HOME/.cch-npm/bin/claude doctor"
-alias cco-doctor="CLAUDE_CONFIG_DIR=$HOME/.cco $HOME/.cco-npm/bin/claude doctor"
+# ─────────────────────────────────────────#
+# CLAUDE CODE — multi-account aliases      #
+# ─────────────────────────────────────────#
 
-# Update both instances at once (auto-updater disabled; update is manual by design)
-alias cc-update="npm install -g --prefix $HOME/.cco-npm @anthropic-ai/claude-code@latest && npm install -g --prefix $HOME/.cch-npm @anthropic-ai/claude-code@latest && echo \"cco: \$($HOME/.cco-npm/bin/claude --version) | cch: \$($HOME/.cch-npm/bin/claude --version)\""
+# Account Switchers (Using your fnm Node v24 global binary with isolated config directories)
+alias cch="CLAUDE_CONFIG_DIR=\$HOME/.cch /Users/eric/.local/share/fnm/node-versions/v24.19.0/installation/bin/claude"
+alias cco="CLAUDE_CONFIG_DIR=\$HOME/.cco /Users/eric/.local/share/fnm/node-versions/v24.19.0/installation/bin/claude"
+
+# Diagnostics for each isolated environment
+alias cch-doctor="CLAUDE_CONFIG_DIR=\$HOME/.cch /Users/eric/.local/share/fnm/node-versions/v24.19.0/installation/bin/claude doctor"
+alias cco-doctor="CLAUDE_CONFIG_DIR=\$HOME/.cco /Users/eric/.local/share/fnm/node-versions/v24.19.0/installation/bin/claude doctor"
+
+# Updaters (Since fnm handles the global binaries, this updates the actual package your aliases point to)
+alias cc-update="npm install -g @anthropic-ai/claude-code@latest"
+alias cch-update="cc-update"
+alias cco-update="cc-update"
 
 # Disable bare `claude` to avoid accidentally using the wrong account
-alias claude="echo 'Use cco (office) or cch (home). Update both: cc-update'"
+alias claude="echo 'Use cco (office) or cch (home). Update: cc-update'"
+
 
 
 
@@ -297,3 +300,4 @@ alias pr-desc="$GX_SCRIPTS_DIR/pr-desc"
 # Gitignored — see local/zshrc.local.template
 
 [[ -f ~/.dotfiles/local/zshrc.local ]] && source ~/.dotfiles/local/zshrc.local
+

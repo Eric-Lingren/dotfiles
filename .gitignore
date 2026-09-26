@@ -1,2 +1,5 @@
 local/
 Brewfile.local
+
+# Claude Code auto-synced claude.ai skills (machine-generated, per-account)
+claude-code-shared/skills/synced/
