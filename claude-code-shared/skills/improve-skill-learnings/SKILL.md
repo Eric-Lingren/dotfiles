@@ -112,6 +112,11 @@ And stop.
 Ask the user which target they want to improve. Accept a rank number or a slug
 name. Wait for the response.
 
+If you use AskUserQuestion, pass at most 4 options (the tool maximum). If the
+ranked list has more than 4 targets, pass only the top 4. Lower-ranked targets
+stay reachable because the user can type a rank number or slug in the built-in
+"Other" free-text option.
+
 Collect all captured entries for the selected target (by their `id` values from
 step 1).
 
