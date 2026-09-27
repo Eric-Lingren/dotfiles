@@ -150,6 +150,7 @@ Review scope:
 - **Fowler code smells:** Mysterious Name, Duplicated Code, Feature Envy, Data Clumps, Primitive Obsession, Repeated Switches, Shotgun Surgery, Divergent Change, Speculative Generality, Message Chains, Middle Man, Refused Bequest. Documented project conventions override the baseline. Each smell is a judgement call — label as "possible X". Most map to nit; raise to risk only when fragile.
 - **Severity labels:** `bug` (broken behavior), `risk` (works today but fragile), `nit` (style/naming/minor), `q` (genuine question — unsure if a problem).
 - **Runtime-dependent claims:** If a claim depends on runtime behavior not evidenced in the diff (lazy evaluation, DOM state, event propagation), use `q` instead of `bug` or `risk`. State what you would need to confirm it.
+- **Apparent syntax errors in diffs:** If a hunk seems to show an unclosed JSX tag or a missing bracket, read the actual source file with the Read tool before reporting it. Diff text can carry HTML-encoded entities (e.g. `&lt;`, `&gt;`) that make valid syntax look broken. Report only what the source file confirms.
 - Acknowledge genuinely praiseworthy code with `severity: "praise"`.
 - Tone: ask open-ended questions before strong statements; offer alternatives; assume you may be missing context; reserve `bug` for things you are confident are broken.
 
