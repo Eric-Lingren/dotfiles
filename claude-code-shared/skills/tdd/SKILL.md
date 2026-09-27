@@ -197,6 +197,7 @@ Rules:
 - Only enough code to pass current test
 - Don't anticipate future tests
 - Keep tests focused on observable behavior
+- Add new imports in the same Edit that adds their first use. This applies to test files and implementation files. The lint hook runs noUnusedImports on every edited file and blocks imports that nothing uses yet.
 
 ### 4. Refactor
 
