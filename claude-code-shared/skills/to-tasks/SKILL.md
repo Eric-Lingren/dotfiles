@@ -133,6 +133,7 @@ Slices may be **HITL** (requires a keyboard action the AI cannot perform AFK —
 - Every slice MUST include tests, whether it is new code, a refactor, or a move
 - For refactoring slices: the description must state that characterization tests for existing behavior are written BEFORE any restructuring begins. If the code being refactored has no test coverage, the first step is capturing current behavior in tests. Then refactor while keeping tests green.
 - **out_of_scope guard:** If the PRD has an `out_of_scope[]` field, read it. Never generate a task slice for any item listed there — skip it silently. The rationale in each out_of_scope entry is negative context: use it to avoid accidentally implementing a rejected thing under a different name.
+- **Predecessor scaffold guard:** If a slice references a component, symbol, or wrapper as already present from a prior task, check that task's `status`. It counts as present only when its status is `"done"`. Otherwise, either add the prior task's ID to this slice's `blocked_by` (when it is in the same task file) or copy the full spec for that symbol (including required wrappers, providers, and props) into this slice's `acceptance_criteria` as if it does not exist yet. Never assume an unfinished upstream task delivered its full spec.
 </vertical-slice-rules>
 
 #### browser_verify field
