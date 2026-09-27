@@ -308,6 +308,8 @@ Produce a single flat array of deduped findings. Proceed to the investigator gat
 
 **This gate is non-optional.** Every finding that contains a factual claim must pass through it before being included in the output or posted as a PR comment. There is no bypass path.
 
+Expect dimension agents to produce false positives, especially at the `risk` tier. A `VERIFIED_FALSE` drop means the gate is working. It is not a failure. Never skip or thin out the gate because the dimension agents seem reliable on a given PR.
+
 Review findings are factual claims about the code. Before any finding is output or posted, spawn the `investigator` agent using the Agent tool for each factual claim in the finding body. Pass the finding text as the `claim` input along with `cwd` (the repo root) so the investigator can search the codebase.
 
 **Do not substitute Read tool calls for the investigator spawn.** Inline reads bypass sub-claim decomposition and the investigation-result contract.
