@@ -312,6 +312,17 @@ Produce a single flat array of deduped findings. Proceed to the investigator gat
 
 Expect dimension agents to produce false positives, especially at the `risk` tier. A `VERIFIED_FALSE` drop means the gate is working. It is not a failure. Never skip or thin out the gate because the dimension agents seem reliable on a given PR.
 
+### Pre-check: local HEAD matches PR head
+
+Skip this check when Step 1 fell back to the local merge-base diff. When a PR exists, compare SHAs before spawning investigators:
+
+```bash
+git rev-parse HEAD
+gh pr view <number> --json headRefOid -q .headRefOid
+```
+
+If the SHAs differ, do not silently proceed. Tell the user the local HEAD and the PR head differ. Pass the PR head SHA to each investigator so it reads files with `git show <sha>:<path>`, not the stale worktree. Do not checkout or reset the user's worktree without asking. It may hold uncommitted work.
+
 Review findings are factual claims about the code. Before any finding is output or posted, spawn the `investigator` agent using the Agent tool for each factual claim in the finding body. Pass the finding text as the `claim` input along with `cwd` (the repo root) so the investigator can search the codebase.
 
 **Do not substitute Read tool calls for the investigator spawn.** Inline reads bypass sub-claim decomposition and the investigation-result contract.
