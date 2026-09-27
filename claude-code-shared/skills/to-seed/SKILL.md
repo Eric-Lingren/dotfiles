@@ -81,6 +81,8 @@ Before writing the seed, route every thread from the conversation through exactl
 
 Nothing stays undecided. If a thread truly cannot be resolved, it must exit via DEFER (if worth doing later) or REJECT (if not). The only exception: a genuinely open judgment that the user explicitly says needs another grill session belongs in `open_threads`.
 
+**Security and abuse-prevention gaps:** A thread about captcha, rate limiting, auth hardening, or similar may exit via DEFER or REJECT only if the conversation shows two things. First, the actual enforcement path was checked (server vs client, real check vs feature flag). Second, the user explicitly accepted the residual risk. If either is missing, the thread stays in `open_threads`. When both are present, the DEFER or REJECT rationale must record them.
+
 **Status derivation (required):**
 
 After routing all threads, derive `status`:
