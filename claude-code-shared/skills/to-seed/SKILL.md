@@ -67,6 +67,7 @@ Required fields are always present. Optional fields are omitted when the convers
 - `disposed_threads` is the lock list of threads that were disposed during this or any prior session. Each entry is `{id, text, disposition, iteration}` where disposition is `decided`, `deferred`, or `rejected`. This list is immutable once written — entries are never removed.
 - `iteration` is an integer tracking how many grill/verification cycles this seed has gone through. Start at 1 for fresh seeds.
 - **Decided-but-conditional implementation details are NOT open threads.** If something was decided (e.g. "use Registry API if jsonschema >=4.18, else RefResolver"), it is a decided implementation detail. Put it in `implementation_decisions` or in a task's acceptance criteria. Do NOT file it as an open thread just because it has a conditional.
+- **Version schemas in place unless old data needs the old file.** If a decision versions a schema or contract that already has an internal version field (e.g. a `schema_version` const), record it as an in-place bump. Only record a new version-suffixed file (e.g. `foo-v2.json`) when live old-version data must keep validating against the old file.
 - `next_action` is singular — the most important next step, not a list.
 
 **Thread classification (required before writing):**
