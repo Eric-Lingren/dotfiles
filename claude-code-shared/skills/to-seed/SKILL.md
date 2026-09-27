@@ -129,7 +129,7 @@ Before spawning any persona, produce two temp files:
 
 **Cleaned transcript:**
 
-1. Resolve the session JSONL path using `$CLAUDE_CODE_SESSION_ID` and `$CLAUDE_CONFIG_DIR` (or the hook-provided `transcript_path` env var). The filter script handles resolution — see `~/.dotfiles/claude-code-shared/scripts/filter-session-transcript.sh --help`.
+1. Resolve the session JSONL path using `$CLAUDE_CODE_SESSION_ID` and `$CLAUDE_CONFIG_DIR` (or the hook-provided `transcript_path` env var). The filter script handles resolution — see `~/.dotfiles/claude-code-shared/scripts/filter-session-transcript.sh --help`. Store the resolved session JSONL path as `RAW_TRANSCRIPT_PATH`.
 
 2. Run:
    ```bash
@@ -185,6 +185,8 @@ Each persona returns a JSON array of refutation objects (`[]` if nothing found).
      "/tmp/evidence-pack-${CLAUDE_CODE_SESSION_ID}.txt"
    ```
    Store the output path as `EVIDENCE_PACK_PATH`. If the script exits non-zero, treat it as a stage failure: record the error, skip the judge stage, and go to 3d on the degraded path.
+
+   **Zero-span check:** parse M from the script's `OK: <N> refutations, <M> spans located, ...` line. If M is 0 and at least one refutation has a non-null `transcript_span`, the pack is suspect, likely a cleaned-transcript scope issue. In that case, tell the screener in its prompt that the pack located 0 spans, and also pass `raw_transcript_path: <RAW_TRANSCRIPT_PATH>`. The screener must grep that file, including assistant messages, before it rejects any refutation on `SPAN NOT FOUND` alone.
 
 **Round 1 — screener (1 Sonnet judge over the whole batch):** spawn one `personas:persona-judge` instance (Sonnet). Its prompt carries: the full `REFUTATIONS_PATH` array (inline the JSON or pass the path and have it Read — passing inline is fine since it is small), `evidence_pack_path: <EVIDENCE_PACK_PATH>`, `transcript_path: <CLEANED_TRANSCRIPT_PATH>` (escape hatch — the judge defaults to the pack and only greps the full transcript when far-context settles a verdict), and `seed_path: <SEED_PATH>`. It returns a verdict array — one `{ref_id, verdict, reason}` per refutation. Validate against the inlined verdict shape below (open `~/.dotfiles/claude-code-shared/contracts/verdict-contract.md` only on suspected drift). On a parse mismatch, non-JSON response, or timeout (see timeout policy above), retry that judge once.
 
