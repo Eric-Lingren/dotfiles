@@ -151,6 +151,8 @@ Tool preference:
 
 **Perf branch.** For performance regressions, logs are usually wrong. Instead: establish a baseline measurement (timing harness, `performance.now()`, profiler, query plan), then bisect. Measure first, fix second.
 
+**Enumerate every writer to shared state.** If the suspected root cause involves shared state (form library state, a store, a context, a cache), do not stop at the one write path you analyzed. Delegate the search to `caveman:cavecrew-investigator` (Haiku). Have it find every writer to that state across all components that share it. Check each writer for side effects that undo the fix. Example: in Formik, with `validateOnChange` on (the default) and no `validate` or `validationSchema`, any `setFieldValue` call resets errors set via `setFieldError` to `{}`.
+
 ### Phase 3 exit gate
 
 Before moving to Phase 4, complete both steps.
