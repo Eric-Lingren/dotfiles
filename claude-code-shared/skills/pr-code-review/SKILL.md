@@ -151,6 +151,7 @@ Review scope:
 - **Severity labels:** `bug` (broken behavior), `risk` (works today but fragile), `nit` (style/naming/minor), `q` (genuine question — unsure if a problem).
 - **Runtime-dependent claims:** If a claim depends on runtime behavior not evidenced in the diff (lazy evaluation, DOM state, event propagation), use `q` instead of `bug` or `risk`. State what you would need to confirm it.
 - **Apparent syntax errors in diffs:** If a hunk seems to show an unclosed JSX tag or a missing bracket, read the actual source file with the Read tool before reporting it. Diff text can carry HTML-encoded entities (e.g. `&lt;`, `&gt;`) that make valid syntax look broken. Report only what the source file confirms.
+- **Loading races:** Before flagging a tab flash or loading race in a sub-component, trace the parent render path. Check for a page-level guard (Suspense boundary, `isLoading` gate, redirect) that keeps the component from rendering before data arrives. If one exists, drop the finding.
 - Acknowledge genuinely praiseworthy code with `severity: "praise"`.
 - Tone: ask open-ended questions before strong statements; offer alternatives; assume you may be missing context; reserve `bug` for things you are confident are broken.
 
