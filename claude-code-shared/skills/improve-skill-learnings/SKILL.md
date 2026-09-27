@@ -173,6 +173,9 @@ Steps:
    mechanism's distinctive terms. If exactly one other file clearly owns it →
    return {"id": "{id}", "verdict": "misrouted", "reason": "<owner file path>",
    "file_path": "<path>", "suggested_improves": "<slug>", "suggested_improves_type": "<skill|agent|process|contract>"}
+   Before returning misrouted in step 4 or 5, read the suggested owner's file and
+   confirm it performs the action itself. A name in the fix text is not proof of
+   ownership. If the owner only delegates, do not return misrouted; go to step 6.
 6. Has the file changed so significantly that the lesson is no longer relevant?
    If yes → return {"id": "{id}", "verdict": "stale", "reason": "no_longer_relevant", "file_path": "<path>"}
 7. Otherwise → return {"id": "{id}", "verdict": "valid", "reason": "ok", "file_path": "<path>"}
