@@ -43,6 +43,7 @@ For each question:
 4. When asking your first question, briefly signal the other major branches of the decision tree you plan to explore later, so the user knows you see the full picture.
 5. Before recommending a CLI flag or configuration knob, ask: "Would you prefer a flag you pass explicitly, or an interactive prompt that asks at runtime?" Do not default to flags — users often forget to use them.
 6. Before locking any caller (direct or indirect) to a single mode or default, ask: "Could any direct caller of this ever need the non-default option?" Do not assume all callers share the same usage pattern.
+7. Before accepting a plan that deletes or replaces a wrapper or component, have a Haiku subagent inspect the deleted component for implicit behaviors, such as a `key=` prop that forces a remount when route params change. Then ask: "Should the replacement carry this behavior forward, or drop it on purpose?"
 
 Before formulating your question, if the answer could be in the codebase, spawn a read-only Haiku subagent for file exploration rather than reading files inline. If a *fact* can be answered by reading code or project files, delegate that lookup to a Haiku subagent to look it up instead of asking the user. The *decisions* however are the users - put each one to them and wait for their answer.
 
