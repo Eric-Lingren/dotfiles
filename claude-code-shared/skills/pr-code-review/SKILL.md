@@ -214,6 +214,8 @@ Only flag real performance risks — not micro-optimizations. Use `risk` for pat
 
 Exclusion: setState in the render body can be the documented React derived-state pattern. It is intentional when guarded by a changed-value check (e.g., `if (next !== prev) setState(next)`). Do not flag it as a performance issue unless you confirm it is not an intentional derived-state update.
 
+Instance count: before you flag a recursive or polling loop as a scale risk from "N concurrent instances," read the component's call sites. Confirm how many instances can be mounted at once. Do not assume the worst-case N.
+
 ---
 
 ### Dimension: conventions (model: haiku)
