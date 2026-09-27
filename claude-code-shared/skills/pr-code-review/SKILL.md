@@ -218,6 +218,8 @@ Exclusion: setState in the render body can be the documented React derived-state
 
 Instance count: before you flag a recursive or polling loop as a scale risk from "N concurrent instances," read the component's call sites. Confirm how many instances can be mounted at once. Do not assume the worst-case N.
 
+Callback identity: before you flag a missing `useCallback` on a callback passed to a third-party library, check how that library stores it. Search its source or `.d.ts` for internal ref or `useEvent`-style wrapping. If the library already stabilizes callback identity, do not raise the finding.
+
 ---
 
 ### Dimension: conventions (model: haiku)
@@ -273,6 +275,8 @@ Review scope:
 
 Use `risk` when new behavior has no test coverage, `nit` for coverage gaps in edge cases, `q` when you are unsure whether a test is needed.
 If a claim depends on runtime or test-library semantics not evidenced in the diff (lazy mocks, focusability, event behavior), use `q` instead of `bug` or `risk`.
+
+Mock cleanup: before you flag a spy or mock that is never cleared between tests, read the project's vitest or jest config. If `clearMocks`, `resetMocks`, or `restoreMocks` is enabled, the runner already cleans up. Do not raise the finding in that case.
 
 ---
 
