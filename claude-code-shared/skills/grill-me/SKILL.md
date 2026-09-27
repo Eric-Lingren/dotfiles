@@ -47,6 +47,8 @@ For each question:
 
 Before formulating your question, if the answer could be in the codebase, spawn a read-only Haiku subagent for file exploration rather than reading files inline. If a *fact* can be answered by reading code or project files, delegate that lookup to a Haiku subagent to look it up instead of asking the user. The *decisions* however are the users - put each one to them and wait for their answer.
 
+If the user's input references a Linear ticket ID (e.g. KEY-1234), fetch it with `mcp__claude_ai_Linear__get_issue`. If that tool is missing or returns an auth error, do not retry or call the authenticate tool; fall back to `mcp__claude_ai_Notion__notion-ai-search` with the ticket ID. If that also finds nothing, ask the user to paste the ticket context.
+
 ## Session end protocol
 
 When all major branches are resolved, signal the end explicitly:
