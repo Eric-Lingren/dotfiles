@@ -297,6 +297,8 @@ Produce a single flat array of deduped findings. Proceed to the investigator gat
 
 Review findings are factual claims about the code. Before any finding is output or posted, spawn the `investigator` agent using the Agent tool for each factual claim in the finding body. Pass the finding text as the `claim` input along with `cwd` (the repo root) so the investigator can search the codebase.
 
+**Do not substitute Read tool calls for the investigator spawn.** Inline reads bypass sub-claim decomposition and the investigation-result contract.
+
 The investigator is the Opus-tier orchestrator defined in `agents/investigator.md`. It decomposes each claim into sub-claims, routes each to the correct leaf agent (code, web, GitHub, Linear, Notion), and returns a schema-valid `investigation-result` per `contracts/investigation-result-schema.json`.
 
 ### Verdict-to-action mapping
