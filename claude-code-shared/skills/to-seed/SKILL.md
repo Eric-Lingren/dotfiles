@@ -68,6 +68,7 @@ Required fields are always present. Optional fields are omitted when the convers
 - `iteration` is an integer tracking how many grill/verification cycles this seed has gone through. Start at 1 for fresh seeds.
 - **Decided-but-conditional implementation details are NOT open threads.** If something was decided (e.g. "use Registry API if jsonschema >=4.18, else RefResolver"), it is a decided implementation detail. Put it in `implementation_decisions` or in a task's acceptance criteria. Do NOT file it as an open thread just because it has a conditional.
 - **Version schemas in place unless old data needs the old file.** If a decision versions a schema or contract that already has an internal version field (e.g. a `schema_version` const), record it as an in-place bump. Only record a new version-suffixed file (e.g. `foo-v2.json`) when live old-version data must keep validating against the old file.
+- **Record the full call contract for reused hooks and utilities.** If a decision says a new call site uses a hook, utility, or function "the same way <file X> does," read the reference call site and the callee's contract, then state the exact arguments file X passes. If an argument is intentionally omitted, say so and say why.
 - `next_action` is singular — the most important next step, not a list.
 
 **Thread classification (required before writing):**
