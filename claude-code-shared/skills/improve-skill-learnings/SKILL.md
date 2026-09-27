@@ -134,6 +134,10 @@ For each learning, construct a `path_candidates` list based on `improves_type`:
 | `process`     | `~/.dotfiles/claude-code-shared/resources/<improves>.md`, then `~/.dotfiles/claude-code-shared/resources/<improves>.json` |
 | `contract`    | `~/.dotfiles/claude-code-shared/contracts/<improves>.json`, then `~/.dotfiles/claude-code-shared/contracts/<improves>.md` |
 
+After the declared type's paths, append the other three types' paths (same
+slug) as fallback candidates, in table order. A fallback hit means the
+`improves_type` is wrong, not that the learning is invalid.
+
 Pass this prompt to each Haiku agent (model: haiku):
 
 ```
@@ -153,6 +157,8 @@ Target file paths to check (in order):
 Steps:
 1. Check whether each path exists (use Bash: test -f <path> && echo exists).
    If none exist → return {"id": "{id}", "verdict": "invalid", "reason": "file_not_found", "file_path": null}
+   If the first existing path belongs to a different type than {improves_type} →
+   return {"id": "{id}", "verdict": "misrouted", "reason": "type_mismatch", "file_path": "<path>", "suggested_improves": "{improves}", "suggested_improves_type": "<type of that path>"}
 2. Read the first file that exists (Read tool).
 3. Does the file ALREADY contain the substance of the fix or lesson?
    If yes → return {"id": "{id}", "verdict": "stale", "reason": "already_applied", "file_path": "<path>"}
