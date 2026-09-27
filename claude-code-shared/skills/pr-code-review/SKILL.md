@@ -270,6 +270,7 @@ Review scope:
 - New behavior has a test
 - Tests use `renderSM` and Testing Library queries (role > text > testId)
 - Network calls use MSW, not internal function stubs
+- Flag any `expect()` call inside an MSW request handler as `bug` severity. This is confirmed MSW behavior, so do not downgrade it to `q`. MSW swallows thrown errors and returns a 500. Use a request spy and assert outside the handler after `waitFor`.
 - Happy path, error path, and edge cases are each covered
 - Tests are not testing implementation details (internal function calls, state shape) — they test observable behavior
 
