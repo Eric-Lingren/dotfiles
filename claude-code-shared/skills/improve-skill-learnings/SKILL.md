@@ -200,6 +200,12 @@ python3 ~/.dotfiles/claude-code-shared/scripts/update-learning.py \
 Treat any verdict outside `valid|stale|invalid|misrouted` as malformed. Read its
 prose: if it names another owner, handle it as `misrouted`; otherwise as `stale`.
 
+If a `valid` verdict's `file_path` matches none of the target's path candidates
+(compare after expanding `~`), treat it as `misrouted`. Derive the new slug and
+type from `file_path`: `skills/<slug>/SKILL.md` is `skill`, `agents/<slug>.md` is
+`agent`, `resources/<slug>.md|json` is `process`, and `contracts/<slug>.json|md`
+is `contract`.
+
 Print a validation summary:
 
 ```
