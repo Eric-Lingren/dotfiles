@@ -227,6 +227,8 @@ The first acceptance criterion must always be: `"Failing test exists at <path fr
 
 **Preserve identity stability when replacing module-level definitions.** A module-level constant, component, or factory often exists to keep a stable reference. Examples include a TanStack Table cell factory, a React component definition, or a memoized callback. If a fix removes or replaces one, add this acceptance criterion: `Replacement functions and components are defined at module scope or behind a stable reference. Verify that the reference does not change between renders when upstream state (e.g., feature flags, fetched data) updates.` An inline arrow inside a `useMemo` that depends on upstream state fails this check. It causes remounts, such as cells losing focus mid-edit.
 
+**Check when a data source is populated before recommending it.** Before the Fix approach says where a component reads data, check when that source gets written. A source written by a deferred effect (useEffect, async load, a form-state mirror) is undefined on first render. IDs and other stable identity data used in API calls must come from a synchronous source, such as props or the row object. Use reactive form state only for values that must react to edits. Never recommend a placeholder fallback such as `{ id: 0 }` for a missing ID, because it silently hits a real endpoint. Optionally add the acceptance criterion `The mutation uses a real ID on first render.`
+
 **"No testable seam" is a claim, not a default.** Before asserting it, you must attempt to write a test. The following bug types have testable seams even when they appear visual:
 
 - Conditional renders based on auth state or flags → RTL `render()` + `screen.queryBy*` with mocked auth context
