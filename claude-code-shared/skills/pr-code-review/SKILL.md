@@ -134,6 +134,10 @@ Findings must anchor to a line added or modified in the diff. You may flag a pre
 
 Read surrounding context to understand the change, but the context is for comprehension, not for generating findings.
 
+### API-bound pre-screen (all dimensions)
+
+Before flagging an API-contract concern, confirm the code path reaches the server. This covers renumbering, schema changes, and contract mismatches. Trace the value from the changed line to a network call or serializer. If it stays client-side (e.g. FE-only input filtering or display state), drop the finding. Do not send it to the investigator gate.
+
 ---
 
 ### Dimension: correctness (model: sonnet)
