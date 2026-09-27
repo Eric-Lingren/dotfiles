@@ -149,6 +149,7 @@ Review scope:
 - **Design holistically:** overall approach, user impact, complexity (unnecessary indirection/over-abstraction/premature generalization), YAGNI (speculative features → nit), parallel safety (race conditions, missing awaits, stale closures), naming clarity, comment quality (why not what).
 - **Fowler code smells:** Mysterious Name, Duplicated Code, Feature Envy, Data Clumps, Primitive Obsession, Repeated Switches, Shotgun Surgery, Divergent Change, Speculative Generality, Message Chains, Middle Man, Refused Bequest. Documented project conventions override the baseline. Each smell is a judgement call — label as "possible X". Most map to nit; raise to risk only when fragile.
 - **Severity labels:** `bug` (broken behavior), `risk` (works today but fragile), `nit` (style/naming/minor), `q` (genuine question — unsure if a problem).
+- **Runtime-dependent claims:** If a claim depends on runtime behavior not evidenced in the diff (lazy evaluation, DOM state, event propagation), use `q` instead of `bug` or `risk`. State what you would need to confirm it.
 - Acknowledge genuinely praiseworthy code with `severity: "praise"`.
 - Tone: ask open-ended questions before strong statements; offer alternatives; assume you may be missing context; reserve `bug` for things you are confident are broken.
 
@@ -264,6 +265,7 @@ Review scope:
 - Tests are not testing implementation details (internal function calls, state shape) — they test observable behavior
 
 Use `risk` when new behavior has no test coverage, `nit` for coverage gaps in edge cases, `q` when you are unsure whether a test is needed.
+If a claim depends on runtime or test-library semantics not evidenced in the diff (lazy mocks, focusability, event behavior), use `q` instead of `bug` or `risk`.
 
 ---
 
