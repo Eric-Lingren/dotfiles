@@ -365,12 +365,11 @@ FIRST_ID=$(bash ~/.dotfiles/claude-code-shared/scripts/next-task-id.sh docs/task
 
 Include `"context": "<finding.context>"` only when the finding includes a context snippet. Omit the field entirely when absent.
 
-**Write the tasks array** to a temp file, then call `create-task-envelope.py` to build the validated envelope:
+**Write the tasks array** as JSON to `/tmp/pr-review-tasks.json` with the Write tool. Do not use a `python3 -c` one-liner. The data-exfil hook blocks it.
+
+Then call `create-task-envelope.py` to build the validated envelope:
 
 ```bash
-# Write the tasks array to a temp file
-python3 -c "import json; json.dump(tasks_array, open('/tmp/pr-review-tasks.json','w'), indent=2)"
-
 # Generate the task file slug
 SLUG="pr-review"
 FILENAME=$(bash ~/.dotfiles/claude-code-shared/scripts/task-filename.sh "$SLUG")
