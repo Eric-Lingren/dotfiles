@@ -259,7 +259,9 @@ Always use `strategy: "single"`. Never ask the user to choose between single and
 
 Ask only: "Branch name?" — use the naming conventions in `~/.dotfiles/claude-code-shared/resources/branching-strategy.md` to suggest a default (derive from current branch prefix + slug). User can accept or override.
 
-**PR-feedback seeds:** default the branch to the seed's `provenance.head_branch` — the fixes land on the existing PR branch so build-code's push updates that PR (and its commit is what relay cites). Suggest it as the default; the user can still override.
+If you use AskUserQuestion here, every question needs at least 2 distinct options. Never call it with a single option.
+
+**PR-feedback seeds:** `provenance.head_branch` fixes the branch. The fixes land on the existing PR branch so build-code's push updates that PR (and its commit is what relay cites). Do not ask. State it in prose and continue: "Branch: <name> (from PR provenance). Reply with a different name to override."
 
 Record in the JSON: `{"strategy": "single", "branch": "{confirmed-name}"}`.
 
