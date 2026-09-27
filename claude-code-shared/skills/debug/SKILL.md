@@ -221,6 +221,8 @@ Root cause: <confirmed cause>. Failing scenario: <minimised repro>. Test seam: <
 
 The first acceptance criterion must always be: `"Failing test exists at <path from Phase 1> that reproduces the bug before any fix is applied"`.
 
+**Behavioral parity with a reference component.** If a fix task touches a component that has a sibling or reference with an established pattern (e.g. a sibling form cell), or the description says "same pattern as X", read the reference first. Add at least one acceptance criterion that requires behavioral parity, not just type or compile parity. Check these dimensions: controlled vs uncontrolled input, save trigger (onChange vs onBlur), debounce or latest-save guards, and conditional save guards (e.g. preview or readonly flags). Compile-only criteria are not enough here.
+
 **"No testable seam" is a claim, not a default.** Before asserting it, you must attempt to write a test. The following bug types have testable seams even when they appear visual:
 
 - Conditional renders based on auth state or flags → RTL `render()` + `screen.queryBy*` with mocked auth context
