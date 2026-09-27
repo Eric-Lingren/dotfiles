@@ -195,6 +195,8 @@ Review scope — run against **every changed file**:
 
 Use severity `bug` for confirmed vulnerabilities, `risk` for likely-exploitable patterns, `nit` for hygiene issues, `q` when uncertain.
 
+Credential leaks: before you flag an axios or fetch call as a credential leak, check the client config and the URL. Cross-origin cookies are sent only when the axios instance sets `withCredentials: true` (or fetch uses `credentials: 'include'`). Confirm whether the URL is a relative path or an absolute presigned URL (e.g. S3), which carries its own auth and is not a cookie leak.
+
 ---
 
 ### Dimension: performance (model: haiku)
