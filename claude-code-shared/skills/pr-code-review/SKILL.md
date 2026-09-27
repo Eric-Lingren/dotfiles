@@ -267,9 +267,22 @@ Use `risk` when new behavior has no test coverage, `nit` for coverage gaps in ed
 
 ---
 
+## Step 2a: Validate line numbers (mandatory)
+
+**This step is mandatory.** Run it after all five dimension agents return and before Step 3. Dedup groups by (file, line), so a wrong line breaks the merge.
+
+Do not trust any agent's `line` value. Haiku-tier agents are the usual offenders. They often return the raw diff row instead of the new-file line. Check every finding from every dimension. Skip findings with `line: 0`.
+
+1. **Hunk range check.** Find the hunk for the finding's `file`. The line must fall within `new_start..new_start+new_count-1` of some hunk in that file.
+2. **File length check.** The line must not exceed the new file's actual line count.
+3. **Recompute on failure.** If either check fails, treat the value as a raw diff row. Recompute the new-file line with the Step 1b hunk walk. Update the finding. Note the correction in your working notes.
+4. **Unresolvable lines.** If recomputation still fails, set `line` to 0 (file-level) and prefix the description with "Line unverified."
+
+Pass the corrected array to Step 3.
+
 ## Step 3: Dedup findings
 
-After all five dimension agents return, apply mechanical dedup to their combined JSON arrays:
+After Step 2a validates line numbers, apply mechanical dedup to the combined JSON arrays:
 
 1. **Group by (file, line).** Findings with the same `file` and `line` values are duplicates regardless of dimension.
 2. **Keep max severity.** Severity rank: `bug` > `risk` > `q` > `nit` > `praise`. Retain the highest-ranked severity for the group.
