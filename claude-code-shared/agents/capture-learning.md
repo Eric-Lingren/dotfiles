@@ -88,6 +88,23 @@ Override the default when the context clearly indicates a different cause. Do no
 
 `confidence`: `confirmed` when quotes are verbatim. `candidate` when the link between quote and lesson is inferred.
 
+### Target and scope check
+
+Run this before Step 3. It can be one Bash call.
+
+1. Confirm the `improves` target file exists. Paths are under `~/.dotfiles/claude-code-shared/`:
+
+| improves_type | path |
+|---|---|
+| `skill` | `skills/<slug>/SKILL.md` |
+| `agent` | any `agents/**/<slug>.md` (may be nested) |
+| `process` | `resources/<slug>.md` or `resources/<slug>.json` |
+| `contract` | `contracts/<slug>.json` or `contracts/<slug>.md` |
+
+If no file exists, set `improves` to null. Do not invent a slug. Unassigned is a supported state. This overrides the `improves == skill slug` default above.
+
+2. Check scope. If `problem` is only a bug in product code, with no skill, agent, process or contract gap behind it, print `SKIP: product-code bug, no skill gap` and stop. An escape can involve both a product bug and a real process gap. Keep the entry when `why_missed` or `lesson` names that gap. If unsure, keep it and set `confidence` to `candidate`.
+
 ## Step 3: ground and write in one call
 
 ```bash
