@@ -271,6 +271,8 @@ If a claim depends on runtime or test-library semantics not evidenced in the dif
 
 Mock cleanup: before you flag a spy or mock that is never cleared between tests, read the project's vitest or jest config. If `clearMocks`, `resetMocks`, or `restoreMocks` is enabled, the runner already cleans up. Do not raise the finding in that case.
 
+Cache-reset state changes: a test may clear the query cache (e.g. `resetQueries` or `removeQueries`) to simulate a state change such as logout. If a `beforeEach` MSW handler still serves the old data, an active query can refetch right away. The assertion may then pass on a transient no-data gap, not a stable end state. Check whether the test overrides that handler (e.g. to return a 401) before it clears the cache. Flag as `risk` when the handler and an active observer are both visible in the test file. Use `q` when the refetch depends on something the diff does not show, such as `enabled`, `retry`, or whether the query has a mounted observer.
+
 ---
 
 **Synchronization checkpoint:** Collect ALL five dimension agent notifications before proceeding to Step 2a. Do not begin Step 2a until every dimension agent has returned. Emitting review output or writing the task file before all agents have returned is a process violation.
