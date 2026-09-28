@@ -434,34 +434,34 @@ After printing findings and writing the task file, resolve `review_mode`:
 
 - `sprout-seed` caller → `fix`
 - `--fix` / `--comment` arg → that mode
-- otherwise → print this plain-text menu (no `AskUserQuestion`) and end the turn:
+- otherwise → ask with `AskUserQuestion` (single question, header `Next`):
+  - `Comment` → post findings to PR
+  - `Fix` → apply fixes via dispatch-tasks
+  - `Done` → keep task file for `/dispatch-tasks <path>` later
 
-  ```
-  Next:
-  - `comment` → post findings to PR
-  - `fix` → apply fixes via dispatch-tasks
-  - nothing → done (task file kept for `/dispatch-tasks <path>` later)
-  ```
-
-  Omit the `comment` line when no PR exists. Act on the user's reply using the modes below. If they reply with anything else, treat it as `show`.
+  Omit `Comment` when no PR exists. Act on the answer using the modes below. If the question times out, is dismissed, or gets any other answer, treat it as `show`. This is safe because Step 5 already wrote the task file, so no finding depends on the answer.
 
 ### `comment` mode
 
 Post findings as one PR review with an inline comment on each finding's line. Requires a PR to exist (from Step 1).
 
-Write a JSON array to `/tmp/pr-review-comments.json` with the Write tool. Add one entry per verified finding, and skip praise:
+Write a JSON array to `/tmp/pr-review-comments.json` with the Write tool. Add one entry per verified finding, including praise, each anchored to its own line:
 
 ```json
-[{"file": "src/foo.ts", "line": 42, "body": "🟡 **risk**: <description>\n\n<suggested_fix>"}]
+[
+  {"file": "src/foo.ts", "line": 42, "body": "risk: <description>\n\n<suggested_fix>"},
+  {"file": "src/bar.ts", "line": 7, "body": "<praise, no label>"}
+]
 ```
 
-Write each `body` in the Step 1a voice. Then post:
+Posted bodies use a plain-text label (`bug:`, `risk:`, `q:`, `nit -`). Praise has no label. Never post the severity emoji, finding counts, or the verdict. Those are for the in-session output only. Drop praise with `line: 0` rather than fold it into a summary.
+
+Write each `body` in the Step 1a voice. Then post with no `--summary`:
 
 ```bash
 python3 ~/.dotfiles/claude-code-shared/scripts/post-pr-review.py \
   --pr <number> \
-  --findings /tmp/pr-review-comments.json \
-  --summary "<one-line summary + Verdict>"
+  --findings /tmp/pr-review-comments.json
 ```
 
 The script checks each line against the PR diff. It moves `line: 0` findings and findings outside the diff into the review summary body. This avoids a 422 that would reject the whole review. On non-zero exit, STOP and report stderr. On success, relay the `inline: N  folded: M` line and the review URL.
