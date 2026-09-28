@@ -49,6 +49,8 @@ Before formulating your question, if the answer could be in the codebase, spawn 
 
 If the user's input references a Linear ticket ID (e.g. KEY-1234), fetch it with `mcp__claude_ai_Linear__get_issue`. If that tool is missing or returns an auth error, do not retry or call the authenticate tool; fall back to `mcp__claude_ai_Notion__notion-ai-search` with the ticket ID. If that also finds nothing, ask the user to paste the ticket context.
 
+Branch naming is not a grill topic. Do not propose a branch rename, even when a memory rule suggests one. Both `feat/`, `fix/`, or `spike/` prefixed branches and Linear `gitBranchName` formats are acceptable. If the user raises branch naming themselves, it is fine to discuss it.
+
 ## Session end protocol
 
 When all major branches are resolved, signal the end explicitly:
