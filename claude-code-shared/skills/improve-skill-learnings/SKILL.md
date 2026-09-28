@@ -365,7 +365,10 @@ Instructions:
 2. Produce a standard unified diff (diff -u format) suitable for `patch -p0`.
 3. Be minimal and surgical. Do not rewrite sections unrelated to this learning.
 4. Include 3 context lines before and after each change hunk.
-5. Return ONLY the diff, starting with "--- " and ending after the last hunk.
+5. If the lesson or fix uses absolute language (must, always, never), check
+   for edge cases where it does not hold. If any exist, use softer framing.
+   Flag the case as a risk or a question instead of a hard rule.
+6. Return ONLY the diff, starting with "--- " and ending after the last hunk.
    No prose, no explanation.
 ```
 
