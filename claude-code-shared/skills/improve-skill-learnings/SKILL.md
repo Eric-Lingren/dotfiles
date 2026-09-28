@@ -193,12 +193,16 @@ based on `improves_type`:
 | improves_type | Paths to check (in order) |
 |---------------|--------------------------|
 | `skill`       | `~/.dotfiles/claude-code-shared/skills/<improves>/SKILL.md` |
-| `agent`       | `~/.dotfiles/claude-code-shared/agents/<improves>.md` |
+| `agent`       | First hit of `find ~/.dotfiles/claude-code-shared/agents -name '<improves>.md'`, else `~/.dotfiles/claude-code-shared/agents/<improves>.md` |
 | `process`     | `~/.dotfiles/claude-code-shared/resources/<improves>.md`, then `~/.dotfiles/claude-code-shared/resources/<improves>.json` |
 | `contract`    | `~/.dotfiles/claude-code-shared/contracts/<improves>.json`, then `~/.dotfiles/claude-code-shared/contracts/<improves>.md` |
 
 After the declared type's paths, append the other three types' paths (same
 slug) as fallback candidates, in table order.
+
+Resolve the `agent` row with the recursive find every time it is used. Agent
+files can be nested (e.g. `agents/personas/<improves>.md`). The flat path alone
+misses them.
 
 **Unassigned entries (`improves` is null):** Use `reported_by` as the slug.
 List all four types' paths for it, in table order. If `reported_by` is also
@@ -257,6 +261,12 @@ Return ONLY the JSON object. No prose.
 
 ### Apply the verdict
 
+- **`invalid` with reason `file_not_found`:** Confirm before marking. Run
+  `find ~/.dotfiles/claude-code-shared -name '<improves>.*'`. If it hits, use
+  the first hit as `file_path`. If its type (derived below) matches
+  `improves_type`, treat the verdict as `valid`. Otherwise treat it as
+  `misrouted` with the derived slug and type. Only mark `invalid` if find
+  returns nothing.
 - **`stale` or `invalid`:** Run update-learning.py to mark it. Print a one-line
   note. Remove from the picker list. Return to Step 5.
   ```bash
@@ -282,6 +292,7 @@ Return ONLY the JSON object. No prose.
 - **`valid` with `file_path` outside path candidates** (compare after expanding
   `~`): treat as `misrouted`. Derive slug and type from the path:
   `skills/<slug>/SKILL.md` → skill, `agents/<slug>.md` → agent,
+  nested `agents/<subdir>/<slug>.md` → agent (slug = file basename),
   `resources/<slug>.md|json` → process, `contracts/<slug>.json|md` → contract.
 - **`valid`:** Set `file_path` as the canonical target path. Proceed to Step 6.
 
