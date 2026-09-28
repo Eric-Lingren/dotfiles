@@ -164,7 +164,7 @@
       "name": "capture-learning",
       "file": "agents/capture-learning.md",
       "model": "sonnet",
-      "description": "End-of-run learning capture agent. Receives a rough correction-event description from a skill, expands it into a schema-valid entry with discrete transcript anchors, runs the grounding judge, and writes the entry to the per-skill JSONL file if grounded. Spawned by the managed tail block in every shared skill when a correction-event occurred.",
+      "description": "End-of-run learning capture agent. Receives a rough correction-event description plus candidate verbatim anchors from a skill, expands it into a schema-valid v2 self-learning entry, grounds it with the deterministic verify-anchors.py script, and writes it to learnings/unified-learnings.jsonl if grounded. Spawned in the background by the managed tail block in every shared skill.",
       "consumers": [
         "cc-usage-analytics",
         "clean-scaffolding",
@@ -198,38 +198,6 @@
       "model": "sonnet",
       "description": "Sonnet-tier egress agent. Consumes an investigation-result and composes a voice-matched Slack reply using the slack-casual voice profile. Citations render inline per distinct verified claim. INSUFFICIENT_EVIDENCE claims surface an explicit 'couldn't confirm' tag — never smoothed over. Adds no content beyond what the investigation-result provides. Output is copy-only for manual paste to Slack.",
       "consumers": []
-    },
-    {
-      "name": "learning-grounding-judge",
-      "file": "agents/learning-grounding-judge.md",
-      "model": "haiku",
-      "description": "Anchor-verification agent that confirms whether a candidate learning entry's evidence anchors actually appear in the session transcript. Returns a JSON verdict {grounded: bool, reason: string}. Spawned by the managed tail block in every shared skill at end-of-run.",
-      "consumers": [
-        "cc-usage-analytics",
-        "clean-scaffolding",
-        "pr-code-review",
-        "debug",
-        "find-work",
-        "grill-me",
-        "grill-with-docs",
-        "handoff",
-        "how-to",
-        "improve-codebase-architecture",
-        "improve-component",
-        "improve-skill-benchmarks",
-        "improve-skill-learnings",
-        "prototype",
-        "register-skill",
-        "run-task-followups",
-        "build-code",
-        "tasks-to-linear",
-        "tdd",
-        "tldr-tech",
-        "to-e2e-tasks",
-        "to-spec",
-        "to-seed",
-        "to-tasks"
-      ]
     }
   ]
 }

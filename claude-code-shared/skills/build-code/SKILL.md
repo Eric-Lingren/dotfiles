@@ -159,10 +159,11 @@ For each task in the wave (up to 4 at a time — if the wave has more than 4 tas
 
 ```
 Agent(subagent_type="build-runner", isolation="worktree",
-      prompt="<task object JSON, context_brief, tooling_manifest, breadcrumb, taskfile_basename, project_root>")
+      prompt="<task object JSON, context_brief, tooling_manifest, breadcrumb, taskfile_basename, project_root, wave_base>")
 ```
 
 Pass per task:
+- `wave_base` — the SHA recorded in step 0. build-runner syncs its worktree onto it before any work, so it never has to pull feature commits in itself.
 - `task` — this task's full object (`id`, `title`, `type`, `description`, `acceptance_criteria`, `browser_verify` if present).
 - `context_brief` — the brief built once in step 3b.
 - `tooling_manifest` — the manifest built once in step 3b.

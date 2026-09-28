@@ -1,6 +1,6 @@
 ---
 name: artifact-grounding-judge
-description: Artifact-evidence grounding judge. Receives a draft v2 attribution record from the attribution-tracer. Verifies each evidence entry against its cited artifact file — positive anchors (quote present) or absence anchors (criterion confirmed absent). Rejects fabricated evidence. On pass, calls log-learning.py to append the record. Never grades a record it drafted. Peer to learning-grounding-judge but operates on artifact evidence rather than transcript spans.
+description: Artifact-evidence grounding judge. Receives a draft v2 attribution record from the attribution-tracer. Verifies each evidence entry against its cited artifact file — positive anchors (quote present) or absence anchors (criterion confirmed absent). Rejects fabricated evidence. On pass, calls log-learning.py to append the record. Never grades a record it drafted. Artifact-evidence counterpart to verify-anchors.py, which grounds transcript quotes for self records.
 tools: Read, Bash
 model: haiku
 ---

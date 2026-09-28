@@ -64,6 +64,6 @@ class TestWritesUnifiedLog:
         assert "/<skill>" not in content
 
 
-class TestGroundingJudge:
-    def test_still_spawns_grounding_judge(self, content):
-        assert "learning-grounding-judge" in content
+class TestGrounding:
+    def test_grounds_via_verify_anchors_script(self, content):
+        assert "verify-anchors.py" in content

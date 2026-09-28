@@ -6,7 +6,15 @@
 INPUT=$(cat)
 COMMAND=$(echo "$INPUT" | jq -r '.tool_input.command')
 
-MATCHED=$(echo "$COMMAND" | grep -ioE \
+# Strip git global options so `git -C <path> push --force` matches like
+# `git push --force`. Covers -C/-c/--git-dir/--work-tree/--namespace (with a
+# separate or =value arg, quoted or bare) and flag-only globals.
+NORMALIZED=$(printf '%s' "$COMMAND" | perl -pe '
+  1 while s/\bgit\s+(?:-[Cc]|--git-dir|--work-tree|--namespace)(?:\s+|=)(?:"[^"]*"|'"'"'[^'"'"']*'"'"'|\S+)/git/g
+       || s/\bgit\s+(?:--no-pager|--paginate|-p|-P|--bare|--no-replace-objects|--literal-pathspecs|--no-optional-locks)(?=\s)/git/g;
+')
+
+MATCHED=$(echo "$NORMALIZED" | grep -ioE \
   "git push[[:space:]].*(-f|--force|--force-with-lease)\
 |git reset[[:space:]]+--hard\
 |git clean[[:space:]]+-[a-z]*f\

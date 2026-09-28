@@ -70,8 +70,7 @@
     "persona-completeness": "T1",
     "persona-coherence": "T1",
     "persona-judge": "T3",
-    "learning-grounding-judge": "T1",
-    "capture-learning": "T3",
+    "capture-learning": "T2",
     "export-tasks": "T2",
     "build-runner": "T3"
   },

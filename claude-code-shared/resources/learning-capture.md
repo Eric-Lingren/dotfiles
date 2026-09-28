@@ -1,24 +1,48 @@
 # Shared Learning Capture Block
 
-Run this as the FINAL action of the skill's terminal turn, BEFORE printing the
-closing suggestion or handoff. Always spawn the agent — it determines whether
-anything is worth recording. Do not self-assess and skip.
+Run this at the end of the skill's terminal turn. Always spawn the agent. It
+decides whether anything is worth recording. Do not self-assess and skip.
 
-Always spawn the `capture-learning` agent (`subagent_type: capture-learning`).
-Pass:
-- `skill`: the slug provided in the skill stub that referenced this file
-- `transcript_path`: resolve via bash before spawning:
-  ```bash
-  CLAUDE_CONFIG_DIR="${CLAUDE_CONFIG_DIR:-$HOME/.claude}"
-  encoded_cwd=$(pwd | sed 's|[./]|-|g')
-  transcript_path="${CLAUDE_CONFIG_DIR}/projects/${encoded_cwd}/${CLAUDE_CODE_SESSION_ID}.jsonl"
-  echo "$transcript_path"
-  ```
-  Run this command and capture the output. Pass the resulting absolute path explicitly.
-- `brief_evidence`: one-sentence summary of what happened this run (what the skill
-  did, any backtracks, tool failures, or user corrections observed)
+## 1. Resolve the transcript path
 
-The agent identifies the `trigger` (tool_failure | backtrack | user_correction |
-instruction_gap | redundant_effort | uncategorized), builds a schema-valid entry,
-runs grounding verification, and writes if grounded. If nothing is worth recording,
-the agent exits cleanly — but the spawn must always happen.
+```bash
+bash ~/.dotfiles/claude-code-shared/scripts/resolve-transcript-path.sh
+```
+
+Pass the printed absolute path as `transcript_path` (pass `null` if it printed `null`).
+
+## 2. Spawn `capture-learning` in the background
+
+Agent tool: `subagent_type: capture-learning`, `run_in_background: true`.
+Prompt fields:
+
+- `skill`: the slug given in the skill stub that referenced this file
+- `transcript_path`: from step 1
+- `brief_evidence`: one or two sentences on what happened this run. Name any
+  backtracks, tool failures, user corrections, instruction gaps or redundant
+  effort. Say "clean run" if there were none.
+- `trigger`: your best guess (`tool_failure | backtrack | user_correction |
+  instruction_gap | redundant_effort | uncategorized`), or omit it
+- `anchors`: 1 to 3 short verbatim quotes copied from your own context that
+  show the event (exact error text, the user's correction words, the output
+  you retracted). Copy characters exactly, no paraphrase. Empty list if clean run.
+
+Supplying `anchors` is the main speed lever. With them, the agent skips
+searching the transcript entirely.
+
+## 3. Print the closing message
+
+Print the skill's closing suggestion (the next-step list from the skill stub).
+Then, as the very last lines of the turn, print exactly:
+
+```
+⏳ Capturing learnings in the background (capture-learning). Keep this session open until it reports back.
+<!-- skill-done: <slug> --> <!-- learning-eval: <slug> -->
+```
+
+## 4. When the background agent finishes
+
+On its completion notification, print one line and nothing else:
+
+- written: `✅ Learning captured: <id from the agent's output line>`
+- skipped: `Learning capture: <the agent's SKIP line>`

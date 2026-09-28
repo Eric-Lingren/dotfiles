@@ -6,8 +6,9 @@
 INPUT=$(cat)
 COMMAND=$(echo "$INPUT" | jq -r '.tool_input.command // ""')
 
-# Strip harmless stderr suppression before checking for /dev/ writes
-SANITIZED=$(echo "$COMMAND" | sed 's/2>\/dev\/null//g')
+# Strip harmless redirects (>/dev/null, 2>/dev/null, &>/dev/null, >/dev/stderr,
+# >>/dev/tty, ...) before checking for /dev/ writes
+SANITIZED=$(printf '%s' "$COMMAND" | perl -pe 's#[0-9&]?>>?\s*/dev/(?:null|stdout|stderr|tty)\b##g')
 
 MATCHED=$(echo "$SANITIZED" | grep -ioE \
   "rm[[:space:]]+-[a-zA-Z]*f\

@@ -69,29 +69,42 @@ def save_nudged(session_id, state):
     path.write_text(json.dumps(state))
 
 
+def _text_of(content):
+    if isinstance(content, str):
+        return content
+    if isinstance(content, list):
+        return "\n".join(
+            item.get("text", "") for item in content
+            if isinstance(item, dict) and item.get("type") == "text"
+        )
+    return ""
+
+
 def get_last_assistant_text(transcript_path):
-    """Extract the last assistant turn text from transcript JSONL."""
+    """Extract the text of the final assistant turn from transcript JSONL.
+
+    Claude Code writes each content block of a message as its own line, with
+    the payload nested under "message". Collect text from the trailing run of
+    assistant lines, stopping at the previous user line.
+    """
     try:
         lines = pathlib.Path(transcript_path).read_text().strip().splitlines()
     except Exception:
         return ""
 
+    parts = []
     for line in reversed(lines):
         try:
             turn = json.loads(line)
         except Exception:
             continue
-        if turn.get("role") == "assistant":
-            content = turn.get("content", "")
-            if isinstance(content, str):
-                return content
-            if isinstance(content, list):
-                parts = []
-                for item in content:
-                    if isinstance(item, dict) and item.get("type") == "text":
-                        parts.append(item.get("text", ""))
-                return "\n".join(parts)
-    return ""
+        msg = turn.get("message") if isinstance(turn.get("message"), dict) else turn
+        role = msg.get("role") or turn.get("type")
+        if role == "assistant":
+            parts.append(_text_of(msg.get("content", "")))
+        elif role == "user" and parts:
+            break
+    return "\n".join(reversed(parts))
 
 
 def append_audit(ts, skill, outcome):
@@ -147,10 +160,9 @@ def main():
             "decision": "block",
             "reason": (
                 f"The learning-eval tail was skipped for skill(s): {slugs_str}. "
-                f"Please run the learning capture tail now: "
-                f"check if a correction-event occurred this run, and if so spawn "
-                f"the capture-learning agent with the skill slug, trigger, "
-                f"brief_evidence, and transcript_path."
+                f"Please run the learning capture tail now: read and execute "
+                f"~/.dotfiles/claude-code-shared/resources/learning-capture.md "
+                f"for each skipped slug."
             ),
         }))
 

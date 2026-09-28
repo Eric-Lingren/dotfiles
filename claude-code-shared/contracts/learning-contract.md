@@ -81,7 +81,7 @@ Single append-only log. All records from all skills land in one file. Each line 
 | `fix` | string or null | Concrete change that would prevent recurrence. Null if no actionable fix yet. |
 | `evidence` | array | Each item: `{source, ref, quote}`. `source` is `"transcript"` or `"artifact"`. |
 | `trace` | object or null | Attribution records only. Provenance pointers: `seed`, `tasks`, `task_id`, `pr`, `branch`. |
-| `confidence` | `"confirmed"` or `"candidate"` | `confirmed` = grounding judge verified all anchors. `candidate` = weak but real anchors. |
+| `confidence` | `"confirmed"` or `"candidate"` | `confirmed` = verify-anchors.py (self) or artifact-grounding-judge (attribution) verified all anchors. `candidate` = weak but real anchors. |
 | `status` | `"active"` | Reserved for future state transitions. |
 
 ## Agents
@@ -89,11 +89,11 @@ Single append-only log. All records from all skills land in one file. Each line 
 **Self records** (`type: "self"`) — produced at end-of-run by skill tail blocks:
 
 ```
-skill tail block (trigger, brief_evidence)
-  → spawns capture-learning agent
-  → capture-learning drafts full entry
-  → spawns learning-grounding-judge with entry + transcript path
-  → grounded=true: echo entry | python log-learning.py
+skill tail block (brief_evidence, trigger hint, verbatim anchors)
+  → spawns capture-learning agent in the background
+  → capture-learning drafts full entry (greps prep-transcript.py output only if anchors are missing)
+  → verify-anchors.py --write checks each quote against the transcript deterministically
+  → grounded=true: verify-anchors.py pipes entry to log-learning.py
   → grounded=false or no correction-event: write nothing
 ```
 

@@ -17,8 +17,27 @@ The caller passes all context in the prompt. Expect:
 - `taskfile_basename` — basename of the task file (e.g. `20260709-1341-dispatch-execution-isolation.json`), used to build the log path.
 - `project_root` — absolute path to the project root.
 - `tooling_manifest` — JSON array from `detect_tooling.py`, one entry per workspace with resolved lint/format/typecheck/test/test_affected/e2e commands. Pre-computed once by build-code. Do not re-run detection.
+- `wave_base` — SHA of the shared branch tip. Your worktree must start from it.
+
+## Git rules
+
+- Never cherry-pick, merge, rebase, or reset to bring other branches into your worktree. Step 0 is the only base sync.
+- If the code you need is missing after step 0, fail the task with the reason. Do not work around it.
+- Run git in your own worktree (cwd). Do not use `git -C` against the main checkout or other worktrees.
 
 ## Process
+
+### 0. Sync the worktree onto the base
+
+Run from your worktree:
+
+```bash
+~/.dotfiles/claude-code-shared/scripts/sync-worktree-base.sh "<wave_base>"
+```
+
+- Exit 0: continue.
+- Exit 3 (refused) or 1: return a receipt with `status: "failed"` and the script's stderr in `summary`. Do not try other git commands to fix it.
+- If `wave_base` was not passed, skip this step and log `wave_base missing`.
 
 ### 1. Open the trace log
 

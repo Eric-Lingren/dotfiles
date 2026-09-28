@@ -61,7 +61,7 @@ AGENT_GROUPS = {
     ],
     "IMPROVE": ["architecture-auditor"],
     "LEARN": [
-        "capture-learning", "learning-grounding-judge",
+        "capture-learning",
         "attribution-tracer", "artifact-grounding-judge",
     ],
 }
@@ -675,8 +675,8 @@ def render_learn(skill_tiers, agent_tiers):
 
     parts.append('<line x1="107" y1="81" x2="107" y2="105" class="ln" marker-end="url(#a)"/>')
 
-    t = tier_to_letter(agent_tiers.get("learning-grounding-judge", "T1"))
-    parts.append(agent_box(20, 108, "learn-ground-judge", t, w=195))
+    parts.append('<rect x="20" y="108" width="195" height="26" rx="5" class="ct"/>')
+    parts.append('<text x="117" y="121" class="cn">verify-anchors.py</text>')
 
     t = tier_to_letter(agent_tiers.get("attribution-tracer", "T3"))
     parts.append(agent_box(270, 55, "attribution-tracer", t, w=175))

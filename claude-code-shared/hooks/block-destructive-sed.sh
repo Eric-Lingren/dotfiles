@@ -5,7 +5,9 @@
 INPUT=$(cat)
 COMMAND=$(echo "$INPUT" | jq -r '.tool_input.command // ""')
 
-if echo "$COMMAND" | grep -qE '\bsed\b.*-[a-zA-Z]*i\b'; then
+# Match -i only within the same pipeline segment as sed, so `sed -n ...; grep -i`
+# is not a false positive.
+if echo "$COMMAND" | grep -qE '\bsed\b[^|;&]*[[:space:]]-[a-zA-Z]*i\b'; then
   echo "Destructive sed -i is blocked. Use the Edit tool to make in-place file changes instead." >&2
   exit 2
 fi
