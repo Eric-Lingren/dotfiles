@@ -71,6 +71,15 @@ If any instance bypasses it, fix that instance directly. Otherwise the criterion
 If you map a UI label to an API enum or ordering value and the direction is not self-evident (e.g. sort keys), read the backend implementation or API docs first.
 Confirm which value produces which human-facing direction. Fields named after age or recency can sort opposite to their timestamp.
 
+## Scope check
+
+This section applies while fixing errors (type, lint, or test failures) during the cycle. It does not cover deletions that are the task's own planned work (e.g. a refactor or move the description calls for).
+If a fix has more than one path (e.g. for a type error), pick the one that stays within the task's scope. Do not add production logic, props, or interface members the task does not ask for.
+Deletes are limited to the error being fixed. They are not a general license.
+Delete nothing except code this task added or the specific item the task description names. This limit applies to tests and fixtures too.
+Log each deletion in the trace log with its reason.
+If the fix would need any other deletion, stop and fail the task with the reason.
+
 ## Project context
 
 {context_brief}
