@@ -1,9 +1,20 @@
 ================================================================
-CC USAGE DIGEST -- 2026-W38 (vs 2026-W37, last complete weeks)
+CC USAGE DIGEST -- 2026-W39 (vs 2026-W38, last complete weeks)
 ================================================================
-  spend    $  2,725   ^138%
-  opus%        81%   ^2pt
-  adher.        0%   n/a   (0/1)
+  spend    $  1,379   v49%
+  opus%        89%   ^8pt
+  adher.       19%   ^19pt   (23/123)
 
+  DRIFT (act):
+  improve-skill-learnings    exp sonnet -> opus:18       18/18  1wk  -> re-tier up or add model override
+  pr-code-review             exp sonnet -> opus:17       17/17  1wk  -> re-tier up or add model override
+  to-seed                    exp sonnet -> opus:15       15/15  1wk  -> re-tier up or add model override
+  tdd                        exp sonnet -> opus:14       14/14  1wk  -> re-tier up or add model override
+  to-tasks                   exp sonnet -> opus:9        9/9  1wk  -> re-tier up or add model override
+  pr-revise                  exp sonnet -> opus:7        7/7  1wk  -> re-tier up or add model override
+  build-code                 exp sonnet -> opus:7        7/7  1wk  -> re-tier up or add model override
+  dispatch-tasks             exp sonnet -> opus:5        5/5  1wk  -> re-tier up or add model override
+  ci-fix                     exp sonnet -> opus:4        4/4  1wk  -> re-tier up or add model override
+  relay                      exp sonnet -> opus:3        3/3  1wk  -> re-tier up or add model override
   DRIFT (minor / watch):
-  worktree                   exp sonnet -> opus:1        1/1  1wk  -> re-tier up or add model override
+  improve-skill-benchmarks   exp sonnet -> opus:1        1/1  1wk  -> re-tier up or add model override
