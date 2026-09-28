@@ -66,6 +66,11 @@ If an acceptance criterion says "each" or "every" and the fix lives in a shared 
 Record the enumerated list in your output, marking how each instance routes through the shared mechanism.
 If any instance bypasses it, fix that instance directly. Otherwise the criterion is unmet.
 
+## Direction check
+
+If you map a UI label to an API enum or ordering value and the direction is not self-evident (e.g. sort keys), read the backend implementation or API docs first.
+Confirm which value produces which human-facing direction. Fields named after age or recency can sort opposite to their timestamp.
+
 ## Project context
 
 {context_brief}
