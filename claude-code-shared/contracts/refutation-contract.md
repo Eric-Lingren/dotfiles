@@ -63,6 +63,10 @@ On unrecoverable failure (e.g. transcript file not found, unreadable input), the
 | `error` | string | yes (error) | Short description of the failure |
 | `details` | string | no (error) | Optional additional context |
 
+### Synthesized content
+
+Synthesized or inferred seed content often draws on several transcript locations. Never stitch separate fragments into one quote. A stitched quote is not verbatim, so the judge rejects it even when every piece exists. Cite the single strongest verbatim span in `transcript_span`. Name the other locations in `problem`.
+
 ## Orchestrator handling
 
 The orchestrator validates each returned array against this schema. On a parse mismatch, it retries the persona once. If the retry also fails to return valid JSON, the orchestrator records the failure and continues (the verification stamp is set to `degraded`).
