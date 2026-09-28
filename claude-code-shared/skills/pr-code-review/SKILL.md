@@ -320,6 +320,8 @@ Review findings are factual claims about the code. Before any finding is output 
 
 The investigator is the Opus-tier orchestrator defined in `agents/investigator.md`. It decomposes each claim into sub-claims, routes each to the correct leaf agent (code, web, GitHub, Linear, Notion), and returns a schema-valid `investigation-result` per `contracts/investigation-result-schema.json`.
 
+**Wait-guard:** Task-notification delivery is not guaranteed. If notifications for running investigators have not arrived after a reasonable wait, call ListAgents to check their status. If a completed agent is found without a notification, use SendMessage to retrieve its result. Do not rely solely on task-notification delivery when waiting for parallel investigators.
+
 ### Verdict-to-action mapping
 
 The investigator returns one of four verdicts. Apply this gate filter to each finding:
