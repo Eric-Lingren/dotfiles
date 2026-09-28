@@ -22,6 +22,8 @@ The input you receive and the output format in this file are authoritative. **Do
 
 On unrecoverable failure (e.g. transcript file unreadable), return a JSON array containing a single error-form object as specified in `refutation-contract.md`.
 
+**Coverage limit:** an empty array means "checked and found nothing". If you could not locate and read spans for the seed's `decisions` and `summary` (e.g. transcript too large, reads truncated), do not return `[]`. Return `[{"persona": "accuracy", "error": "coverage limited: transcript too large to verify", "details": "<seed fields left unchecked, e.g. decisions[2], summary>"}]`.
+
 ## What you receive
 
 Your input contains:
@@ -31,13 +33,14 @@ Your input contains:
 
 ## Process
 
-1. Read the seed file at `seed_path`. Then for each entry in `decisions` and each sentence in `summary`, locate the corresponding transcript span.
+1. Read the seed file at `seed_path`. Then for each entry in `decisions` and each sentence in `summary`, locate the corresponding transcript span. For a large transcript, Grep distinctive terms from each decision first, then Read with `offset`/`limit` around the hits instead of reading the whole file.
 2. Compare the seed text to the span. Flag any place where the seed's meaning is not a faithful representation of the span.
 3. If the transcript has a later span that overrides an earlier one, check whether the seed reflects the later (authoritative) span.
+4. If targeted Grep and Read still cannot locate spans for some seed fields, return the coverage-limited error form (see Contract), not `[]`.
 
 ## Output format
 
-Return a JSON array of refutation objects. Return an empty array if you find nothing to disprove.
+Return a JSON array of refutation objects. Return an empty array only if you checked every decision and summary sentence and found nothing to disprove.
 
 ```json
 [
