@@ -137,6 +137,9 @@ When `run_all = true`:
 4. After all learnings for a target are exhausted (applied, skipped, or
    discarded), advance to the next target automatically. No prompt between
    targets.
+   A learning retargeted mid-pass to a target outside the original rank list
+   is deferred to the next run-all pass. Include it now only if the user
+   explicitly asks.
 5. After all targets are done, go to Step 8 (summary).
 
 ## Step 3: Fetch entry fields (no upfront validation)
