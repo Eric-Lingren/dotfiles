@@ -156,7 +156,7 @@ target = os.environ["TARGET"]
 path = os.path.expanduser(
     "~/.dotfiles/claude-code-shared/learnings/unified-learnings.jsonl"
 )
-keys = ("id", "improves", "improves_type", "problem", "lesson", "fix")
+keys = ("id", "improves", "improves_type", "reported_by", "problem", "lesson", "fix")
 try:
     with open(path) as f:
         for line in f:
@@ -200,6 +200,11 @@ based on `improves_type`:
 After the declared type's paths, append the other three types' paths (same
 slug) as fallback candidates, in table order.
 
+**Unassigned entries (`improves` is null):** Use `reported_by` as the slug.
+List all four types' paths for it, in table order. If `reported_by` is also
+null, pass an empty list. These paths are a starting point only. The
+validator greps for the real owner. Do not add custom rules to the prompt.
+
 Pass this prompt to the Haiku agent (model: haiku). Fill the learning entry
 fields verbatim from the Step 3 fetch output:
 
@@ -219,6 +224,8 @@ Target file paths to check (in order):
 
 Steps:
 1. Check whether each path exists (use Bash: test -f <path> && echo exists).
+   If {improves} is null, skip the rest of this step. The paths come from the
+   reporter, not an owner. If none exist, go to step 5.
    If none exist → return {"id": "{id}", "verdict": "invalid", "reason": "file_not_found", "file_path": null}
    If the first existing path belongs to a different type than {improves_type} →
    return {"id": "{id}", "verdict": "misrouted", "reason": "type_mismatch", "file_path": "<path>", "suggested_improves": "{improves}", "suggested_improves_type": "<type of that path>"}
@@ -241,7 +248,9 @@ Steps:
    ownership. If the owner only delegates, do not return misrouted; go to step 6.
 6. Has the file changed so significantly that the lesson is no longer relevant?
    If yes → return {"id": "{id}", "verdict": "stale", "reason": "no_longer_relevant", "file_path": "<path>"}
-7. Otherwise → return {"id": "{id}", "verdict": "valid", "reason": "ok", "file_path": "<path>"}
+7. If {improves} is null and no file owns the mechanism →
+   return {"id": "{id}", "verdict": "no_applicable_target", "reason": "no_owner", "file_path": null}
+8. Otherwise → return {"id": "{id}", "verdict": "valid", "reason": "ok", "file_path": "<path>"}
 
 Return ONLY the JSON object. No prose.
 ```
@@ -261,6 +270,12 @@ Return ONLY the JSON object. No prose.
     --id <id> \
     --improves <suggested_improves> \
     --improves-type <suggested_improves_type>
+  ```
+- **`no_applicable_target`:** No file owns the fix. Mark it `invalid`. Print a
+  one-line note. Remove from the picker list. Return to Step 5.
+  ```bash
+  python3 ~/.dotfiles/claude-code-shared/scripts/update-learning.py \
+    --id <id> --status invalid
   ```
 - **Malformed verdict:** Read its prose. If it names another owner, handle as
   `misrouted`; otherwise as `stale`.
