@@ -420,7 +420,7 @@ Build this block and hand it to `/to-seed` (it becomes the seed's `provenance`, 
       "fix": "<the code scope to change on this PR, or null>",
       "original_comment_body": "<the verbatim comment body captured at Step 3c-capture>",
       "original_comment_author": "<the author.login captured at Step 3c-capture>",
-      "thread_database_id": "<the numeric databaseId captured at Step 3c-capture>"
+      "thread_database_id": "<string: str(databaseId) if databaseId is not None else ''; coerce numeric IDs to string before inserting; schema requires a string, never a number or null>"
     }
   ]
 }
