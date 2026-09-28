@@ -236,6 +236,10 @@ Steps:
 2. Read the first file that exists (Read tool).
 3. Does the file ALREADY contain the substance of the fix or lesson?
    If yes → return {"id": "{id}", "verdict": "stale", "reason": "already_applied", "file_path": "<path>"}
+   Also check for partial coverage. The file may hold the core lesson but omit
+   one dimension (a trigger, scenario, or criterion). If so → return
+   {"id": "{id}", "verdict": "partial", "reason": "partial_coverage", "file_path": "<path>",
+   "existing_line": <line number of the existing coverage>, "missing": "<the omitted dimension>"}
 4. Does this file itself perform the action the fix changes (e.g. edit code, spawn
    the agent, run the command)? If it only delegates that action to another skill
    or agent (e.g. an orchestrator skill that hands code edits to a runner agent) →
@@ -295,6 +299,8 @@ Return ONLY the JSON object. No prose.
   nested `agents/<subdir>/<slug>.md` → agent (slug = file basename),
   `resources/<slug>.md|json` → process, `contracts/<slug>.json|md` → contract.
 - **`valid`:** Set `file_path` as the canonical target path. Proceed to Step 6.
+- **`partial`:** Handle like `valid`. Set `file_path` and proceed to Step 6.
+  Carry `existing_line` and `missing` into the drafter prompt.
 
 No validation summary block is printed. Validation is silent except for a
 brief inline note when a learning is discarded or retargeted.
@@ -329,7 +335,7 @@ Wait for user response. If "done" or equivalent, jump to Step 8 (summary).
 
 When the user picks a number: run **Step 4** (validate that one learning).
 Proceed based on the verdict — Step 4 either returns to this list (stale /
-invalid / misrouted) or proceeds to Step 6 (valid).
+invalid / misrouted) or proceeds to Step 6 (valid or partial).
 
 ## Step 6: Draft diff for selected learning
 
@@ -343,6 +349,9 @@ constraints to its prompt (style rules, which section to touch), not the diff.**
 
 Fill `{id}`, `{problem}`, `{lesson}` and `{fix}` verbatim from the Step 3
 fetch output. Never paraphrase them.
+
+For a `partial` verdict, append this constraint to the drafter prompt:
+`Existing coverage is at line {existing_line}. Extend that text. Add only: {missing}. Do not duplicate what is already there.`
 
 ```
 You are drafting a unified diff to apply ONE learning to a target file.
