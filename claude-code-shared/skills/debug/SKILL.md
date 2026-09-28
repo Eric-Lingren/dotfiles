@@ -49,6 +49,26 @@ Before entering any phase, assess the bug:
 
 If all three are true: jump directly to Phase 4 (write tasks). No feedback loop required. State the skip explicitly and explain why.
 
+## Scope gate: bug vs. design change
+
+Debug writes task files only for **bugs**: code that does not do what it was built to do, where the correct behavior is already settled. Re-check this at every phase boundary, not only at the start. Diagnosis often shows the code works as built and the real problem is a design choice.
+
+The work has become a **design change** when any of these is true:
+
+- The code behaves as built, and the fix changes intended behavior, UX, copy, flow, or layout.
+- The fix requires picking between two or more options with real trade-offs (you presented options, or the user asked for them).
+- The fix adds, removes, or swaps a feature, integration, or third-party component (e.g. turning off a payment method, replacing an input).
+- The fix needs a decision a future reader would ask "why?" about, and that rationale lives only in this conversation.
+
+When the gate trips:
+
+1. Say so explicitly: `Scope gate: this is a design change, not a bug. Handing off to /to-seed.`
+2. Do **not** write a task file. Do not run Phase 4.
+3. Keep any diagnosis findings (root cause of the symptom, file:line seams, rejected options and why) in the conversation so `/to-seed` can capture them.
+4. Tell the user the next steps: `/to-seed` to record the decision and rationale, then `/to-tasks` to produce the task file.
+
+Mixed sessions are allowed. If one confirmed root cause is a real bug and another is a design change, write tasks only for the bug and hand the design change to `/to-seed`. A config-only fix with no code change (e.g. a dashboard setting) produces no task file either way.
+
 ## Observation log
 
 Maintain a running scratchpad throughout all phases. Format:
@@ -180,6 +200,8 @@ Do not proceed to Phase 4 until both steps are complete.
 ## Phase 4 — Write fix tasks, then stop
 
 **The debug skill does not apply any fix. It writes a tasks file and stops. All implementation happens in a separate `/build-code` session.**
+
+**Before Step 1, re-run the Scope gate.** If any confirmed root cause is a design change, not a bug, it does not get a task here. Hand it to `/to-seed` per the Scope gate section. Proceed with Phase 4 only for the remaining bugs.
 
 ### Step 1: Branch
 
