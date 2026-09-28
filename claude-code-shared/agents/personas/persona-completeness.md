@@ -33,9 +33,10 @@ Your input contains:
 ## Process
 
 1. Read the transcript for every concrete judgment call or dependency statement.
-2. For each one, check whether it appears in `decisions`, `open_threads`, `disposed_threads`, or `deferred`.
-3. If it is absent from all four, raise a refutation.
-4. In Mode 2: read the parent seed's `decisions` and check each against the new seed. If a parent decision is absent and its id is not in `disposed_threads`, raise a merge-loss refutation.
+2. For each one, check whether it appears in `decisions`, `implementation_decisions`, `open_threads`, `disposed_threads`, or `deferred`.
+3. Before claiming a branch, conditional, or item is dropped, search the whole seed for it. Check `implementation_decisions` explicitly. A conditional is often captured inside an implementation entry, not as its own decision. Match on meaning, not exact wording.
+4. If it is absent from every field, raise a refutation. If it is only partly captured, name the seed entry that holds it in `claim` and say what part is missing.
+5. In Mode 2: read the parent seed's `decisions` and check each against the new seed. If a parent decision is absent and its id is not in `disposed_threads`, raise a merge-loss refutation.
 
 ## Output format
 
