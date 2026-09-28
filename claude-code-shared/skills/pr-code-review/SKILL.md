@@ -29,28 +29,17 @@ the current model. Delegate only the menial searching.
 **Role:** always produces a task file with `review_finding` entries after the investigator gate (Step 5)
 
 **Caller-context output modes:**
-- `sprout-seed` caller: skip Step 0, auto-select `fix` mode (the task file feeds to `build-code`)
-- standalone invocation: Step 0 asks the user
+- `sprout-seed` caller: auto-select `fix` mode (the task file feeds to `build-code`)
+- args contain `--fix` or `--comment`: preselect that mode
+- standalone invocation with no flag: review first, then offer actions in Step 6
 
-Both modes produce the same task file. The mode determines what happens after.
+Every mode produces the same task file. The mode only decides what happens after.
 
 ---
 
 You are performing a thorough code review. Follow this process exactly.
 
-## Step 0: Ask the user what to do with findings
-
-**Skip this step when invoked by `sprout-seed` (auto-select `fix`).**
-
-Before gathering the diff, ask the user:
-
-> What should I do with review findings?
->
-> 1. **Comment** — post as inline PR review comments (requires a PR)
-> 2. **Fix** — apply code fixes via build-code
-> 3. **Show only** — print findings, take no action
-
-Wait for an answer. Store the choice as `review_mode` for Step 6.
+Do not ask the user anything before the review. Start at Step 1.
 
 ## Step 1: Gather the diff
 
@@ -441,17 +430,41 @@ After the human-readable findings block, proceed to Step 5 to write the task fil
 
 ## Step 6: Route based on review_mode
 
-After printing findings and writing the task file, act on `review_mode` from Step 0:
+After printing findings and writing the task file, resolve `review_mode`:
+
+- `sprout-seed` caller → `fix`
+- `--fix` / `--comment` arg → that mode
+- otherwise → print this plain-text menu (no `AskUserQuestion`) and end the turn:
+
+  ```
+  Next:
+  - `comment` → post findings to PR
+  - `fix` → apply fixes via dispatch-tasks
+  - nothing → done (task file kept for `/dispatch-tasks <path>` later)
+  ```
+
+  Omit the `comment` line when no PR exists. Act on the user's reply using the modes below. If they reply with anything else, treat it as `show`.
 
 ### `comment` mode
 
-Post findings as an inline PR review. Requires a PR to exist (from Step 1).
+Post findings as one PR review with an inline comment on each finding's line. Requires a PR to exist (from Step 1).
 
-```bash
-gh pr review <number> --comment --body "<formatted findings>"
+Write a JSON array to `/tmp/pr-review-comments.json` with the Write tool. Add one entry per verified finding, and skip praise:
+
+```json
+[{"file": "src/foo.ts", "line": 42, "body": "🟡 **risk**: <description>\n\n<suggested_fix>"}]
 ```
 
-Format the body using the same output format (severity emojis, file grouping, verdict). Do not post praise-only findings. Each finding becomes one top-level bullet, not an inline per-line comment.
+Write each `body` in the Step 1a voice. Then post:
+
+```bash
+python3 ~/.dotfiles/claude-code-shared/scripts/post-pr-review.py \
+  --pr <number> \
+  --findings /tmp/pr-review-comments.json \
+  --summary "<one-line summary + Verdict>"
+```
+
+The script checks each line against the PR diff. It moves `line: 0` findings and findings outside the diff into the review summary body. This avoids a 422 that would reject the whole review. On non-zero exit, STOP and report stderr. On success, relay the `inline: N  folded: M` line and the review URL.
 
 ### `fix` mode
 

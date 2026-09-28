@@ -206,6 +206,18 @@ and stop.
 
 After displaying the harvest list, auto-classify each item using a two-axis model.
 
+### Praise filter (before classifying)
+
+Pull out pure praise first. An item is praise when it asks nothing, requests nothing, and claims no defect. Examples: "Thanks for adding this note!", "Bless you for pulling this out into a function". An item that praises *and* asks or suggests something (e.g. "Nice, but could this live in a util?") is not praise. Classify it normally.
+
+Praise items skip the triage table, diligence, the HITL gate, and the seed. They get no `fix`, no `reply_body`, and no task. Print them as one line under the table, keeping their harvest numbers:
+
+```
+Skipped as praise (no action): #2, #25
+```
+
+The user can pull one back in through the override prompt (e.g. `25: nit`).
+
 ### Axis 1: Class
 
 Assign one of these classes to every item:
@@ -217,7 +229,7 @@ Assign one of these classes to every item:
 | `question` | Asks for clarification; no action claimed required |
 | `diligence` | Missing test, doc, or safety check |
 | `discuss` | Design/architecture debate; no clear verdict yet |
-| `nit` | Style or naming preference; non-blocking |
+| `nit` | Style or naming preference; non-blocking. Must still suggest a change. Praise-only items never land here |
 
 ### Axis 2: Escape-disposition (bug class only)
 
