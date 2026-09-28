@@ -51,9 +51,9 @@ for all subsequent steps.
 
 Resolve the PR's **base** repository from the GitHub API (the repo the PR targets, not the
 fork it originates from). For fork-based PRs `headRepository` is the fork and would fail the
-assertion against cwd. Use `baseRepository`:
+assertion against cwd. Extract `{owner}`, `{repo}`, and `{number}` from the PR URL, then query via REST:
 ```bash
-gh pr view <url> --json baseRepository --jq '.baseRepository.nameWithOwner'
+gh api repos/{owner}/{repo}/pulls/{number} --jq '.base.repo.full_name'
 ```
 
 Resolve the cwd repository from git:
