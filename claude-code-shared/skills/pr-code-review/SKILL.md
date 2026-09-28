@@ -273,6 +273,8 @@ Mock cleanup: before you flag a spy or mock that is never cleared between tests,
 
 ---
 
+**Synchronization checkpoint:** Collect ALL five dimension agent notifications before proceeding to Step 2a. Do not begin Step 2a until every dimension agent has returned. Emitting review output or writing the task file before all agents have returned is a process violation.
+
 ## Step 2a: Validate line numbers (mandatory)
 
 **This step is mandatory.** Run it after all five dimension agents return and before Step 3. Dedup groups by (file, line), so a wrong line breaks the merge.
@@ -332,6 +334,8 @@ The investigator returns one of four verdicts. Apply this gate filter to each fi
 | `CONTESTED` | **Proceed** — genuine expert disagreement; note the contested status in the finding |
 | `INSUFFICIENT_EVIDENCE` | **Downgrade** — caveat the claim explicitly; do not state it as fact, or drop the finding if the review comment depends entirely on the unverified claim being true |
 | `VERIFIED_FALSE` | **Drop** — exclude this finding from output and from any comment posted to the PR |
+
+**Self-judging prohibition:** The session model is never permitted to write `VERIFIED_TRUE` itself. `VERIFIED_TRUE` may only appear in a finding's record after the investigator agent returns that verdict. Self-judging a finding as `VERIFIED_TRUE` without spawning the investigator is a process violation, regardless of how obvious the claim appears from the diff.
 
 **VERIFIED_FALSE — drop the finding:** Remove it from the review output entirely. Do not post it. Annotate your working notes: "dropped: VERIFIED_FALSE".
 
