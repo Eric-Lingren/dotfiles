@@ -3,7 +3,8 @@ name: improve-skill-learnings
 description: >
   Apply captured learnings from unified-learnings.jsonl to their target skill,
   agent, process, or contract files. Shows a ranked table of targets, lets the
-  user pick one or "run all" (offered when TOTAL ≤ 10). Validation is lazy —
+  user pick one or "run all" (offered when TOTAL ≤ 10). A picked target with
+  ≤ 10 learnings also offers "run all" for that target. Validation is lazy —
   runs per-learning just before drafting, not upfront in batch. Run-all loops
   through every target and learning automatically with a y/n per diff. Covers
   all four improves_type values: skill, agent, process, contract.
@@ -247,6 +248,15 @@ Learnings for <target> (<N> remaining):
 Pick a learning to apply (number), or "done" to stop:
 ```
 
+**Target run-all option:** When the target has ≤ 10 remaining learnings and
+global run-all is not active, also offer "Run all <N> for <target>". This
+applies even when the global `TOTAL > 10` hid the Step 2 run-all option. If you
+use AskUserQuestion, pass this option first and fill the remaining slots with
+the top learnings. When selected, set `target_run_all = true`. Then work
+through every remaining learning in list order: Step 4, then Step 6, then Step
+7. Do not show the picker between learnings. Each diff still gets its own y/n.
+When the list is empty, go to Step 8.
+
 Wait for user response. If "done" or equivalent, jump to Step 8 (summary).
 
 When the user picks a number: run **Step 4** (validate that one learning).
@@ -341,7 +351,8 @@ Keep the commit message subject under 50 chars. Use a truncated version of the
 `problem` field if needed.
 
 **Auto-loop:** Remove the applied learning from the list. If learnings remain
-for the current target, jump back to Step 5 and show the updated list. If
+for the current target, jump back to Step 5 and show the updated list. When
+`target_run_all = true`, skip the list and validate the next learning. If
 none remain, print "All learnings for <target> done." then:
 - In single-target mode: continue to Step 8.
 - In run-all mode: advance to the next target (Step 2 run-all logic).
