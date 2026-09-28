@@ -256,9 +256,18 @@ Steps:
    ownership. If the owner only delegates, do not return misrouted; go to step 6.
 6. Has the file changed so significantly that the lesson is no longer relevant?
    If yes → return {"id": "{id}", "verdict": "stale", "reason": "no_longer_relevant", "file_path": "<path>"}
-7. If {improves} is null and no file owns the mechanism →
+7. Does the fix contradict a shared managed resource the target is meant to
+   follow? Such resources include files the target pulls in by a managed marker
+   block (e.g. `<!-- learning-capture:start -->`) and files it references by
+   path under ~/.dotfiles/claude-code-shared/resources/. Grep each one for the
+   fix's distinctive terms and read the matching sections. A fix that changes
+   the resource itself is not a contradiction. Only a fix that makes the target
+   diverge from the resource counts. If it does →
+   return {"id": "{id}", "verdict": "invalid", "reason": "contradicts_shared_resource", "file_path": "<path>", "resource_path": "<resource path>"}
+   If the conflict is unclear, do not return invalid. Continue to step 8.
+8. If {improves} is null and no file owns the mechanism →
    return {"id": "{id}", "verdict": "no_applicable_target", "reason": "no_owner", "file_path": null}
-8. Otherwise → return {"id": "{id}", "verdict": "valid", "reason": "ok", "file_path": "<path>"}
+9. Otherwise → return {"id": "{id}", "verdict": "valid", "reason": "ok", "file_path": "<path>"}
 
 Return ONLY the JSON object. No prose.
 ```
