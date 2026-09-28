@@ -160,6 +160,11 @@ Append a closing summary section to the trace log, then return ONLY this JSON (n
 - `summary`: if step 4 was skipped for missing Playwright, end with `Browser check skipped: Playwright not installed. Install: npm i -D @playwright/test && npx playwright install chromium.`
 - `pr`: always `null` — build-runner never opens PRs; the caller handles that at end-of-run.
 - `follow_ups`: irreducible human-only actions discovered while touching this task's diff, in the same shape as the task file's `follow_ups` array items (`id` omitted — the caller assigns it). Empty array if none. Apply the same discovery rules build-code has always used: never emit a follow-up for testing, verification, QA, cleanup, or anything AFK-doable.
+  Each item carries exactly these fields (per `contracts/task-schema.json`, `additionalProperties: false`, so no `description` or other extra keys):
+  - `title`: short string describing the action.
+  - `steps`: non-empty array of strings, each specific (exact command, SQL, config key, or dashboard click path).
+  - `trigger_task`: the current task's ID (its completion creates the need), or `null` if general.
+  - `source`: `"discovered"` for items found during execution.
 
 `log_path` is always relative to `project_root`, matching the task file's convention for path fields.
 
