@@ -390,6 +390,14 @@ Instructions:
    No prose, no explanation.
 ```
 
+Before presenting, check contract edits for type drift. If the target is a
+contract `.md` and the diff changes a field's type or shape, grep that field
+name in the contract's JSON schema counterpart under `contracts/` (for example
+`refutation-schema.json`). Also grep `scripts/` for consumers that read it.
+If the schema or a consumer still expects the old shape, flag the mismatch
+with the diff. Ask whether to extend the change to those files. Skip this
+check for wording-only contract edits.
+
 Present the diff to the user. Keep the header as plain text outside the fence.
 Put the diff in a fence tagged `diff` so added lines render green and removed
 lines red. An untagged fence renders every line the same color.
