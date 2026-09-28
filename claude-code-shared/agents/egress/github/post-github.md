@@ -73,7 +73,42 @@ path="${path#pull/}"
 pr_number="${path%%[/#]*}"
 ```
 
-### 3. Post to GitHub via gh api
+### 3. Idempotency check — skip if already posted
+
+Before posting, check whether the authenticated user already has a reply on this thread.
+This prevents duplicate comments if the agent is retried or re-run.
+
+```bash
+my_login=$(gh api /user --jq '.login' 2>/dev/null)
+
+# For inline review threads, check existing replies with matching in_reply_to
+existing=$(gh api \
+  "/repos/${owner}/${repo}/pulls/${pr_number}/comments" \
+  --jq "[.[] | select(.in_reply_to_id == ${thread_database_id} and .user.login == \"${my_login}\")] | length" \
+  2>/dev/null || echo "0")
+
+if [ "${existing:-0}" -gt 0 ]; then
+  # Already posted. Return success with the existing comment's URL.
+  existing_url=$(gh api \
+    "/repos/${owner}/${repo}/pulls/${pr_number}/comments" \
+    --jq "[.[] | select(.in_reply_to_id == ${thread_database_id} and .user.login == \"${my_login}\")] | .[0].html_url" \
+    2>/dev/null || echo "")
+  echo '{"schema_version":"1","posted":true,"url":"'"${existing_url}"'","thread_id":"'"${thread_id}"'","status":"posted"}'
+  exit 0
+fi
+```
+
+### 4. Post to GitHub via gh api
+
+**Body passing rule:** Always pass the comment body inline using `-f body="..."`.
+Never write the body to a temporary file and use `@/tmp/...` syntax — that passes
+the filename as a literal string, not the file contents. If the body contains
+special characters, use `printf '%s' "$combined_draft" | gh api ... --input -`
+for the REST case.
+
+**No-retry rule:** Make exactly one POST attempt. If it fails, return
+`status: failed` immediately. Never retry a write autonomously. The caller
+(relay) handles retries with explicit user confirmation.
 
 Based on `thread_id_type`:
 
@@ -100,7 +135,7 @@ response=$(gh api \
 exit_code=$?
 ```
 
-### 4. Return the egress-result
+### 5. Return the egress-result
 
 **On success** (exit_code 0 and response contains html_url):
 
