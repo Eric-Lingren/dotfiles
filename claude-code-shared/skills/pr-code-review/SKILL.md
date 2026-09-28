@@ -210,6 +210,8 @@ Instance count: before you flag a recursive or polling loop as a scale risk from
 
 Callback identity: before you flag a missing `useCallback` on a callback passed to a third-party library, check how that library stores it. Search its source or `.d.ts` for internal ref or `useEvent`-style wrapping. If the library already stabilizes callback identity, do not raise the finding.
 
+React context callback identity: when a context hook wraps some action callbacks in `useCallback` but not others, flag the inconsistency as `risk`. One unwrapped callback in an otherwise-memoized context value creates a new reference on every render and invalidates all consumers. If none use `useCallback`, flag as `q` — the context value may not be memoized at all, which is a separate issue.
+
 ---
 
 ### Dimension: conventions (model: haiku)
