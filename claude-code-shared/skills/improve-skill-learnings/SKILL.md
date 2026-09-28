@@ -139,11 +139,51 @@ When `run_all = true`:
    targets.
 5. After all targets are done, go to Step 8 (summary).
 
-## Step 3: Proceed to picker (no upfront validation)
+## Step 3: Fetch entry fields (no upfront validation)
 
-Skip batch validation. Go directly to Step 5 with all captured entries for the
-target. Each learning is validated lazily in Step 4 when the user selects it.
-This keeps parallel agent output out of the session context.
+Skip batch validation. Each learning is validated lazily in Step 4 when the
+user selects it. This keeps parallel agent output out of the session context.
+
+Step 1 prints only IDs. Fetch the full fields for the target's captured
+entries. Set `TARGET` to the selected slug (`__unassigned__` for unassigned).
+In run-all mode, rerun this for each target.
+
+```bash
+TARGET='<slug>' python3 - <<'PYEOF'
+import json, os
+
+target = os.environ["TARGET"]
+path = os.path.expanduser(
+    "~/.dotfiles/claude-code-shared/learnings/unified-learnings.jsonl"
+)
+keys = ("id", "improves", "improves_type", "problem", "lesson", "fix")
+try:
+    with open(path) as f:
+        for line in f:
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                e = json.loads(line)
+            except json.JSONDecodeError:
+                continue
+            if e.get("status", "captured") != "captured":
+                continue
+            if (e.get("improves") or "__unassigned__") != target:
+                continue
+            print(json.dumps({k: e.get(k) for k in keys}))
+except FileNotFoundError:
+    pass
+PYEOF
+```
+
+Each output line is one entry. This output is the only source of entry fields.
+Step 5 shows `problem` from it. Step 4 and Step 6 fill `{id}`, `{improves}`,
+`{improves_type}`, `{problem}`, `{lesson}` and `{fix}` verbatim from it. Never
+paraphrase them. Never compose them from memory. If an entry is missing from
+the output, rerun this step before dispatching any agent.
+
+Then go to Step 5.
 
 ## Step 4: Validate one learning (lazy — called per pick from Step 5)
 
@@ -160,7 +200,8 @@ based on `improves_type`:
 After the declared type's paths, append the other three types' paths (same
 slug) as fallback candidates, in table order.
 
-Pass this prompt to the Haiku agent (model: haiku):
+Pass this prompt to the Haiku agent (model: haiku). Fill the learning entry
+fields verbatim from the Step 3 fetch output:
 
 ```
 You are a learning validation agent. Assess one learning entry and return a JSON verdict.
@@ -235,7 +276,8 @@ brief inline note when a learning is discarded or retargeted.
 ## Step 5: Pick-one loop — show learnings and let user choose
 
 Display ALL captured learnings for the target as a numbered sub-list (no
-pre-filtering). Show only the `problem` field per entry (one line each).
+pre-filtering). Show only the `problem` field per entry (one line each),
+taken from the Step 3 fetch output.
 These have not been validated yet — validation runs when one is selected.
 
 ```
@@ -272,6 +314,9 @@ session-model agent (subagent_type: general-purpose) with this prompt:
 a process violation, because the drafter works from the file and the learning
 alone, without this session's context and assumptions. You may add extra
 constraints to its prompt (style rules, which section to touch), not the diff.**
+
+Fill `{id}`, `{problem}`, `{lesson}` and `{fix}` verbatim from the Step 3
+fetch output. Never paraphrase them.
 
 ```
 You are drafting a unified diff to apply ONE learning to a target file.
