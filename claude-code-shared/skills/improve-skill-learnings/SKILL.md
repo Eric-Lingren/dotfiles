@@ -2,13 +2,11 @@
 name: improve-skill-learnings
 description: >
   Apply captured learnings from unified-learnings.jsonl to their target skill,
-  agent, process, or contract files. Shows a ranked table of targets by unactioned
-  learning count, lets the user pick one, validates all learnings for that target
-  upfront via Haiku agents, then presents valid learnings one at a time for
-  cherry-pick, diff approval, and commit. Auto-loops within the selected target
-  until the user stops or the list is empty. Covers all four improves_type values:
-  skill, agent, process, contract. Use when you want to act on accumulated
-  learnings: "/improve-skill-learnings".
+  agent, process, or contract files. Shows a ranked table of targets, lets the
+  user pick one or "run all" (offered when TOTAL ≤ 10). Validation is lazy —
+  runs per-learning just before drafting, not upfront in batch. Run-all loops
+  through every target and learning automatically with a y/n per diff. Covers
+  all four improves_type values: skill, agent, process, contract.
 model: sonnet
 effort: high
 invokedBy: human
@@ -107,25 +105,49 @@ No captured learnings found. Nothing to do.
 
 And stop.
 
-## Step 2: User selects target
+## Step 2: User selects target (or "run all")
 
 Ask the user which target they want to improve. Accept a rank number or a slug
 name. Wait for the response.
 
-If you use AskUserQuestion, pass at most 4 options (the tool maximum). If the
-ranked list has more than 4 targets, pass only the top 4. Lower-ranked targets
-stay reachable because the user can type a rank number or slug in the built-in
+**Run-all option:** When `TOTAL ≤ 10`, include a "Run all (N learnings)" option.
+When selected, set `run_all = true` and skip to **Run-all mode** below — no
+further target selection prompts appear.
+
+If you use AskUserQuestion, pass at most 4 options (the tool maximum). When
+run-all is offered, it takes one slot (pass it first). Pass the top 3 targets
+in the remaining slots. Lower-ranked targets stay reachable via the built-in
 "Other" free-text option.
 
 Collect all captured entries for the selected target (by their `id` values from
 step 1).
 
-## Step 3: Validate all learnings for target upfront
+### Run-all mode
 
-Spawn one Haiku validation agent per learning in a **single parallel Agent call**.
-This runs before showing the picker so stale/invalid entries never appear.
+When `run_all = true`:
 
-For each learning, construct a `path_candidates` list based on `improves_type`:
+1. Work through targets in rank order. Skip `__unassigned__` targets unless
+   that is the only one.
+2. For each target, print a progress header:
+   `--- Target <X>/<Y>: <slug> (<N> learnings) ---`
+3. Iterate through the target's learnings using the pick-one loop (Steps 5–7).
+   Lazy per-learning validation (Step 4) still applies — each learning is
+   validated when it comes up in the loop, not upfront.
+4. After all learnings for a target are exhausted (applied, skipped, or
+   discarded), advance to the next target automatically. No prompt between
+   targets.
+5. After all targets are done, go to Step 8 (summary).
+
+## Step 3: Proceed to picker (no upfront validation)
+
+Skip batch validation. Go directly to Step 5 with all captured entries for the
+target. Each learning is validated lazily in Step 4 when the user selects it.
+This keeps parallel agent output out of the session context.
+
+## Step 4: Validate one learning (lazy — called per pick from Step 5)
+
+Spawn ONE Haiku validation agent for the selected learning. Build `path_candidates`
+based on `improves_type`:
 
 | improves_type | Paths to check (in order) |
 |---------------|--------------------------|
@@ -135,10 +157,9 @@ For each learning, construct a `path_candidates` list based on `improves_type`:
 | `contract`    | `~/.dotfiles/claude-code-shared/contracts/<improves>.json`, then `~/.dotfiles/claude-code-shared/contracts/<improves>.md` |
 
 After the declared type's paths, append the other three types' paths (same
-slug) as fallback candidates, in table order. A fallback hit means the
-`improves_type` is wrong, not that the learning is invalid.
+slug) as fallback candidates, in table order.
 
-Pass this prompt to each Haiku agent (model: haiku):
+Pass this prompt to the Haiku agent (model: haiku):
 
 ```
 You are a learning validation agent. Assess one learning entry and return a JSON verdict.
@@ -183,65 +204,41 @@ Steps:
 Return ONLY the JSON object. No prose.
 ```
 
-Collect all verdicts. The resolved `file_path` from a valid entry is the
-canonical target path for the diff.
+### Apply the verdict
 
-## Step 4: Process validation results and build picker list
+- **`stale` or `invalid`:** Run update-learning.py to mark it. Print a one-line
+  note. Remove from the picker list. Return to Step 5.
+  ```bash
+  python3 ~/.dotfiles/claude-code-shared/scripts/update-learning.py \
+    --id <id> --status <stale|invalid>
+  ```
+- **`misrouted`:** Retarget via update-learning.py (status stays `captured`).
+  Print a one-line note. Remove from the picker list. Return to Step 5.
+  ```bash
+  python3 ~/.dotfiles/claude-code-shared/scripts/update-learning.py \
+    --id <id> \
+    --improves <suggested_improves> \
+    --improves-type <suggested_improves_type>
+  ```
+- **Malformed verdict:** Read its prose. If it names another owner, handle as
+  `misrouted`; otherwise as `stale`.
+- **`valid` with `file_path` outside path candidates** (compare after expanding
+  `~`): treat as `misrouted`. Derive slug and type from the path:
+  `skills/<slug>/SKILL.md` → skill, `agents/<slug>.md` → agent,
+  `resources/<slug>.md|json` → process, `contracts/<slug>.json|md` → contract.
+- **`valid`:** Set `file_path` as the canonical target path. Proceed to Step 6.
 
-For each verdict where `verdict` is `stale` or `invalid`, run:
+No validation summary block is printed. Validation is silent except for a
+brief inline note when a learning is discarded or retargeted.
 
-```bash
-python3 ~/.dotfiles/claude-code-shared/scripts/update-learning.py \
-  --id <id> \
-  --status <stale|invalid>
-```
+## Step 5: Pick-one loop — show learnings and let user choose
 
-For each `misrouted` verdict, retarget it so it shows up under its real owner
-(status stays `captured`):
-
-```bash
-python3 ~/.dotfiles/claude-code-shared/scripts/update-learning.py \
-  --id <id> \
-  --improves <suggested_improves> \
-  --improves-type <suggested_improves_type>
-```
-
-Treat any verdict outside `valid|stale|invalid|misrouted` as malformed. Read its
-prose: if it names another owner, handle it as `misrouted`; otherwise as `stale`.
-
-If a `valid` verdict's `file_path` matches none of the target's path candidates
-(compare after expanding `~`), treat it as `misrouted`. Derive the new slug and
-type from `file_path`: `skills/<slug>/SKILL.md` is `skill`, `agents/<slug>.md` is
-`agent`, `resources/<slug>.md|json` is `process`, and `contracts/<slug>.json|md`
-is `contract`.
-
-Print a validation summary:
-
-```
-Validation complete for <target>:
-  Valid:      N
-  Retargeted: N  (<id> → <new slug>, one per line)
-  Stale:      N  (marked via update-learning.py)
-  Invalid:    N  (marked via update-learning.py — file not resolvable)
-```
-
-If zero valid learnings remain, print:
+Display ALL captured learnings for the target as a numbered sub-list (no
+pre-filtering). Show only the `problem` field per entry (one line each).
+These have not been validated yet — validation runs when one is selected.
 
 ```
-All learnings for <target> are stale or invalid. Nothing to apply.
-```
-
-Then show the Summary Report (Step 8) and stop.
-
-Otherwise, proceed to the **pick-one loop** (Steps 5-7).
-
-## Step 5: Pick-one loop — show valid learnings and let user choose
-
-Display the valid learnings as a numbered sub-list. Show only the `problem`
-field per entry (one line each). Example:
-
-```
-Valid learnings for <target> (<N> remaining):
+Learnings for <target> (<N> remaining):
 
   1. filename versioning double-encoded when internal schema_version exists
   2. cleanup step uses shell rm, blocked by destructive-fs hook
@@ -251,6 +248,10 @@ Pick a learning to apply (number), or "done" to stop:
 ```
 
 Wait for user response. If "done" or equivalent, jump to Step 8 (summary).
+
+When the user picks a number: run **Step 4** (validate that one learning).
+Proceed based on the verdict — Step 4 either returns to this list (stale /
+invalid / misrouted) or proceeds to Step 6 (valid).
 
 ## Step 6: Draft diff for selected learning
 
@@ -339,10 +340,11 @@ git commit -m "improve(<target>): apply learning <short problem summary>"
 Keep the commit message subject under 50 chars. Use a truncated version of the
 `problem` field if needed.
 
-**Auto-loop:** Remove the applied learning from the valid list. If valid
-learnings remain, jump back to Step 5 and show the updated list. If none
-remain, print "All valid learnings for <target> applied." and continue to
-Step 8.
+**Auto-loop:** Remove the applied learning from the list. If learnings remain
+for the current target, jump back to Step 5 and show the updated list. If
+none remain, print "All learnings for <target> done." then:
+- In single-target mode: continue to Step 8.
+- In run-all mode: advance to the next target (Step 2 run-all logic).
 
 ## Step 8: Summary report
 
