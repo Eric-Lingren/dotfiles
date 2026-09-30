@@ -4,7 +4,8 @@
 # Claude Code's isolation: "worktree" creates bare git worktrees at
 # .claude/worktrees/agent-*. These have no node_modules, so pre-commit
 # hooks (biome, eslint) and builds fail. This hook detects the package
-# manager and runs install after worktree creation.
+# manager and runs install after worktree creation, via the shared
+# ensure-worktree-deps.sh script.
 #
 # Disable: export CLAUDE_WT_DEPS=0
 
@@ -31,23 +32,9 @@ fi
 
 [ -d "$WT_PATH" ] || exit 0
 [ -f "$WT_PATH/package.json" ] || exit 0
-[ -d "$WT_PATH/node_modules" ] && exit 0
 
-cd "$WT_PATH" || exit 0
-
-if [ -f pnpm-lock.yaml ]; then
-  echo "worktree-deps: pnpm install (frozen)..." >&2
-  pnpm install --frozen-lockfile >&2 2>&1
-elif [ -f yarn.lock ]; then
-  echo "worktree-deps: yarn install (frozen)..." >&2
-  yarn install --frozen-lockfile >&2 2>&1
-elif [ -f bun.lockb ] || [ -f bun.lock ]; then
-  echo "worktree-deps: bun install (frozen)..." >&2
-  bun install --frozen-lockfile >&2 2>&1
-elif [ -f package-lock.json ]; then
-  echo "worktree-deps: npm ci..." >&2
-  npm ci >&2 2>&1
-fi
+# Repairs symlinked node_modules and installs only when needed.
+bash "$HOME/.claude-code-shared/scripts/ensure-worktree-deps.sh" --quiet "$WT_PATH" >&2
 
 # Never block worktree entry on install failure
 exit 0

@@ -88,6 +88,20 @@ eval "$(fnm env --use-on-cd)"
 
 source ~/Documents/dev/Quaestor-Web/dev/.zshrc
 
+# Wrap the repo's `dev` function so `dev start` runs a preflight first: it
+# repairs/installs node_modules and clears stale servers on :3000/:8000.
+# The repo's dev/.zshrc is team-owned, so the wrapper lives here.
+# Bypass: DEV_PREFLIGHT=0 dev start
+if (( $+functions[dev] )) && ! (( $+functions[_repo_dev] )); then
+  functions -c dev _repo_dev
+  dev() {
+    if [[ "$1" == start && "${DEV_PREFLIGHT:-1}" != 0 ]]; then
+      ~/.dotfiles/.scripts/dev-preflight || return 1
+    fi
+    _repo_dev "$@"
+  }
+fi
+
 # New cmux tabs inherit the parent pane's CWD. Opening a fresh workspace from
 # inside a worktree would start you in that worktree instead of clean, so reset
 # to the main repo root.

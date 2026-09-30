@@ -434,13 +434,17 @@ Then list findings grouped by file starting with **FILE:** `<FILE_PATH>` and in 
 
 Finding line format: `<file>:L<line>: <label>: <description>`
 
+After the findings, add a **Dropped by gate** list: one line per finding the investigator gate dropped, as `<file>:L<line>: <label>: <short claim> (VERIFIED_FALSE)`. Omit the list when nothing was dropped.
+
 Write nothing that doesn't belong in a comment thread. No preamble, no "Overall this looks great."
 
-After the human-readable findings block, proceed to Step 5 to write the task file and print the `task_file_path:` line.
+**The findings block is mandatory and verbatim.** Render it after Step 5 writes the task file, as the last text before Step 6. Never replace it with a prose summary, even for a single finding or a zero-finding review. Progress notes printed while waiting on investigators do not count as the findings block.
 
 ## Step 6: Route based on review_mode
 
-After printing findings and writing the task file, resolve `review_mode`:
+**Gate:** the full findings block from Output format (emoji summary line, per-file findings, Dropped by gate list, Verdict) must already be printed in this turn. If it is not, print it now. Do not call `AskUserQuestion` until it is on screen. The user decides from that block.
+
+Then resolve `review_mode`:
 
 - `sprout-seed` caller → `fix`
 - `--fix` / `--comment` arg → that mode

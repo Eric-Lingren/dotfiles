@@ -31,10 +31,10 @@ WORKTREE LOCATION
   ~/Documents/dev/worktrees/<repo>/<branch>
 
 DEPENDENCIES
-  node_modules is gitignored, so a new worktree starts empty. On create, deps
-  are installed for the repo root and each immediate subdir holding a
-  package.json, using the package manager named by its lockfile. On attach,
-  only dirs still missing node_modules are installed.
+  node_modules is gitignored, so a new worktree starts empty. On create and
+  attach, ensure-worktree-deps.sh installs deps with the lockfile's package
+  manager (frozen), and repairs node_modules symlinked from another checkout.
+  It is a sub-second no-op when deps are already healthy.
 
 LOCAL CONFIG
   Gitignored config listed under "worktree_links" in repo-policy.json is
@@ -239,49 +239,31 @@ cmd_stop() {
 
 # ─── Dependency install ───────────────────────────────────────────────────────
 
-# Installs JS deps for the repo root and each immediate subdir holding a
-# package.json. node_modules is gitignored, so a fresh worktree has none, and
-# the editor reports every import as unresolved until this runs.
+# Installs JS deps for the worktree via the shared ensure-worktree-deps.sh.
+# node_modules is gitignored, so a fresh worktree has none, and the editor
+# reports every import as unresolved until this runs.
 #
-# $1 worktree dir. $2 "true" to skip dirs that already have node_modules.
+# The shared script also repairs node_modules that were symlinked from another
+# checkout. A plain "-d node_modules" test is true for such a link, so the old
+# skip-if-present check left poisoned worktrees broken forever. The script
+# no-ops in under a second when deps are already healthy, so attach and create
+# share one path.
+#
+# $1 worktree dir.
+ENSURE_DEPS="$HOME/.dotfiles/claude-code-shared/scripts/ensure-worktree-deps.sh"
 install_deps() {
   local wt_dir="$1"
-  local only_if_missing="${2:-false}"
-  local dir pm label
 
   [[ "$INSTALL_DEPS" == true ]] || return 0
+  [[ -f "$wt_dir/package.json" ]] || return 0
 
-  for dir in "$wt_dir" "$wt_dir"/*/; do
-    dir="${dir%/}"
-    [[ -d "$dir" ]] || continue
-    [[ -f "$dir/package.json" ]] || continue
-    [[ "$only_if_missing" == true && -d "$dir/node_modules" ]] && continue
+  if [[ ! -x "$ENSURE_DEPS" ]]; then
+    echo "WARN: $ENSURE_DEPS not found; skipping dependency install" >&2
+    return 0
+  fi
 
-    if [[ -f "$dir/pnpm-lock.yaml" ]]; then
-      pm="pnpm"
-    elif [[ -f "$dir/yarn.lock" ]]; then
-      pm="yarn"
-    elif [[ -f "$dir/bun.lockb" || -f "$dir/bun.lock" ]]; then
-      pm="bun"
-    elif [[ -f "$dir/package-lock.json" ]]; then
-      pm="npm"
-    else
-      continue
-    fi
-
-    label="${dir#$wt_dir}"
-    label="${label#/}"
-    [[ -n "$label" ]] || label="."
-
-    if [[ -z "$(command -v "$pm")" ]]; then
-      echo "WARN: $pm not on PATH; skipping install in $label" >&2
-      continue
-    fi
-
-    echo "installing deps: $pm install in $label" >&2
-    ( cd "$dir" && "$pm" install >&2 ) || \
-      echo "WARN: $pm install failed in $label; worktree usable but deps incomplete" >&2
-  done
+  "$ENSURE_DEPS" --quiet "$wt_dir" || \
+    echo "WARN: dependency install failed; worktree usable but deps incomplete" >&2
 }
 
 # ─── Local config links ───────────────────────────────────────────────────────
@@ -425,7 +407,7 @@ fi
 if [[ -d "$WORKTREE_DIR" ]]; then
   echo "attaching to existing branch $BRANCH" >&2
   link_local_config "$WORKTREE_DIR"
-  install_deps "$WORKTREE_DIR" true
+  install_deps "$WORKTREE_DIR"
   emit_path "$WORKTREE_DIR"
   exit 0
 fi
@@ -442,9 +424,9 @@ fi
 
 # Case 3: branch exists on remote only — fetch then create
 if git ls-remote --heads origin "$BRANCH" 2>/dev/null | grep -q "refs/heads/$BRANCH"; then
-  git fetch origin "$BRANCH:$BRANCH" >&2
+  git fetch origin "$BRANCH" >&2
   mkdir -p "$(dirname "$WORKTREE_DIR")"
-  git worktree add "$WORKTREE_DIR" "$BRANCH" >&2
+  git worktree add --track -b "$BRANCH" "$WORKTREE_DIR" "origin/$BRANCH" >&2
   link_local_config "$WORKTREE_DIR"
   install_deps "$WORKTREE_DIR"
   emit_path "$WORKTREE_DIR"

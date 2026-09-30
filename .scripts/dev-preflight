@@ -1,0 +1,103 @@
+#!/usr/bin/env bash
+# dev-preflight — make `dev start` work in any Quaestor-Web checkout.
+# What: repairs/installs JS deps, then clears the dev ports held by stale servers.
+# When: called by the `dev` zsh wrapper in ~/.dotfiles/.zshrc before `dev start`.
+#
+# Usage: dev-preflight [--yes]
+#   --yes  stop port holders without asking
+#
+# Exit codes: 0 ready, 1 not ready (the caller skips `dev start`).
+set -uo pipefail
+
+ASSUME_YES=false
+[[ "${1:-}" == "--yes" ]] && ASSUME_YES=true
+
+ROOT=$(git rev-parse --show-toplevel 2>/dev/null) || {
+  echo "dev-preflight: not in a git repo" >&2
+  exit 1
+}
+
+ENSURE_DEPS="$HOME/.dotfiles/claude-code-shared/scripts/ensure-worktree-deps.sh"
+
+# ─── 1. JS deps ───────────────────────────────────────────────────────────────
+
+if [[ -x "$ENSURE_DEPS" ]]; then
+  "$ENSURE_DEPS" --quiet "$ROOT" || {
+    echo "dev-preflight: dependency install failed; fix it before dev start" >&2
+    exit 1
+  }
+else
+  echo "dev-preflight: WARN $ENSURE_DEPS not found; skipping deps check" >&2
+fi
+
+# ─── 2. Local config ──────────────────────────────────────────────────────────
+
+if [[ ! -e "$ROOT/app/.env" ]]; then
+  echo "dev-preflight: WARN app/.env missing. Run 'wt <branch>' to link it from the main checkout." >&2
+fi
+
+# ─── 3. Ports ─────────────────────────────────────────────────────────────────
+
+# 3000 Next.js, 8000 Django. nginx (8080) runs in Docker and is shared by
+# every checkout, so compose handles it.
+PORTS=(3000 8000)
+
+describe() {
+  local pid="$1" cmd cwd
+  cmd=$(ps -o command= -p "$pid" 2>/dev/null | cut -c1-80)
+  cwd=$(lsof -a -p "$pid" -d cwd -Fn 2>/dev/null | sed -n 's/^n//p')
+  local where="other checkout"
+  [[ "$cwd" == "$ROOT" || "$cwd" == "$ROOT/"* ]] && where="THIS checkout, dev may already be running"
+  echo "pid $pid  $cmd  ($where: ${cwd:-?})"
+}
+
+# The process group leader owns the whole server (e.g. `next dev` and its
+# `next-server` child), so stop the group, not just the listener.
+stop_holder() {
+  local pid="$1" pgid
+  pgid=$(ps -o pgid= -p "$pid" 2>/dev/null | tr -d ' ')
+  if [[ -n "$pgid" && "$pgid" != "$(ps -o pgid= -p $$ | tr -d ' ')" ]]; then
+    kill -TERM -- "-$pgid" 2>/dev/null || kill -TERM "$pid" 2>/dev/null
+  else
+    kill -TERM "$pid" 2>/dev/null
+  fi
+}
+
+blocked=false
+for port in "${PORTS[@]}"; do
+  pids=$(lsof -tiTCP:"$port" -sTCP:LISTEN 2>/dev/null | sort -u)
+  [[ -n "$pids" ]] || continue
+
+  echo "dev-preflight: port $port is in use:" >&2
+  for pid in $pids; do echo "  $(describe "$pid")" >&2; done
+
+  answer=n
+  if $ASSUME_YES; then
+    answer=y
+  elif [[ -t 0 ]]; then
+    read -r -p "Stop it? [y/N] " answer
+  fi
+
+  if [[ "$answer" =~ ^[Yy] ]]; then
+    for pid in $pids; do stop_holder "$pid"; done
+    for _ in 1 2 3 4 5 6 7 8 9 10; do
+      lsof -tiTCP:"$port" -sTCP:LISTEN >/dev/null 2>&1 || break
+      sleep 0.5
+    done
+    if lsof -tiTCP:"$port" -sTCP:LISTEN >/dev/null 2>&1; then
+      echo "dev-preflight: port $port still in use after SIGTERM" >&2
+      blocked=true
+    else
+      echo "dev-preflight: freed port $port" >&2
+    fi
+  else
+    blocked=true
+  fi
+done
+
+if $blocked; then
+  echo "dev-preflight: ports busy; not starting. Rerun and answer y, or stop them yourself." >&2
+  exit 1
+fi
+
+exit 0

@@ -39,6 +39,16 @@ Run from your worktree:
 - Exit 3 (refused) or 1: return a receipt with `status: "failed"` and the script's stderr in `summary`. Do not try other git commands to fix it.
 - If `wave_base` was not passed, skip this step and log `wave_base missing`.
 
+Then install deps in the worktree. A fresh agent worktree has no `node_modules`:
+
+```bash
+~/.dotfiles/claude-code-shared/scripts/ensure-worktree-deps.sh --quiet
+```
+
+- Exit 0: continue.
+- Non-zero: return a receipt with `status: "failed"` and the script's stderr in `summary`.
+- Never symlink `node_modules` (or anything inside it) from another checkout. Turbopack rejects links outside the project root, and pnpm then rewrites the other checkout's links. A PreToolUse hook blocks it.
+
 ### 1. Open the trace log
 
 Resolve the log path:
@@ -124,7 +134,8 @@ If `/tdd` cannot complete (stuck, acceptance criteria unmeetable, blocked on mis
 5. Append every verdict to the trace log.
 6. **Gate decision:**
    - `pass` or `warn`: continue.
-   - `fail`, `timeout`, or `deps-missing`: stop. Log the violations/failures in the trace. Return a receipt with `status: "failed"`.
+   - `deps-missing`: run `~/.dotfiles/claude-code-shared/scripts/ensure-worktree-deps.sh` once, then re-spawn only the runners that reported it. If they report `deps-missing` again, treat it as `fail`.
+   - `fail` or `timeout`: stop. Log the violations/failures in the trace. Return a receipt with `status: "failed"`.
 
 ### 4. Browser verify (only when `task.browser_verify` is present)
 
