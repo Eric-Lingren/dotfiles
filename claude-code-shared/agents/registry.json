@@ -198,6 +198,15 @@
       "model": "sonnet",
       "description": "Sonnet-tier egress agent. Consumes an investigation-result and composes a voice-matched Slack reply using the slack-casual voice profile. Citations render inline per distinct verified claim. INSUFFICIENT_EVIDENCE claims surface an explicit 'couldn't confirm' tag — never smoothed over. Adds no content beyond what the investigation-result provides. Output is copy-only for manual paste to Slack.",
       "consumers": []
+    },
+    {
+      "name": "visual-judge",
+      "file": "agents/visual-judge.md",
+      "model": "sonnet",
+      "description": "Vision-model judge that evaluates a Baseline/Candidate capture pair against declared intent and returns a visual-verdict JSON object. One verdict per (capture_ref, viewport) pair.",
+      "consumers": [
+        "build-runner"
+      ]
     }
   ]
 }
