@@ -1,5 +1,5 @@
 #!/bin/bash
-# PostToolUse hook for EnterWorktree: install JS deps in new worktrees.
+# PostToolUse hook for EnterWorktree: link local config and install JS deps in new worktrees.
 #
 # Claude Code's isolation: "worktree" creates bare git worktrees at
 # .claude/worktrees/agent-*. These have no node_modules, so pre-commit
@@ -31,6 +31,10 @@ if [ -z "$WT_PATH" ] || [ ! -d "$WT_PATH" ]; then
 fi
 
 [ -d "$WT_PATH" ] || exit 0
+
+# Symlink gitignored local config (app/.env etc.) per repo-policy worktree_links.
+bash "$HOME/.claude-code-shared/scripts/ensure-worktree-links.sh" "$WT_PATH" >&2
+
 [ -f "$WT_PATH/package.json" ] || exit 0
 
 # Repairs symlinked node_modules and installs only when needed.

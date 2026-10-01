@@ -268,49 +268,23 @@ install_deps() {
 
 # ─── Local config links ───────────────────────────────────────────────────────
 
-# Symlinks gitignored local config from the main worktree into a new worktree.
-# git leaves ignored files alone on checkout, so one directory switching
-# branches sees a single shared .env. A symlink gives a worktree the same
-# behaviour. A copy would not: it drifts the moment a credential is rotated.
+# Symlinks gitignored local config from the main worktree into a new worktree
+# via the shared ensure-worktree-links.sh. The same script runs from the repo's
+# post-checkout hook, so worktrees made outside wt get links too.
 #
 # $1 worktree dir.
+ENSURE_LINKS="$HOME/.dotfiles/claude-code-shared/scripts/ensure-worktree-links.sh"
 link_local_config() {
   local wt_dir="$1"
-  local main_root rel src dest dest_parent
 
   [[ "$LINK_CONFIG" == true ]] || return 0
 
-  main_root=$(main_worktree_root) || return 0
-  [[ -n "$main_root" ]] || return 0
+  if [[ ! -x "$ENSURE_LINKS" ]]; then
+    echo "WARN: $ENSURE_LINKS not found; skipping local config links" >&2
+    return 0
+  fi
 
-  while IFS= read -r rel; do
-    [[ -n "$rel" ]] || continue
-    src="$main_root/$rel"
-    dest="$wt_dir/$rel"
-
-    if [[ ! -e "$src" ]]; then
-      echo "WARN: local config '$rel' not found in $main_root; skipping" >&2
-      continue
-    fi
-
-    if [[ -L "$dest" ]]; then
-      continue
-    fi
-
-    if [[ -e "$dest" ]]; then
-      echo "WARN: '$rel' already exists in worktree as a real file; leaving it alone" >&2
-      continue
-    fi
-
-    dest_parent=$(dirname "$dest")
-    [[ -d "$dest_parent" ]] || mkdir -p "$dest_parent"
-
-    if ln -s "$src" "$dest" 2>/dev/null; then
-      echo "linked local config: $rel -> $src" >&2
-    else
-      echo "WARN: could not link '$rel' into worktree" >&2
-    fi
-  done < <(gx_worktree_links)
+  "$ENSURE_LINKS" "$wt_dir" >&2 || true
 }
 
 # ─── Flag extraction ──────────────────────────────────────────────────────────

@@ -139,8 +139,8 @@ Do not delete functionality from either side unless it is truly redundant. Prefe
     fi
   fi
 
-  # All conflicts resolved. Complete merge.
-  if ! GIT_EDITOR=true git merge --continue; then
+  # All conflicts resolved. Skip hooks: staged set is all of base's changes, not ours.
+  if ! git commit --no-edit --no-verify; then
     echo ""
     echo "Merge commit failed (likely pre-commit hook). Merge still in progress."
     echo "Fix, then run: git commit --no-edit"

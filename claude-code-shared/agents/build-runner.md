@@ -24,6 +24,7 @@ The caller passes all context in the prompt. Expect:
 - Never cherry-pick, merge, rebase, or reset to bring other branches into your worktree. Step 0 is the only base sync.
 - If the code you need is missing after step 0, fail the task with the reason. Do not work around it.
 - Run git in your own worktree (cwd). Do not use `git -C` against the main checkout or other worktrees.
+- Commit messages describe the code change only. Never include the task ID (`T-xxxx`), task file name, or other pipeline identifiers. Target repos do not use them.
 
 ## Process
 

@@ -199,7 +199,7 @@ For each task in the wave (in order):
   ```bash
   git log --oneline HEAD..<task-worktree-branch>
   ```
-  If the output is empty, the fix was left staged or uncommitted in the worktree. Do NOT merge. Mark this task `failed`, override `receipt.status = "failed"`, and add to `summary`: "Worktree branch has no commits. Changes were not committed." Continue to the next task. Otherwise, attempt `git merge --no-ff <task-worktree-branch>`.
+  If the output is empty, the fix was left staged or uncommitted in the worktree. Do NOT merge. Mark this task `failed`, override `receipt.status = "failed"`, and add to `summary`: "Worktree branch has no commits. Changes were not committed." Continue to the next task. Otherwise, attempt `git merge --no-ff <task-worktree-branch>`. Merge messages describe the change only. Never include the task ID (`T-xxxx`) or the worktree branch name.
   - On success: the merge is committed to the shared branch.
   - On conflict (`git merge` exits non-zero): run `git merge --abort`. Mark this task `failed` in the JSON. Override `receipt.status = "failed"`. Add a note in the task's `summary`: "Merge conflict during wave integration." Continue to the next task — do not halt.
 
