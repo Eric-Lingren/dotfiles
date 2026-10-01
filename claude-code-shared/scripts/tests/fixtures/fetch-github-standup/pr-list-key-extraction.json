@@ -11,7 +11,8 @@
     "mergedAt": null,
     "reviews": [],
     "reviewRequests": [],
-    "statusCheckRollup": []
+    "statusCheckRollup": [],
+    "changedFiles": 5
   },
   {
     "number": 202,
@@ -25,6 +26,7 @@
     "mergedAt": null,
     "reviews": [],
     "reviewRequests": [],
-    "statusCheckRollup": []
+    "statusCheckRollup": [],
+    "changedFiles": 8
   }
 ]
