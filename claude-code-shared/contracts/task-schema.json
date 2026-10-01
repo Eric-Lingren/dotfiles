@@ -90,8 +90,8 @@
           },
           "status": {
             "type": "string",
-            "enum": ["not_started", "in_progress", "done", "merged", "blocked", "failed", "deferred_hitl"],
-            "description": "Current execution state managed by run-tasks. 'failed': a build-runner task that did not pass. 'deferred_hitl': a HITL task skipped for a later interactive pass."
+            "enum": ["not_started", "in_progress", "done", "merged", "blocked", "failed", "deferred_hitl", "needs_eyes"],
+            "description": "Current execution state managed by run-tasks. 'failed': a build-runner task that did not pass. 'deferred_hitl': a HITL task skipped for a later interactive pass. 'needs_eyes': a check whose Visual verdict is unexpected or uncertain; awaits async review in Verification Report without blocking other tasks."
           },
           "branch": {
             "type": ["string", "null"],
@@ -103,21 +103,125 @@
           },
           "browser_verify": {
             "type": "object",
-            "required": ["url_path", "assertions"],
+            "required": ["role", "steps"],
             "additionalProperties": false,
             "properties": {
-              "url_path": {
+              "role": {
                 "type": "string",
-                "description": "Route to check. Must start with /. Dynamic segments as :param placeholders (e.g. /firms/:firmSlug/dashboard)."
+                "description": "Named identity from the repo's Auth Profile (e.g. 'admin', 'firm', 'trial', 'anonymous'). Determines which stored state file browser-verify.mjs loads before running steps. Defaults to the first Role declared in the repo's Auth Profile."
               },
-              "assertions": {
+              "viewports": {
                 "type": "array",
                 "items": {"type": "string"},
+                "description": "Viewport names to run against (e.g. ['desktop', 'mobile']). Names must match entries in resources/repo-policy.json viewports for this repo. Omit to use the repo defaults declared in repo-policy.json."
+              },
+              "steps": {
+                "type": "array",
                 "minItems": 1,
-                "description": "Observable behaviors — visible text, navigation targets, redirects. Not implementation details."
+                "description": "Ordered interaction steps executed identically on Baseline and Candidate. Must include at least one goto and one capture.",
+                "items": {
+                  "type": "object",
+                  "required": ["type"],
+                  "oneOf": [
+                    {
+                      "description": "Navigate to a URL.",
+                      "properties": {
+                        "type": {"const": "goto"},
+                        "url": {
+                          "type": "string",
+                          "description": "Path or absolute URL. Relative paths are resolved against the repo's base_url. Dynamic segments as :param placeholders (e.g. /firms/:firmSlug/dashboard)."
+                        }
+                      },
+                      "required": ["type", "url"],
+                      "additionalProperties": false
+                    },
+                    {
+                      "description": "Click an element by role/text locator.",
+                      "properties": {
+                        "type": {"const": "click"},
+                        "locator": {
+                          "type": "string",
+                          "description": "Playwright locator expression (e.g. 'role=button[name=\"Submit\"]', 'text=Sign in', 'css=.nav-link')."
+                        }
+                      },
+                      "required": ["type", "locator"],
+                      "additionalProperties": false
+                    },
+                    {
+                      "description": "Fill a form field.",
+                      "properties": {
+                        "type": {"const": "fill"},
+                        "locator": {
+                          "type": "string",
+                          "description": "Playwright locator for the input field."
+                        },
+                        "value": {
+                          "type": "string",
+                          "description": "Text to type into the field."
+                        }
+                      },
+                      "required": ["type", "locator", "value"],
+                      "additionalProperties": false
+                    },
+                    {
+                      "description": "Wait for a condition before continuing.",
+                      "properties": {
+                        "type": {"const": "waitFor"},
+                        "condition": {
+                          "type": "string",
+                          "description": "Wait target: 'networkidle', 'load', 'domcontentloaded', or a CSS selector string."
+                        }
+                      },
+                      "required": ["type", "condition"],
+                      "additionalProperties": false
+                    },
+                    {
+                      "description": "Capture a screenshot at this point for visual comparison.",
+                      "properties": {
+                        "type": {"const": "capture"},
+                        "name": {
+                          "type": "string",
+                          "description": "Stable identifier for this capture point. Must be unique within the spec (e.g. 'hero', 'nav-bar', 'modal-open')."
+                        }
+                      },
+                      "required": ["type", "name"],
+                      "additionalProperties": false
+                    },
+                    {
+                      "description": "Assert a condition about the page. Failure always blocks the task.",
+                      "properties": {
+                        "type": {"const": "expect"},
+                        "locator": {
+                          "type": "string",
+                          "description": "Playwright locator for the element under assertion."
+                        },
+                        "assertion": {
+                          "type": "string",
+                          "enum": ["visible", "hidden", "text", "count"],
+                          "description": "Assertion type."
+                        },
+                        "value": {
+                          "type": "string",
+                          "description": "Expected value for 'text' and 'count' assertions. Omit for 'visible' and 'hidden'."
+                        }
+                      },
+                      "required": ["type", "locator", "assertion"],
+                      "additionalProperties": false
+                    }
+                  ]
+                }
+              },
+              "masks": {
+                "type": "array",
+                "items": {"type": "string"},
+                "description": "CSS selector strings for dynamic page regions to blank before visual comparison (e.g. '.timestamp', '.user-name', '[data-testid=\"live-counter\"]'). Applied identically to Baseline and Candidate."
+              },
+              "expected_visual_change": {
+                "type": "string",
+                "description": "Declared intent. Use 'none' when no visual change is expected (triggers zero-diff shortcut). Use a brief description of the change for visual tasks (e.g. 'New chart layout on the overview panel'). The visual-judge uses this to confirm intent matches the actual delta."
               }
             },
-            "description": "Optional browser verification after TDD passes. Omit for non-UI tasks (backend, config, refactor, infra). E2e-authoring tasks from to-e2e-tasks must never carry browser_verify."
+            "description": "Optional Check Spec for post-TDD browser verification. Omit for non-UI tasks (backend, config, refactor, infra). E2e-authoring tasks from to-e2e-tasks must never carry browser_verify."
           },
           "linear_url": {
             "type": ["string", "null"],
@@ -348,11 +452,16 @@
           "branch": null,
           "pr": null,
           "browser_verify": {
-            "url_path": "/dashboard",
-            "assertions": [
-              "Unauthenticated visit redirects to /login",
-              "Authenticated visit shows 'Dashboard' heading"
-            ]
+            "role": "anonymous",
+            "viewports": ["desktop"],
+            "steps": [
+              {"type": "goto", "url": "/dashboard"},
+              {"type": "waitFor", "condition": "networkidle"},
+              {"type": "expect", "locator": "css=body", "assertion": "visible"},
+              {"type": "capture", "name": "dashboard-unauthenticated"}
+            ],
+            "masks": [],
+            "expected_visual_change": "none"
           }
         }
       ],

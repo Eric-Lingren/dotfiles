@@ -22,10 +22,48 @@
 
 ## Optional fields
 
-- `browser_verify`: present only for UI tasks requiring post-TDD browser verification
+- `browser_verify`: present only for UI tasks requiring post-TDD browser verification (Check Spec shape — see below)
 - `linear_url`: written back by tasks-to-linear after syncing; null until then
 - `commit`: fixing commit SHA recorded by build-code at end-of-run push; cited by `reply` tasks
 - `reply_body` / `reply_url` / `thread_id` / `thread_id_type`: present only on `reply` tasks (written by pr-revise)
+
+## browser_verify field (Check Spec)
+
+The `browser_verify` field carries an inline Check Spec that `browser-verify.mjs` executes identically against the Baseline (merge-base render) and the Candidate (feature branch). Authored at planning time by `to-tasks`; consumed by `build-runner` after TDD passes.
+
+**Required fields:** `role`, `steps`
+
+| Field | Type | Notes |
+|---|---|---|
+| `role` | string | Named identity from the repo's Auth Profile (e.g. `"admin"`, `"firm"`, `"anonymous"`). |
+| `viewports` | string[] | Viewport names from `repo-policy.json` (e.g. `["desktop", "mobile"]`). Omit to use repo defaults. |
+| `steps` | step[] | Ordered steps. Must include at least one `goto` and one `capture`. |
+| `masks` | string[] | CSS selectors for dynamic regions to blank before diffing (e.g. `[".timestamp"]`). |
+| `expected_visual_change` | string | `"none"` for no expected change; a brief description of the intended change for visual tasks. |
+
+**Step types:** `goto` (`url`), `click` (`locator`), `fill` (`locator`, `value`), `waitFor` (`condition`), `capture` (`name`), `expect` (`locator`, `assertion`, optional `value`).
+
+**Example:**
+
+```json
+"browser_verify": {
+  "role": "firm",
+  "viewports": ["desktop", "mobile"],
+  "steps": [
+    {"type": "goto",    "url": "/dashboard"},
+    {"type": "waitFor", "condition": "networkidle"},
+    {"type": "capture", "name": "dashboard-initial"},
+    {"type": "click",   "locator": "role=button[name=\"Open settings\"]"},
+    {"type": "waitFor", "condition": ".settings-panel"},
+    {"type": "expect",  "locator": "role=dialog", "assertion": "visible"},
+    {"type": "capture", "name": "settings-panel-open"}
+  ],
+  "masks": [".user-avatar", ".last-login-timestamp"],
+  "expected_visual_change": "Settings panel now shows the new notification preferences section"
+}
+```
+
+Omit `browser_verify` entirely (never set to `null`) for backend, config, refactor, infra, or any task with no user-visible route change.
 
 ## Schema file
 
