@@ -72,7 +72,8 @@
     "persona-judge": "T3",
     "capture-learning": "T2",
     "export-tasks": "T2",
-    "build-runner": "T3"
+    "build-runner": "T3",
+    "visual-judge": "T2"
   },
   "delegate": [
     "build-code",
