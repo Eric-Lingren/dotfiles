@@ -1,0 +1,101 @@
+{
+  "schema_version": "4",
+  "producer": "to-seed",
+  "source": {
+    "type": "session",
+    "ref": null
+  },
+  "title": "/standup skill: cycle status report for team standup",
+  "slug": "standup-skill",
+  "created": "2026-10-01T18:10:53Z",
+  "iteration": 1,
+  "summary": "A shared skill, /standup, living in ~/.dotfiles/claude-code-shared/skills/, that gathers the user's current-cycle Linear tickets and their own GitHub PRs and renders a skimmable bullet report for twice-weekly team standup. Each line carries the Linear ticket number and link, the Linear title, a short human-readable summary, the GitHub PR number and link, and a precise state (waiting on me, waiting on reviewers with an age tag, approved/ready to merge, draft). The report ends with an evidence-anchored positive theme and a sub-60-word talk track tied to the Linear project or initiative. Output prints to the terminal and is saved as history in Quaestor-Web/docs/standups/, protected from commits and from clean-scaffolding.",
+  "problem_statement": "The user needs a fast, objective, skimmable view of in-review, done, and in-progress work to give a 30-second standup update. Linear titles are sometimes AI-generated and do not convey the core functionality. PRs can fall out of the user's line of sight. The report doubles as a safety net so nothing is missed or overlooked.",
+  "solution": "A /standup skill backed by scripts: a Linear GraphQL fetch script and a GitHub fetch via gh, then a script that merges, classifies review state, computes age tags and theme signals, and diffs against the last saved standup. The model only writes the human summaries, theme wording, and talk track.",
+  "decisions": [
+    "No out-of-band decisions override this design. Report structure follows the user's description: In Review, Done, In Progress, Blockers, overarching theme, then talk track.",
+    "Scope is the union of Linear tickets assigned to the user in the active cycle (any status) and the user's GitHub PRs opened, updated, or merged within the cycle window. Every open PR the user authored is included regardless of age. Unmatched items are tagged '(no ticket)' or '(no PR yet)'.",
+    "Review state uses four buckets: 🔴 waiting on me (CI failing or unaddressed reviewer feedback, merged into one state); 🟡 waiting on reviewers (first review and re-review merged into one state); 🟢 approved / ready to merge (rare, since the user usually merges before standup); ⚪ draft, listed under In Progress.",
+    "Waiting lines carry a duration age tag (e.g. 'waiting 6d') so stale PRs surface as blockers.",
+    "Each PR line lists reviewer names.",
+    "Report is one line per ticket+PR pair, assuming the user's 1:1 ticket-to-PR workflow. Lines are grouped under parent ticket or epic headers. A ⚠️ flag marks violations (a ticket with multiple PRs) and Linear/GitHub status disagreements.",
+    "Linear data is fetched by a script calling Linear's GraphQL API with LINEAR_API_KEY, not via Linear MCP tools, for consistency with the scriptable-code rule.",
+    "The Linear script resolves the user by email (eric@standardmetrics.io) and filters by exact assignee id, cross-checks KEY ids found in PR branches/titles against Linear results and fetches any missing ones, and prints a loud warning instead of an empty section if Linear returns nothing while open PRs exist.",
+    "LINEAR_API_KEY resolution order: environment variable, else source ~/.dotfiles/local/secrets.env (the same file gxstart uses, reusing the existing 'gxstart' Linear key), else stop with a one-line setup hint. The script never prints or writes the key. No Keychain step.",
+    "Output prints to the terminal and is also saved to Quaestor-Web/docs/standups/YYYY-MM-DD.md.",
+    "Standup history must never be committed: add an explicit 'docs/standups/' entry to the Quaestor-Web exclude list in ~/.dotfiles/claude-code-shared/resources/repo-policy.json, and have the skill idempotently add 'docs/standups/' to .git/info/exclude on first run. Never modify .gitignore (admin-owned).",
+    "Standup history must not be stored in the dotfiles repo because it is public.",
+    "Add docs/standups/ to clean-scaffolding's 'Untouched' list so it is never archived or deleted.",
+    "Positive theme is a hybrid: the script computes evidence signals and the model picks framings from an evidence menu (quality bar / no regressions, cross-team collaboration, small reviewable slices, careful spec for accuracy and consistency, steady delivery) but may word the spin freely. Tone is silver-lining; blockers are phrased as 'next step' or 'need eyes on #X from Y', never as complaints.",
+    "Report ends with a talk track of 3 to 4 spoken-style lines under 60 words covering shipped, waiting and on whom, next, and theme, tied to the Linear project or initiative.",
+    "Done section shows merges since the last saved standup in full with a 🆕 tag, plus a one-line 'Earlier this cycle' summary with links. With no prior saved standup, it falls back to all merges this cycle. The talk track mentions only 🆕 items.",
+    "Report covers only the user's own work. No 'waiting on my review' section.",
+    "Skill name is /standup with no flags or arguments.",
+    "The skill lives in ~/.dotfiles/claude-code-shared/skills/standup/, not in Quaestor-Web."
+  ],
+  "implementation_decisions": [
+    "GitHub data is fetched with gh inside a script (gh pr list --author @me plus per-PR reviews, review requests, commits, status checks, and unresolved review thread counts).",
+    "Bucket classification, age tags, theme signals, and since-last-standup diffing are computed in scripts. The model writes human summaries, theme wording, and the talk track.",
+    "Scripts live in ~/.dotfiles/claude-code-shared/scripts/ with real argument handling, per the global scriptable-code rule.",
+    "Since-last-standup cutoff is derived from the most recent file in Quaestor-Web/docs/standups/."
+  ],
+  "out_of_scope": [
+    {
+      "text": "A 'waiting on my review' section for teammates' PRs requesting the user's review.",
+      "rationale": "User manages review requests through a different process."
+    },
+    {
+      "text": "CLI flags such as --since or --no-save.",
+      "rationale": "User chose /standup with no flags."
+    },
+    {
+      "text": "Fetching Linear via Linear MCP tools.",
+      "rationale": "User reversed to the script-based GraphQL approach for consistency with the scriptable-code rule."
+    },
+    {
+      "text": "macOS Keychain storage for the Linear key.",
+      "rationale": "Existing key in ~/.dotfiles/local/secrets.env is reused."
+    },
+    {
+      "text": "Storing standup history in ~/.dotfiles/claude-code-shared/docs/standups/.",
+      "rationale": "Dotfiles repo is public."
+    },
+    {
+      "text": "Slack draft or canvas output.",
+      "rationale": "User chose terminal plus saved file."
+    },
+    {
+      "text": "Modifying .gitignore in Quaestor-Web.",
+      "rationale": "It is maintained by company admins."
+    }
+  ],
+  "risks_and_tradeoffs": [
+    "Sharing the 'gxstart' Linear API key means revoking or rotating it breaks both gxstart and /standup, and Linear API logs attribute standup calls to the gxstart label. Accepted for personal tooling.",
+    "~/.dotfiles/local/secrets.env must remain gitignored and untracked in the public dotfiles repo. Verified ignored and untracked on 2026-10-01.",
+    "Standup history lives only in the local Quaestor-Web clone via .git/info/exclude, so it is lost on re-clone.",
+    "An initial background pull via Linear MCP with an implicit 'me' filter returned zero assigned issues despite PRs referencing KEY-3008 and others. The email-resolved assignee id and PR cross-check guard against this.",
+    "Unresolved review threads where the user already replied but pushed no code are classified as waiting on reviewers."
+  ],
+  "further_notes": [
+    "Register the skill via /register-skill so tier-advisor tracks it.",
+    "The dotfiles repo was on feat/browser-verification at grill time. The skill should be built on its own branch so it does not mix into that work.",
+    "The user also asked for today's standup report. Not yet generated at seed time."
+  ],
+  "open_threads": [],
+  "disposed_threads": [],
+  "next_action": "Run /to-tasks on this seed to break the /standup skill into implementation tasks in ~/.dotfiles.",
+  "status": "ready",
+  "verification": {
+    "iteration": 1,
+    "personas": [
+      "grounding",
+      "accuracy",
+      "completeness",
+      "coherence"
+    ],
+    "refutations_upheld": 0,
+    "refutations_screened": 7,
+    "clean": true,
+    "status": "verified"
+  }
+}
