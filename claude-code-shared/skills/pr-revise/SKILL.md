@@ -136,7 +136,7 @@ three fields alongside the comment for use in the provenance block at Step 8c:
 - **`thread_database_id`** — the comment's numeric `databaseId` value (the REST-accessible ID)
 
 These are carried forward into every provenance item. They are not displayed in the harvest
-output at Step 3f, but they must be present in memory when the provenance block is assembled.
+output at Step 3g, but they must be present in memory when the provenance block is assembled.
 
 ### 3d. SSO 403 handling
 
@@ -185,18 +185,69 @@ and it does not depend on the `[bot]` login suffix (integrations like `chromatic
 - Include only where `author.login !== $me` and `author.__typename !== "Bot"`. Drop all
   bot-authored top-level comments.
 
-### 3f. Display harvest output
+### 3f. Verification Report rejected-capture harvest
 
-Print a numbered list of harvested items. Each entry shows:
+Check whether the current PR's build run produced a Verification Report with reviewer-rejected
+captures.
+
+**Resolve the PR head branch** (if not yet resolved):
+```bash
+gh pr view <pr_url> --json headRefName --jq '.headRefName'
+```
+Store as `$head_branch`. Compute `$branch_slug` by replacing `/` with `-`:
+```bash
+branch_slug=$(echo "$head_branch" | tr '/' '-')
+```
+
+**Check for the artifact URL file:**
+```bash
+cat docs/visual-changes/${branch_slug}/report-url.txt 2>/dev/null
+```
+
+**If the file is absent, empty, or unreadable — skip this step silently. Do not print anything.
+Continue to Step 3g with only the PR harvest items.**
+
+If the file exists and contains a non-empty URL (e.g. `https://claude.ai/artifacts/<artifact-id>`):
+
+1. Use the `ArtifactData` tool to read the `captures` collection on that artifact:
+   ```
+   db.collection("captures").get()
+   ```
+   Filter the returned documents for those where `status === "rejected"`.
+
+   If `ArtifactData` is unavailable in this session, or the artifact cannot be read for any
+   reason — skip silently and continue to Step 3g.
+
+2. For each rejected document, build a **Verification Report fix item**:
+
+   | Field | Value |
+   |-------|-------|
+   | `source_type` | `"verification-report"` |
+   | `title` | `"Fix visual regression: <spec_role> <viewport>"` — use the `spec_role` and `viewport` fields from the document |
+   | `body` | Two-section body: **Judge rationale:** `<rationale field>` · **Reviewer note:** `<note field>`. Combined, truncated to 400 chars. |
+   | `url` | The artifact URL read from `report-url.txt` |
+   | `capture_ref` | `capture_ref` field from the document |
+   | `viewport` | `viewport` field |
+   | `candidate_png` | Published copy in `docs/visual-changes/${branch_slug}/` — reference by capture_ref and viewport (e.g. the file matching `*-<capture_ref>-<viewport>-after.png`) |
+
+3. Append these fix items to the harvest list built in Step 3e. Place them after any PR items.
+   Every rejected capture becomes exactly one fix item. There is no author filter, no
+   resolved/unresolved check, and no bot-source rule — these items come from a human reviewer's
+   explicit rejection action, not from automated comments.
+
+### 3g. Display combined harvest output
+
+Print a numbered list of all harvested items (PR items from Step 3e followed by Verification
+Report items from Step 3f). Each entry shows:
 - Item number
-- Source type (inline thread / review summary / PR comment)
-- Author login
-- Comment URL
+- Source type (inline thread / review summary / PR comment / **verification-report**)
+- Author login (or `"reviewer"` for verification-report items)
+- Comment or artifact URL
 - First 120 characters of body (truncated with `…` if longer)
 
-If zero items remain after filtering, print:
+If zero items remain after both harvests, print:
 ```
-No unresolved reviewer or bugbot comments found. Nothing to triage.
+No unresolved reviewer or bugbot comments found, and no rejected Verification Report captures. Nothing to triage.
 ```
 and stop.
 
@@ -281,6 +332,8 @@ For each claim-bearing item — primarily `bug`-class items, plus any `change` o
 The investigator is the Opus-tier orchestrator defined in `agents/investigator.md`. It decomposes the claim into sub-claims, routes each to the correct leaf agent (code, web, GitHub, Linear, Notion), and returns a schema-valid `investigation-result` per `contracts/investigation-result-schema.json`.
 
 Non-claim-bearing items (`question`, `nit`, `discuss`) do not require investigator invocation. Present the claim text and URL to the user for manual review; collect a `reviewed` verdict and any reclassification before proceeding.
+
+**Verification Report items bypass the investigator.** A `source_type: "verification-report"` item carries a screenshot pair confirmed by a human reviewer — the visual evidence IS the claim. Do not spawn an investigator for these items. They move directly to the HITL gate in Step 6 with diligence status `reviewer-confirmed`. Auto-classify them as `change` unless the user overrides in Step 4.
 
 ### Verdict-to-action mapping
 
@@ -408,7 +461,7 @@ Build this block and hand it to `/to-seed` (it becomes the seed's `provenance`, 
 ```json
 {
   "pr_url": "<the PR URL from Step 1>",
-  "head_branch": "<the PR head branch resolved in Step 7>",
+  "head_branch": "<the PR head branch resolved in Step 3f or Step 7>",
   "items": [
     {
       "thread_id": "<the id value>",
@@ -427,6 +480,25 @@ Build this block and hand it to `/to-seed` (it becomes the seed's `provenance`, 
 ```
 
 **ID type discipline:** inline review threads (`reviewThreads.nodes[].id`) yield an opaque GraphQL global node ID → `thread_id_type: "graphql_node_id"`. Top-level PR comments expose a numeric `databaseId` → `"database_id"`. Prefer the thread `id` for inline threads since resolution operates on the thread, not an individual comment. A downstream consumer (relay) keys thread resolution on `thread_id_type`, so it is mandatory on every item.
+
+**Verification Report items** (`source_type: "verification-report"`) have no GitHub thread. Use this shape for their provenance entries:
+
+```json
+{
+  "thread_id": null,
+  "thread_id_type": null,
+  "final_class": "change",
+  "disposition": null,
+  "reply_body": null,
+  "reply_url": "<artifact URL from report-url.txt>",
+  "fix": "<description of the visual regression to fix, including spec_role, viewport, and candidate_png reference>",
+  "original_comment_body": "<judge rationale + reviewer note, as assembled in Step 3f>",
+  "original_comment_author": null,
+  "thread_database_id": ""
+}
+```
+
+These items produce a `code` task only (no relay reply task — there is no GitHub thread to post to). `to-tasks` skips the reply-task generation for any provenance entry where `thread_id` is null.
 
 ### 8d. Seed stop
 
