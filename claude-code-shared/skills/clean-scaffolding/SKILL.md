@@ -1,6 +1,6 @@
 ---
 name: clean-scaffolding
-description: Archive consumed doc scaffolding (seeds, PRDs, tasks, handoffs) in the current working tree. Bundles each fully-consumed lineage chain verbatim into docs/archive/. Leaves docs/adr/, docs/prototype/, and docs/wizard/ untouched. Deletes browser-checks and task trace logs without archiving. Use when done with a workflow and ready to clear the clutter. Pass --force or -y to skip the confirmation prompt.
+description: Archive consumed doc scaffolding (seeds, PRDs, tasks, handoffs) in the current working tree. Bundles each fully-consumed lineage chain verbatim into docs/archive/. Leaves docs/adr/, docs/prototype/, and docs/wizard/ untouched. Deletes browser-checks, task trace logs, and docs/visual-changes/<branch-slug>/ directories for branches whose PRs are merged — without archiving. Use when done with a workflow and ready to clear the clutter. Pass --force or -y to skip the confirmation prompt.
 argument-hint: "--force or -y to skip confirmation"
 model: haiku
 effort: low
@@ -13,7 +13,7 @@ This skill is **lineage-aware**: it groups artifacts by their provenance chain a
 
 **Three-way disposition:**
 - **Archive set** (bundle then remove originals): `docs/seeds/`, `docs/prd/`, `docs/tasks/`, `docs/handoffs/`
-- **Delete set** (remove without archiving): `docs/browser-checks/`, `docs/tasks/.logs/`, `docs/offload-output/`
+- **Delete set** (remove without archiving): `docs/browser-checks/`, `docs/tasks/.logs/`, `docs/offload-output/`, `docs/visual-changes/<branch-slug>/` (each subdirectory is removed only when its branch's PR is merged; missing directory or unmerged/missing PR is a silent skip)
 - **Untouched**: `docs/adr/`, `docs/prototype/`, `docs/wizard/` (committed wizard snippets — durable example corpus, never archived or deleted)
 
 ## Process
@@ -121,6 +121,34 @@ Both operations are atomic per chain sweep.
 ### 7. Report
 
 Relay the script's `archived … to …`, `removed …`, and summary lines. Note any chains that were refused (not consumed or dangling ref) and what the user must do before those chains can be archived.
+
+### 8. Clean merged visual-changes
+
+Visual-changes directories hold ephemeral PNG evidence published per-branch during browser verification. They are never archived — delete only.
+
+1. If `docs/visual-changes/` does not exist in the current working directory, skip this step silently.
+2. List the immediate subdirectories of `docs/visual-changes/`. Each subdirectory name is the branch slug for a prior browser-verification run.
+3. For each `<branch-slug>`:
+
+   ```bash
+   gh pr view <branch-slug> --json state 2>/dev/null
+   ```
+
+   - If the command fails (no PR found for that branch), skip silently.
+   - If `state` is not `"MERGED"`, skip silently.
+   - If `state` is `"MERGED"`, delete the directory:
+
+     ```bash
+     rm -rf docs/visual-changes/<branch-slug>/
+     ```
+
+4. If `docs/visual-changes/` is now empty after deletions, remove it too:
+
+   ```bash
+   rmdir docs/visual-changes/ 2>/dev/null || true
+   ```
+
+5. Report the count of directories removed (e.g. `Removed 2 visual-changes directories.`). If none were removed, say nothing — this is a silent pass.
 
 <!-- learning-capture:start -->
 Read and execute `~/.dotfiles/claude-code-shared/resources/learning-capture.md`.
