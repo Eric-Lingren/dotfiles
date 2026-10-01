@@ -70,7 +70,7 @@ If a specific task ID was given:
 If no task ID was given, build the queue:
 - Include all tasks with status `not_started`, `failed`, or `blocked`, in `id` order. Resumption is free: a `failed` task from a prior run is retried exactly like a fresh `not_started` task.
 - A `blocked` task is a *parked* item, not a terminal one. Re-include it so its `blocked_by` is re-evaluated live at execution time (step 4a). If its blockers have since landed (`done`/`merged`), it runs; if not, step 4a re-parks it. This is what unsticks a task once its dependency completes, instead of excluding it by status forever. Mirrors the same rule in `dispatch-tasks` step 2.
-- Skip tasks with status `in_progress`, `done`, `merged`, or `deferred_hitl`.
+- Skip tasks with status `in_progress`, `done`, `merged`, `needs_eyes`, or `deferred_hitl`.
 
 ### 3. Set up branching
 
@@ -117,7 +117,7 @@ If another queued task's `blocked_by` names a HITL task, that dependent task wil
 A wave is a maximal set of tasks that can run concurrently given the dependency graph. Compute iteratively:
 
 ```
-done_ids = set of task IDs already in status "done" or "merged" in the JSON
+done_ids = set of task IDs already in status "done", "merged", or "needs_eyes" in the JSON
 wave_lists = []
 remaining = AFK queue (non-HITL tasks)
 
@@ -134,13 +134,66 @@ while remaining is non-empty:
 
 Tasks with `blocked_by = []` (or whose blockers are all already `done`/`merged`) enter **Wave 1**. Wave N+1 contains tasks whose blockers all appear in waves 1..N. Maximum 4 tasks execute concurrently within any wave.
 
+### 3c. Browser verification run setup (only when any task has `browser_verify`)
+
+Scan the AFK queue. If no task has a `browser_verify` field, skip this entire section and set `browser_run = null`.
+
+If any task has `browser_verify`:
+
+1. **Collect roles and repo:**
+   - Gather all unique `role` values from `task.browser_verify.role` across tasks that have `browser_verify`.
+   - Derive `repo` (Org/Repo string) from the git remote:
+     ```bash
+     git remote get-url origin | sed 's|.*github\.com[:/]\(.*\)\.git|\1|; s|.*github\.com[:/]||'
+     ```
+   - Derive `branch_slug` from the current branch:
+     ```bash
+     git rev-parse --abbrev-ref HEAD | tr '/' '-'
+     ```
+
+2. **Auth ensure:** For each unique role, run:
+   ```bash
+   python3 ~/.dotfiles/claude-code-shared/scripts/browser-auth.py ensure --repo <repo> --role <role>
+   ```
+   - Exit 0: state is fresh. Continue.
+   - Exit 1 (`SKIPPED: auth_expired` in output): log which role expired. Build-code continues — browser-checker will skip affected tasks and report `status: "skipped"`. Collect expired roles in `expired_roles` for the end-of-run summary.
+
+3. **Base server boot:** Compute the merge-base SHA:
+   ```bash
+   base_sha=$(git merge-base HEAD origin/main)
+   ```
+   Look up the candidate server's primary port from `resources/app-launch-detection.md`. Use port `<primary_port + 1000>` as the base server's offset port. Then start the base server:
+   ```bash
+   bash ~/.dotfiles/claude-code-shared/scripts/base-server.sh up "$base_sha" <project_root> <offset_port>
+   ```
+   Capture the URL printed by the script as `base_server_url` (e.g., `http://localhost:4173`).
+   - If `base-server.sh up` fails (non-zero exit): set `base_server_url = null`. Note in the end-of-run summary that baselines will fall back to pre-build snapshot path.
+
+4. **Create run directory:**
+   ```bash
+   run_dir="<project_root>/docs/browser-checks/$(date +%Y%m%d-%H%M)-${branch_slug}"
+   mkdir -p "$run_dir"
+   ```
+   Store the absolute path as `run_dir`.
+
+5. **Verification Report artifact:** Using the Artifact tool (if available in this session), create a new artifact from `~/.dotfiles/claude-code-shared/resources/verification-report-template.html` with the `db` capability enabled. Store the returned artifact ID as `report_artifact_id` and the artifact URL as `report_artifact_url`.
+   - If the Artifact tool is not available: set `report_artifact_id = null` and `report_artifact_url = null`.
+   - Write the artifact URL to `docs/visual-changes/${branch_slug}/report-url.txt` (create parent directory if needed):
+     ```bash
+     mkdir -p docs/visual-changes/${branch_slug}
+     echo "$report_artifact_url" > docs/visual-changes/${branch_slug}/report-url.txt
+     ```
+     If `report_artifact_url` is null, skip this write.
+
+Store all gathered values as `browser_run = {base_server_url, repo, run_dir, base_sha, report_artifact_id, report_artifact_url, branch_slug, expired_roles}`.
+
 ### 4. Execute waves sequentially; tasks within each wave run in parallel
 
 For each wave in `wave_lists`:
 
 #### a. Blocker pre-check (wave entry)
 
-Before launching any task in the wave, re-read the JSON to confirm each task's `blocked_by` IDs are all `done` or `merged`. If any blocker is not satisfied:
+Before launching any task in the wave, re-read the JSON to confirm each task's `blocked_by` IDs are all `done`, `merged`, or `needs_eyes`. If any blocker is not satisfied:
 - Mark that task `blocked` in the JSON.
 - If any other queued task in a later wave depends on this task, halt the entire run immediately. Report which task is blocked and why. Do not process further waves.
 - Otherwise, park it (add to end-of-run summary) and exclude it from this wave's spawn set.
@@ -171,6 +224,13 @@ Pass per task:
 - `taskfile_basename` — basename of the task file.
 - `project_root` — absolute project root path.
 
+When `browser_run` is non-null (set in step 3c), also pass:
+- `base_server_url` — `browser_run.base_server_url` (may be null if base server failed to start; build-runner will fall back gracefully).
+- `repo` — `browser_run.repo`.
+- `run_dir` — `browser_run.run_dir`.
+- `base_sha` — `browser_run.base_sha`.
+- `report_artifact_id` — `browser_run.report_artifact_id` (may be null if no Verification Report was created).
+
 **When `local_only: true` is set at the task file root**, include this explicit instruction in every build-runner prompt:
 
 > "Do NOT push or create a PR. The task file has `local_only: true` — all changes must remain as local commits only."
@@ -179,7 +239,7 @@ build-runner runs the full `/tdd` cycle, the runner-based validation gate, and b
 
 #### c. Collect all receipts for the wave
 
-Wait for all concurrent build-runner agents to complete. For each receipt, parse: `status`, `summary`, `files_touched`, `tests`, `pr`, `log_path`, `follow_ups`.
+Wait for all concurrent build-runner agents to complete. For each receipt, parse: `status`, `summary`, `files_touched`, `tests`, `pr`, `log_path`, `follow_ups`. Valid status values are `"done"`, `"failed"`, and `"needs_eyes"`. A `"needs_eyes"` receipt is non-blocking — treat it as successful for wave progression and merging.
 
 #### d. Merge worktree branches sequentially
 
@@ -187,7 +247,7 @@ After all tasks in the wave complete (regardless of individual pass/fail), merge
 
 For each task in the wave (in order):
 - If `receipt.status == "failed"`: skip the merge for this task. Its worktree branch is abandoned.
-- If `receipt.status == "done"`: first check the worktree forked from this wave's base:
+- If `receipt.status == "done"` or `receipt.status == "needs_eyes"`: first check the worktree forked from this wave's base:
   ```bash
   git merge-base --is-ancestor "$wave_base" <task-worktree-branch>
   ```
@@ -210,6 +270,7 @@ For each task in the wave (after its merge attempt):
 1. **Write the receipt:**
    - Set `summary`, `files_touched`, `tests`, `log_path` directly from the receipt.
    - If `receipt.status == "done"`: set task `status` to `done` and `pr` to a suggested `gh pr create` command the user can run (do not run it).
+   - If `receipt.status == "needs_eyes"`: set task `status` to `needs_eyes`. Set `pr` to the same suggested command. A `needs_eyes` task is considered successful — it produced code changes, but one or more visual captures need async reviewer attention in the Verification Report.
    - If `receipt.status == "failed"`: set task `status` to `failed`.
    - Write the updated JSON immediately.
 
@@ -219,11 +280,13 @@ For each task in the wave (after its merge attempt):
    - Append with `"source": "discovered"` and `"trigger_task"` set to this task's ID.
    - Write the updated JSON immediately.
 
-3. **Thread the breadcrumb forward.** On success (`receipt.status == "done"`), append a compact entry — `{id, title, summary, files_touched}` — to `breadcrumb`. This breadcrumb is available to all tasks in **subsequent waves** but not to same-wave siblings.
+3. **Thread the breadcrumb forward.** On success (`receipt.status == "done"` or `"needs_eyes"`), append a compact entry — `{id, title, summary, files_touched}` — to `breadcrumb`. This breadcrumb is available to all tasks in **subsequent waves** but not to same-wave siblings.
 
 #### f. Apply the AFK obstacle policy for failed tasks
 
 After processing all receipts in the wave:
+
+Tasks with `status == "needs_eyes"` are never failures — skip them in this step entirely.
 
 For each task whose final `status == "failed"`:
 - Determine if any task in a later wave depends on this one (a **blocker** task) or not (a **leaf** task).
@@ -232,7 +295,7 @@ For each task whose final `status == "failed"`:
 
 #### g. Advance to the next wave
 
-The next wave begins on the merged state left by the current wave. Only tasks whose blockers all ended in `done` status advance to the next wave (the wave algorithm already computed this, but re-confirm at step 4a).
+The next wave begins on the merged state left by the current wave. Only tasks whose blockers all ended in `done` or `needs_eyes` status advance to the next wave (the wave algorithm already computed this, but re-confirm at step 4a).
 
 ### 4b. Debug cleanup (only when `producer: "debug"`)
 
@@ -243,9 +306,60 @@ Read the root `producer` field of the tasks file. If it is `"debug"` and all fix
 
 If `producer` is anything other than `"debug"`, skip this step.
 
+### 4c. Browser verification run teardown (only when `browser_run` is non-null)
+
+If `browser_run` is null, skip this section.
+
+#### a. Shut down the base server
+
+```bash
+bash ~/.dotfiles/claude-code-shared/scripts/base-server.sh down
+```
+
+This is a best-effort call — log any errors but do not halt the run.
+
+#### b. Export Publication
+
+Scan `browser_run.run_dir` for browser-check-result-v2 JSON files (written by build-runner into subdirectories of `run_dir`). Build a flat list of all captures across all result files.
+
+For each capture, apply the export filter:
+- **Skip** captures where: `verdict == "expected"` AND the task's `browser_verify.expected_visual_change == "none"`.
+- **Include** all other captures (verdict `needs_eyes`, `unexpected`, `regression`, or `expected` with a non-none `expected_visual_change`).
+
+For each included capture, numbered starting at `01`:
+```bash
+mkdir -p docs/visual-changes/${browser_run.branch_slug}
+cp <capture.baseline_png> docs/visual-changes/${browser_run.branch_slug}/<N>-<spec>-<viewport>-before.png
+cp <capture.candidate_png> docs/visual-changes/${browser_run.branch_slug}/<N>-<spec>-<viewport>-after.png
+```
+Where `<N>` is zero-padded to two digits, `<spec>` is the check spec name (slugified), and `<viewport>` is the viewport name (e.g., `desktop`, `mobile`).
+
+Write `docs/visual-changes/${browser_run.branch_slug}/pr-snippet.md`:
+
+```markdown
+## Visual changes
+
+| # | Spec | Viewport | Verdict | Before | After |
+|---|------|----------|---------|--------|-------|
+| 01 | login-flow | desktop | needs_eyes | ![before](01-login-flow-desktop-before.png) | ![after](01-login-flow-desktop-after.png) |
+...
+
+> <N_expected> expected, <N_needs_eyes> needs_eyes
+```
+
+Count `N_expected` and `N_needs_eyes` across **all** captures in the run (not just exported ones) for the summary line. If no captures qualify for export, still write `pr-snippet.md` with the summary line and an empty table body.
+
+#### c. Ensure report-url.txt is written
+
+If `browser_run.report_artifact_url` is non-null and `docs/visual-changes/${browser_run.branch_slug}/report-url.txt` does not yet exist:
+```bash
+mkdir -p docs/visual-changes/${browser_run.branch_slug}
+echo "$report_artifact_url" > docs/visual-changes/${browser_run.branch_slug}/report-url.txt
+```
+
 ### 5. End-of-run summary
 
-Print a consolidated status table in the conversation. Every row that reached `done`, `failed`, `deferred_hitl`, or `blocked` gets a `Log` column pointing at its trace (blank for tasks that never reached build-runner, e.g. `blocked` from a dependency check):
+Print a consolidated status table in the conversation. Every row that reached `done`, `needs_eyes`, `failed`, `deferred_hitl`, or `blocked` gets a `Log` column pointing at its trace (blank for tasks that never reached build-runner, e.g. `blocked` from a dependency check):
 
 ```
 Run complete — docs/tasks/20260512-1423-user-auth-flow.json
@@ -253,7 +367,7 @@ Run complete — docs/tasks/20260512-1423-user-auth-flow.json
  ID      Title                        Result           Log
  ──────  ───────────────────────────  ──────────────  ─────────────────────────────────
  T-0023  Bootstrap auth schema        done             docs/tasks/.logs/.../T-0023.md
- T-0024  Login endpoint               done             docs/tasks/.logs/.../T-0024.md
+ T-0024  Login endpoint               needs_eyes       docs/tasks/.logs/.../T-0024.md
  T-0025  Design review (HITL)         deferred_hitl    —
  T-0026  Token refresh flow           failed           docs/tasks/.logs/.../T-0026.md
  T-0027  Logout endpoint              blocked          —
@@ -267,6 +381,9 @@ Failed / blocked tasks:
 
 If a blocker task failed (halted the run): frame it as a scoping signal, not a retry target.
 Re-grill or re-seed the affected slice before re-running — see docs/tasks/.logs/.../<task>.md for the full trace.
+
+needs_eyes tasks (visual captures awaiting review):
+  T-0024 — Login endpoint: 1 needs_eyes capture. Review: docs/visual-changes/feat-login/report-url.txt
 
 Resumption: re-invoking build-code on this file picks up every `not_started` and `failed` task automatically.
 
@@ -334,6 +451,12 @@ Rules for the description:
 - No Testing section, no other sections
 - No em dashes — use periods or commas only
 - Concise, no run-on sentences
+
+**Browser verification summary line:** If `browser_run` is non-null and any task in the run had a `browser_verify` outcome, append this one-liner to the end of the PR description body:
+```
+<N> expected, <N> needs_eyes
+```
+Where the two counts are the totals across all tasks in this run. Omit if `browser_run` is null or no task had `browser_verify`.
 
 #### b. Push and create the PR
 
