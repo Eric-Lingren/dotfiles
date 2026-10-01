@@ -20,6 +20,8 @@
     "verify_host": "local",
     "browser_auth": {
       "strategy": "project_setup",
+      "base_url": "http://127.0.0.1:8000",
+      "probe_url": "http://127.0.0.1:8000/",
       "login_endpoint": [
         "/user/setup-test-users-and-entities/",
         "/user/authenticate-test-firm-user/",
@@ -48,6 +50,7 @@
     "exclude": ["docs/prototype/", "docs/browser-checks/", "docs/offload-output/", "docs/tasks/.sprout/", "docs/tasks/*-revisions-r*.json", "docs/visual-changes/"],
     "verify_host": "local",
     "browser_auth": {
+      "probe_url": "http://localhost:5173/",
       "roles": {
         "active": {
           "strategy": "project_setup",
