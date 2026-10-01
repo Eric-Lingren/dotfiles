@@ -26,9 +26,23 @@
         "bash ~/.dotfiles/claude-code-shared/scripts/validate-schema.sh --instance contracts/browser-check-result-schema.json <example> exits 0"
       ],
       "blocked_by": [],
-      "status": "not_started",
+      "status": "done",
       "branch": null,
-      "pr": null
+      "pr": "gh pr create --base main --head feat/browser-verification",
+      "summary": "Created three contract pairs for browser verification: check-spec (role/viewports/steps/masks/expected_visual_change), visual-verdict (verdict enum expected/regression/unexpected/uncertain with panel_votes), and browser-check-result v2 (adds captures[] with Baseline/Candidate PNG paths, diff ratio, diff heatmap, optional visual_verdict per capture; step_results[] replaces assertions[]). Updated resources/browser-check-result.md to v2. All validated via validate-schema.sh.",
+      "files_touched": [
+        "claude-code-shared/contracts/check-spec.md",
+        "claude-code-shared/contracts/check-spec-schema.json",
+        "claude-code-shared/contracts/visual-verdict.md",
+        "claude-code-shared/contracts/visual-verdict-schema.json",
+        "claude-code-shared/contracts/browser-check-result-schema.json",
+        "claude-code-shared/resources/browser-check-result.md"
+      ],
+      "tests": {
+        "passed": 0,
+        "failed": 0
+      },
+      "log_path": "docs/tasks/.logs/20260930-2249-agentic-browser-verification/T-0001.md"
     },
     {
       "id": "T-0002",
@@ -43,9 +57,18 @@
         "SpawnedSapien roles cover all six E2E_* prefixes in .env.local (active, admin via project_setup; trial, journeyman, craftsman, inactive via api_login)"
       ],
       "blocked_by": [],
-      "status": "not_started",
+      "status": "done",
       "branch": null,
-      "pr": null
+      "pr": "gh pr create --base main --head feat/browser-verification",
+      "summary": "Extended resources/repo-policy.json with browser verification config: added docs/visual-changes/ to exclude arrays for all four repos; added browser_auth (SpawnedSapien: six roles across project_setup and api_login strategies; Quaestor-Web: project_setup with login_endpoint/seed_hooks/roles), viewports (desktop 1440x900, mobile 390x844), and verify_host: local to both app repos. JSON validates clean.",
+      "files_touched": [
+        "claude-code-shared/resources/repo-policy.json"
+      ],
+      "tests": {
+        "passed": 0,
+        "failed": 0
+      },
+      "log_path": "docs/tasks/.logs/20260930-2249-agentic-browser-verification/T-0002.md"
     },
     {
       "id": "T-0003",
@@ -62,9 +85,19 @@
       "blocked_by": [
         "T-0002"
       ],
-      "status": "not_started",
+      "status": "done",
       "branch": null,
-      "pr": null
+      "pr": "gh pr create --base main --head feat/browser-verification",
+      "summary": "Created scripts/browser-auth.py with an `ensure --repo <Org/Repo> --role <role>` subcommand. Reads the Auth Profile from repo-policy.json, runs a freshness probe (8-hour timestamp check plus optional headless Playwright probe via probe_url), and regenerates state on miss via three strategies: project_setup with playwright_projects, project_setup with login_endpoint (Django TESTING_BYPASS_LOGIN), and api_login (Supabase). State written to ~/.cache/claude-browser-auth/<label>/<role>.json (chmod 600); seed hooks run after regen; unrecoverable failure prints SKIPPED: auth_expired and exits 1. Added base_url and probe_url to repo-policy.json for both app repos.",
+      "files_touched": [
+        "claude-code-shared/scripts/browser-auth.py",
+        "claude-code-shared/resources/repo-policy.json"
+      ],
+      "tests": {
+        "passed": 0,
+        "failed": 0
+      },
+      "log_path": "claude-code-shared/docs/tasks/.logs/20260930-2249-agentic-browser-verification/T-0003.md"
     },
     {
       "id": "T-0004",
@@ -80,9 +113,22 @@
         "baseline-cache.py get on a missing key exits 1"
       ],
       "blocked_by": [],
-      "status": "not_started",
+      "status": "done",
       "branch": null,
-      "pr": null
+      "pr": "gh pr create --base main --head feat/browser-verification",
+      "summary": "Created browser runner scripts in scripts/: browser-verify.mjs (Playwright capture/diff runner producing browser-check-result v2 result.json, pixelmatch diff), base-server.sh (up/down manager for base-SHA git worktrees with worktree_links symlinking and health polling), baseline-cache.py (get/put PNG cache keyed by spec-hash/base-sha/viewport/role). Added scripts/package.json + package-lock.json for pixelmatch and pngjs deps.",
+      "files_touched": [
+        "claude-code-shared/scripts/browser-verify.mjs",
+        "claude-code-shared/scripts/base-server.sh",
+        "claude-code-shared/scripts/baseline-cache.py",
+        "claude-code-shared/scripts/package.json",
+        "claude-code-shared/scripts/package-lock.json"
+      ],
+      "tests": {
+        "passed": 0,
+        "failed": 0
+      },
+      "log_path": "claude-code-shared/docs/tasks/.logs/20260930-2249-agentic-browser-verification/T-0004.md"
     },
     {
       "id": "T-0005",
@@ -99,9 +145,18 @@
         "db reads/writes use only call names documented by the artifact-capabilities skill"
       ],
       "blocked_by": [],
-      "status": "not_started",
+      "status": "done",
       "branch": null,
-      "pr": null
+      "pr": "gh pr create --base main --head feat/browser-verification",
+      "summary": "Created resources/verification-report-template.html, an 854-line HTML5 artifact template for the per-run Verification Report. Uses the artifact db capability (db.doc/db.collection + onSnapshot + update) to subscribe live to run metadata and captures, groups captures by Check Spec with needs_eyes first, renders Baseline/Candidate/Visual-diff trios, and provides Dismiss and Reject-with-note actions written back via db.doc().update(). Degrades to empty state when db capability is unavailable.",
+      "files_touched": [
+        "claude-code-shared/resources/verification-report-template.html"
+      ],
+      "tests": {
+        "passed": 0,
+        "failed": 0
+      },
+      "log_path": "claude-code-shared/docs/tasks/.logs/20260930-2249-agentic-browser-verification/T-0005.md"
     },
     {
       "id": "T-0006",
@@ -118,9 +173,20 @@
       "blocked_by": [
         "T-0001"
       ],
-      "status": "not_started",
+      "status": "done",
       "branch": null,
-      "pr": null
+      "pr": "gh pr create --base main --head feat/browser-verification",
+      "summary": "Created agents/visual-judge.md, a Sonnet/T2 agent that reads Baseline, Candidate, and diff heatmap PNGs via vision, applies a delta-only rubric, and returns a visual-verdict JSON object. Registered in agents/registry.json (consumers: [build-runner]) and resources/model-tiers.json (T2). Frontmatter synced via sync-model-tiers.py --apply with zero drift.",
+      "files_touched": [
+        "claude-code-shared/agents/visual-judge.md",
+        "claude-code-shared/agents/registry.json",
+        "claude-code-shared/resources/model-tiers.json"
+      ],
+      "tests": {
+        "passed": 0,
+        "failed": 0
+      },
+      "log_path": "claude-code-shared/docs/tasks/.logs/20260930-2249-agentic-browser-verification/T-0006.md"
     },
     {
       "id": "T-0007",
@@ -139,9 +205,20 @@
         "T-0003",
         "T-0004"
       ],
-      "status": "not_started",
+      "status": "done",
       "branch": null,
-      "pr": null
+      "pr": "gh pr create --base main --head feat/browser-verification",
+      "summary": "Rewrote agents/browser-checker.md to replace the improvised check.mjs approach with deterministic script orchestration. Agent accepts a Check Spec JSON (spec, base_url, base_server_url, repo, run_dir, base_sha) and calls browser-auth.py, baseline-cache.py, and browser-verify.mjs to authenticate, retrieve or generate baselines, run Candidate capture, and return browser-check-result-v2. Downgraded model from sonnet (T3) to haiku (T1); synced registry.json and model-tiers.json.",
+      "files_touched": [
+        "claude-code-shared/agents/browser-checker.md",
+        "claude-code-shared/agents/registry.json",
+        "claude-code-shared/resources/model-tiers.json"
+      ],
+      "tests": {
+        "passed": 0,
+        "failed": 0
+      },
+      "log_path": "claude-code-shared/docs/tasks/.logs/20260930-2249-agentic-browser-verification/T-0007.md"
     },
     {
       "id": "T-0008",
@@ -158,9 +235,20 @@
       "blocked_by": [
         "T-0001"
       ],
-      "status": "not_started",
+      "status": "done",
       "branch": null,
-      "pr": null
+      "pr": "gh pr create --base main --head feat/browser-verification",
+      "summary": "Updated task-schema.json to replace the url_path+assertions browser_verify shape with a full inline Check Spec (role, viewports as name strings, steps array with oneOf step types, masks as selector strings, expected_visual_change); added needs_eyes to the status enum. Updated task-contract.md with a browser_verify section, field table, and two examples. Replaced browser_verify authoring section in skills/to-tasks/SKILL.md with Check Spec authoring guidance. All existing task files validate clean.",
+      "files_touched": [
+        "claude-code-shared/contracts/task-schema.json",
+        "claude-code-shared/contracts/task-contract.md",
+        "claude-code-shared/skills/to-tasks/SKILL.md"
+      ],
+      "tests": {
+        "passed": 0,
+        "failed": 0
+      },
+      "log_path": "claude-code-shared/docs/tasks/.logs/20260930-2249-agentic-browser-verification/T-0008.md"
     },
     {
       "id": "T-0009",
@@ -181,9 +269,18 @@
         "T-0007",
         "T-0008"
       ],
-      "status": "not_started",
+      "status": "done",
       "branch": null,
-      "pr": null
+      "pr": "gh pr create --base main --head feat/browser-verification",
+      "summary": "Rewrote step 4 of agents/build-runner.md to wire Phase 1 browser verification: browser-checker (Check Spec contract), visual-judge screener plus 3-panelist parallel panel, zero-diff auto-pass shortcut, mobile regression downgrade to needs_eyes, desktop regression retry loop, and Verification Report artifact DB write. Added 5 optional inputs (base_server_url, repo, run_dir, base_sha, report_artifact_id). Added needs_eyes as valid receipt status in step 5.",
+      "files_touched": [
+        "claude-code-shared/agents/build-runner.md"
+      ],
+      "tests": {
+        "passed": 0,
+        "failed": 0
+      },
+      "log_path": "claude-code-shared/docs/tasks/.logs/20260930-2249-agentic-browser-verification/T-0009.md"
     },
     {
       "id": "T-0010",
@@ -204,9 +301,18 @@
         "T-0005",
         "T-0009"
       ],
-      "status": "not_started",
+      "status": "done",
       "branch": null,
-      "pr": null
+      "pr": "gh pr create --base main --head feat/browser-verification",
+      "summary": "Extended skills/build-code/SKILL.md with the browser verification lifecycle: run-start setup (section 3c: auth ensure, base server boot, run_dir creation, Verification Report artifact publish, report-url.txt write), run-end teardown (section 4c: base-server.sh down, Export Publication to docs/visual-changes/<branch-slug>/ with pr-snippet.md), PR summary line (N expected, N needs_eyes), and needs_eyes propagated as a non-blocking success status through waves, merge, receipt write-back, obstacle policy, and advancement.",
+      "files_touched": [
+        "claude-code-shared/skills/build-code/SKILL.md"
+      ],
+      "tests": {
+        "passed": 0,
+        "failed": 0
+      },
+      "log_path": "claude-code-shared/docs/tasks/.logs/20260930-2249-agentic-browser-verification/T-0010.md"
     },
     {
       "id": "T-0011",
@@ -223,9 +329,19 @@
       "blocked_by": [
         "T-0007"
       ],
-      "status": "not_started",
+      "status": "done",
       "branch": null,
-      "pr": null
+      "pr": "gh pr create --base main --head feat/browser-verification",
+      "summary": "Updated skills/debug/SKILL.md to replace the old url_path+assertions browser-checker spawn with a Check Spec v2 invocation (Phase 1 step 4 derives a minimal Check Spec: goto + waitFor + capture, expected_visual_change null; Phase 4 browser_verify note references Check Spec JSON). Updated resources/app-launch-detection.md: step 3 now points to browser-auth.py ensure (ADR-0005); new step 5 documents base server port offset rule (primary + 1000) with base-server.sh reference.",
+      "files_touched": [
+        "claude-code-shared/skills/debug/SKILL.md",
+        "claude-code-shared/resources/app-launch-detection.md"
+      ],
+      "tests": {
+        "passed": 0,
+        "failed": 0
+      },
+      "log_path": "claude-code-shared/docs/tasks/.logs/20260930-2249-agentic-browser-verification/T-0011.md"
     },
     {
       "id": "T-0012",
@@ -276,7 +392,7 @@
         "T-0001",
         "T-0012"
       ],
-      "status": "not_started",
+      "status": "blocked",
       "branch": null,
       "pr": null
     },
@@ -296,7 +412,7 @@
       "blocked_by": [
         "T-0012"
       ],
-      "status": "not_started",
+      "status": "blocked",
       "branch": null,
       "pr": null
     },
@@ -317,7 +433,7 @@
         "T-0013",
         "T-0014"
       ],
-      "status": "not_started",
+      "status": "blocked",
       "branch": null,
       "pr": null
     },
@@ -338,7 +454,7 @@
         "T-0010",
         "T-0015"
       ],
-      "status": "not_started",
+      "status": "blocked",
       "branch": null,
       "pr": null
     },
@@ -358,9 +474,18 @@
         "T-0005",
         "T-0010"
       ],
-      "status": "not_started",
+      "status": "done",
       "branch": null,
-      "pr": null
+      "pr": "gh pr create --base main --head feat/browser-verification",
+      "summary": "Extended skills/pr-revise/SKILL.md with Step 3f that reads the Verification Report artifact DB as an extra feedback source. Checks docs/visual-changes/<branch-slug>/report-url.txt, queries captures via ArtifactData for rejected entries, appends each as a fix item (title 'Fix visual regression: <spec_role> <viewport>', body judge rationale + reviewer note, candidate_png ref). Missing file or unavailable ArtifactData are silent skips. VR items bypass the investigator diligence gate and produce code tasks only.",
+      "files_touched": [
+        "claude-code-shared/skills/pr-revise/SKILL.md"
+      ],
+      "tests": {
+        "passed": 0,
+        "failed": 0
+      },
+      "log_path": "claude-code-shared/docs/tasks/.logs/20260930-2249-agentic-browser-verification/T-0017.md"
     },
     {
       "id": "T-0018",
@@ -377,9 +502,18 @@
       "blocked_by": [
         "T-0002"
       ],
-      "status": "not_started",
+      "status": "done",
       "branch": null,
-      "pr": null
+      "pr": "gh pr create --base main --head feat/browser-verification",
+      "summary": "Extended skills/clean-scaffolding/SKILL.md with a new step 8 that deletes docs/visual-changes/<branch-slug>/ directories for merged branches. Updated frontmatter description and Three-way disposition. Uses gh pr view <branch> --json state to check merge state; missing dir, unmerged PR, and no PR are silent skips. Parent dir removed when empty.",
+      "files_touched": [
+        "claude-code-shared/skills/clean-scaffolding/SKILL.md"
+      ],
+      "tests": {
+        "passed": 0,
+        "failed": 0
+      },
+      "log_path": "docs/tasks/.logs/20260930-2249-agentic-browser-verification/T-0018.md"
     },
     {
       "id": "T-0019",
