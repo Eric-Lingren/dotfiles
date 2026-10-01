@@ -1,6 +1,6 @@
 ---
 name: standup
-description: Generate a daily standup report from GitHub PRs and Linear tickets. Fetches live data, builds structured JSON, writes prose, and renders the report to the terminal. Saves the report to Quaestor-Web/docs/standups/YYYY-MM-DD.md. Use when the user says /standup, "standup", "morning standup", "daily standup", or "what did I work on".
+description: Generate a team standup report from your current-cycle Linear tickets and GitHub PRs. Fetches live data, builds structured JSON, writes prose, and renders the report to the terminal. Saves the report to Quaestor-Web/docs/standups/YYYY-MM-DD.md. Use when the user says /standup, "standup", "morning standup", "daily standup", or "what did I work on".
 model: sonnet
 effort: medium
 invokedBy: human
