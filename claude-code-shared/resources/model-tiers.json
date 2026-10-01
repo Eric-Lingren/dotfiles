@@ -60,7 +60,7 @@
   },
   "agents": {
     "architecture-auditor": "T3",
-    "browser-checker": "T3",
+    "browser-checker": "T1",
     "context-loader": "T1",
     "lint-runner": "T1",
     "test-runner": "T1",
