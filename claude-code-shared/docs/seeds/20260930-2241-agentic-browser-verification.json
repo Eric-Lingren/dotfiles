@@ -1,0 +1,152 @@
+{
+  "schema_version": "4",
+  "producer": "to-seed",
+  "source": {
+    "type": "session",
+    "ref": null
+  },
+  "title": "Agentic browser verification toolchain",
+  "slug": "agentic-browser-verification",
+  "created": "2026-10-01T05:36:54Z",
+  "iteration": 1,
+  "summary": "Replace the current browser-checker (improvised inline check.mjs, text assertions, fail-only screenshots, passive storageState discovery) with a deterministic, repo-agnostic browser verification toolchain in claude-code-shared. Agents capture Baseline (merge-base) and Candidate (feature branch) renders per Check Spec, judge the visual delta with a vision model panel, verify behavior steps, handle auth via per-repo Auth Profiles, and stream results into a Verification Report artifact the user reviews asynchronously. Kept before/after pairs are exported to an excluded docs/visual-changes/ folder for manual PR attachment. Nothing is committed to target repos. Scope is Phase 1 (core loop), a real-app validation gate on SpawnedSapien and Quaestor-Web, then Phase 2 (derived checks, exploratory diagnosis, final sweep, review loop). Cloud execution is deferred.",
+  "problem_statement": "The user manually verifies FE features because browser-checker only runs text assertions, discards evidence on pass, has no before/after comparison or visual judgment, cannot express multi-step behavior, and relies on a pre-existing storageState file that silently goes stale.",
+  "solution": "Deterministic scripts (auth, runner, base server, baseline cache) driven by a declarative Check Spec, a vision-judge agent with screener plus 3-judge panel, build-code/build-runner wiring for per-task and end-of-run checks, and an async Verification Report artifact with dismiss/reject harvested by pr-revise.",
+  "decisions": [
+    "Baseline is captured by replaying the same Check Spec against the feature branch's merge-base (not current main). Fallback when the base server cannot boot: pre-build snapshot of the working tree before the change is built.",
+    "Pixel diff (with heatmap) is a signal only, never a pass/fail gate. A vision model renders the Visual verdict.",
+    "Visual verdict values are expected, regression, unexpected, uncertain. 'as_intended' is not used.",
+    "Judging flow: zero-diff shortcut (diff under noise threshold and expected_visual_change none => expected, no model call); otherwise one Sonnet screener; any non-expected screener verdict goes to a 3-Sonnet-judge panel with 2-of-3 majority; no majority => uncertain. No Opus escalation.",
+    "Judge rubric is delta-only: flaws already present in the Baseline are not findings. It is for regressions and diff checks, not aesthetics.",
+    "Desktop regression blocks the task and feeds the judge rationale into the build-runner retry loop. Mobile regression is downgraded to needs_eyes. unexpected and uncertain become needs_eyes and never block. A failed behavior expect step always blocks.",
+    "Default viewports are desktop 1440x900 and mobile 390x844 for both SpawnedSapien and Quaestor-Web. Tablet only when a spec requests it. Dark mode only if the app supports it and the diff touches styles/tokens. Per-repo viewport override lives in repo-policy.json.",
+    "Auth uses a per-repo Auth Profile stored in claude-code-shared resources/repo-policy.json (browser_auth block), never in the target repo. Strategy order: project-owned auth setup, then API login, then scripted form login, then human-seeded session. Ship project-owned setup and API login now.",
+    "Shared tooling stores no credentials. Creds stay in the project's .env.local or macOS Keychain.",
+    "Auth state per Role is stored at ~/.cache/claude-browser-auth/<repo>/<role>.json with chmod 600.",
+    "A Freshness probe runs before every check; stale state regenerates; unrecoverable auth yields skipped: auth_expired, never a failure.",
+    "Auth Profiles support a Seed hook of pre-check calls so Baseline and Candidate render against identical data (e.g. Quaestor enable-all-feature-flags and setup-test-users-and-entities).",
+    "Quaestor-Web auth: TESTING_BYPASS_LOGIN endpoints (/user/setup-test-users-and-entities/, /user/authenticate-test-firm-user/, /user/authenticate-test-company-user/, /user/enable-all-feature-flags/). SpawnedSapien auth: existing tests/auth.setup.ts and tests/auth.admin.setup.ts with E2E_* creds in .env.local.",
+    "A browser check is defined by a declarative Check Spec (role, viewports, ordered steps: goto/click/fill/waitFor/capture/expect, masks, expected_visual_change) using role/text locators, executed by one deterministic shared script (browser-verify.mjs) identically against Baseline and Candidate. Agents no longer improvise check.mjs.",
+    "An Exploratory pass (live browser via chrome-devtools MCP) runs only on a failed step or uncertain verdict and produces diagnosis only, never a verdict.",
+    "Check Specs are ephemeral, live in excluded docs/browser-checks/ scaffolding, and are never committed or promoted to committed e2e tests.",
+    "Verification instrumentation never touches target repos (no committed specs, no in-repo auth config, no asset branches, no new CI jobs), consistent with repo-policy.json excludes.",
+    "The runner owns determinism: disabled animations, frozen clock, network idle wait, fonts loaded, and spec-declared masks for dynamic regions.",
+    "One Base server per build run serves the merge-base SHA from a fresh read-only worktree on an offset port, shared by all checks in the run, torn down at run end.",
+    "Baselines are cached keyed by (spec hash, base SHA, viewport, role) in ~/.cache/claude-browser-verify/.",
+    "Candidates are captured per task inside the build-runner loop; parallel worktrees each get their own candidate port and share the Base server.",
+    "A Final sweep re-runs every Check Spec from a build run against the final branch head at run end to catch cross-task regressions.",
+    "Two coverage triggers: Planned checks authored by to-tasks from seed intent, and Derived checks produced after TDD passes when the diff touches FE files or API response shape and no Planned check exists.",
+    "Derived checks are authored by an Opus-tier agent (check-spec-deriver). Their expected_visual_change is unknown, so any visible change resolves to needs_eyes.",
+    "Derived checks map changed files to routes (Sapien Vite router, Quaestor Next app/pages dirs), cap at 3 routes per shared component, and list the rest as Unchecked consumers in the report.",
+    "Backend-only diffs get no check, except API serializer/response-shape changes, which derive a check on the consuming page.",
+    "Evidence retention is fixed (no flags): expected with expected_visual_change none is discarded; expected with intentional change, unexpected, uncertain, and regression are kept.",
+    "Results stream into one private Verification Report artifact per build run, created at run start and filled live. needs_eyes items are listed first. The run never pauses for review.",
+    "Report actions are dismiss and reject-with-note only, stored in the artifact DB. Rejects are harvested by pr-revise as an additional feedback source alongside PR comments.",
+    "No /verify-publish skill. Publication is automatic at build-code run end: every kept Baseline/Candidate pair plus a paste-ready pr-snippet.md is written to docs/visual-changes/<branch-slug>/ with numbered filenames. The user attaches images to the PR manually.",
+    "docs/visual-changes/ is added to the exclude list of all 4 repos in repo-policy.json. clean-scaffolding deletes a branch's docs/visual-changes/ folder (no archive) once its PR is merged.",
+    "The PR body gets a one-line verification summary (e.g. '5 expected, 2 needs_eyes').",
+    "No /verify-ui skill. debug spawns the refactored browser-checker directly with a Check Spec.",
+    "No opt-in flags or modes (no --attended, no --evidence always).",
+    "Tiers: browser-checker Haiku, visual-judge Sonnet, check-spec-deriver Opus, browser-explorer Sonnet.",
+    "browser-checker takes a verify host input; only local is implemented now. The seam exists for a later amp-orb host.",
+    "Build order: Phase 1 core loop, then a validation gate, then Phase 2. All in this one effort.",
+    "Validation gate: run the toolchain on a real feature branch in SpawnedSapien and in Quaestor-Web locally. Pass = auth works for 2+ roles, before/after pairs are produced, judge verdicts look sane, report renders. Phase 2 starts only after it passes. No unit tests for the infra scripts; real-app validation replaces them.",
+    "e2e-runner and to-e2e-tasks are left untouched as a separate committed-e2e path."
+  ],
+  "implementation_decisions": [
+    "Phase 1 new scripts in claude-code-shared/scripts/: browser-auth.py (ensure --repo --role), browser-verify.mjs (run --spec --base-url --state --out; captures, pixelmatch diff + heatmap, console errors, manifest JSON), base-server.sh (up|down; merge-base worktree, offset port e.g. 5173->6173, health poll, reuses repo-policy worktree_links for env files), baseline-cache.py (get|put).",
+    "Phase 1 new contracts (md + schema): check-spec, visual-verdict, and browser-check-result bumped to v2 (capture pairs, diff ratios, step results, console errors).",
+    "Phase 1 new agent: agents/visual-judge.md (Sonnet), registered in agents/registry.json and resources/model-tiers.json.",
+    "Phase 1 edits: browser-checker rewrite (orchestrates scripts, returns v2, stays Haiku); build-runner step 4 (checker, screener, panel, mobile downgrade, needs_eyes, regression rationale into retry loop); build-code (auth ensure, base server up/down, report artifact create, Publication, PR summary line, needs_eyes status handling); to-tasks writes a full Check Spec into browser_verify; task contract browser_verify becomes check-spec and gains needs_eyes status; repo-policy.json excludes + browser_auth + viewports blocks; app-launch-detection.md storageState discovery replaced by browser-auth.py plus base port offset rule; debug uses Check Spec and v2 contract; Verification Report artifact template in resources/ with DB capability.",
+    "Phase 2: agents/check-spec-deriver.md (Opus), agents/browser-explorer.md (Sonnet + chrome-devtools MCP), build-runner wiring for both, build-code Final sweep, pr-revise reject harvest from the report DB, clean-scaffolding delete-on-merge for docs/visual-changes/, registry and model-tiers sync for the new agents.",
+    "Quaestor-Web local dev: Django backend 127.0.0.1:8000, Next.js frontend; existing state file client/playwright/.auth/user.json. SpawnedSapien: Vite 5173, Supabase cloud, state in playwright/.auth/user.json and admin.json."
+  ],
+  "testing_decisions": [
+    "No unit tests for claude-code-shared scripts/agents (user rule). Validation is a real-app gate on SpawnedSapien and Quaestor-Web feature branches between Phase 1 and Phase 2."
+  ],
+  "risks_and_tradeoffs": [
+    "Two app servers per run (Base + Candidate) plus up to 4 parallel candidate ports increases local resource use, especially for Quaestor's Django + Next stack.",
+    "Final sweep adds run time; accepted because it is the only cross-task regression catch.",
+    "Derived-check file-to-route mapping may miss consumers beyond the 3-route cap; mitigated by listing Unchecked consumers.",
+    "Mask lists must be maintained in specs for dynamic regions or the diff becomes noise.",
+    "Artifact publishing from an unattended build-code run may hit permission prompts; not verified in this session."
+  ],
+  "deferred": [
+    {
+      "text": "Amp orb verify host for Quaestor-Web (amp-verify.sh adapter: fresh Base orb at merge-base per run, candidate orb per branch, amp threads continue -ox with --stream-json, amp sync results back).",
+      "rationale": "User wants the local toolchain validated first. Amp docs leave code delivery, prompt-driven execution, script delivery, and amp sync scope unverified; amp CLI not installed locally.",
+      "context": "Quaestor-Web already has team-maintained orb config in .agents/ (setup, resume, orb, ensure, docker pulling amp-orb-ecr:Quaestor-Web-Dev). Start with a 1-2 hour spike to answer the four unknowns. Base orb must be fresh per run, never long-lived.",
+      "source_seed": null
+    },
+    {
+      "text": "Claude Code cloud environment recipe for SpawnedSapien and offloading sprout-seed to cloud.",
+      "rationale": "Deferred until the local toolchain is validated.",
+      "context": "Claude cloud env: 4 vCPU/16 GB, Docker available, setup scripts cached, env vars visible to environment users. Sapien stack is light (Vite + Supabase cloud).",
+      "source_seed": null
+    },
+    {
+      "text": "Scripted form login and human-seeded SSO session auth strategies.",
+      "rationale": "Both current apps bypass SSO via project-owned setup; build only when an app needs them.",
+      "context": "Form login uses selectors plus Keychain creds; human-seeded uses playwright open --save-storage with re-prompt on expiry.",
+      "source_seed": null
+    }
+  ],
+  "out_of_scope": [
+    {
+      "text": "Promoting Check Specs to committed .spec.ts tests.",
+      "rationale": "Violates no-instrumentation-in-target-repos rule (ADR-0003)."
+    },
+    {
+      "text": "Per-repo .claude/browser-auth.json in target repos.",
+      "rationale": "Instrumentation in repo; Auth Profiles live in repo-policy.json."
+    },
+    {
+      "text": "Orphan verification-assets branch or secret gist for PR images, and browser-automated GitHub image upload.",
+      "rationale": "User attaches images manually from docs/visual-changes/."
+    },
+    {
+      "text": "Nightly drift routine and a new SpawnedSapien CI job.",
+      "rationale": "Require persisted specs or CI files in the repo."
+    },
+    {
+      "text": "/verify-ui and /verify-publish skills.",
+      "rationale": "User will not use ad hoc verify; publication is automatic and rejects flow through pr-revise."
+    },
+    {
+      "text": "Opt-in flags such as --attended or --evidence always, and an inline attended review gate.",
+      "rationale": "User never passes flags; runs stay unattended."
+    },
+    {
+      "text": "Committed golden screenshots and pixel-threshold pass/fail.",
+      "rationale": "Churn, flakiness, and cannot distinguish intent (ADR-0004)."
+    },
+    {
+      "text": "Aesthetic judging.",
+      "rationale": "Checks are for regressions and diffs only."
+    }
+  ],
+  "success_metrics": [
+    "Validation gate passes on a real feature branch in both SpawnedSapien and Quaestor-Web: auth for 2+ roles, before/after pairs produced, sane verdicts, report renders."
+  ],
+  "further_notes": [
+    "Glossary terms recorded in claude-code-shared/CONTEXT.md: Baseline, Candidate, Visual diff, Visual verdict, Check Spec, Planned check, Derived check, Unchecked consumer, Exploratory pass, Verification Report, needs_eyes, Publication, Base server, Verify host, Final sweep, Auth Profile, Role, Freshness probe, Seed hook.",
+    "ADRs: claude-code-shared/docs/adr/0003 (instrumentation stays out of target repos), 0004 (visual verdict is a judged delta), 0005 (browser auth is project-owned first)."
+  ],
+  "open_threads": [],
+  "disposed_threads": [],
+  "next_action": "Run /to-tasks on this seed to slice Phase 1, the validation gate, and Phase 2 into build-code tasks.",
+  "status": "ready",
+  "verification": {
+    "iteration": 1,
+    "personas": [
+      "grounding",
+      "accuracy",
+      "completeness",
+      "coherence"
+    ],
+    "refutations_upheld": 0,
+    "refutations_screened": 0,
+    "clean": true,
+    "status": "verified"
+  }
+}
