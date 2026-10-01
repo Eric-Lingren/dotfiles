@@ -18,6 +18,11 @@ The caller passes all context in the prompt. Expect:
 - `project_root` — absolute path to the project root.
 - `tooling_manifest` — JSON array from `detect_tooling.py`, one entry per workspace with resolved lint/format/typecheck/test/test_affected/e2e commands. Pre-computed once by build-code. Do not re-run detection.
 - `wave_base` — SHA of the shared branch tip. Your worktree must start from it.
+- `base_server_url` — URL of the shared base server (merge-base SHA) started by build-code (e.g. `http://localhost:6173`). Present only when the run has tasks with `browser_verify`.
+- `repo` — Org/Repo string for the target repo (e.g. `Eric-Lingren/SpawnedSapien`). Passed from build-code. Present when `base_server_url` is present.
+- `run_dir` — absolute path to the run's artifact directory created by build-code (e.g. `/Users/eric/project/docs/browser-checks/20260930-1200-<branch>/`). Present when `base_server_url` is present.
+- `base_sha` — merge-base SHA for baseline cache keying. Passed from build-code. Present when `base_server_url` is present.
+- `report_artifact_id` — ID of the Verification Report artifact created by build-code at run start. Used to stream capture results. May be absent if no Verification Report was created for this run.
 
 ## Git rules
 
@@ -140,17 +145,84 @@ If `/tdd` cannot complete (stuck, acceptance criteria unmeetable, blocked on mis
 
 ### 4. Browser verify (only when `task.browser_verify` is present)
 
-Follow `~/.dotfiles/claude-code-shared/resources/app-launch-detection.md` to resolve `start_command`, `base_url`, `storageState`, and the Playwright module location.
+`task.browser_verify` is a Check Spec object (`{role, viewports, steps, masks, expected_visual_change}`). If absent, skip this entire step.
 
-Check Playwright is available at that location (e.g. `npx playwright --version 2>/dev/null`). If the check fails, skip the rest of this step and start no server. Log `Browser check skipped: Playwright not installed` to the trace, with the install command `npm i -D @playwright/test && npx playwright install chromium`. This is a skip, not a failure. Status stays `"done"` if earlier steps passed.
+#### 4a. Resolve the candidate server
 
-Health-check the server (`curl -s -o /dev/null -w "%{http_code}" <base_url>`). Start it via `start_command` (background) if it's not already up, polling until healthy (60s cap). Track whether you started it.
+Follow `~/.dotfiles/claude-code-shared/resources/app-launch-detection.md` to resolve `start_command` and `base_url` for the candidate (this worktree's build). Do **not** resolve `storageState` here — auth is handled inside browser-checker via `browser-auth.py`.
 
-Spawn `browser-checker` (Agent tool) with `base_url`, `url_path`, `assertions`, `storageState`, the Playwright module location, a `run_slug` derived from the task id, and `cwd`. Cap at 3 attempts; bail on no-progress (two consecutive identical failing assertions) or after 3 attempts.
+Health-check the candidate server (`curl -s -o /dev/null -w "%{http_code}" <base_url>`). Start it via `start_command` (background) if it is not already up, polling until healthy (60s cap). Track whether you started it.
 
-Log every attempt and result to the trace. If you started the server, tear it down when this step finishes (pass or fail).
+#### 4b. Spawn browser-checker (retry loop)
 
-On failure or cap: stop. Return a receipt with `status: "failed"`.
+Spawn `browser-checker` (Agent tool) with:
+
+- `spec` — `task.browser_verify` (the Check Spec object)
+- `base_url` — candidate server URL from 4a
+- `base_server_url` — passed from build-code
+- `repo` — passed from build-code
+- `run_dir` — passed from build-code
+- `base_sha` — passed from build-code
+
+Retry up to **3 total attempts**. Bail early if two consecutive attempts produce identical failures (same failing step `description` and `detail` in `step_results[]`).
+
+- **`status: "skipped"`** — log the `skipped_reason` and continue without failing the task. Status stays `"done"` if earlier steps passed.
+- **`status: "fail"` (failed expect step)** — extract the failing step's `description` and `detail` from `step_results[]`. If this failure is identical to the previous attempt, stop. Otherwise, feed the failure detail as fix context into the next attempt's prompt. After 3 failed attempts, tear down the server (if you started it) and return `status: "failed"`.
+- **`status: "pass"`** — proceed to 4c.
+
+#### 4c. Visual verdict
+
+For each entry in `captures[]`:
+
+**Zero-diff shortcut:** if `diff_ratio` is `0` (or `null`) **and** `task.browser_verify.expected_visual_change` is `"none"`, skip the judge call. The capture's verdict is auto-`expected` with no model call.
+
+Otherwise:
+
+1. Spawn `visual-judge` (Agent tool) once with `mode: "screener"`, passing: `baseline_path` (= `capture.baseline_png`), `candidate_path` (= `capture.candidate_png`), `diff_heatmap_path` (= `capture.diff_heatmap`), `intent` (= `task.browser_verify.expected_visual_change`), `viewport` (= `capture.viewport`), `capture_ref` (= `capture.name`).
+2. If the screener verdict is `expected`: capture verdict is `expected`. Done for this capture.
+3. If the screener verdict is `regression`, `unexpected`, or `uncertain`: spawn **3 `visual-judge` panel instances in a single parallel Agent call**, all with `mode: "panel"` and the same image inputs. Collect the 3 returned `panel_votes[0]` entries. Count votes per verdict value:
+   - If one verdict value appears 2 or 3 times: that value is the final verdict.
+   - If all three votes differ (three-way split): final verdict is `uncertain`.
+   - Build the final visual-verdict JSON with `panel_votes[]` containing all 3 votes and a `rationale` taken from the majority voters.
+
+#### 4d. Route verdicts
+
+For each capture's final visual verdict:
+
+| Viewport | Verdict | Action |
+|---|---|---|
+| any | `expected` | Continue. |
+| `desktop` | `regression` | Feeds judge `rationale` as fix context into the next browser-checker attempt (restart from 4b). If this is the 3rd attempt or the failure repeats, tear down the server and return `status: "failed"`. |
+| `mobile` | `regression` | Downgrade to `needs_eyes`. Do not block or retry. |
+| any | `unexpected` | `needs_eyes`. Do not block or retry. |
+| any | `uncertain` | `needs_eyes`. Do not block or retry. |
+
+If any capture is routed to `needs_eyes`, the task receipt status becomes `"needs_eyes"`. A `needs_eyes` task does not block continuation; build-code proceeds to the next task.
+
+#### 4e. Post to Verification Report
+
+For each capture, write a record to the run's Verification Report artifact DB using `report_artifact_id` (passed from build-code):
+
+```json
+{
+  "task_id": "<task.id>",
+  "spec_role": "<spec.role>",
+  "capture_ref": "<capture.name>",
+  "viewport": "<capture.viewport>",
+  "baseline_png": "<capture.baseline_png>",
+  "candidate_png": "<capture.candidate_png>",
+  "diff_heatmap": "<capture.diff_heatmap>",
+  "diff_ratio": <capture.diff_ratio>,
+  "verdict": "<final verdict or 'skipped'>",
+  "rationale": "<judge rationale, skipped_reason, or 'zero-diff auto-pass'>"
+}
+```
+
+Write via `db.collection("verification_captures").doc("<task.id>-<capture.name>-<capture.viewport>").set(...)`. If `report_artifact_id` was not passed, skip this write silently.
+
+Log every attempt, verdict, and DB write to the trace.
+
+Tear down the candidate server if you started it in 4a.
 
 ### 5. Build and return the receipt
 
@@ -168,7 +240,7 @@ Append a closing summary section to the trace log, then return ONLY this JSON (n
 }
 ```
 
-- `status`: `"done"` on success, `"failed"` if any step above returned failed.
+- `status`: `"done"` on success, `"failed"` if any step above returned failed, `"needs_eyes"` if step 4 routed one or more captures to `needs_eyes` and no capture caused a failure.
 - `summary`: if step 4 was skipped for missing Playwright, end with `Browser check skipped: Playwright not installed. Install: npm i -D @playwright/test && npx playwright install chromium.`
 - `pr`: always `null` — build-runner never opens PRs; the caller handles that at end-of-run.
 - `follow_ups`: irreducible human-only actions discovered while touching this task's diff, in the same shape as the task file's `follow_ups` array items (`id` omitted — the caller assigns it). Empty array if none. Apply the same discovery rules build-code has always used: never emit a follow-up for testing, verification, QA, cleanup, or anything AFK-doable.
