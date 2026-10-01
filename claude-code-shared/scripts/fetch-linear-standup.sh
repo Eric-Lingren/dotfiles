@@ -11,7 +11,7 @@
 #   2. Source ~/.dotfiles/local/secrets.env
 #   3. Exit with a setup hint
 #
-# Output: JSON array of {id, key, title, status, url, parentKey, epicKey} to stdout.
+# Output: JSON array of {id, key, title, status, url, parentKey, epicKey, projectName} to stdout.
 # Errors go to stderr. LINEAR_API_KEY is never printed or written.
 
 set -euo pipefail
@@ -118,6 +118,7 @@ gql = '''
       title
       state { name }
       url
+      project { name }
       parent {
         identifier
         parent { identifier }
@@ -154,6 +155,7 @@ gql = '''
       title
       state { name }
       url
+      project { name }
       parent {
         identifier
         parent { identifier }
@@ -187,6 +189,7 @@ for n in nodes:
         'url': n.get('url', ''),
         'parentKey': parent.get('identifier') or None,
         'epicKey': grandparent.get('identifier') or None,
+        'projectName': (n.get('project') or {}).get('name') or None,
     })
 json.dump(results, sys.stdout, indent=2)
 print()

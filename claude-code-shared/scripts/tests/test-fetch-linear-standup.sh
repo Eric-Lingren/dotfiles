@@ -61,6 +61,7 @@ cat > "$FIXTURE_DIR/cycle_issues_response.json" << 'EOF'
     "title":"Fix login bug",
     "state":{"name":"In Progress"},
     "url":"https://linear.app/test/issue/KEY-10",
+    "project":{"name":"Auth Improvements"},
     "parent":{"identifier":"KEY-5","parent":{"identifier":"KEY-1"}}
   },
   {
@@ -69,6 +70,7 @@ cat > "$FIXTURE_DIR/cycle_issues_response.json" << 'EOF'
     "title":"Add dark mode",
     "state":{"name":"Todo"},
     "url":"https://linear.app/test/issue/KEY-11",
+    "project":null,
     "parent":null
   }
 ]}}}
@@ -265,19 +267,19 @@ with open(sys.argv[1]) as f:
 assert isinstance(items, list), f"Expected list, got {type(items)}"
 assert len(items) >= 1, f"Expected at least 1 item, got {len(items)}"
 
-required_keys = {"id", "key", "title", "status", "url", "parentKey", "epicKey"}
+required_keys = {"id", "key", "title", "status", "url", "parentKey", "epicKey", "projectName"}
 for item in items:
     missing = required_keys - set(item.keys())
     assert not missing, f"Item missing fields: {missing}. Item: {item}"
-    # parentKey and epicKey may be None/null — that is valid
+    # parentKey, epicKey, projectName may be None/null — that is valid
 
 print("Shape check passed")
 print(f"  Items: {len(items)}")
 for item in items:
-    print(f"  {item['key']}: {item['title'][:40]!r} status={item['status']!r} parentKey={item['parentKey']!r} epicKey={item['epicKey']!r}")
+    print(f"  {item['key']}: {item['title'][:40]!r} status={item['status']!r} parentKey={item['parentKey']!r} epicKey={item['epicKey']!r} projectName={item['projectName']!r}")
 PYEOF
 if [[ $? -eq 0 ]]; then
-  assert_pass "Test 5: all items have required fields {id, key, title, status, url, parentKey, epicKey}"
+  assert_pass "Test 5: all items have required fields {id, key, title, status, url, parentKey, epicKey, projectName}"
 else
   assert_fail "Test 5: shape check failed"
 fi
@@ -295,15 +297,17 @@ assert item0['status'] == 'In Progress', f"status mismatch: {item0['status']}"
 assert item0['url'] == 'https://linear.app/test/issue/KEY-10', f"url mismatch: {item0['url']}"
 assert item0['parentKey'] == 'KEY-5', f"parentKey mismatch: {item0['parentKey']}"
 assert item0['epicKey'] == 'KEY-1', f"epicKey mismatch: {item0['epicKey']}"
+assert item0['projectName'] == 'Auth Improvements', f"projectName mismatch: {item0['projectName']}"
 
 item1 = next(i for i in items if i['key'] == 'KEY-11')
 assert item1['parentKey'] is None, f"parentKey should be None: {item1['parentKey']}"
 assert item1['epicKey'] is None, f"epicKey should be None: {item1['epicKey']}"
+assert item1['projectName'] is None, f"projectName should be None (project null): {item1['projectName']}"
 
 print("Field value check passed")
 PYEOF
 if [[ $? -eq 0 ]]; then
-  assert_pass "Test 5: field values match fixture data"
+  assert_pass "Test 5: field values match fixture data (including projectName)"
 else
   assert_fail "Test 5: field values do not match fixture"
 fi

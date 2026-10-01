@@ -21,6 +21,15 @@ trap 'rm -rf "$TMP"' EXIT
 assert_pass() { echo "  PASS: $1"; PASS=$((PASS + 1)); }
 assert_fail() { echo "  FAIL: $1"; FAIL=$((FAIL + 1)); }
 
+assert_eq() {
+  local actual="$1" expected="$2" desc="$3"
+  if [ "$actual" = "$expected" ]; then
+    assert_pass "$desc"
+  else
+    assert_fail "$desc (expected '$expected', got '$actual')"
+  fi
+}
+
 assert_contains() {
   local text="$1" pattern="$2" desc="$3"
   if echo "$text" | grep -q "$pattern"; then
@@ -117,9 +126,9 @@ FIELDS_CHECK=$(echo "$OUT2" | python3 -c "
 import json, sys
 d = json.load(sys.stdin)
 prs = d.get('prs', [])
-required = ['number','title','body','headRefName','state','isDraft',
+required = ['number','title','body','headRefName','url','state','isDraft',
             'createdAt','updatedAt','mergedAt','reviews','reviewRequests',
-            'ciRollup','unresolvedThreadCount']
+            'reviewers','ciRollup','unresolvedThreadCount']
 pr = prs[0]
 missing = [f for f in required if f not in pr]
 if missing:
@@ -177,6 +186,85 @@ fi
 
 # Check it contains 'carol'
 assert_contains "$OUT2" '"carol"' "reviewRequests contains requested reviewer carol"
+
+# --- Test 6b: url field present ---
+echo ""
+echo "=== T6b: url field ==="
+URL_CHECK=$(echo "$OUT2" | python3 -c "
+import json, sys
+d = json.load(sys.stdin)
+prs = d.get('prs', [])
+for pr in prs:
+    if 'url' not in pr:
+        print('MISSING_URL on PR ' + str(pr['number']))
+        sys.exit(0)
+print('OK')
+")
+if [ "$URL_CHECK" = "OK" ]; then
+  assert_pass "url field present on all PR objects"
+else
+  assert_fail "url field check failed: $URL_CHECK"
+fi
+
+# PR 101 url
+PR101_URL=$(echo "$OUT2" | python3 -c "
+import json, sys
+d = json.load(sys.stdin)
+pr = next(p for p in d['prs'] if p['number'] == 101)
+print(pr['url'])
+")
+assert_contains "$PR101_URL" "pull/101" "PR 101 url contains pull/101"
+
+# --- Test 6c: reviewers field ---
+echo ""
+echo "=== T6c: reviewers field ==="
+REVIEWERS_CHECK=$(echo "$OUT2" | python3 -c "
+import json, sys
+d = json.load(sys.stdin)
+prs = d.get('prs', [])
+for pr in prs:
+    if 'reviewers' not in pr:
+        print('MISSING_reviewers on PR ' + str(pr['number']))
+        sys.exit(0)
+    if not isinstance(pr['reviewers'], list):
+        print('NOT_LIST on PR ' + str(pr['number']))
+        sys.exit(0)
+print('OK')
+")
+if [ "$REVIEWERS_CHECK" = "OK" ]; then
+  assert_pass "reviewers field present and is list on all PRs"
+else
+  assert_fail "reviewers field check failed: $REVIEWERS_CHECK"
+fi
+
+# PR 101 has reviews from alice and bob, plus reviewRequest for carol
+PR101_REVIEWERS=$(echo "$OUT2" | python3 -c "
+import json, sys
+d = json.load(sys.stdin)
+pr = next(p for p in d['prs'] if p['number'] == 101)
+print(sorted(pr['reviewers']))
+")
+assert_contains "$PR101_REVIEWERS" "alice" "PR 101 reviewers includes alice"
+assert_contains "$PR101_REVIEWERS" "bob" "PR 101 reviewers includes bob"
+assert_contains "$PR101_REVIEWERS" "carol" "PR 101 reviewers includes carol (from reviewRequests)"
+
+# PR 102 has only alice as reviewer
+PR102_REVIEWERS=$(echo "$OUT2" | python3 -c "
+import json, sys
+d = json.load(sys.stdin)
+pr = next(p for p in d['prs'] if p['number'] == 102)
+print(pr['reviewers'])
+")
+assert_eq "$PR102_REVIEWERS" "['alice']" "PR 102 reviewers = ['alice']"
+
+# PR 103 (draft) has no reviewers
+PR103_REVIEWERS=$(echo "$OUT2" | python3 -c "
+import json, sys
+d = json.load(sys.stdin)
+pr = next(p for p in d['prs'] if p['number'] == 103)
+print(pr['reviewers'])
+")
+assert_eq "$PR103_REVIEWERS" "[]" "PR 103 (draft, no reviews) reviewers = []"
 
 # --- Test 7: ciRollup values ---
 echo ""

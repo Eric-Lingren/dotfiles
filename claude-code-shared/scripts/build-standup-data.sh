@@ -283,6 +283,7 @@ def pr_summary(pr, bucket=None):
         "number": pr["number"],
         "title": pr.get("title") or "",
         "headRefName": pr.get("headRefName") or "",
+        "url": pr.get("url") or "",
         "state": pr.get("state") or "",
         "ciRollup": pr.get("ciRollup"),
         "unresolvedThreadCount": pr.get("unresolvedThreadCount"),
@@ -291,6 +292,7 @@ def pr_summary(pr, bucket=None):
         "updatedAt": pr.get("updatedAt"),
         "mergedAt": pr.get("mergedAt"),
         "age_tag": age_tag(pr),
+        "reviewers": pr.get("reviewers") or [],
     }
     if bucket:
         out["bucket"] = bucket
@@ -309,6 +311,7 @@ def ticket_summary(tkey):
         "url": t["url"],
         "parentKey": t.get("parentKey"),
         "epicKey": t.get("epicKey"),
+        "projectName": t.get("projectName") or None,
     }
 
 # Group: buckets for open non-draft PRs

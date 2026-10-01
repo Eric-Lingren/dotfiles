@@ -553,6 +553,102 @@ else
   assert_fail "should exit non-zero when linear_json not found (exited 0)"
 fi
 
+# --- Test 21: PR objects have url and reviewers fields ---
+echo ""
+echo "=== T21: PR url and reviewers passthrough ==="
+# PR 101 should have url from fixture and reviewers=["alice"]
+PR101_URL=$(echo "$OUT" | python3 -c "
+import json, sys
+d = json.load(sys.stdin)
+for group in d['in_review']:
+    for pr in group['prs']:
+        if pr['number'] == 101:
+            print(pr.get('url', 'MISSING'))
+            sys.exit(0)
+print('NOT_FOUND')
+")
+assert_contains "$PR101_URL" "pull/101" "PR 101 url passed through from github fixture"
+
+PR101_REVIEWERS=$(echo "$OUT" | python3 -c "
+import json, sys
+d = json.load(sys.stdin)
+for group in d['in_review']:
+    for pr in group['prs']:
+        if pr['number'] == 101:
+            print(sorted(pr.get('reviewers', [])))
+            sys.exit(0)
+print('NOT_FOUND')
+")
+assert_contains "$PR101_REVIEWERS" "alice" "PR 101 reviewers includes alice"
+
+# PR 106 reviewers=["dave"] (reviewRequests only)
+PR106_REVIEWERS=$(echo "$OUT" | python3 -c "
+import json, sys
+d = json.load(sys.stdin)
+for group in d['in_review']:
+    for pr in group['prs']:
+        if pr['number'] == 106:
+            print(pr.get('reviewers', []))
+            sys.exit(0)
+print('NOT_FOUND')
+")
+assert_contains "$PR106_REVIEWERS" "dave" "PR 106 reviewers includes dave (from reviewRequests)"
+
+# PR 105 (done_new) reviewers=["carol"]
+PR105_REVIEWERS=$(echo "$OUT" | python3 -c "
+import json, sys
+d = json.load(sys.stdin)
+for group in d['done_new']:
+    for pr in group['prs']:
+        if pr['number'] == 105:
+            print(pr.get('reviewers', []))
+            sys.exit(0)
+print('NOT_FOUND')
+")
+assert_contains "$PR105_REVIEWERS" "carol" "PR 105 (done_new) reviewers includes carol"
+
+# --- Test 22: ticket objects have projectName field ---
+echo ""
+echo "=== T22: ticket projectName passthrough ==="
+# SM-3008 has projectName="Platform Reliability"
+SM3008_PROJECT=$(echo "$OUT" | python3 -c "
+import json, sys
+d = json.load(sys.stdin)
+for group in d['in_review']:
+    t = group['ticket']
+    if t and t.get('key') == 'SM-3008':
+        print(t.get('projectName', 'MISSING'))
+        sys.exit(0)
+print('NOT_FOUND')
+")
+assert_eq "$SM3008_PROJECT" "Platform Reliability" "SM-3008 ticket has projectName=Platform Reliability"
+
+# SM-3009 has projectName=null
+SM3009_PROJECT=$(echo "$OUT" | python3 -c "
+import json, sys
+d = json.load(sys.stdin)
+for group in d['done_new']:
+    t = group['ticket']
+    if t and t.get('key') == 'SM-3009':
+        print(t.get('projectName'))
+        sys.exit(0)
+print('NOT_FOUND')
+")
+assert_eq "$SM3009_PROJECT" "None" "SM-3009 ticket has projectName=null"
+
+# SM-3011 (done_new) has projectName="Platform Reliability"
+SM3011_PROJECT=$(echo "$OUT" | python3 -c "
+import json, sys
+d = json.load(sys.stdin)
+for group in d['done_new']:
+    t = group['ticket']
+    if t and t.get('key') == 'SM-3011':
+        print(t.get('projectName', 'MISSING'))
+        sys.exit(0)
+print('NOT_FOUND')
+")
+assert_eq "$SM3011_PROJECT" "Platform Reliability" "SM-3011 (done_new) ticket has projectName=Platform Reliability"
+
 # --- Results ---
 echo ""
 echo "Results: $PASS passed, $FAIL failed"

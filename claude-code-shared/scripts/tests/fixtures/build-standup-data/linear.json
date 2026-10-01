@@ -6,7 +6,8 @@
     "status": "In Progress",
     "url": "https://linear.app/sm/issue/SM-3008",
     "parentKey": null,
-    "epicKey": "SM-3000"
+    "epicKey": "SM-3000",
+    "projectName": "Platform Reliability"
   },
   {
     "id": "uuid-3009",
@@ -15,7 +16,8 @@
     "status": "In Progress",
     "url": "https://linear.app/sm/issue/SM-3009",
     "parentKey": null,
-    "epicKey": null
+    "epicKey": null,
+    "projectName": null
   },
   {
     "id": "uuid-3010",
@@ -24,7 +26,8 @@
     "status": "In Progress",
     "url": "https://linear.app/sm/issue/SM-3010",
     "parentKey": null,
-    "epicKey": null
+    "epicKey": null,
+    "projectName": null
   },
   {
     "id": "uuid-3011",
@@ -33,7 +36,8 @@
     "status": "Done",
     "url": "https://linear.app/sm/issue/SM-3011",
     "parentKey": null,
-    "epicKey": null
+    "epicKey": null,
+    "projectName": "Platform Reliability"
   },
   {
     "id": "uuid-3012",
@@ -42,7 +46,8 @@
     "status": "In Progress",
     "url": "https://linear.app/sm/issue/SM-3012",
     "parentKey": null,
-    "epicKey": null
+    "epicKey": null,
+    "projectName": null
   },
   {
     "id": "uuid-3013",
@@ -51,6 +56,7 @@
     "status": "In Progress",
     "url": "https://linear.app/sm/issue/SM-3013",
     "parentKey": null,
-    "epicKey": null
+    "epicKey": null,
+    "projectName": null
   }
 ]

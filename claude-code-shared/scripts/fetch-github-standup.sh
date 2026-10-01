@@ -5,8 +5,9 @@
 #   { "prs": [...], "key_ids": [...] }
 #
 # Each PR object includes:
-#   number, title, body, headRefName, state, isDraft,
+#   number, title, body, headRefName, url, state, isDraft,
 #   createdAt, updatedAt, mergedAt, reviews, reviewRequests,
+#   reviewers (deduped list of reviewer logins),
 #   ciRollup (success|failure|pending|none), unresolvedThreadCount (integer),
 #   changedFiles (integer)
 #
@@ -28,7 +29,7 @@ trap cleanup EXIT
 
 # --- 1. Fetch PR list ---
 
-GH_FIELDS="number,title,body,headRefName,state,isDraft,createdAt,updatedAt,mergedAt,reviews,reviewRequests,statusCheckRollup,changedFiles"
+GH_FIELDS="number,title,body,headRefName,url,state,isDraft,createdAt,updatedAt,mergedAt,reviews,reviewRequests,statusCheckRollup,changedFiles"
 
 if [ -n "${GH_PR_LIST_FIXTURE:-}" ]; then
   cp "$GH_PR_LIST_FIXTURE" "$TMP/pr_list.json"
@@ -132,11 +133,17 @@ for pr in pr_list:
         if login:
             review_requests.append(login)
 
+    # Deduped reviewer logins: review authors + requested reviewers
+    reviewer_logins = set(r["login"] for r in reviews if r.get("login"))
+    reviewer_logins.update(review_requests)
+    reviewers = sorted(reviewer_logins)
+
     prs_out.append({
         "number": pr.get("number"),
         "title": title,
         "body": pr.get("body") or "",
         "headRefName": branch,
+        "url": pr.get("url") or "",
         "state": pr.get("state") or "",
         "isDraft": bool(pr.get("isDraft", False)),
         "createdAt": pr.get("createdAt") or "",
@@ -144,6 +151,7 @@ for pr in pr_list:
         "mergedAt": pr.get("mergedAt"),
         "reviews": reviews,
         "reviewRequests": review_requests,
+        "reviewers": reviewers,
         "ciRollup": ci_rollup,
         "unresolvedThreadCount": unresolved_count,
         "changedFiles": pr.get("changedFiles")
