@@ -46,6 +46,68 @@ enforce or automate them.
   context-aware build), T4 = opus/xhigh (deep reasoning). `scripts/sync-model-tiers.py`
   is the only thing that should propagate tier changes into skill/agent frontmatter.
 
+## Browser verification glossary
+
+- **Baseline** — the "before" render of a route, captured by replaying the same
+  check against the feature branch's merge-base with the base branch (default) or, as fallback, against the working tree
+  before the change is built. A new route has no Baseline.
+  _Avoid_: golden, snapshot (unless meaning committed Playwright golden files).
+- **Candidate** — the "after" render of the same route and steps, captured on the
+  feature branch.
+- **Visual diff** — the pixel-level delta between Baseline and Candidate. A signal
+  fed to the judge, never a pass/fail gate on its own.
+- **Visual verdict** — a vision-model judgment of whether the Baseline→Candidate
+  change matches the intended change and nothing else regressed. One of `expected`,
+  `regression` (blocks), `unexpected`, or `uncertain` (both flag `needs_eyes`).
+  Decided by a single screener judge; any non-`expected` screener result goes to a
+  3-judge panel, 2-of-3 majority, no majority means `uncertain`. Judges the delta
+  only, never aesthetics: flaws already present in the Baseline are not findings.
+  Mobile-viewport `regression` is advisory (downgraded to `needs_eyes`); only desktop
+  `regression` blocks.
+  _Avoid_: as_intended, pass (for visual outcomes).
+- **Check Spec** — the declarative, repeatable definition of one browser check: Role,
+  viewports, and ordered steps (navigate, interact, capture, expect). Executed
+  identically against Baseline and Candidate by a deterministic runner. Ephemeral:
+  lives in excluded scaffolding, never committed to the target repo.
+  _Avoid_: assertions (as the whole check), check script.
+- **Planned check** — a Check Spec authored at planning time from seed intent.
+- **Derived check** — a Check Spec inferred (Opus tier) from an FE-touching or
+  response-shape-changing diff when no Planned check exists. Intent is unknown, so any
+  visible change resolves to `needs_eyes`, not `expected`.
+- **Unchecked consumer** — a route rendering a changed shared component beyond the
+  derivation cap; listed in the Verification Report, not checked.
+- **Exploratory pass** — a bounded, live-browser agent session run only to diagnose a
+  failed step or uncertain Visual verdict. Produces explanation, never a verdict.
+- **Verification Report** — one private artifact per build run showing Baseline,
+  Candidate, and Visual diff per capture with verdicts. Fills live during the run;
+  the reviewer can dismiss or reject (with a note) each capture. Never blocks the run.
+  Rejects are harvested by `pr-revise` as a feedback source alongside PR comments.
+- **needs_eyes** — task state for a check whose Visual verdict is `unexpected` or
+  `uncertain`. Awaits async review in the Verification Report; does not block.
+- **Publication** — automatic end-of-run export of every kept Baseline/Candidate pair
+  plus a paste-ready `## Visual changes` snippet to `docs/visual-changes/<branch-slug>/`
+  for manual attachment to the PR. Never pushed; deleted once the PR merges.
+- **Base server** — one fresh app instance serving the merge-base SHA, shared by every
+  check in a build run and discarded at run end. Source of all Baselines for that run.
+  Runs locally or in a fresh Amp orb, per the repo's verify host.
+- **Verify host** — where the app stack and browser run for checks: `local` or
+  `amp-orb`. Set per repo in `repo-policy.json`. Planning, judging, and the report
+  always stay local.
+- **Final sweep** — re-running every Check Spec from a build run against the final
+  branch head, to catch cross-task regressions per-task checks miss.
+- **Auth Profile** — per-repo declaration of how to obtain an authenticated browser
+  state for each Role. Strategy order: project-owned auth setup, then API login, then
+  scripted form login, then human-seeded session. Holds no secrets; creds stay with
+  the project (`.env.local`) or Keychain. Lives in dotfiles (`repo-policy.json`), never
+  in the target repo.
+- **Role** — a named identity an Auth Profile can produce state for (e.g. `admin`,
+  `firm`, `trial`). Each Role has its own storage state.
+- **Freshness probe** — a pre-run check that a Role's stored state still reaches a
+  protected page. Stale triggers regeneration; unrecoverable yields `skipped:
+  auth_expired`, never a failure.
+- **Seed hook** — pre-check calls an Auth Profile declares so Baseline and Candidate
+  render against identical data.
+
 ## Load-bearing invariants
 
 1. **Absolute-path script references.** Skills and agents must invoke shared scripts
