@@ -4,7 +4,7 @@
     "account": "cch",
     "base_branch": "main",
     "domain": "personal",
-    "exclude": ["docs/prototype/", "docs/browser-checks/", "docs/offload-output/", "docs/tasks/.sprout/", "docs/tasks/*-revisions-r*.json"]
+    "exclude": ["docs/prototype/", "docs/browser-checks/", "docs/offload-output/", "docs/tasks/.sprout/", "docs/tasks/*-revisions-r*.json", "docs/visual-changes/"]
   },
   "Quaestor-Technologies/Quaestor-Web": {
     "label": "quaestor-web",
@@ -15,8 +15,29 @@
     "issue_tracker": "linear",
     "domain": "standard-metrics",
     "worktree_links": ["app/.env", "local_settings.py"],
-    "exclude": ["docs", "docs/adr/", "docs/prototype/", "docs/browser-checks/", "docs/seeds/", "docs/tasks/", "docs/handoffs/", "docs/prd/", "docs/archive/", "docs/offload-output/", ".gitignore"],
-    "ci": {"provider": "circleci", "project_slug": "gh/Quaestor-Technologies/Quaestor-Web"}
+    "exclude": ["docs", "docs/adr/", "docs/prototype/", "docs/browser-checks/", "docs/seeds/", "docs/tasks/", "docs/handoffs/", "docs/prd/", "docs/archive/", "docs/offload-output/", ".gitignore", "docs/visual-changes/"],
+    "ci": {"provider": "circleci", "project_slug": "gh/Quaestor-Technologies/Quaestor-Web"},
+    "verify_host": "local",
+    "browser_auth": {
+      "strategy": "project_setup",
+      "base_url": "http://127.0.0.1:8000",
+      "probe_url": "http://127.0.0.1:8000/",
+      "login_endpoint": [
+        "/user/setup-test-users-and-entities/",
+        "/user/authenticate-test-firm-user/",
+        "/user/authenticate-test-company-user/"
+      ],
+      "seed_hooks": [
+        "/user/enable-all-feature-flags/",
+        "/user/setup-test-users-and-entities/"
+      ],
+      "roles": ["firm", "company"],
+      "state_dir": "~/.cache/claude-browser-auth/quaestor-web"
+    },
+    "viewports": [
+      {"name": "desktop", "width": 1440, "height": 900},
+      {"name": "mobile", "width": 390, "height": 844}
+    ]
   },
   "Eric-Lingren/SpawnedSapien": {
     "label": "spawnedsapien",
@@ -26,13 +47,66 @@
     "pr_auto_create": true,
     "issue_tracker": "github",
     "worktree_links": [".env.local"],
-    "exclude": ["docs/prototype/", "docs/browser-checks/", "docs/offload-output/", "docs/tasks/.sprout/", "docs/tasks/*-revisions-r*.json"]
+    "exclude": ["docs/prototype/", "docs/browser-checks/", "docs/offload-output/", "docs/tasks/.sprout/", "docs/tasks/*-revisions-r*.json", "docs/visual-changes/"],
+    "verify_host": "local",
+    "browser_auth": {
+      "probe_url": "http://localhost:5173/",
+      "roles": {
+        "active": {
+          "strategy": "project_setup",
+          "playwright_projects": ["setup"],
+          "outputs": ["playwright/.auth/user.json"]
+        },
+        "admin": {
+          "strategy": "project_setup",
+          "playwright_projects": ["admin-setup"],
+          "outputs": ["playwright/.auth/admin.json"]
+        },
+        "trial": {
+          "strategy": "api_login",
+          "provider": "supabase",
+          "method": "signInWithPassword",
+          "email_env": "E2E_TRIAL_EMAIL",
+          "password_env": "E2E_TRIAL_PASSWORD",
+          "env_file": ".env.local"
+        },
+        "journeyman": {
+          "strategy": "api_login",
+          "provider": "supabase",
+          "method": "signInWithPassword",
+          "email_env": "E2E_JOURNEYMAN_EMAIL",
+          "password_env": "E2E_JOURNEYMAN_PASSWORD",
+          "env_file": ".env.local"
+        },
+        "craftsman": {
+          "strategy": "api_login",
+          "provider": "supabase",
+          "method": "signInWithPassword",
+          "email_env": "E2E_CRAFTSMAN_EMAIL",
+          "password_env": "E2E_CRAFTSMAN_PASSWORD",
+          "env_file": ".env.local"
+        },
+        "inactive": {
+          "strategy": "api_login",
+          "provider": "supabase",
+          "method": "signInWithPassword",
+          "email_env": "E2E_INACTIVE_EMAIL",
+          "password_env": "E2E_INACTIVE_PASSWORD",
+          "env_file": ".env.local"
+        }
+      },
+      "state_dir": "~/.cache/claude-browser-auth/spawnedsapien"
+    },
+    "viewports": [
+      {"name": "desktop", "width": 1440, "height": 900},
+      {"name": "mobile", "width": 390, "height": 844}
+    ]
   },
   "Eric-Lingren/ericlingren": {
     "label": "ericlingren",
     "account": "cch",
     "base_branch": "main",
     "domain": "personal",
-    "exclude": ["docs/browser-checks/", "docs/offload-output/", "docs/tasks/.sprout/", "docs/tasks/*-revisions-r*.json"]
+    "exclude": ["docs/browser-checks/", "docs/offload-output/", "docs/tasks/.sprout/", "docs/tasks/*-revisions-r*.json", "docs/visual-changes/"]
   }
 }

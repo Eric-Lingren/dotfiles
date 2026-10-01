@@ -1,6 +1,6 @@
 ---
 name: app-launch-detection
-description: Ordered discovery rules for launch context (start_command, base_url, storageState, Playwright module) used by run-tasks and debug before spawning the browser-checker agent.
+description: Ordered discovery rules for launch context (start_command, base_url, storageState, Playwright module, base server port) used by run-tasks and debug before spawning the browser-checker agent.
 ---
 
 # App Launch Detection
@@ -9,12 +9,13 @@ All skills that spawn the browser-checker agent reference this document. Do not 
 
 ## Purpose
 
-Before spawning the browser-checker agent, the calling skill (run-tasks, debug) must resolve four pieces of launch context:
+Before spawning the browser-checker agent, the calling skill (run-tasks, debug) must resolve five pieces of launch context:
 
 1. `start_command` — how to start the dev server
 2. `base_url` — where the app listens
-3. `storageState` path — pre-authenticated browser state, or none
+3. `storageState` path — pre-authenticated browser state via browser-auth.py
 4. Playwright module location — project-local, global, or unavailable
+5. Base server port offset — where to run the merge-base server when baseline comparison is needed
 
 Resolve each in the order listed below. Stop at the first successful match.
 
@@ -52,15 +53,24 @@ Ordered discovery:
 
 ## 3. storageState path
 
-Ordered discovery:
+Storage state is always obtained via `scripts/browser-auth.py`. Do not probe filesystem paths directly.
 
-1. **`playwright.config.*`** — read `use.storageState` from the project Playwright config.
-2. **Admin path detection** — if `url_path` starts with `/admin` (e.g. `/admin/research/...`), check `playwright/.auth/admin.json` first. If it exists, use it. Skip to step 3 on miss.
-3. **Known auth-state files** — check these paths in order:
-   - `playwright/.auth/user.json`
-   - `.auth/storage-state.json`
-   - `e2e/.auth/user.json`
-4. **Not found** → run unauthenticated. Report in the check result: `"Auth: unauthenticated (no storageState found)"`. Do not block.
+The `role` comes from the Check Spec's `role` field (e.g. `admin`, `firm`, `anonymous`). For `anonymous` checks, skip this step — no storage state is needed.
+
+For all other roles, run:
+
+```bash
+python3 ~/.dotfiles/claude-code-shared/scripts/browser-auth.py ensure \
+  --repo "<Org/Repo>" \
+  --role "<role>"
+```
+
+Available roles and their auth strategies are declared in `resources/repo-policy.json` under `browser_auth` for each repo.
+
+- **Exit 0:** stdout is the absolute path to the storage state JSON file. Pass this path as `storageState` to the browser-checker agent.
+- **Exit 1:** stderr contains `SKIPPED: <reason>`. Run unauthenticated or skip the check entirely as appropriate. Report the reason in the run summary. Do not block.
+
+See ADR-0005 for the auth strategy selection policy.
 
 ---
 
@@ -71,6 +81,22 @@ Ordered discovery:
 1. **Project `node_modules`** — check whether `./node_modules/playwright` or `./node_modules/playwright-core` exists. If yes, use `node check.mjs` normally (Node resolves from project root).
 2. **Global install** — run `npm root -g` to get the global modules path. Check whether `$(npm root -g)/playwright` exists. If yes, invoke check.mjs with `NODE_PATH=$(npm root -g) node check.mjs`.
 3. **Not found** → return `status: "skipped"` with `skipped_reason: "Playwright module not found in project node_modules or global install"`. Do not install packages, do not block the task. Report and move on.
+
+---
+
+## 5. Base server port offset
+
+When a Base server (serving the merge-base SHA) is needed alongside the Candidate server, compute its port by adding 1000 to the Candidate's primary port:
+
+| Candidate port | Base server port |
+|---|---|
+| 5173 (Vite default) | 6173 |
+| 3000 (Next.js / CRA / Express default) | 4000 |
+| 8000 | 9000 |
+
+The Base server URL becomes `base_server_url` in the browser-checker agent's input. Health-poll this URL before spawning the browser-checker (use the same polling logic as the Caller responsibilities section: `curl`, 60 s cap). Manage the Base server lifecycle via `~/.dotfiles/claude-code-shared/scripts/base-server.sh`.
+
+The Base server is needed only when `base_server_url` is passed to the browser-checker. The debug skill (diagnostic use) omits `base_server_url` and performs candidate-only checks.
 
 ---
 

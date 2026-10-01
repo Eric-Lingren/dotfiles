@@ -25,8 +25,8 @@
     {
       "name": "browser-checker",
       "file": "agents/browser-checker.md",
-      "model": "sonnet",
-      "description": "Stateless single-run agent. Navigates to a URL, evaluates observable assertions via inline Playwright, and returns a JSON result per browser-check-result.md. Spawned by build-runner and debug after TDD passes. The caller owns the retry loop and server lifecycle.",
+      "model": "haiku",
+      "description": "Stateless single-run agent. Orchestrates browser-auth.py, baseline-cache.py, and browser-verify.mjs to execute a Check Spec against Baseline and Candidate servers. Returns a browser-check-result-v2 JSON. Never generates improvised scripts. Spawned by build-runner.",
       "consumers": [
         "build-runner",
         "debug"
@@ -196,8 +196,17 @@
       "name": "answer-composer",
       "file": "agents/egress/answer-composer.md",
       "model": "sonnet",
-      "description": "Sonnet-tier egress agent. Consumes an investigation-result and composes a voice-matched Slack reply using the slack-casual voice profile. Citations render inline per distinct verified claim. INSUFFICIENT_EVIDENCE claims surface an explicit 'couldn't confirm' tag — never smoothed over. Adds no content beyond what the investigation-result provides. Output is copy-only for manual paste to Slack.",
+      "description": "Sonnet-tier egress agent. Consumes an investigation-result and composes a voice-matched Slack reply using the slack-casual voice profile. Citations render inline per distinct verified claim. INSUFFICIENT_EVIDENCE claims surface an explicit 'couldn't confirm' tag \u2014 never smoothed over. Adds no content beyond what the investigation-result provides. Output is copy-only for manual paste to Slack.",
       "consumers": []
+    },
+    {
+      "name": "visual-judge",
+      "file": "agents/visual-judge.md",
+      "model": "sonnet",
+      "description": "Vision-model judge that evaluates a Baseline/Candidate capture pair against declared intent and returns a visual-verdict JSON object. One verdict per (capture_ref, viewport) pair.",
+      "consumers": [
+        "build-runner"
+      ]
     }
   ]
 }
