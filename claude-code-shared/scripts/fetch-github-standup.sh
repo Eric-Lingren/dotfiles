@@ -7,7 +7,8 @@
 # Each PR object includes:
 #   number, title, body, headRefName, state, isDraft,
 #   createdAt, updatedAt, mergedAt, reviews, reviewRequests,
-#   ciRollup (success|failure|pending|none), unresolvedThreadCount (integer)
+#   ciRollup (success|failure|pending|none), unresolvedThreadCount (integer),
+#   changedFiles (integer)
 #
 # KEY id extraction (e.g. SM-3008, KEY-42) from branch names and PR titles.
 #
@@ -27,7 +28,7 @@ trap cleanup EXIT
 
 # --- 1. Fetch PR list ---
 
-GH_FIELDS="number,title,body,headRefName,state,isDraft,createdAt,updatedAt,mergedAt,reviews,reviewRequests,statusCheckRollup"
+GH_FIELDS="number,title,body,headRefName,state,isDraft,createdAt,updatedAt,mergedAt,reviews,reviewRequests,statusCheckRollup,changedFiles"
 
 if [ -n "${GH_PR_LIST_FIXTURE:-}" ]; then
   cp "$GH_PR_LIST_FIXTURE" "$TMP/pr_list.json"
@@ -144,7 +145,8 @@ for pr in pr_list:
         "reviews": reviews,
         "reviewRequests": review_requests,
         "ciRollup": ci_rollup,
-        "unresolvedThreadCount": unresolved_count
+        "unresolvedThreadCount": unresolved_count,
+        "changedFiles": pr.get("changedFiles")
     })
 
 result = {"prs": prs_out, "key_ids": sorted(key_ids)}

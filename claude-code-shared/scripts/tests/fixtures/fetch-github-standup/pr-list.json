@@ -25,7 +25,8 @@
     "statusCheckRollup": [
       {"name": "ci/test", "status": "COMPLETED", "conclusion": "SUCCESS"},
       {"name": "ci/lint", "status": "COMPLETED", "conclusion": "SUCCESS"}
-    ]
+    ],
+    "changedFiles": 12
   },
   {
     "number": 102,
@@ -46,7 +47,8 @@
     "reviewRequests": [],
     "statusCheckRollup": [
       {"name": "ci/test", "status": "COMPLETED", "conclusion": "FAILURE"}
-    ]
+    ],
+    "changedFiles": 3
   },
   {
     "number": 103,
@@ -62,7 +64,8 @@
     "reviewRequests": [],
     "statusCheckRollup": [
       {"name": "ci/test", "status": "IN_PROGRESS", "conclusion": null}
-    ]
+    ],
+    "changedFiles": 1
   },
   {
     "number": 104,
@@ -76,6 +79,7 @@
     "mergedAt": null,
     "reviews": [],
     "reviewRequests": [],
-    "statusCheckRollup": []
+    "statusCheckRollup": [],
+    "changedFiles": 2
   }
 ]

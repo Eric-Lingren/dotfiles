@@ -1,0 +1,175 @@
+{
+  "prs": [
+    {
+      "number": 101,
+      "title": "feat: SM-3008 dispatch redesign - CHANGES_REQUESTED",
+      "body": "",
+      "headRefName": "feat/SM-3008-dispatch",
+      "state": "OPEN",
+      "isDraft": false,
+      "createdAt": "2026-09-10T10:00:00Z",
+      "updatedAt": "2026-09-20T10:00:00Z",
+      "mergedAt": null,
+      "reviews": [
+        {"login": "alice", "state": "CHANGES_REQUESTED"}
+      ],
+      "reviewRequests": [],
+      "ciRollup": "success",
+      "unresolvedThreadCount": 0,
+      "changedFiles": 5
+    },
+    {
+      "number": 102,
+      "title": "fix: red due to CI failure",
+      "body": "",
+      "headRefName": "fix/SM-3008-ci-red",
+      "state": "OPEN",
+      "isDraft": false,
+      "createdAt": "2026-09-12T10:00:00Z",
+      "updatedAt": "2026-09-18T10:00:00Z",
+      "mergedAt": null,
+      "reviews": [],
+      "reviewRequests": [],
+      "ciRollup": "failure",
+      "unresolvedThreadCount": 0,
+      "changedFiles": 8
+    },
+    {
+      "number": 103,
+      "title": "feat: SM-3009 null pointer - merged, ticket still In Progress",
+      "body": "",
+      "headRefName": "feat/SM-3009-fix",
+      "state": "MERGED",
+      "isDraft": false,
+      "createdAt": "2026-09-20T10:00:00Z",
+      "updatedAt": "2026-09-29T10:00:00Z",
+      "mergedAt": "2026-09-29T10:00:00Z",
+      "reviews": [
+        {"login": "bob", "state": "APPROVED"}
+      ],
+      "reviewRequests": [],
+      "ciRollup": "success",
+      "unresolvedThreadCount": 0,
+      "changedFiles": 3
+    },
+    {
+      "number": 104,
+      "title": "chore: SM-3010 update deps (draft)",
+      "body": "",
+      "headRefName": "chore/SM-3010-deps",
+      "state": "OPEN",
+      "isDraft": true,
+      "createdAt": "2026-09-25T10:00:00Z",
+      "updatedAt": "2026-09-25T10:00:00Z",
+      "mergedAt": null,
+      "reviews": [],
+      "reviewRequests": [],
+      "ciRollup": "none",
+      "unresolvedThreadCount": 0,
+      "changedFiles": 2
+    },
+    {
+      "number": 105,
+      "title": "feat: SM-3011 feature X - merged after cutoff (done_new)",
+      "body": "",
+      "headRefName": "feat/SM-3011-feature",
+      "state": "MERGED",
+      "isDraft": false,
+      "createdAt": "2026-09-27T10:00:00Z",
+      "updatedAt": "2026-09-30T10:00:00Z",
+      "mergedAt": "2026-09-30T10:00:00Z",
+      "reviews": [
+        {"login": "carol", "state": "APPROVED"}
+      ],
+      "reviewRequests": [],
+      "ciRollup": "success",
+      "unresolvedThreadCount": 0,
+      "changedFiles": 7
+    },
+    {
+      "number": 106,
+      "title": "feat: SM-3012 part 1 (yellow - no reviews)",
+      "body": "",
+      "headRefName": "feat/SM-3012-p1",
+      "state": "OPEN",
+      "isDraft": false,
+      "createdAt": "2026-09-20T10:00:00Z",
+      "updatedAt": "2026-09-22T10:00:00Z",
+      "mergedAt": null,
+      "reviews": [],
+      "reviewRequests": ["dave"],
+      "ciRollup": "success",
+      "unresolvedThreadCount": 0,
+      "changedFiles": 4
+    },
+    {
+      "number": 107,
+      "title": "feat: SM-3012 part 2 (red - CI failure)",
+      "body": "",
+      "headRefName": "feat/SM-3012-p2",
+      "state": "OPEN",
+      "isDraft": false,
+      "createdAt": "2026-09-22T10:00:00Z",
+      "updatedAt": "2026-09-23T10:00:00Z",
+      "mergedAt": null,
+      "reviews": [],
+      "reviewRequests": [],
+      "ciRollup": "failure",
+      "unresolvedThreadCount": 0,
+      "changedFiles": 6
+    },
+    {
+      "number": 108,
+      "title": "fix: green - approved, CI success",
+      "body": "",
+      "headRefName": "fix/green-pr",
+      "state": "OPEN",
+      "isDraft": false,
+      "createdAt": "2026-09-18T10:00:00Z",
+      "updatedAt": "2026-09-19T10:00:00Z",
+      "mergedAt": null,
+      "reviews": [
+        {"login": "alice", "state": "APPROVED"}
+      ],
+      "reviewRequests": [],
+      "ciRollup": "success",
+      "unresolvedThreadCount": 0,
+      "changedFiles": 3
+    },
+    {
+      "number": 109,
+      "title": "fix: done earlier - merged before cutoff",
+      "body": "",
+      "headRefName": "fix/done-earlier",
+      "state": "MERGED",
+      "isDraft": false,
+      "createdAt": "2026-09-01T10:00:00Z",
+      "updatedAt": "2026-09-10T10:00:00Z",
+      "mergedAt": "2026-09-10T10:00:00Z",
+      "reviews": [
+        {"login": "bob", "state": "APPROVED"}
+      ],
+      "reviewRequests": [],
+      "ciRollup": "success",
+      "unresolvedThreadCount": 0,
+      "changedFiles": 2
+    },
+    {
+      "number": 110,
+      "title": "fix: red - unresolved threads",
+      "body": "",
+      "headRefName": "fix/unresolved-threads",
+      "state": "OPEN",
+      "isDraft": false,
+      "createdAt": "2026-09-15T10:00:00Z",
+      "updatedAt": "2026-09-16T10:00:00Z",
+      "mergedAt": null,
+      "reviews": [],
+      "reviewRequests": [],
+      "ciRollup": "success",
+      "unresolvedThreadCount": 2,
+      "changedFiles": 4
+    }
+  ],
+  "key_ids": ["SM-3008", "SM-3009", "SM-3010", "SM-3011", "SM-3012"]
+}

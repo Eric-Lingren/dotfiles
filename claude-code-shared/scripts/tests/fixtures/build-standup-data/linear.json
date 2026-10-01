@@ -1,0 +1,56 @@
+[
+  {
+    "id": "uuid-3008",
+    "key": "SM-3008",
+    "title": "Dispatch redesign",
+    "status": "In Progress",
+    "url": "https://linear.app/sm/issue/SM-3008",
+    "parentKey": null,
+    "epicKey": "SM-3000"
+  },
+  {
+    "id": "uuid-3009",
+    "key": "SM-3009",
+    "title": "Null pointer fix",
+    "status": "In Progress",
+    "url": "https://linear.app/sm/issue/SM-3009",
+    "parentKey": null,
+    "epicKey": null
+  },
+  {
+    "id": "uuid-3010",
+    "key": "SM-3010",
+    "title": "Update deps",
+    "status": "In Progress",
+    "url": "https://linear.app/sm/issue/SM-3010",
+    "parentKey": null,
+    "epicKey": null
+  },
+  {
+    "id": "uuid-3011",
+    "key": "SM-3011",
+    "title": "Feature X",
+    "status": "Done",
+    "url": "https://linear.app/sm/issue/SM-3011",
+    "parentKey": null,
+    "epicKey": null
+  },
+  {
+    "id": "uuid-3012",
+    "key": "SM-3012",
+    "title": "Multi-PR ticket",
+    "status": "In Progress",
+    "url": "https://linear.app/sm/issue/SM-3012",
+    "parentKey": null,
+    "epicKey": null
+  },
+  {
+    "id": "uuid-3013",
+    "key": "SM-3013",
+    "title": "Ticket with no PR yet",
+    "status": "In Progress",
+    "url": "https://linear.app/sm/issue/SM-3013",
+    "parentKey": null,
+    "epicKey": null
+  }
+]
