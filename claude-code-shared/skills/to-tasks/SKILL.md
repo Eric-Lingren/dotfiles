@@ -136,21 +136,60 @@ Slices may be **HITL** (requires a keyboard action the AI cannot perform AFK —
 - **Predecessor scaffold guard:** If a slice references a component, symbol, or wrapper as already present from a prior task, check that task's `status`. It counts as present only when its status is `"done"`. Otherwise, either add the prior task's ID to this slice's `blocked_by` (when it is in the same task file) or copy the full spec for that symbol (including required wrappers, providers, and props) into this slice's `acceptance_criteria` as if it does not exist yet. Never assume an unfinished upstream task delivered its full spec.
 </vertical-slice-rules>
 
-#### browser_verify field
+#### browser_verify field (Check Spec)
 
-For user-facing feature and fix tasks (route or UI changes), populate `browser_verify` using PRD intent. Schema: `~/.dotfiles/claude-code-shared/contracts/task-schema.json`.
+For user-facing feature and fix tasks (route or UI changes), author a full Check Spec into `browser_verify`. Schema: `~/.dotfiles/claude-code-shared/contracts/task-schema.json`. Full field reference: `contracts/task-contract.md`.
 
-- `url_path`: the route the feature lives on (e.g. `/dashboard`, `/settings/billing`).
-- `assertions`: **concrete observable behaviors** — visible text, navigation targets, redirects. Not vague prose ("works correctly" is invalid; "Text 'Welcome back' is visible in the heading" is valid).
-- **Omit `browser_verify` entirely** (never set to `null`) for backend, config, refactor, infra, or any task with no user-visible route change.
-- E2e-authoring tasks from `to-e2e-tasks` must **never** carry `browser_verify`.
+**Omit `browser_verify` entirely** (never set to `null`) for backend, config, refactor, infra, or any task with no user-visible route change. E2e-authoring tasks from `to-e2e-tasks` must **never** carry `browser_verify`.
 
-**Dynamic routes:** Write variable segments as `:param` placeholders. Never invent a concrete slug — a made-up value navigates to a 404.
+**How to author the Check Spec:**
 
-- Mark dynamic parts with a leading colon: `/firms/:firmSlug/dashboard`, `/reports/:reportId`.
-- Placeholder names are cosmetic; the browser-checker resolves by position. Use whatever reads clearly.
-- Write static segments concretely. Only variable parts get a colon.
-- Never resolve placeholders yourself. See `~/.dotfiles/claude-code-shared/agents/browser-checker.md`.
+1. **`role`** — derive from the task context. Default to the first Role declared in the repo's Auth Profile (from `resources/repo-policy.json`). Use the role that most naturally sees the feature (e.g. `"firm"` for firm-facing routes, `"admin"` for admin panel, `"anonymous"` for public pages).
+
+2. **`viewports`** — omit unless the task specifically targets a viewport (e.g. a mobile layout fix). When omitted, the runner uses the repo defaults from `repo-policy.json`. Viewport names must match entries declared in that config (typically `"desktop"` and `"mobile"`).
+
+3. **`steps`** — write an ordered sequence that exercises the route. Always start with a `goto` to the route. Add a `waitFor` for `networkidle` after navigation. Add `capture` steps at key visual states (initial load, after interaction). Use `click`/`fill` steps to reach non-trivial states. Use `expect` steps to assert critical functional invariants.
+
+   Dynamic route segments: write `:param` placeholders (e.g. `/firms/:firmSlug/dashboard`). Never invent a concrete slug — a made-up value navigates to a 404.
+
+4. **`masks`** — add CSS selector strings for any dynamic regions that will differ between Baseline and Candidate for non-semantic reasons: timestamps, user names, avatars, live counters, chart data that changes per-run. Use specific selectors. Example: `[".last-login", "[data-testid='chart-canvas']"]`.
+
+5. **`expected_visual_change`** — set to `"none"` for non-visual tasks (backend wiring, performance, bug fixes with no layout change). Set to a brief description of the intended change for visual tasks (e.g. `"New notification preferences section added to settings panel"`). The visual-judge uses this to confirm the actual delta matches intent.
+
+**Minimal example (non-visual task):**
+
+```json
+"browser_verify": {
+  "role": "firm",
+  "steps": [
+    {"type": "goto",    "url": "/dashboard"},
+    {"type": "waitFor", "condition": "networkidle"},
+    {"type": "capture", "name": "dashboard"}
+  ],
+  "masks": [".last-login-timestamp"],
+  "expected_visual_change": "none"
+}
+```
+
+**Example with interaction (visual task):**
+
+```json
+"browser_verify": {
+  "role": "firm",
+  "viewports": ["desktop", "mobile"],
+  "steps": [
+    {"type": "goto",    "url": "/settings/notifications"},
+    {"type": "waitFor", "condition": "networkidle"},
+    {"type": "capture", "name": "settings-initial"},
+    {"type": "click",   "locator": "role=button[name=\"Save preferences\"]"},
+    {"type": "waitFor", "condition": ".toast-success"},
+    {"type": "expect",  "locator": "text=Preferences saved", "assertion": "visible"},
+    {"type": "capture", "name": "settings-saved"}
+  ],
+  "masks": [".user-avatar", ".timestamp"],
+  "expected_visual_change": "New notification preferences section visible on the settings page"
+}
+```
 
 #### Auth-gated routes
 
