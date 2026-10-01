@@ -129,82 +129,68 @@ _ZSHRC_LOADED=1
 # FUNCTIONS                                #
 # ─────────────────────────────────────────#
 
-function wt {
-  local output exit_code target
-  output=$("$HOME/.dotfiles/.scripts/worktree" "$@")
-  exit_code=$?
-  if [[ $exit_code -eq 0 && -n "$output" ]]; then
-    target=$(printf '%s' "$output" | tail -1)
-    cd "$target"
-    local _wt_branch
-    _wt_branch="$(basename "$(dirname "$target")")/$(basename "$target")"
-    local _wt_identity _wt_surface _wt_workspace
-    _wt_identity=$(cmux identify 2>/dev/null)
-    _wt_surface=$(printf '%s' "$_wt_identity" | grep -o 'surface:[0-9]*' | head -1)
-    _wt_workspace=$(printf '%s' "$_wt_identity" | grep -o 'workspace:[0-9]*' | head -1)
-    if [[ -n "$_wt_branch" ]]; then
-      local _wt_label="${_wt_branch#feat/}"
-      _wt_label="${_wt_label#fix/}"
-      _wt_label="${_wt_label#spike/}"
-      _wt_label="🌿 $_wt_label"
-      ZSH_THEME_TERM_TITLE_IDLE="$_wt_label"
-      ZSH_THEME_TERM_TAB_TITLE_IDLE="$_wt_label"
-      [[ -n "$_wt_surface" ]] && cmux rename-tab --surface "$_wt_surface" "$_wt_label" 2>/dev/null || true
-      [[ -n "$_wt_workspace" ]] && cmux rename-workspace --workspace "$_wt_workspace" "$_wt_label" 2>/dev/null || true
+# Split right with retry; prints new surface ref. cmux can drop a split while
+# the source pane is still settling.
+function _gx_new_split {
+  local _dir="$1" _surface="$2" _workspace="$3" _out _i
+  for _i in 1 2 3; do
+    _out=$(cmux new-split "$_dir" --surface "$_surface" --workspace "$_workspace" 2>/dev/null | grep -o 'surface:[0-9]*' | head -1)
+    [[ -n "$_out" ]] && { print -r -- "$_out"; return 0; }
+    sleep 0.3
+  done
+  return 1
+}
+
+# Shared by wt and gxstart: cd into worktree, label tab/workspace, build
+# left | top-right (clients/web) / bottom-right (worktree root) layout.
+function _gx_open_worktree {
+  local target="$1"
+  cd "$target" || return 1
+  local _branch _label
+  _branch="$(basename "$(dirname "$target")")/$(basename "$target")"
+  _label="${_branch#feat/}"
+  _label="${_label#fix/}"
+  _label="${_label#spike/}"
+  _label="🌿 $_label"
+  ZSH_THEME_TERM_TITLE_IDLE="$_label"
+  ZSH_THEME_TERM_TAB_TITLE_IDLE="$_label"
+  local _identity _surface _workspace
+  _identity=$(cmux identify 2>/dev/null)
+  _surface=$(printf '%s' "$_identity" | grep -o 'surface:[0-9]*' | head -1)
+  _workspace=$(printf '%s' "$_identity" | grep -o 'workspace:[0-9]*' | head -1)
+  [[ -n "$_surface" ]] && cmux rename-tab --surface "$_surface" "$_label" 2>/dev/null || true
+  [[ -n "$_workspace" ]] && cmux rename-workspace --workspace "$_workspace" "$_label" 2>/dev/null || true
+  [[ -n "$_surface" && -n "$_workspace" ]] || return 0
+  local _top_dir="$target"
+  [[ -d "$target/clients/web" ]] && _top_dir="$target/clients/web"
+  export GX_WORKTREE_TARGET="$target"
+  local _top _bottom
+  if _top=$(_gx_new_split right "$_surface" "$_workspace"); then
+    cmux rename-tab --surface "$_top" "client" 2>/dev/null || true
+    cmux send --surface "$_top" "cd $(printf '%q' "$_top_dir")" 2>/dev/null
+    cmux send-key --surface "$_top" Return 2>/dev/null
+    if _bottom=$(_gx_new_split down "$_top" "$_workspace"); then
+      cmux send --surface "$_bottom" "cd $(printf '%q' "$target")" 2>/dev/null
+      cmux send-key --surface "$_bottom" Return 2>/dev/null
+    else
+      echo "gx: bottom-right split failed" >&2
     fi
-    if [[ -n "$_wt_surface" && -n "$_wt_workspace" ]]; then
-      export GX_WORKTREE_TARGET="$target"
-      local _wt_split_top
-      _wt_split_top=$(cmux new-split right --surface "$_wt_surface" --workspace "$_wt_workspace" 2>/dev/null | grep -o 'surface:[0-9]*' | head -1)
-      if [[ -n "$_wt_split_top" ]]; then
-        cmux rename-tab --surface "$_wt_split_top" "client" 2>/dev/null || true
-        cmux send --surface "$_wt_split_top" "cd $(printf '%q' "$target/clients/web")" 2>/dev/null
-        cmux send-key --surface "$_wt_split_top" Return 2>/dev/null
-        local _wt_split_bottom
-        _wt_split_bottom=$(cmux new-split down --surface "$_wt_split_top" --workspace "$_wt_workspace" 2>/dev/null | grep -o 'surface:[0-9]*' | head -1)
-        if [[ -n "$_wt_split_bottom" ]]; then
-          cmux send --surface "$_wt_split_bottom" "cd $(printf '%q' "$target")" 2>/dev/null
-          cmux send-key --surface "$_wt_split_bottom" Return 2>/dev/null
-        fi
-      fi
-      unset GX_WORKTREE_TARGET
-    fi
+  else
+    echo "gx: right split failed" >&2
   fi
+  unset GX_WORKTREE_TARGET
+}
+
+function wt {
+  local output
+  output=$("$HOME/.dotfiles/.scripts/worktree" "$@") || return
+  [[ -n "$output" ]] && _gx_open_worktree "$(printf '%s' "$output" | tail -1)"
 }
 
 function gxstart {
-  local _gs_output _gs_exit _gs_target
-  _gs_output=$("$HOME/.dotfiles/.scripts/gxstart" "$@")
-  _gs_exit=$?
-  if [[ $_gs_exit -eq 0 && -n "$_gs_output" ]]; then
-    _gs_target=$(printf '%s' "$_gs_output" | tail -1)
-    cd "$_gs_target"
-    local _gs_branch _gs_label
-    _gs_branch="$(basename "$(dirname "$_gs_target")")/$(basename "$_gs_target")"
-    _gs_label="${_gs_branch#feat/}"
-    _gs_label="${_gs_label#fix/}"
-    _gs_label="${_gs_label#spike/}"
-    _gs_label="🌿 $_gs_label"
-    ZSH_THEME_TERM_TITLE_IDLE="$_gs_label"
-    ZSH_THEME_TERM_TAB_TITLE_IDLE="$_gs_label"
-    local _gs_identity _gs_surface _gs_workspace
-    _gs_identity=$(cmux identify 2>/dev/null)
-    _gs_surface=$(printf '%s' "$_gs_identity" | grep -o 'surface:[0-9]*' | head -1)
-    _gs_workspace=$(printf '%s' "$_gs_identity" | grep -o 'workspace:[0-9]*' | head -1)
-    [[ -n "$_gs_surface" ]] && cmux rename-tab --surface "$_gs_surface" "$_gs_label" 2>/dev/null || true
-    [[ -n "$_gs_workspace" ]] && cmux rename-workspace --workspace "$_gs_workspace" "$_gs_label" 2>/dev/null || true
-    if [[ -n "$_gs_surface" && -n "$_gs_workspace" ]]; then
-      export GX_WORKTREE_TARGET="$_gs_target"
-      local _gs_split
-      _gs_split=$(cmux new-split right --surface "$_gs_surface" --workspace "$_gs_workspace" 2>/dev/null | grep -o 'surface:[0-9]*' | head -1)
-      if [[ -n "$_gs_split" ]]; then
-        [[ -n "$_gs_label" ]] && cmux rename-tab --surface "$_gs_split" "$_gs_label" 2>/dev/null || true
-        cmux send --surface "$_gs_split" "cd $(printf '%q' "$_gs_target")" 2>/dev/null
-        cmux send-key --surface "$_gs_split" Return 2>/dev/null
-      fi
-      unset GX_WORKTREE_TARGET
-    fi
-  fi
+  local output
+  output=$("$HOME/.dotfiles/.scripts/gxstart" "$@") || return
+  [[ -n "$output" ]] && _gx_open_worktree "$(printf '%s' "$output" | tail -1)"
 }
 
 function gxlist {
