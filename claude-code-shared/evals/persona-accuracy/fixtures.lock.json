@@ -1,0 +1,14 @@
+{
+  "ci-fix": {
+    "transcript.jsonl": "604fbc474d9df94f35f3faabd74b16f50b6798d19145ffdac2504cc67d218471",
+    "seed.clean.json": "8c07a11ec4dcb2cbc60f79461239793057e298e0fc58a6a8a775044a3a2f294b"
+  },
+  "improve-learnings": {
+    "transcript.jsonl": "ac92146a175be0adb7bb5642449ff6d1279f3cd7326d0824ea29fe571681b431",
+    "seed.clean.json": "6ffa5d5664f9fa23d225d15a73b826c3b9c52561fbc25f1ac2f82639829ff564"
+  },
+  "relay-posting": {
+    "transcript.jsonl": "789cc4a6154f5c681daae75f656be61613e498605e53b1e57b589ee2d1314d1c",
+    "seed.clean.json": "db0c0359997684ece8d6b08ca7c77632bd64170bedd7642154b64771cd6b5212"
+  }
+}

@@ -4,7 +4,7 @@
     "account": "cch",
     "base_branch": "main",
     "domain": "personal",
-    "exclude": ["docs/prototype/", "docs/browser-checks/", "docs/offload-output/", "docs/tasks/.sprout/", "docs/tasks/*-revisions-r*.json", "docs/visual-changes/"]
+    "exclude": ["docs/prototype/", "docs/browser-checks/", "docs/offload-output/", "docs/tasks/.sprout/", "docs/tasks/*-revisions-r*.json", "docs/visual-changes/", ".claude/hillclimb/*/traces/*", ".claude/hillclimb/*/ref/*", ".claude/hillclimb/*/trajectory/*", ".claude/hillclimb/*report.html", ".claude/hillclimb/*summary.html", ".claude/hillclimb/*progress.txt", ".claude/hillclimb/*errors.jsonl", "evals/*/fixtures/*", "*/evals/*/fixtures/*"]
   },
   "Quaestor-Technologies/Quaestor-Web": {
     "label": "quaestor-web",
@@ -15,7 +15,7 @@
     "issue_tracker": "linear",
     "domain": "standard-metrics",
     "worktree_links": ["app/.env", "local_settings.py"],
-    "exclude": ["docs", "docs/adr/", "docs/prototype/", "docs/browser-checks/", "docs/seeds/", "docs/tasks/", "docs/handoffs/", "docs/prd/", "docs/archive/", "docs/offload-output/", ".gitignore", "docs/visual-changes/", "docs/standups/"],
+    "exclude": ["docs", "docs/adr/", "docs/prototype/", "docs/browser-checks/", "docs/seeds/", "docs/tasks/", "docs/handoffs/", "docs/prd/", "docs/archive/", "docs/offload-output/", ".gitignore", "docs/visual-changes/", "docs/standups/", ".claude/hillclimb/", "evals/*/fixtures/*", "*/evals/*/fixtures/*"],
     "ci": {"provider": "circleci", "project_slug": "gh/Quaestor-Technologies/Quaestor-Web"},
     "verify_host": "local",
     "browser_auth": {
@@ -47,7 +47,7 @@
     "pr_auto_create": true,
     "issue_tracker": "github",
     "worktree_links": [".env.local"],
-    "exclude": ["docs/prototype/", "docs/browser-checks/", "docs/offload-output/", "docs/tasks/.sprout/", "docs/tasks/*-revisions-r*.json", "docs/visual-changes/"],
+    "exclude": ["docs/prototype/", "docs/browser-checks/", "docs/offload-output/", "docs/tasks/.sprout/", "docs/tasks/*-revisions-r*.json", "docs/visual-changes/", ".claude/hillclimb/*/traces/*", ".claude/hillclimb/*/ref/*", ".claude/hillclimb/*/trajectory/*", ".claude/hillclimb/*report.html", ".claude/hillclimb/*summary.html", ".claude/hillclimb/*progress.txt", ".claude/hillclimb/*errors.jsonl", "evals/*/fixtures/*", "*/evals/*/fixtures/*"],
     "verify_host": "local",
     "browser_auth": {
       "probe_url": "http://localhost:5173/",
@@ -107,6 +107,6 @@
     "account": "cch",
     "base_branch": "main",
     "domain": "personal",
-    "exclude": ["docs/browser-checks/", "docs/offload-output/", "docs/tasks/.sprout/", "docs/tasks/*-revisions-r*.json", "docs/visual-changes/"]
+    "exclude": ["docs/browser-checks/", "docs/offload-output/", "docs/tasks/.sprout/", "docs/tasks/*-revisions-r*.json", "docs/visual-changes/", ".claude/hillclimb/*/traces/*", ".claude/hillclimb/*/ref/*", ".claude/hillclimb/*/trajectory/*", ".claude/hillclimb/*report.html", ".claude/hillclimb/*summary.html", ".claude/hillclimb/*progress.txt", ".claude/hillclimb/*errors.jsonl", "evals/*/fixtures/*", "*/evals/*/fixtures/*"]
   }
 }

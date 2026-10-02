@@ -1,5 +1,7 @@
-theme = dark:dracula-green,light:Catppuccin Latte
+theme = dark:Gruvbox Material Dark,light:Modus Operandi
 cursor-style = block
 cursor-style-blink = true
 font-family = JetBrains Mono
-font-size = 13
+font-size = 14
+font-thicken = true
+adjust-cell-height = 15%

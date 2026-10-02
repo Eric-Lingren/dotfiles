@@ -38,27 +38,30 @@ Do not judge a quote by reading the file and comparing by eye. One changed word 
 
 ### Positive anchors (source `artifact` or `transcript`)
 
-Run the check script once on the whole record. Paste the draft record from `## Draft attribution record` unchanged. The script reads each quote from the record itself; never type a quote or file text into the check.
+Run this once per entry, with the entry's `ref` as the argument and its `quote` pasted unchanged into the heredoc:
 
 ```bash
-python3 ~/.dotfiles/claude-code-shared/scripts/check-anchors.py <<'JSON'
-<draft record JSON exactly as given>
-JSON
+python3 -c '
+import os, re, sys
+p = sys.argv[1]
+if not os.path.isfile(p): print("MISSING"); sys.exit()
+norm = lambda s: re.sub(r"\s+", " ", s).strip()
+q, t = norm(sys.stdin.read()), norm(open(p, errors="replace").read())
+if q in t: print("MATCH"); sys.exit()
+words = set(re.findall(r"\w+", t))
+print("NO_MATCH; quote words not in file:", [w for w in re.findall(r"\w+", q) if w not in words])
+' "<ref>" <<'QUOTE'
+<quote exactly as given>
+QUOTE
 ```
 
-It prints one line per evidence entry with `status` and, on `NO_MATCH`, `words_not_in_file` and `closest`. Whitespace and line breaks are ignored, so a multi-line passage quoted on one line still matches.
+The check ignores whitespace and line breaks, so a multi-line passage quoted on one line still matches.
 
 - `MATCH`: the anchor is verified. Confidence unchanged.
 - `MISSING`: see "File not found" below.
-- `NO_MATCH`: the quote is not in the file as written. It is either fabricated or a paraphrase. `closest` shows the passage that shares the most words with the quote. If it is about something else, run `grep -niF` on a distinctive term from the quote to find the right one. Then apply these tests in order and stop at the first one that decides:
-  1. **No passage → fabricated.** Nothing in the file covers the same subject as the quote.
-  2. **Code or names differ → fabricated.** If the quote is code (statements, expressions, signatures, config or JSON keys and values, lists of literals), it must equal the passage exactly. A renamed identifier, a changed operator or value, or an item added, dropped or reordered is fabricated. Code has no paraphrase. Comments and prose are not code, even inside a source file. In prose, each identifier, path, number and quoted string the quote names must appear in the passage character for character (surrounding backticks or quote marks do not count). If one differs, it is fabricated.
-  3. **Prose → compare claims, not words.** State in one line what the passage asserts and in one line what the quote asserts. A paraphrase swaps in synonyms, restructures sentences, and drops or adds filler, so it always has words listed as "not in file". That list is never a reason to reject on its own.
-     - **Fabricated** if the quote asserts something the passage does not: a direction, order, quantity, comparison or yes/no reversed (a word swapped for its opposite, a negation added or removed), a different thing acting or acted on, a changed condition, or a claim the passage never makes.
-     - **Paraphrase** if the passage, read on its own, supports every claim in the quote.
-
-  Fabricated → return `{"verdict": "rejected", "confidence": "<input>", "reason": "anchor not found in <ref>: '<exact quote text>'"}`.
-  Paraphrase → the anchor is verified. Set confidence to `candidate` and go on to the next entry.
+- `NO_MATCH`: the quote is not in the file as written. Find the closest passage (`grep -nF` on a short distinctive fragment of the quote), then compare it to the quote token by token:
+  - **Fabricated → reject.** Any identifier, code symbol, file path, number, name, or meaning-bearing word differs from the file, or no matching passage exists. Words listed as "not in file" that are identifiers or values are almost always this case. Return `{"verdict": "rejected", "confidence": "<input>", "reason": "anchor not found in <ref>: '<exact quote text>'"}`.
+  - **Paraphrase → pass, demote.** Every identifier, symbol, number, and meaning-bearing word matches the passage; only connecting wording or word order differs, and the statement says the same thing. The anchor is verified; set confidence to `candidate`.
 
 ### Absence anchors (checking that something does NOT appear)
 

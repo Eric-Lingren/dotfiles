@@ -25,11 +25,14 @@ Usage:
   sync-model-tiers.py --skills-dir <path>   # override skills location
   sync-model-tiers.py --agents-dir <path>   # override agents location
 """
+from __future__ import annotations
+
 import argparse
 import json
 import os
 import re
 import sys
+from pathlib import Path
 
 DOTFILES = os.path.expanduser("~/.dotfiles/claude-code-shared")
 CONFIG = os.path.join(DOTFILES, "resources", "model-tiers.json")
@@ -198,13 +201,22 @@ def main():
         with open(registry_path) as f:
             registry_data = json.load(f)
 
+    agent_paths = {}
+    for p in sorted(Path(args.agents_dir).rglob("*.md")):
+        agent_paths.setdefault(p.stem, []).append(str(p))
+
     for agent_name, tier in cfg.get("agents", {}).items():
         model = tiers[tier]["model"]
-        path = os.path.join(args.agents_dir, f"{agent_name}.md")
-        if not os.path.isfile(path):
-            print(f"  MISSING  {agent_name:36s} (no {path})")
+        candidates = agent_paths.get(agent_name, [])
+        if not candidates:
+            print(f"  MISSING  {agent_name:36s} (no {agent_name}.md under {args.agents_dir})")
             missing += 1
             continue
+        if len(candidates) > 1:
+            print(f"  AMBIG    {agent_name:36s} ({', '.join(candidates)})")
+            missing += 1
+            continue
+        path = candidates[0]
         with open(path) as f:
             text = f.read()
         parts = split_frontmatter(text)

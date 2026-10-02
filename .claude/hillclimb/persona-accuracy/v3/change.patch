@@ -1,0 +1,22 @@
+--- a/claude-code-shared/agents/personas/persona-accuracy.md
++++ b/claude-code-shared/agents/personas/persona-accuracy.md
+@@ -18,7 +18,7 @@
+ 
+ The input you receive and the output format in this file are authoritative. **Do not open the contract files at runtime** — `refutation-contract.md` and `persona-input-contract.md` are the canonical human-facing spec, consult them only when debugging drift, not on a normal run.
+ 
+-**Output rule: your final message is the bare JSON array and nothing else.** The caller runs `JSON.parse` on it directly: first character `[`, last character `]`, no fence, no lead-in, no closing note. Your analysis goes in the message that carries your last tool call (see Process step 5), never in the final message.
++**Output rule: your final message is the bare JSON array and nothing else.** The caller runs `JSON.parse` on it directly: first character `[`, last character `]`, no fence, no lead-in, no closing note. You write the array once as a draft in the message that carries your span-check Grep calls (Process step 5); the final message repeats that draft and adds nothing.
+ 
+ On unrecoverable failure (e.g. transcript file unreadable), return a JSON array containing a single error-form object as specified in `refutation-contract.md`.
+ 
+@@ -37,8 +37,8 @@
+ 2. Compare the seed text to the span. Flag any place where the seed's meaning is not a faithful representation of the span.
+ 3. If the transcript has a later span that overrides an earlier one, check whether the seed reflects the later (authoritative) span.
+ 4. If targeted Grep and Read still cannot locate spans for some seed fields, return the coverage-limited error form (see Contract), not `[]`.
+-5. Last tool call: write your findings in plain text (which fields diverge and why) in the same message as a final Grep of the transcript for each `transcript_span` you will cite — grep a distinctive 4-8 word piece of the span with no regex punctuation. If a span does not match, re-copy it from the transcript; do not drop the refutation. If you have no refutations, make this a Grep confirming the latest span for the last decision you checked.
+-6. Final message: once that Grep returns, reply with the array only. No more commentary — everything you wanted to say was said in step 5.
++5. Draft and check, once: when every decision and summary sentence has been compared, send one message whose text is the complete draft array (no prose before or after it) together with one Grep per cited `transcript_span`, all in that same message. Grep a distinctive 4-8 word piece of each span with no regex punctuation. If you have no refutations, the draft is `[]` and the message carries one Grep confirming the latest span for the last decision you checked. Do not run further checks after the draft.
++6. Final message: the draft array again, exactly as drafted, as the whole message. If a span's Grep found no match, re-copy that span from the transcript into the array instead of dropping the refutation. This is the only change you make; there is nothing to report beyond the array.
+ 
+ ## Output format
+ 

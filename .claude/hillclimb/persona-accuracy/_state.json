@@ -1,0 +1,185 @@
+{
+  "flow": "persona-accuracy",
+  "metrics": [
+    {
+      "id": "quote_ok",
+      "label": "Quote verbatim",
+      "kind": "binary"
+    },
+    {
+      "id": "format_ok",
+      "label": "JSON only",
+      "kind": "binary"
+    },
+    {
+      "id": "correct",
+      "label": "Correct",
+      "kind": "binary"
+    },
+    {
+      "id": "recall",
+      "label": "Recall",
+      "kind": "binary"
+    },
+    {
+      "id": "specificity",
+      "label": "Specificity",
+      "kind": "binary"
+    },
+    {
+      "id": "field_ok",
+      "label": "Field index",
+      "kind": "binary"
+    },
+    {
+      "id": "covered",
+      "label": "No cov. error",
+      "kind": "binary"
+    }
+  ],
+  "perf_fields": [
+    {
+      "id": "latency_s",
+      "label": "Latency",
+      "unit": "s"
+    },
+    {
+      "id": "tool_calls",
+      "label": "Tool calls"
+    },
+    {
+      "id": "num_turns",
+      "label": "Turns"
+    },
+    {
+      "id": "cli_cost_usd",
+      "label": "CLI cost",
+      "unit": "$"
+    }
+  ],
+  "harness_paths": [
+    "claude-code-shared/evals/persona-accuracy/cases.jsonl",
+    "claude-code-shared/evals/persona-accuracy/build_cases.py",
+    "claude-code-shared/evals/persona-accuracy/mutations.json",
+    "claude-code-shared/evals/persona-accuracy/fixtures.lock.json"
+  ],
+  "summary": {
+    "what": "Tests whether the persona-accuracy adversary catches a seed decision that misstates what the to-seed transcript actually decided, without flagging faithful decisions or defects that belong to other personas.",
+    "metrics": {
+      "correct": "Right call on this case: caught the planted defect (by field or by quoting the changed text), or stayed silent where it should. Main score.",
+      "recall": "On planted defects only: did it raise a refutation on the planted field?",
+      "specificity": "On clean seeds and off-lens distractors: did it stay quiet (no refutation on that field, none at all for clean seeds)?",
+      "quote_ok": "When it raised refutations, was every transcript_span a verbatim quote from the transcript?",
+      "format_ok": "Did it reply with a bare JSON array matching the refutation contract (no prose, no code fence)?",
+      "covered": "Did it avoid the coverage-limited error form (i.e. actually check the seed)?",
+      "field_ok": "When it caught a planted defect, did it cite the right seed field path (e.g. decisions[8], not a line number)?"
+    },
+    "kinds": {
+      "planted": "A real seed with one decision changed so it no longer matches the transcript (drift, stale, scope creep, or negation). Should flag that field.",
+      "distractor": "A real seed with a made-up rationale added. That is the Grounding persona's job. Accuracy should not flag it.",
+      "clean": "The real draft seed, unchanged. Production returned no refutations. Should return []."
+    },
+    "groups": {
+      "Catch misstated decisions": [
+        "planted"
+      ],
+      "Stay quiet when faithful": [
+        "clean",
+        "distractor"
+      ]
+    }
+  },
+  "harness_sha": "cb4e25ab2819a99c7eadbe2ac393d9d26c0162ce7be8d9500fbfcf27e386d620",
+  "current_round": 3,
+  "reps": 3,
+  "model": "claude-haiku-4-5",
+  "goal": {
+    "target": [
+      "quote_ok",
+      "format_ok"
+    ],
+    "direction": "higher",
+    "hold": [
+      "correct",
+      "recall",
+      "specificity",
+      "field_ok",
+      "covered"
+    ],
+    "note": "retargeted 2026-10-02: test correct 0.92 at baseline, headroom < \u00b114 noise"
+  },
+  "approve_each_round": false,
+  "stopping": {
+    "max_rounds": 3,
+    "plateau_rounds": 3,
+    "delta": 0.1
+  },
+  "scope": {
+    "will_change": [
+      "claude-code-shared/agents/personas/persona-accuracy.md (body below frontmatter)"
+    ],
+    "off_limits": [
+      "persona-accuracy.md frontmatter (name, description, tools, model)",
+      "to-seed spawn prompt / runner PROMPT",
+      "cases, mutations, fixtures, grader"
+    ]
+  },
+  "train_ids": [
+    "ci-fix--clean",
+    "ci-fix--distractor-2",
+    "ci-fix--drift-2",
+    "ci-fix--negation-1",
+    "ci-fix--scope-1",
+    "ci-fix--stale-1",
+    "improve-learnings--distractor-2",
+    "improve-learnings--drift-1",
+    "improve-learnings--negation-1",
+    "improve-learnings--scope-1",
+    "improve-learnings--stale-1",
+    "relay-posting--clean",
+    "relay-posting--distractor-1",
+    "relay-posting--drift-2",
+    "relay-posting--negation-1",
+    "relay-posting--scope-2",
+    "relay-posting--stale-1"
+  ],
+  "test_ids": [
+    "ci-fix--distractor-1",
+    "ci-fix--drift-1",
+    "ci-fix--negation-2",
+    "ci-fix--scope-2",
+    "ci-fix--stale-2",
+    "improve-learnings--clean",
+    "improve-learnings--distractor-1",
+    "improve-learnings--drift-2",
+    "improve-learnings--negation-2",
+    "improve-learnings--scope-2",
+    "improve-learnings--stale-2",
+    "relay-posting--distractor-2",
+    "relay-posting--drift-1",
+    "relay-posting--negation-2",
+    "relay-posting--scope-1",
+    "relay-posting--stale-2"
+  ],
+  "best": {
+    "round": 2,
+    "test_score": {
+      "quote_ok": 0.59,
+      "format_ok": 0.38,
+      "correct": 0.81
+    }
+  },
+  "env_fingerprint": {
+    "claude_cli": "2.1.287",
+    "model": "claude-haiku-4-5",
+    "config_dir": "~/.cco",
+    "hooks": "disabled via --settings",
+    "repo_commit": "1203d62"
+  },
+  "budget": {
+    "account": "~/.cco (paid overage)",
+    "ceiling_usd": 100,
+    "passes": "baseline + v1..v3"
+  },
+  "status": "done: max_rounds reached; v3 reverted"
+}

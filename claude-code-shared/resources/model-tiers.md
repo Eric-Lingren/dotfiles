@@ -10,11 +10,14 @@ from that config.
 |------|-------|--------|-----|
 | T1 | haiku | low | Pure lookup. No reasoning. (`how-to`, `find-work`) |
 | T2 | sonnet | medium | Mechanical, narrow scope. (`tasks-to-linear`, `run-task-followups`) |
-| T3 | sonnet | xhigh | Standard build. **Session default.** (most skills) |
+| T3 | sonnet | high | Standard build. Default tier for unlisted skills. (most skills) |
 | T4 | opus | xhigh | Deep reasoning. (`grill-me`, `grill-with-docs`, `debug`, `improve-codebase-architecture`) |
 
-Session default is set in `settings.json` (`"model": "sonnet"`, `"effortLevel": "xhigh"`),
-so ad-hoc prompts run T3. Skills override via their own frontmatter.
+Session default is set in `settings.json` (`"model": "opus"`, `"effortLevel": "high"`), not by
+a tier. Ad-hoc prompts run there. Skills override model and effort via their own frontmatter.
+Model aliases resolve through the pinned `ANTHROPIC_DEFAULT_SONNET_MODEL` / `ANTHROPIC_DEFAULT_OPUS_MODEL` env vars.
+
+Agent files may live in subdirectories of `agents/`. The sync finds them by filename.
 
 ## The agents map
 

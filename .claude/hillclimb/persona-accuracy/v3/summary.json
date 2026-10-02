@@ -1,0 +1,1 @@
+{"description": "Draft the array once alongside span Greps; final message repeats it", "target": "skill", "suspicious": "reverted: format_ok -0.08 vs v2 (noise), train specificity 0.67->0.33"}

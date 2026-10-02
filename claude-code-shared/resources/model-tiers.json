@@ -14,7 +14,7 @@
     "T3": {
       "model": "sonnet",
       "effort": "high",
-      "_meaning": "Standard build. Context-aware. THIS IS THE SESSION DEFAULT."
+      "_meaning": "Standard build. Context-aware. Default tier for unlisted skills (session default lives in settings.json)."
     },
     "T4": {
       "model": "opus",
@@ -50,7 +50,6 @@
     "handoff": "T2",
     "clean-scaffolding": "T1",
     "pr-revise": "T3",
-    "vet": "T3",
     "relay": "T2",
     "investigate": "T1",
     "improve-directory-structure": "T4",

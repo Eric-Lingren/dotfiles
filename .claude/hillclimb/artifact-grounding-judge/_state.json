@@ -1,0 +1,163 @@
+{
+  "flow": "artifact-grounding-judge",
+  "metrics": [
+    {
+      "id": "verdict_correct",
+      "label": "Verdict",
+      "kind": "binary"
+    },
+    {
+      "id": "confidence_correct",
+      "label": "Confidence",
+      "kind": "binary"
+    },
+    {
+      "id": "write_correct",
+      "label": "Write",
+      "kind": "binary"
+    },
+    {
+      "id": "format_ok",
+      "label": "JSON only",
+      "kind": "binary"
+    }
+  ],
+  "perf_fields": [
+    {
+      "id": "latency_s",
+      "label": "Latency",
+      "unit": "s"
+    },
+    {
+      "id": "tool_calls",
+      "label": "Tool calls"
+    },
+    {
+      "id": "num_turns",
+      "label": "Turns"
+    },
+    {
+      "id": "cli_cost_usd",
+      "label": "CLI cost",
+      "unit": "$"
+    }
+  ],
+  "harness_paths": [
+    "claude-code-shared/evals/artifact-grounding-judge/cases.jsonl",
+    "claude-code-shared/evals/artifact-grounding-judge/build_cases.py",
+    "claude-code-shared/evals/artifact-grounding-judge/fixtures.lock.json"
+  ],
+  "harness_sha": "77979153b5058cebfc40d7e783edb9837d6dd212edf5e16d9d6628c045d08e98",
+  "summary": {
+    "what": "Tests whether the artifact-grounding-judge agent catches made-up evidence in learning records before they are saved, without blocking real records.",
+    "metrics": {
+      "verdict_correct": "Did the judge give the right answer (pass or reject)? This is the main score.",
+      "confidence_correct": "Did it set confidence right? A reworded quote or a missing file should lower it to candidate.",
+      "write_correct": "Did it save the record when it passed, and never when it rejected?",
+      "format_ok": "Did it reply with one bare JSON object, as its instructions require (no code block, no prose)?"
+    },
+    "kinds": {
+      "exact": "Real records, unchanged. Should pass.",
+      "fabricated": "One word in a quote changed. Should reject.",
+      "wrong_file": "A real quote cited against the wrong file. Should reject.",
+      "paraphrase": "A quote reworded, same meaning. Should pass and lower confidence.",
+      "whitespace": "A multi-line quote flattened to one line. Should pass.",
+      "missing_file": "A cited file does not exist. Should pass with confidence candidate.",
+      "missing_plus_fab": "A missing file plus a fake quote. Should reject.",
+      "absence_true": "A true 'X is not in this file' claim. Should pass.",
+      "absence_false": "A false 'X is not in this file' claim. Should reject."
+    },
+    "groups": {
+      "Pass real records": [
+        "exact",
+        "paraphrase",
+        "whitespace",
+        "missing_file",
+        "absence_true"
+      ],
+      "Catch fakes": [
+        "fabricated",
+        "wrong_file",
+        "missing_plus_fab",
+        "absence_false"
+      ]
+    },
+    "case_notes": "claude-code-shared/evals/artifact-grounding-judge/case_notes.jsonl"
+  },
+  "current_round": 3,
+  "reps": 3,
+  "approve_each_round": false,
+  "goal": {
+    "target": "verdict_correct",
+    "direction": "higher",
+    "focus": "fakes caught",
+    "hold": [
+      "real records passed",
+      "confidence_correct"
+    ],
+    "stop_when": "fakes caught >= 0.98 AND write_correct == 1.0 AND real passed >= 0.97 (test split)",
+    "max_rounds": 3,
+    "budget_usd_per_round": 6.5
+  },
+  "train_ids": [
+    "absence_false_b087",
+    "absence_false_b131",
+    "absence_true_b000",
+    "exact_b000",
+    "exact_b019",
+    "exact_b030",
+    "exact_b052",
+    "exact_b076",
+    "exact_b116",
+    "fabricated_b004",
+    "fabricated_b052",
+    "fabricated_b087",
+    "fabricated_b131",
+    "missing_file_b004",
+    "missing_file_b052",
+    "missing_plus_fab_b052",
+    "paraphrase_b000",
+    "paraphrase_b015",
+    "paraphrase_b030",
+    "whitespace_b011",
+    "whitespace_b087",
+    "wrong_file_b076",
+    "wrong_file_b116"
+  ],
+  "test_ids": [
+    "absence_false_b030",
+    "absence_true_b015",
+    "absence_true_b020",
+    "exact_b004",
+    "exact_b011",
+    "exact_b015",
+    "exact_b020",
+    "exact_b087",
+    "exact_b131",
+    "fabricated_b011",
+    "fabricated_b015",
+    "fabricated_b019",
+    "fabricated_b030",
+    "missing_file_b019",
+    "missing_file_b116",
+    "missing_plus_fab_b019",
+    "paraphrase_b000_2",
+    "paraphrase_b011",
+    "paraphrase_b020",
+    "whitespace_b019",
+    "whitespace_b131",
+    "wrong_file_b000",
+    "wrong_file_b011"
+  ],
+  "best": {
+    "round": 3,
+    "test_score": 0.986
+  },
+  "model": "claude-haiku-4-5",
+  "fingerprint": {
+    "commit": "1203d62",
+    "agent_file": "claude-code-shared/agents/artifact-grounding-judge.md",
+    "model": "claude-haiku-4-5"
+  },
+  "status": "done: 3 rounds, v3 adopted"
+}

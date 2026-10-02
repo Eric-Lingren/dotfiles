@@ -1,0 +1,151 @@
+{
+  "b000": [
+    {
+      "rel": "docs/seeds/20260605-1358-retro-attribution-learning.json",
+      "repo": "dotfiles",
+      "spec": "a6d13d3c1fb0713724fba41c45a7fc5994ceb2f2^:docs/seeds/20260605-1358-retro-attribution-learning.json"
+    },
+    {
+      "rel": "docs/tasks/20260605-1501-retro-attribution-learning.json",
+      "repo": "dotfiles",
+      "spec": "a6d13d3c1fb0713724fba41c45a7fc5994ceb2f2^:docs/tasks/20260605-1501-retro-attribution-learning.json"
+    }
+  ],
+  "b004": [
+    {
+      "rel": "claude-code-shared/skills/tdd/SKILL.md",
+      "repo": "dotfiles",
+      "spec": "1203d6216f52e045b18ff025176c25d3f5bbddf6:claude-code-shared/skills/tdd/SKILL.md"
+    },
+    {
+      "rel": "client/biome-local.sh",
+      "repo": "quaestor-web",
+      "spec": "e30ea86a925cd3f4c2d962914426f5ff25b390b5^:client/biome-local.sh"
+    },
+    {
+      "rel": "client/package.json",
+      "repo": "quaestor-web",
+      "spec": "2a460b7ecd6d157ce1019c3dab77b8c42db268b2^:client/package.json"
+    }
+  ],
+  "b011": [
+    {
+      "rel": "client/src/modules/portfolio-company/metrics/Filters.tsx",
+      "repo": "quaestor-web",
+      "spec": "2a460b7ecd6d157ce1019c3dab77b8c42db268b2^:client/src/modules/portfolio-company/metrics/Filters.tsx"
+    },
+    {
+      "rel": "client/src/modules/portfolio-company/metrics/components/FYEChangeBanner.tsx",
+      "repo": "quaestor-web",
+      "spec": "299f9187aadd81a932c379a869bbe011568ef39e^:client/src/modules/portfolio-company/metrics/components/FYEChangeBanner.tsx"
+    },
+    {
+      "rel": "client/src/pages/portfolio-company/hooks/useMetricsUrlParams.ts",
+      "repo": "quaestor-web",
+      "spec": "2a460b7ecd6d157ce1019c3dab77b8c42db268b2^:client/src/pages/portfolio-company/hooks/useMetricsUrlParams.ts"
+    }
+  ],
+  "b015": [
+    {
+      "rel": "docs/tasks/20260722-0955-key-1935-portco-cutover-scaffolding.json",
+      "repo": "quaestor-web",
+      "spec": "worktree:sha256:580385a268dc1ccc7fd4a12bff3734c8ab2fdeac0cca21134827e394ac1631a6"
+    }
+  ],
+  "b019": [
+    {
+      "rel": "app/firm_exports/dashboard.py",
+      "repo": "quaestor-web",
+      "spec": "bade6de09cb1550749038034bcaa05fb16349ac0^:app/firm_exports/dashboard.py"
+    },
+    {
+      "rel": "app/firm_exports/tests/test_portfolio_dashboard.py",
+      "repo": "quaestor-web",
+      "spec": "a521cf23cceafef79f63e1c8361d3e6136caf280:app/firm_exports/tests/test_portfolio_dashboard.py"
+    }
+  ],
+  "b020": [
+    {
+      "rel": "docs/tasks/.logs/20260814-1236-investigation-egress-architecture/T-0076.md",
+      "repo": "dotfiles",
+      "spec": "d1c827b1888057aebea88e34bf5c9be3362f9be7^:docs/tasks/.logs/20260814-1236-investigation-egress-architecture/T-0076.md"
+    }
+  ],
+  "b030": [
+    {
+      "rel": "app/data_checks/core.py",
+      "repo": "quaestor-web",
+      "spec": "a521cf23cceafef79f63e1c8361d3e6136caf280:app/data_checks/core.py"
+    },
+    {
+      "rel": "client/src/modules/data-checks/DataChecksInboxPanel.tsx",
+      "repo": "quaestor-web",
+      "spec": "5ba739d66e352860f13f7b7b9ee74bc155cde0d8^:client/src/modules/data-checks/DataChecksInboxPanel.tsx"
+    }
+  ],
+  "b052": [
+    {
+      "rel": "clients/web/src/pages/metrics-repository/components/DatumCategorySections/hooks/useMetricsTableCrud/index.tsx",
+      "repo": "quaestor-web",
+      "spec": "a521cf23cceafef79f63e1c8361d3e6136caf280:clients/web/src/pages/metrics-repository/components/DatumCategorySections/hooks/useMetricsTableCrud/index.tsx"
+    },
+    {
+      "rel": "clients/web/src/pages/portfolio-company/EditableMetrics.tsx",
+      "repo": "quaestor-web",
+      "spec": "a521cf23cceafef79f63e1c8361d3e6136caf280:clients/web/src/pages/portfolio-company/EditableMetrics.tsx"
+    }
+  ],
+  "b076": [
+    {
+      "rel": "clients/web/src/pages/reports/components/MetricSectionTable/index.tsx",
+      "repo": "quaestor-web",
+      "spec": "a521cf23cceafef79f63e1c8361d3e6136caf280:clients/web/src/pages/reports/components/MetricSectionTable/index.tsx"
+    },
+    {
+      "rel": "clients/web/src/pages/reports/index.tsx",
+      "repo": "quaestor-web",
+      "spec": "90cf08deec2a8a00857846a0ca15b38487d4f625^:clients/web/src/pages/reports/index.tsx"
+    }
+  ],
+  "b087": [
+    {
+      "rel": "clients/web/src/pages/reports/components/Cells/DateMetricCell.tsx",
+      "repo": "quaestor-web",
+      "spec": "896b0f26396f7e33e7005aa2f4ed7cc76483ccc9:clients/web/src/pages/reports/components/Cells/DateMetricCell.tsx"
+    },
+    {
+      "rel": "clients/web/src/pages/reports/hooks/useCreateOrUpdateMetric/index.jsdom.test.ts",
+      "repo": "quaestor-web",
+      "spec": "417759e40a529cdb4464514f477282b856f06261^:clients/web/src/pages/reports/hooks/useCreateOrUpdateMetric/index.jsdom.test.ts"
+    },
+    {
+      "rel": "clients/web/src/pages/reports/hooks/useCreateOrUpdateMetric/index.ts",
+      "repo": "quaestor-web",
+      "spec": "920087df72e42d8a7691a9c2cb5b74e41be5a0c9:clients/web/src/pages/reports/hooks/useCreateOrUpdateMetric/index.ts"
+    }
+  ],
+  "b116": [
+    {
+      "rel": "clients/web/src/pages/information-requests/components/MetricLibrary/AddCustomMetricModal.test.tsx",
+      "repo": "quaestor-web",
+      "spec": "a521cf23cceafef79f63e1c8361d3e6136caf280:clients/web/src/pages/information-requests/components/MetricLibrary/AddCustomMetricModal.test.tsx"
+    },
+    {
+      "rel": "clients/web/src/pages/information-requests/components/MetricLibrary/AddCustomMetricModal.tsx",
+      "repo": "quaestor-web",
+      "spec": "5aad1512097e369a6b5d80aec986d6f4632d1fc1^:clients/web/src/pages/information-requests/components/MetricLibrary/AddCustomMetricModal.tsx"
+    }
+  ],
+  "b131": [
+    {
+      "rel": "clients/web/src/components/DateInput/date-utils.ts",
+      "repo": "quaestor-web",
+      "spec": "f7080a8feb1fdfb0bd3f102db74ee6cc520b2c50^:clients/web/src/components/DateInput/date-utils.ts"
+    },
+    {
+      "rel": "clients/web/src/components/legacy/components/DatePicker.tsx",
+      "repo": "quaestor-web",
+      "spec": "a521cf23cceafef79f63e1c8361d3e6136caf280:clients/web/src/components/legacy/components/DatePicker.tsx"
+    }
+  ]
+}

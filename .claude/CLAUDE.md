@@ -19,6 +19,10 @@ Key shared paths:
 
 If something is mechanical and scriptable, it lives in code. Bash operations, API calls, token checks, and external writes must be implemented as scripts in `claude-code-shared/scripts/` with real argument handling. Do not leave these as inline prose, template comments, or copy-paste blocks inside skill or agent files.
 
+## Eval reports always get a plain-English summary
+
+Whenever you build or rebuild an eval report (claude-api `build-eval` / `hillclimb`, or any `.claude/hillclimb/<flow>/` directory), run `~/.dotfiles/claude-code-shared/scripts/eval-report.sh <flow-dir>` instead of calling the report builder directly. It writes `report.html` and `summary.html` (plain-English page). Hand the user `summary.html` first, then `report.html` for detail. For a new eval, fill `_state.json`'s `summary` block (`what`, `metrics`, `kinds`, `groups`, `case_notes`); see the script header for the shape. Eval transcripts and fixtures hold source from other repos: never commit `traces/`, `ref/`, `fixtures/`, `report.html`, or `summary.html` (ignored via `.gitignore` and `repo-policy.json` excludes).
+
 ## Delegate menial work to Haiku
 
 Push pure read-only lookups (multi-file grep/glob, "where is X", mapping a dir, reading many files to locate something, fetching a URL) to the `caveman:cavecrew-investigator` subagent (Haiku) instead of running them on the session model. Keep reasoning and edits on the session model. Skills that do heavy searching restate this; this is the default everywhere else.

@@ -3,3 +3,14 @@ Brewfile.local
 
 # Claude Code auto-synced claude.ai skills (machine-generated, per-account)
 claude-code-shared/skills/synced/
+
+# Eval run data (claude-api build-eval / hillclimb). Transcripts and frozen
+# fixtures hold full source files from other, private repos. Never commit.
+.claude/hillclimb/**/traces/
+.claude/hillclimb/**/ref/
+.claude/hillclimb/**/trajectory/
+.claude/hillclimb/**/report.html
+.claude/hillclimb/**/summary.html
+.claude/hillclimb/**/progress.txt
+.claude/hillclimb/**/errors.jsonl
+**/evals/*/fixtures/

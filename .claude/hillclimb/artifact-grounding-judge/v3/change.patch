@@ -1,0 +1,115 @@
+--- a/claude-code-shared/agents/artifact-grounding-judge.md
++++ b/claude-code-shared/agents/artifact-grounding-judge.md
+@@ -38,33 +38,19 @@
+ 
+ ### Positive anchors (source `artifact` or `transcript`)
+ 
+-Run this once per entry, with the entry's `ref` as the argument and its `quote` pasted unchanged into the heredoc:
++Run the check script once on the whole record. Paste the draft record from `## Draft attribution record` unchanged. The script reads each quote from the record itself; never type a quote or file text into the check.
+ 
+ ```bash
+-python3 -c '
+-import os, re, sys
+-p = sys.argv[1]
+-if not os.path.isfile(p): print("MISSING"); sys.exit()
+-norm = lambda s: re.sub(r"\s+", " ", s).strip()
+-q, t = norm(sys.stdin.read()), norm(open(p, errors="replace").read())
+-if q in t: print("MATCH"); sys.exit()
+-low = lambda ws: {w.lower() for w in ws}
+-tw, qw = t.split(" "), q.split(" ")
+-words = low(re.findall(r"\w+", t))
+-print("NO_MATCH; quote words not in file:", [w for w in re.findall(r"\w+", q) if w.lower() not in words])
+-qs, n = low(qw), len(qw)
+-i = max(range(max(1, len(tw) - n + 1)), key=lambda i: len(qs & low(tw[i:i + n])))
+-print("CLOSEST:", " ".join(tw[max(0, i - 3):i + n + 3]))
+-' "<ref>" <<'QUOTE'
+-<quote exactly as given>
+-QUOTE
++python3 ~/.dotfiles/claude-code-shared/scripts/check-anchors.py <<'JSON'
++<draft record JSON exactly as given>
++JSON
+ ```
+ 
+-The check ignores whitespace and line breaks, so a multi-line passage quoted on one line still matches.
++It prints one line per evidence entry with `status` and, on `NO_MATCH`, `words_not_in_file` and `closest`. Whitespace and line breaks are ignored, so a multi-line passage quoted on one line still matches.
+ 
+ - `MATCH`: the anchor is verified. Confidence unchanged.
+ - `MISSING`: see "File not found" below.
+-- `NO_MATCH`: the quote is not in the file as written. It is either fabricated or a paraphrase. `CLOSEST` shows the passage that shares the most words with the quote. If that passage is about something else, run `grep -niF` on a distinctive term from the quote to find the right one. Then apply these tests in order and stop at the first one that decides:
++- `NO_MATCH`: the quote is not in the file as written. It is either fabricated or a paraphrase. `closest` shows the passage that shares the most words with the quote. If it is about something else, run `grep -niF` on a distinctive term from the quote to find the right one. Then apply these tests in order and stop at the first one that decides:
+   1. **No passage → fabricated.** Nothing in the file covers the same subject as the quote.
+   2. **Code or names differ → fabricated.** If the quote is code (statements, expressions, signatures, config or JSON keys and values, lists of literals), it must equal the passage exactly. A renamed identifier, a changed operator or value, or an item added, dropped or reordered is fabricated. Code has no paraphrase. Comments and prose are not code, even inside a source file. In prose, each identifier, path, number and quoted string the quote names must appear in the passage character for character (surrounding backticks or quote marks do not count). If one differs, it is fabricated.
+   3. **Prose → compare claims, not words.** State in one line what the passage asserts and in one line what the quote asserts. A paraphrase swaps in synonyms, restructures sentences, and drops or adds filler, so it always has words listed as "not in file". That list is never a reason to reject on its own.
+--- /dev/null	2026-10-02 00:40:49
++++ claude-code-shared/scripts/check-anchors.py	2026-10-02 00:40:36
+@@ -0,0 +1,70 @@
++#!/usr/bin/env python3
++"""check-anchors.py — mechanical quote check for artifact-grounding-judge.
++
++Reads a draft v2 attribution record (JSON) on stdin, or from --record-file,
++and checks every evidence entry's quote against the file at its ref. The quote
++is read straight from the record, so the caller never re-types it.
++
++Matching: whitespace runs collapsed on both sides, then exact substring.
++
++Usage:
++  check-anchors.py [--record-file PATH] <<'JSON'
++  <draft record JSON>
++  JSON
++
++Output: one JSON line per evidence entry:
++  {"index": i, "source": ..., "ref": ..., "status": "MATCH"|"MISSING"|"NO_MATCH",
++   "words_not_in_file": [...], "closest": "..."}   (last two only on NO_MATCH)
++Absence claims ("X does not appear ...") normally report NO_MATCH; the caller
++checks them separately.
++
++Exit codes: 0 checked, 1 bad input.
++"""
++import argparse
++import json
++import os
++import re
++import sys
++
++norm = lambda s: re.sub(r"\s+", " ", s).strip()
++low = lambda ws: {w.lower() for w in ws}
++
++
++def check(entry):
++    ref = os.path.expanduser(str(entry.get("ref", "")))
++    out = {"source": entry.get("source"), "ref": entry.get("ref")}
++    if not os.path.isfile(ref):
++        return {**out, "status": "MISSING"}
++    q = norm(str(entry.get("quote", "")))
++    with open(ref, errors="replace") as fh:
++        t = norm(fh.read())
++    if q and q in t:
++        return {**out, "status": "MATCH"}
++    words = low(re.findall(r"\w+", t))
++    missing = [w for w in re.findall(r"\w+", q) if w.lower() not in words]
++    tw, qw = t.split(" "), q.split(" ")
++    qs, n = low(qw), len(qw)
++    i = max(range(max(1, len(tw) - n + 1)), key=lambda k: len(qs & low(tw[k:k + n])))
++    closest = " ".join(tw[max(0, i - 3):i + n + 3])
++    return {**out, "status": "NO_MATCH", "words_not_in_file": missing, "closest": closest}
++
++
++def main():
++    ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
++    ap.add_argument("--record-file", help="read the record from PATH instead of stdin")
++    a = ap.parse_args()
++    try:
++        raw = open(a.record_file).read() if a.record_file else sys.stdin.read()
++        evidence = json.loads(raw).get("evidence")
++        if not isinstance(evidence, list):
++            raise ValueError("record has no evidence array")
++    except (OSError, ValueError) as e:
++        print(f"ERROR: {e}", file=sys.stderr)
++        return 1
++    for i, entry in enumerate(evidence):
++        print(json.dumps({"index": i, **check(entry)}))
++    return 0
++
++
++if __name__ == "__main__":
++    sys.exit(main())

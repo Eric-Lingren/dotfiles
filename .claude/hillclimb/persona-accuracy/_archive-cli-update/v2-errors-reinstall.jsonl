@@ -1,0 +1,46 @@
+{"prompt_id":"improve-learnings--scope-1","rep":2,"failure_class":"error","error":"spawn /Users/eric/.local/share/fnm/node-versions/v24.19.0/installation/bin/claude ENOENT","retries":0,"judge_retries":0,"latency_s":0.003}
+{"prompt_id":"improve-learnings--scope-2","rep":0,"failure_class":"error","error":"spawn /Users/eric/.local/share/fnm/node-versions/v24.19.0/installation/bin/claude ENOENT","retries":0,"judge_retries":0,"latency_s":0.004}
+{"prompt_id":"improve-learnings--scope-2","rep":1,"failure_class":"error","error":"spawn /Users/eric/.local/share/fnm/node-versions/v24.19.0/installation/bin/claude ENOENT","retries":0,"judge_retries":0,"latency_s":0.001}
+{"prompt_id":"improve-learnings--scope-2","rep":2,"failure_class":"error","error":"spawn /Users/eric/.local/share/fnm/node-versions/v24.19.0/installation/bin/claude ENOENT","retries":0,"judge_retries":0,"latency_s":0.001}
+{"prompt_id":"improve-learnings--negation-1","rep":0,"failure_class":"error","error":"spawn /Users/eric/.local/share/fnm/node-versions/v24.19.0/installation/bin/claude ENOENT","retries":0,"judge_retries":0,"latency_s":0.002}
+{"prompt_id":"improve-learnings--negation-1","rep":1,"failure_class":"error","error":"spawn /Users/eric/.local/share/fnm/node-versions/v24.19.0/installation/bin/claude ENOENT","retries":0,"judge_retries":0,"latency_s":0.001}
+{"prompt_id":"improve-learnings--negation-1","rep":2,"failure_class":"error","error":"spawn /Users/eric/.local/share/fnm/node-versions/v24.19.0/installation/bin/claude ENOENT","retries":0,"judge_retries":0,"latency_s":0.001}
+{"prompt_id":"improve-learnings--negation-2","rep":0,"failure_class":"error","error":"spawn /Users/eric/.local/share/fnm/node-versions/v24.19.0/installation/bin/claude ENOENT","retries":0,"judge_retries":0,"latency_s":0.002}
+{"prompt_id":"improve-learnings--negation-2","rep":1,"failure_class":"error","error":"spawn /Users/eric/.local/share/fnm/node-versions/v24.19.0/installation/bin/claude ENOENT","retries":0,"judge_retries":0,"latency_s":0.003}
+{"prompt_id":"improve-learnings--negation-2","rep":2,"failure_class":"error","error":"spawn /Users/eric/.local/share/fnm/node-versions/v24.19.0/installation/bin/claude ENOENT","retries":0,"judge_retries":0,"latency_s":0.001}
+{"prompt_id":"improve-learnings--distractor-1","rep":0,"failure_class":"error","error":"spawn /Users/eric/.local/share/fnm/node-versions/v24.19.0/installation/bin/claude ENOENT","retries":0,"judge_retries":0,"latency_s":0.001}
+{"prompt_id":"improve-learnings--distractor-1","rep":1,"failure_class":"error","error":"spawn /Users/eric/.local/share/fnm/node-versions/v24.19.0/installation/bin/claude ENOENT","retries":0,"judge_retries":0,"latency_s":0.002}
+{"prompt_id":"improve-learnings--distractor-1","rep":2,"failure_class":"error","error":"spawn /Users/eric/.local/share/fnm/node-versions/v24.19.0/installation/bin/claude ENOENT","retries":0,"judge_retries":0,"latency_s":0.004}
+{"prompt_id":"improve-learnings--distractor-2","rep":0,"failure_class":"error","error":"spawn /Users/eric/.local/share/fnm/node-versions/v24.19.0/installation/bin/claude ENOENT","retries":0,"judge_retries":0,"latency_s":0.001}
+{"prompt_id":"improve-learnings--distractor-2","rep":1,"failure_class":"error","error":"spawn /Users/eric/.local/share/fnm/node-versions/v24.19.0/installation/bin/claude ENOENT","retries":0,"judge_retries":0,"latency_s":0.001}
+{"prompt_id":"improve-learnings--distractor-2","rep":2,"failure_class":"error","error":"spawn /Users/eric/.local/share/fnm/node-versions/v24.19.0/installation/bin/claude ENOENT","retries":0,"judge_retries":0,"latency_s":0.001}
+{"prompt_id":"relay-posting--drift-1","rep":0,"failure_class":"error","error":"spawn /Users/eric/.local/share/fnm/node-versions/v24.19.0/installation/bin/claude ENOENT","retries":0,"judge_retries":0,"latency_s":0.002}
+{"prompt_id":"relay-posting--drift-1","rep":1,"failure_class":"error","error":"spawn /Users/eric/.local/share/fnm/node-versions/v24.19.0/installation/bin/claude ENOENT","retries":0,"judge_retries":0,"latency_s":0.001}
+{"prompt_id":"relay-posting--drift-1","rep":2,"failure_class":"error","error":"spawn /Users/eric/.local/share/fnm/node-versions/v24.19.0/installation/bin/claude ENOENT","retries":0,"judge_retries":0,"latency_s":0.001}
+{"prompt_id":"relay-posting--drift-2","rep":0,"failure_class":"error","error":"spawn /Users/eric/.local/share/fnm/node-versions/v24.19.0/installation/bin/claude ENOENT","retries":0,"judge_retries":0,"latency_s":0.001}
+{"prompt_id":"relay-posting--drift-2","rep":1,"failure_class":"error","error":"spawn /Users/eric/.local/share/fnm/node-versions/v24.19.0/installation/bin/claude ENOENT","retries":0,"judge_retries":0,"latency_s":0.001}
+{"prompt_id":"relay-posting--drift-2","rep":2,"failure_class":"error","error":"spawn /Users/eric/.local/share/fnm/node-versions/v24.19.0/installation/bin/claude ENOENT","retries":0,"judge_retries":0,"latency_s":0.001}
+{"prompt_id":"relay-posting--stale-1","rep":0,"failure_class":"error","error":"spawn ENOEXEC","retries":0,"judge_retries":0,"latency_s":0.003}
+{"prompt_id":"relay-posting--stale-1","rep":1,"failure_class":"error","error":"spawn ENOEXEC","retries":0,"judge_retries":0,"latency_s":0.001}
+{"prompt_id":"relay-posting--stale-1","rep":2,"failure_class":"error","error":"spawn ENOEXEC","retries":0,"judge_retries":0,"latency_s":0.001}
+{"prompt_id":"relay-posting--stale-2","rep":0,"failure_class":"error","error":"spawn ENOEXEC","retries":0,"judge_retries":0,"latency_s":0.001}
+{"prompt_id":"relay-posting--stale-2","rep":1,"failure_class":"error","error":"spawn ENOEXEC","retries":0,"judge_retries":0,"latency_s":0.001}
+{"prompt_id":"relay-posting--stale-2","rep":2,"failure_class":"error","error":"spawn ENOEXEC","retries":0,"judge_retries":0,"latency_s":0}
+{"prompt_id":"relay-posting--scope-1","rep":0,"failure_class":"error","error":"spawn ENOEXEC","retries":0,"judge_retries":0,"latency_s":0.001}
+{"prompt_id":"relay-posting--scope-1","rep":1,"failure_class":"error","error":"spawn ENOEXEC","retries":0,"judge_retries":0,"latency_s":0.001}
+{"prompt_id":"relay-posting--scope-1","rep":2,"failure_class":"error","error":"spawn ENOEXEC","retries":0,"judge_retries":0,"latency_s":0.001}
+{"prompt_id":"relay-posting--scope-2","rep":0,"failure_class":"error","error":"spawn ENOEXEC","retries":0,"judge_retries":0,"latency_s":0.001}
+{"prompt_id":"relay-posting--scope-2","rep":1,"failure_class":"error","error":"spawn ENOEXEC","retries":0,"judge_retries":0,"latency_s":0.001}
+{"prompt_id":"relay-posting--scope-2","rep":2,"failure_class":"error","error":"spawn ENOEXEC","retries":0,"judge_retries":0,"latency_s":0}
+{"prompt_id":"relay-posting--negation-1","rep":0,"failure_class":"error","error":"spawn ENOEXEC","retries":0,"judge_retries":0,"latency_s":0.001}
+{"prompt_id":"relay-posting--negation-1","rep":1,"failure_class":"error","error":"spawn ENOEXEC","retries":0,"judge_retries":0,"latency_s":0.001}
+{"prompt_id":"relay-posting--negation-1","rep":2,"failure_class":"error","error":"spawn ENOEXEC","retries":0,"judge_retries":0,"latency_s":0}
+{"prompt_id":"relay-posting--negation-2","rep":0,"failure_class":"error","error":"spawn ENOEXEC","retries":0,"judge_retries":0,"latency_s":0.001}
+{"prompt_id":"relay-posting--negation-2","rep":1,"failure_class":"error","error":"spawn ENOEXEC","retries":0,"judge_retries":0,"latency_s":0.001}
+{"prompt_id":"relay-posting--negation-2","rep":2,"failure_class":"error","error":"spawn ENOEXEC","retries":0,"judge_retries":0,"latency_s":0.001}
+{"prompt_id":"relay-posting--distractor-1","rep":0,"failure_class":"error","error":"spawn ENOEXEC","retries":0,"judge_retries":0,"latency_s":0.001}
+{"prompt_id":"relay-posting--distractor-1","rep":1,"failure_class":"error","error":"spawn ENOEXEC","retries":0,"judge_retries":0,"latency_s":0.001}
+{"prompt_id":"relay-posting--distractor-1","rep":2,"failure_class":"error","error":"spawn ENOEXEC","retries":0,"judge_retries":0,"latency_s":0.001}
+{"prompt_id":"relay-posting--distractor-2","rep":0,"failure_class":"error","error":"spawn ENOEXEC","retries":0,"judge_retries":0,"latency_s":0.001}
+{"prompt_id":"relay-posting--distractor-2","rep":1,"failure_class":"error","error":"spawn ENOEXEC","retries":0,"judge_retries":0,"latency_s":0.001}
+{"prompt_id":"relay-posting--distractor-2","rep":2,"failure_class":"error","error":"spawn ENOEXEC","retries":0,"judge_retries":0,"latency_s":0}
