@@ -119,6 +119,7 @@ For each task that passed both approval gates, delegate to the resolved channel 
 - `pr` — the blocking task's PR URL (may be null)
 - `thread_id` — the thread node id or database id (present only when task carries it)
 - `thread_id_type` — `"graphql_node_id"` or `"database_id"` (disambiguates thread_id)
+- `thread_database_id` — REST numeric comment id (present only when task carries it); used by the GitHub adapter's idempotency check and as `in_reply_to` for inline review replies
 
 The channel adapter returns a schema-valid egress-result with `status: "posted"`,
 `"copy-only"`, or `"failed"`. Record the result for the step 5 summary.
