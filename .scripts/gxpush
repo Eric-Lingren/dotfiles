@@ -82,26 +82,27 @@ compute_excluded() {
   done <<< "$all_files"
 }
 
+SECRET_PATTERNS=(
+  'AKIA[0-9A-Z]{16}'
+  'ghp_[A-Za-z0-9]{36}'
+  'sk-[A-Za-z0-9]{20,}'
+  'token\s*=\s*["\x27][A-Za-z0-9\-_]{20,}'
+  'password\s*=\s*["\x27][^\s"\x27]{8,}'
+  'secret\s*=\s*["\x27][A-Za-z0-9\-_]{16,}'
+  '\.env$'
+  'id_rsa'
+  'id_ed25519'
+)
+
 # Secret scanning: look for common secret patterns in staged + will-add files
 secret_scan() {
   local -a files=("$@")
   local -a hits=()
-  local patterns=(
-    'AKIA[0-9A-Z]{16}'
-    'ghp_[A-Za-z0-9]{36}'
-    'sk-[A-Za-z0-9]{20,}'
-    'token\s*=\s*["\x27][A-Za-z0-9\-_]{20,}'
-    'password\s*=\s*["\x27][^\s"\x27]{8,}'
-    'secret\s*=\s*["\x27][A-Za-z0-9\-_]{16,}'
-    '\.env$'
-    'id_rsa'
-    'id_ed25519'
-  )
   for f in "${files[@]}"; do
     [[ -f "$f" ]] || continue
     # Skip shell scripts — patterns match their own source, not real secrets
     [[ "$f" == *.sh || "$f" == .scripts/* || "$f" == */.scripts/* ]] && continue
-    for pat in "${patterns[@]}"; do
+    for pat in "${SECRET_PATTERNS[@]}"; do
       if grep -qE "$pat" "$f" 2>/dev/null; then
         hits+=("$f")
         break
@@ -114,6 +115,33 @@ secret_scan() {
   done
   printf '%s\n' "${hits[@]}" | sort -u
 }
+
+# Same scan against the committed (HEAD) version of a file, for unpushed commits
+secret_scan_committed() {
+  local f="$1"
+  [[ "$f" == *.sh || "$f" == .scripts/* || "$f" == */.scripts/* ]] && return
+  if [[ "$f" == *.env || "$f" == .env || "$f" == */.env ]]; then
+    echo "$f"
+    return
+  fi
+  local content
+  content=$(git show "HEAD:$f" 2>/dev/null) || return
+  for pat in "${SECRET_PATTERNS[@]}"; do
+    if grep -qE "$pat" <<< "$content"; then
+      echo "$f"
+      return
+    fi
+  done
+}
+
+# Unpushed range: upstream..HEAD, or origin/<base>..HEAD for a branch never pushed
+UPSTREAM=$(git rev-parse --abbrev-ref --symbolic-full-name '@{u}' 2>/dev/null || true)
+if [[ -n "$UPSTREAM" ]]; then
+  UNPUSHED_RANGE="$UPSTREAM..HEAD"
+else
+  UNPUSHED_RANGE="origin/$BASE..HEAD"
+fi
+AHEAD=$(git rev-list --count "$UNPUSHED_RANGE" 2>/dev/null || echo 0)
 
 # --- Compute preview data ---
 STAGED=$(compute_staged_list)
@@ -188,8 +216,43 @@ else
 fi
 echo ""
 
+if [[ "$AHEAD" -gt 0 ]]; then
+  COMMITTED_CHANGED=$(git diff --name-only --diff-filter=ACMRT "$UNPUSHED_RANGE" 2>/dev/null)
+  COMMITTED_DELETED=$(git diff --name-only --diff-filter=D "$UNPUSHED_RANGE" 2>/dev/null)
+
+  echo "UNPUSHED COMMITS ($AHEAD, already committed — will be pushed):"
+  git log --oneline "$UNPUSHED_RANGE" | sed 's/^/  /'
+  echo ""
+
+  echo "  Files added / modified in those commits:"
+  if [[ -n "$COMMITTED_CHANGED" ]]; then
+    while IFS= read -r f; do [[ -n "$f" ]] && echo "    $f"; done <<< "$COMMITTED_CHANGED"
+  else
+    echo "    (none)"
+  fi
+  if [[ -n "$COMMITTED_DELETED" ]]; then
+    echo "  Files deleted in those commits:"
+    while IFS= read -r f; do [[ -n "$f" ]] && echo "    $f"; done <<< "$COMMITTED_DELETED"
+  fi
+  echo ""
+
+  COMMITTED_EXCLUDED=""
+  while IFS= read -r f; do
+    [[ -z "$f" ]] && continue
+    _matches_exclude "$f" && COMMITTED_EXCLUDED+="$f"$'\n'
+  done <<< "$COMMITTED_CHANGED"
+  if [[ -n "$COMMITTED_EXCLUDED" ]]; then
+    echo -e "\033[1;33mEXCLUDED-POLICY FILES INSIDE COMMITS (will be pushed unless you amend):\033[0m"
+    while IFS= read -r f; do [[ -n "$f" ]] && echo "  !! $f"; done <<< "$COMMITTED_EXCLUDED"
+    echo ""
+  fi
+fi
+
 echo "SECRETS (potential — review before pushing):"
-SECRETS=$( (while IFS= read -r f; do [[ -n "$f" ]] && secret_scan "$f"; done <<< "$WILL_ADD_FILTERED"$'\n'"$STAGED") | sort -u )
+SECRETS=$( {
+  while IFS= read -r f; do [[ -n "$f" ]] && secret_scan "$f"; done <<< "$WILL_ADD_FILTERED"$'\n'"$STAGED"
+  while IFS= read -r f; do [[ -n "$f" ]] && secret_scan_committed "$f"; done <<< "${COMMITTED_CHANGED:-}"
+} | sort -u )
 if [[ -n "$SECRETS" ]]; then
   while IFS= read -r f; do [[ -n "$f" ]] && echo "  !! $f"; done <<< "$SECRETS"
 else
@@ -218,12 +281,6 @@ fi
 # directly, leaving nothing to stage but still needing a push).
 if ! $MODE_PUSH_ONLY; then
   if [[ -z "$STAGED" && -z "$WILL_ADD_FILTERED" ]]; then
-    UPSTREAM=$(git rev-parse --abbrev-ref --symbolic-full-name '@{u}' 2>/dev/null || true)
-    if [[ -n "$UPSTREAM" ]]; then
-      AHEAD=$(git rev-list --count "$UPSTREAM"..HEAD 2>/dev/null || echo 0)
-    else
-      AHEAD=$(git rev-list --count "origin/$BASE"..HEAD 2>/dev/null || echo 0)
-    fi
     if [[ "$AHEAD" -gt 0 ]]; then
       echo "Nothing to stage — $AHEAD unpushed commit(s) found. Proceeding to push."
     else

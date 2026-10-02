@@ -63,7 +63,8 @@ For each eligible task, inspect `reply_url` to determine the target channel adap
 Also read the blocking code task's `commit` and `pr` fields. These are passed to the channel
 adapter so it can construct channel-specific formatting (e.g. commit permalink for GitHub).
 relay does not construct commit permalinks directly — that is channel-specific logic owned
-by each adapter.
+by each adapter. If `pr` is null, the run was never pushed, so pass `commit` as null too.
+An unpushed SHA would render a dead permalink.
 
 ### 3. Present for final HITL approval
 
