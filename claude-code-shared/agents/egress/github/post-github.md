@@ -33,7 +33,16 @@ The caller (relay) passes:
 - `pr` — (optional) PR URL; used if `commit` is null but the PR reference is available
 - `thread_id` — GraphQL node id (inline review threads) or numeric databaseId (top-level PR comments)
 - `thread_id_type` — `"graphql_node_id"` or `"database_id"` — selects the posting endpoint
-- `thread_database_id` — REST numeric comment id; used as `in_reply_to` for inline review replies
+- `thread_database_id` — REST numeric comment id; used as `in_reply_to` for inline review replies.
+  **Fallback:** if not provided by the caller, attempt to parse it from the `target` URL anchor.
+  A URL anchor of the form `#discussion_r<N>` contains the REST database id as `N`:
+  ```bash
+  anchor="${target#*#}"          # e.g. "discussion_r123456"
+  if [[ "${anchor}" =~ ^discussion_r([0-9]+)$ ]]; then
+    thread_database_id="${BASH_REMATCH[1]}"
+  fi
+  ```
+  If neither the caller provides it nor the anchor contains a numeric id, set `thread_database_id` to empty and skip the idempotency check (log a warning).
 
 ---
 
@@ -106,9 +115,12 @@ the filename as a literal string, not the file contents. If the body contains
 special characters, use `printf '%s' "$combined_draft" | gh api ... --input -`
 for the REST case.
 
-**No-retry rule:** Make exactly one POST attempt. If it fails, return
-`status: failed` immediately. Never retry a write autonomously. The caller
-(relay) handles retries with explicit user confirmation.
+**No-retry rule:** Make exactly one POST attempt. After the first POST returns,
+exit immediately regardless of outcome — success, failure, or ambiguous response.
+Do not make a second POST call for any reason, including ambiguous response or missing
+`html_url`. If the exit_code is non-zero, return `status: failed` and exit 1 immediately.
+Never retry a write autonomously. The caller (relay) handles retries with explicit user
+confirmation.
 
 Based on `thread_id_type`:
 
@@ -158,7 +170,16 @@ Print the egress-result JSON to stdout:
 
 **On failure** (non-zero exit code or missing html_url):
 
-Print the error details to stderr, then print the egress-result JSON to stdout:
+Print the error details to stderr, then print the egress-result JSON to stdout, then **exit 1
+immediately**. Do not attempt any additional POST or retry:
+
+```bash
+echo "post-github: POST failed (exit_code=${exit_code}): ${response}" >&2
+echo '{"schema_version":"1","posted":false,"url":null,"thread_id":"'"${thread_id}"'","status":"failed"}'
+exit 1
+```
+
+Full JSON form for clarity:
 
 ```json
 {
@@ -170,4 +191,7 @@ Print the error details to stderr, then print the egress-result JSON to stdout:
 }
 ```
 
-Include the error message from `$response` in the status output so the caller can surface it.
+Include the error message from `$response` in the stderr output so the caller can surface it.
+After printing the egress-result JSON and calling `exit 1`, the agent terminates. No further
+bash commands execute. The caller (relay) is responsible for surfacing the failure and offering
+the user a retry choice.
