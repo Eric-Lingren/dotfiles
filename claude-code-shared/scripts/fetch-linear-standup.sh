@@ -78,8 +78,8 @@ _resolve_user_id() {
   local query
   query=$(python3 -c "
 import json
-q = '{\"query\":\"{users(filter:{email:{eq:\\\"%s\\\"}}) {nodes{id name}}}\"}' % '$email'
-print(q)
+gql = '{users(filter:{email:{eq:\"%s\"}}) {nodes{id name}}}' % '$email'
+print(json.dumps({'query': gql}))
 ")
   local data
   data=$(_gql "$query")
