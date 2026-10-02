@@ -260,7 +260,7 @@ For each task in the wave (in order):
   git log --oneline HEAD..<task-worktree-branch>
   ```
   If the output is empty, the fix was left staged or uncommitted in the worktree. Do NOT merge. Mark this task `failed`, override `receipt.status = "failed"`, and add to `summary`: "Worktree branch has no commits. Changes were not committed." Continue to the next task. Otherwise, attempt `git merge --no-ff <task-worktree-branch>`. Merge messages describe the change only. Never include the task ID (`T-xxxx`) or the worktree branch name.
-  - On success: the merge is committed to the shared branch.
+  - On success: the merge is committed to the shared branch. Record `task_commit=$(git rev-parse HEAD)` for this task right away (after the merge, or after the cherry-pick on that path). Step 4e writes it to the task's `commit` field.
   - On conflict (`git merge` exits non-zero): run `git merge --abort`. Mark this task `failed` in the JSON. Override `receipt.status = "failed"`. Add a note in the task's `summary`: "Merge conflict during wave integration." Continue to the next task — do not halt.
 
 #### e. Write receipts back into the task JSON
@@ -269,6 +269,7 @@ For each task in the wave (after its merge attempt):
 
 1. **Write the receipt:**
    - Set `summary`, `files_touched`, `tests`, `log_path` directly from the receipt.
+   - If the merge in step 4d succeeded, set `commit` to that task's `task_commit`. This SHA is the task's own fix, so a `reply` task can point a reviewer at exactly the change for its comment.
    - If `receipt.status == "done"`: set task `status` to `done` and `pr` to a suggested `gh pr create` command the user can run (do not run it).
    - If `receipt.status == "needs_eyes"`: set task `status` to `needs_eyes`. Set `pr` to the same suggested command. A `needs_eyes` task is considered successful — it produced code changes, but one or more visual captures need async reviewer attention in the Verification Report.
    - If `receipt.status == "failed"`: set task `status` to `failed`.
@@ -466,13 +467,9 @@ Where the two counts are the totals across all tasks in this run. Omit if `brows
 
 #### c. Record the fixing commit on completed code tasks
 
-After the push returns, capture the branch HEAD and write it (plus the PR URL) onto every `code` task this run marked `done`. This is what lets a downstream `reply` task (produced by `/pr-revise`) cite the exact commit that fixed its thread, so the reviewer gets one combined comment instead of a plan-then-commit pair.
+After the push returns, write the PR URL onto every `code` task this run marked `done`. Each task already carries its own `commit` from step 4e. That per-task SHA is what lets a downstream `reply` task (produced by `/pr-revise`) cite the exact commit that fixed its thread, so the reviewer gets one combined comment instead of a plan-then-commit pair.
 
-```bash
-git rev-parse HEAD
-```
-
-For each `code` task now `done`: set `commit` to that SHA and `pr` to the PR URL from gxpush, then write the task file. All tasks landed in this single push share the branch HEAD — that is the honest reference under the one-PR-per-run model. If the user declined the push, leave `commit`/`pr` null; the reply branch will fall back to a PR link or omit the reference.
+For each `code` task now `done`: set `pr` to the PR URL from gxpush. Keep its existing `commit`. Only if `commit` is null, fall back to `git rev-parse HEAD`. Then write the task file. If the user declined the push, leave `pr` null. The per-task `commit` stays, but it is not on the remote yet, so the reply branch will fall back to a PR link or omit the reference.
 
 <!-- learning-capture:start -->
 Read and execute `~/.dotfiles/claude-code-shared/resources/learning-capture.md`.

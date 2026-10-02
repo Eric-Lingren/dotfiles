@@ -36,3 +36,7 @@
 {"ts": "2026-10-01T18:18:09Z", "skill": "to-seed", "outcome": "ran"}
 {"ts": "2026-10-01T22:47:11Z", "skill": "pr-revise", "outcome": "ran"}
 {"ts": "2026-10-02T04:01:37Z", "skill": "to-tasks", "outcome": "ran"}
+{"ts": "2026-10-02T04:25:26Z", "skill": "grill-me", "outcome": "ran"}
+{"ts": "2026-10-02T04:45:39Z", "skill": "build-code", "outcome": "ran"}
+{"ts": "2026-10-02T04:45:39Z", "skill": "dispatch-tasks", "outcome": "ran"}
+{"ts": "2026-10-02T04:54:22Z", "skill": "handoff", "outcome": "ran"}
