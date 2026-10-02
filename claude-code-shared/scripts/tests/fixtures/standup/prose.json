@@ -1,0 +1,14 @@
+{
+  "summaries": {
+    "SM-3008": "Replaces the dispatch queue with a deterministic event loop",
+    "SM-3011": "Adds user-facing feature X behind the platform flag",
+    "SM-3013": "Groundwork for the new notification pipeline"
+  },
+  "theme": "Steady delivery — Feature X shipped and the dispatch redesign is one review away.",
+  "talk_track": [
+    "Merged Feature X (SM-3011) for Platform Reliability — clean CI, reviewed by carol.",
+    "Dispatch redesign (SM-3008) is waiting on alice's second pass.",
+    "Next: address alice's feedback and get SM-3008 merged.",
+    "Theme: steady delivery — one shipped, one almost across the line."
+  ]
+}

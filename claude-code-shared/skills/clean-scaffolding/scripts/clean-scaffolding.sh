@@ -10,7 +10,7 @@
 #
 # Archive set (bundled then removed):  docs/seeds/, docs/prd/, docs/tasks/, docs/handoffs/
 # Delete set (removed, not archived):  docs/browser-checks/, docs/tasks/.logs/, docs/offload-output/
-# Untouched:                           docs/adr/, docs/prototype/
+# Untouched:                           docs/adr/, docs/prototype/, docs/standups/
 #
 # Never runs git. Never edits .gitignore. Deletion uses explicit rm per path:
 # no rm -f, no bare rm *, no find -delete.

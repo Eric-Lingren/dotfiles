@@ -31,6 +31,7 @@ All 30 shared skills. Plugin skills (caveman, chrome-devtools) are excluded.
 - `skills/relay/`
 - `skills/pr-revise/`
 - `skills/run-task-followups/`
+- `skills/standup/`
 - `skills/tasks-to-linear/`
 - `skills/tdd/`
 - `skills/vet/`

@@ -1,0 +1,89 @@
+[
+  {
+    "number": 101,
+    "title": "feat: implement SM-3008 dispatch redesign",
+    "body": "Closes SM-3008. Also touches SM-3010.",
+    "headRefName": "feat/SM-3008-dispatch",
+    "url": "https://github.com/owner/repo/pull/101",
+    "state": "OPEN",
+    "isDraft": false,
+    "createdAt": "2026-09-01T10:00:00Z",
+    "updatedAt": "2026-09-15T12:00:00Z",
+    "mergedAt": null,
+    "reviews": [
+      {
+        "author": {"login": "alice"},
+        "state": "APPROVED"
+      },
+      {
+        "author": {"login": "bob"},
+        "state": "CHANGES_REQUESTED"
+      }
+    ],
+    "reviewRequests": [
+      {"requestedReviewer": {"login": "carol"}}
+    ],
+    "statusCheckRollup": [
+      {"name": "ci/test", "status": "COMPLETED", "conclusion": "SUCCESS"},
+      {"name": "ci/lint", "status": "COMPLETED", "conclusion": "SUCCESS"}
+    ],
+    "changedFiles": 12
+  },
+  {
+    "number": 102,
+    "title": "fix: KEY-42 null pointer in loader",
+    "body": "Fix for KEY-42.",
+    "headRefName": "fix/null-pointer-loader",
+    "url": "https://github.com/owner/repo/pull/102",
+    "state": "MERGED",
+    "isDraft": false,
+    "createdAt": "2026-09-05T08:00:00Z",
+    "updatedAt": "2026-09-10T09:00:00Z",
+    "mergedAt": "2026-09-10T09:00:00Z",
+    "reviews": [
+      {
+        "author": {"login": "alice"},
+        "state": "APPROVED"
+      }
+    ],
+    "reviewRequests": [],
+    "statusCheckRollup": [
+      {"name": "ci/test", "status": "COMPLETED", "conclusion": "FAILURE"}
+    ],
+    "changedFiles": 3
+  },
+  {
+    "number": 103,
+    "title": "chore: update deps",
+    "body": "",
+    "headRefName": "chore/update-deps",
+    "url": "https://github.com/owner/repo/pull/103",
+    "state": "OPEN",
+    "isDraft": true,
+    "createdAt": "2026-09-20T14:00:00Z",
+    "updatedAt": "2026-09-20T14:00:00Z",
+    "mergedAt": null,
+    "reviews": [],
+    "reviewRequests": [],
+    "statusCheckRollup": [
+      {"name": "ci/test", "status": "IN_PROGRESS", "conclusion": null}
+    ],
+    "changedFiles": 1
+  },
+  {
+    "number": 104,
+    "title": "docs: readme update",
+    "body": "",
+    "headRefName": "docs/readme",
+    "url": "https://github.com/owner/repo/pull/104",
+    "state": "CLOSED",
+    "isDraft": false,
+    "createdAt": "2026-08-01T00:00:00Z",
+    "updatedAt": "2026-08-02T00:00:00Z",
+    "mergedAt": null,
+    "reviews": [],
+    "reviewRequests": [],
+    "statusCheckRollup": [],
+    "changedFiles": 2
+  }
+]

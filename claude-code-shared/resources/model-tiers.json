@@ -56,7 +56,8 @@
     "improve-directory-structure": "T4",
     "worktree": "T2",
     "offload": "T2",
-    "ci-fix": "T3"
+    "ci-fix": "T3",
+    "standup": "T2"
   },
   "agents": {
     "architecture-auditor": "T3",
