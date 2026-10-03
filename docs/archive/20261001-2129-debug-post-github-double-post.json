@@ -1,0 +1,62 @@
+{
+  "kind": "condensed",
+  "producer": "clean-scaffolding",
+  "slug": "debug-post-github-double-post",
+  "title": "debug-post-github-double-post",
+  "condensed_at": "2026-10-03T07:36:04Z",
+  "condensed_from": [
+    "20261001-2129-debug-post-github-double-post.json"
+  ],
+  "artifacts": [
+    {
+      "filename": "20261001-2129-debug-post-github-double-post.json",
+      "type": "task",
+      "content": {
+        "schema_version": "2",
+        "producer": "debug",
+        "source": {
+          "type": "session",
+          "ref": null
+        },
+        "generated_at": "2026-10-01T21:29:00Z",
+        "branching": {
+          "strategy": "single",
+          "branch": "fix/post-github-double-post"
+        },
+        "tasks": [
+          {
+            "id": "T-0013",
+            "title": "Fix relay missing thread_database_id and post-github idempotency",
+            "type": "AFK",
+            "task_type": "code",
+            "description": "Root cause: relay SKILL.md step 4 pass list omits `thread_database_id`, so post-github never receives it. Without it, the idempotency jq filter (`select(.in_reply_to_id == ${thread_database_id}`) silently errors via `2>/dev/null || echo 0`, always returns 0, and never blocks a duplicate post. Haiku then posts, and if it perceives response ambiguity it violates the no-retry rule and posts again.\n\nFailing scenario: relay delegates 4 parallel reply tasks \u2192 post-github agents each receive no thread_database_id \u2192 idempotency check always passes \u2192 3 of 4 threads get duplicate comments.\n\nTest seam: no automated test seam exists for GitHub API comment creation. The idempotency bash logic can be unit-tested by mocking `gh api` responses. Write a minimal bash test at `~/.dotfiles/claude-code-shared/tests/test-post-github-idempotency.sh` that stubs `gh api` to simulate (a) zero existing replies \u2192 expect one POST, (b) one existing reply \u2192 expect zero POSTs.\n\nFix approach:\n1. In `~/.dotfiles/claude-code-shared/skills/relay/SKILL.md` step 4 pass list, add `thread_database_id` after `thread_id_type`.\n2. In `~/.dotfiles/claude-code-shared/agents/egress/github/post-github.md`:\n   a. Add input field doc for `thread_database_id` and a fallback: if not provided, parse from target URL anchor (`#discussion_r<N>` \u2192 N).\n   b. After step 4 POST call, add explicit: 'After the first POST returns, exit immediately. Do not make a second POST call for any reason, including ambiguous response or missing html_url.'\n   c. On non-zero exit_code, return status: failed and exit 1 immediately. Do not re-run the POST.\n\nFiles: `~/.dotfiles/claude-code-shared/skills/relay/SKILL.md`, `~/.dotfiles/claude-code-shared/agents/egress/github/post-github.md`.",
+            "acceptance_criteria": [
+              "Bash test at ~/.dotfiles/claude-code-shared/tests/test-post-github-idempotency.sh exists and passes: stub gh api to return 1 existing reply \u2192 post-github exits without posting",
+              "relay SKILL.md step 4 pass list includes thread_database_id",
+              "post-github.md documents thread_database_id input and adds URL-anchor fallback parse",
+              "post-github.md step 4 exit path says: after first POST returns, exit immediately regardless of outcome",
+              "Running relay on a PR with graphql_node_id threads produces exactly one comment per thread (no duplicates)"
+            ],
+            "blocked_by": [],
+            "status": "done",
+            "branch": "fix/post-github-double-post",
+            "pr": "gh pr create --base main --head fix/post-github-double-post",
+            "commit": "dac143988926656fe9b01f658223ce0c416a8b3a",
+            "summary": "Added thread_database_id to relay SKILL.md step 4 pass list. post-github.md gains URL-anchor fallback parse, exit-immediately no-retry rule, and exit 1 on failure. Bash idempotency test added (4/4 pass).",
+            "files_touched": [
+              "claude-code-shared/skills/relay/SKILL.md",
+              "claude-code-shared/agents/egress/github/post-github.md",
+              "claude-code-shared/tests/test-post-github-idempotency.sh"
+            ],
+            "tests": {
+              "passed": 4,
+              "failed": 0
+            },
+            "log_path": "docs/tasks/.logs/20261001-2129-debug-post-github-double-post/T-0013.md"
+          }
+        ],
+        "follow_ups": []
+      }
+    }
+  ]
+}

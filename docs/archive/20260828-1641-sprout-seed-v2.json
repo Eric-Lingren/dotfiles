@@ -1,0 +1,273 @@
+{
+  "kind": "condensed",
+  "producer": "clean-scaffolding",
+  "slug": "sprout-seed-v2",
+  "title": "Sprout-Seed v2: Context Management, Local-Only Mode, and Review Output",
+  "condensed_at": "2026-10-03T07:36:04Z",
+  "condensed_from": [
+    "20260828-1641-sprout-seed-v2.json",
+    "20260828-1747-sprout-seed-v2.json"
+  ],
+  "artifacts": [
+    {
+      "filename": "20260828-1641-sprout-seed-v2.json",
+      "type": "seed",
+      "content": {
+        "schema_version": "4",
+        "producer": "to-seed",
+        "source": {
+          "type": "session",
+          "ref": null
+        },
+        "title": "Sprout-Seed v2: Context Management, Local-Only Mode, and Review Output",
+        "slug": "sprout-seed-v2",
+        "created": "2026-08-28T16:41:00Z",
+        "iteration": 1,
+        "summary": "Overhaul the sprout-seed pipeline to fix three problems: context bloat from accumulating full subagent output in the orchestrator, unwanted GitHub side-effects (PR creation, comments, tagging) during unattended runs, and missing structured review output. The orchestrator stays single-session but reads only compact handoff files instead of full subagent text. All runs are fully local (no push, no PR). gxpush defaults to draft PRs globally. The code review phase produces a task file with a new review_finding task type, enabling iterative revision loops. Single-pass execution with manual re-run for iterations.",
+        "status": "ready",
+        "decisions": [
+          "Use file-based handoff between phases. Each subagent writes output to docs/tasks/.sprout/<phase>.json. Orchestrator reads only handoff files, not full Agent return text.",
+          "Remove dead git diff main...HEAD call from orchestrator (SKILL.md:133). pr-code-review fetches its own diff.",
+          "Remove duplicate pr-code-review findings embed (SKILL.md:185).",
+          "Handoff files validated against contracts on both sides: subagent validates on write, orchestrator validates on read.",
+          "Extend task-schema.json with review_finding task type rather than creating entirely new schemas. Reuse runner-result-schema.json for build phase status.",
+          "Create one small new schema for sprout handoff metadata only (phase, paths, status, errors).",
+          "sprout-seed runs fully local. No push, no PR creation. Everything stays on local branch until user explicitly pushes.",
+          "Set GX_PR_DRAFT=true as global default in gxpush. PRs are always draft unless explicitly overridden.",
+          "build-code skips push/PR step via both task file field (local_only: true) and prompt instruction (belt and suspenders).",
+          "Exclude both docs/tasks/.sprout/ and revision task files (docs/tasks/<slug>-revisions-r<N>.json) from push in repo-policy.json. Not via gitignore since user lacks maintenance rights in all repos.",
+          "pr-code-review output mode determined by caller context injection in the subagent prompt. No flags. All modes produce a task file. Caller context determines downstream consumption: sprout-seed feeds task file to build-code, standalone code-review feeds task file to dispatch-tasks for inline printing.",
+          "All review output modes produce a task file. Downstream consumer differs: self-review feeds build-code, review-others feeds dispatch-tasks for inline printing, clarification feeds dispatch-tasks. Scales into relay when ready.",
+          "review_finding severity reuses existing pr-code-review vocabulary: bug, risk, nit, q, praise. No new terms needed.",
+          "review_finding category aligns with existing pr-code-review dimensions: correctness, security, performance, conventions, test-coverage.",
+          "Single-pass execution. No auto-loop. User decides whether to iterate by re-running sprout-seed or build-code on the revision task file.",
+          "End-of-run output is compact receipt (seed path, task file, branch, review file) plus inline findings summary (severity, file:line, one-liner).",
+          "Scope includes: sprout-seed skill changes, pr-code-review output contract changes, task-schema.json extension, gxpush draft default, repo-policy.json update."
+        ],
+        "open_threads": [],
+        "disposed_threads": [],
+        "next_action": "Run /to-tasks to decompose this seed into implementable task slices.",
+        "problem_statement": "The sprout-seed pipeline has two critical issues: (1) context bloat causes failures on large-scope seeds because the orchestrator accumulates full subagent text output plus inline git diff despite having JSON file handoffs, and (2) the pipeline creates real PRs, pushes to GitHub, and posts comments during unattended runs, violating the moratorium on external posting. Additionally, the review phase produces unstructured text output instead of a task file for iterative revision.",
+        "solution": "Surgical cleanup of the orchestrator to read only compact handoff files instead of capturing full subagent output. Fully local execution mode with no remote interaction. Global draft-PR default in gxpush. New review_finding task type in task-schema.json enabling structured review output that feeds back into build-code for iterative passes.",
+        "implementation_decisions": [
+          "Each sprout-seed phase writes to docs/tasks/.sprout/<phase>.json (e.g., phase-1-tasks.json, phase-2-build.json, phase-3-review.json).",
+          "Handoff metadata schema is new but minimal. Existing task-schema.json extended with review_finding type. runner-result-schema.json reused for build status.",
+          "review_finding schema shape: task_type, id (RF-NNN), title, severity (bug|risk|nit|q|praise), category (correctness|security|performance|conventions|test-coverage), file, line, description, suggested_fix, context (optional code snippet), status.",
+          "build-code task file gains local_only boolean field. When true, step 7 (push/PR) is skipped entirely.",
+          "gxpush modified to default GX_PR_DRAFT=true. Non-draft requires explicit opt-out.",
+          "repo-policy.json updated to exclude both docs/tasks/.sprout/ and revision task files from push operations."
+        ],
+        "risks_and_tradeoffs": [
+          "Prompt-based mode injection (caller tells pr-code-review what output to produce) is less rigid than schema enforcement. Mitigated by also having the task file field as structural backup.",
+          "Global draft-PR default changes behavior for all gxpush callers. Intended effect since user never wants non-draft PRs opened without explicit permission.",
+          "review_finding tasks reuse the same task file schema, which means build-code must handle the new type. If a review_finding is accidentally routed to a build-runner, it would attempt to implement a fix rather than just reporting."
+        ],
+        "verification": {
+          "iteration": 1,
+          "personas": [
+            "grounding",
+            "accuracy",
+            "completeness",
+            "coherence"
+          ],
+          "refutations_upheld": 0,
+          "refutations_screened": 3,
+          "clean": true,
+          "status": "verified"
+        }
+      }
+    },
+    {
+      "filename": "20260828-1747-sprout-seed-v2.json",
+      "type": "task",
+      "content": {
+        "schema_version": "2",
+        "producer": "to-tasks",
+        "source": {
+          "type": "seed",
+          "ref": "20260828-1641-sprout-seed-v2.json"
+        },
+        "generated_at": "2026-08-28T17:47:00Z",
+        "branching": {
+          "strategy": "single",
+          "branch": "feat/sprout-seed-v2"
+        },
+        "tasks": [
+          {
+            "id": "T-0014",
+            "title": "Extend task-schema.json with review_finding task type and fields",
+            "type": "AFK",
+            "task_type": "code",
+            "description": "Add review_finding to the task_type enum in task-schema.json. Add review-finding-specific optional fields to the task item schema: severity (bug|risk|nit|q|praise), category (correctness|security|performance|conventions|test-coverage), suggested_fix (string), and context (optional code snippet string). These fields are only present when task_type is review_finding. The extended schema must remain backward-compatible with existing task files.",
+            "acceptance_criteria": [
+              "task-schema.json validates with validate-schema.sh after changes",
+              "Existing task files still validate against the updated schema",
+              "review_finding is a valid task_type enum value",
+              "severity and category fields accept only the specified enum values"
+            ],
+            "blocked_by": [],
+            "status": "done",
+            "branch": null,
+            "pr": null,
+            "summary": "Extended task-schema.json with review_finding task_type enum and four optional review-finding-specific fields; all existing task files still validate.",
+            "files_touched": [
+              "claude-code-shared/contracts/task-schema.json",
+              "docs/tasks/.logs/20260828-1747-sprout-seed-v2/T-0014.md"
+            ],
+            "tests": "passed",
+            "log_path": "docs/tasks/.logs/20260828-1747-sprout-seed-v2/T-0014.md"
+          },
+          {
+            "id": "T-0015",
+            "title": "Create sprout handoff metadata schema",
+            "type": "AFK",
+            "task_type": "code",
+            "description": "Create a minimal JSON schema at contracts/sprout-handoff-schema.json for phase handoff files written to docs/tasks/.sprout/. Schema covers: phase name (string), paths (array of file paths produced), status (enum: success|failed|skipped), and errors (array of strings, empty on success). Both subagent write-side and orchestrator read-side validate against this schema.",
+            "acceptance_criteria": [
+              "sprout-handoff-schema.json validates as a valid JSON Schema draft-07",
+              "A sample handoff JSON conforming to the schema passes validate-schema.sh",
+              "A handoff JSON with an invalid status value fails validate-schema.sh"
+            ],
+            "blocked_by": [],
+            "status": "done",
+            "branch": null,
+            "pr": null,
+            "summary": "Created sprout-handoff-schema.json (draft-07) covering phase, paths, status enum, and errors; validation tests passed.",
+            "files_touched": [
+              "claude-code-shared/contracts/sprout-handoff-schema.json",
+              "docs/tasks/.logs/20260828-1747-sprout-seed-v2/T-0015.md"
+            ],
+            "tests": "passed",
+            "log_path": "docs/tasks/.logs/20260828-1747-sprout-seed-v2/T-0015.md"
+          },
+          {
+            "id": "T-0016",
+            "title": "Set gxpush draft PR default",
+            "type": "AFK",
+            "task_type": "code",
+            "description": "Modify the gxpush script so GX_PR_DRAFT defaults to true. PRs created by gxpush are always draft unless the caller explicitly sets GX_PR_DRAFT=false. This ensures no non-draft PRs are opened during unattended runs.",
+            "acceptance_criteria": [
+              "Running gxpush without setting GX_PR_DRAFT creates a draft PR (verified by reading the gh pr create command args)",
+              "Running GX_PR_DRAFT=false gxpush creates a non-draft PR",
+              "Existing callers that do not set GX_PR_DRAFT get draft behavior with no code changes"
+            ],
+            "blocked_by": [],
+            "status": "done",
+            "branch": null,
+            "pr": null,
+            "summary": "Changed GX_PR_DRAFT default to true in gxpush so PRs are always draft unless caller sets GX_PR_DRAFT=false.",
+            "files_touched": [
+              ".scripts/gxpush",
+              "docs/tasks/.logs/20260828-1747-sprout-seed-v2/T-0016.md"
+            ],
+            "tests": "passed",
+            "log_path": "docs/tasks/.logs/20260828-1747-sprout-seed-v2/T-0016.md"
+          },
+          {
+            "id": "T-0017",
+            "title": "Update repo-policy.json push exclusions",
+            "type": "AFK",
+            "task_type": "code",
+            "description": "Update repo-policy.json to exclude docs/tasks/.sprout/ directory and revision task files (docs/tasks/*-revisions-r*.json) from push operations. Use path patterns, not .gitignore, since user lacks maintenance rights in all repos.",
+            "acceptance_criteria": [
+              "repo-policy.json contains exclusion patterns for docs/tasks/.sprout/ and revision files",
+              "repo-policy.json remains valid JSON after changes",
+              "gxpush or the push-exclusion consumer correctly skips files matching these patterns"
+            ],
+            "blocked_by": [],
+            "status": "done",
+            "branch": null,
+            "pr": null,
+            "summary": "Added docs/tasks/.sprout/ and revision file exclusion patterns to repo-policy.json; updated gxpush to support glob patterns.",
+            "files_touched": [
+              "claude-code-shared/resources/repo-policy.json",
+              ".scripts/gxpush",
+              "docs/tasks/.logs/20260828-1747-sprout-seed-v2/T-0017.md"
+            ],
+            "tests": "passed",
+            "log_path": "docs/tasks/.logs/20260828-1747-sprout-seed-v2/T-0017.md"
+          },
+          {
+            "id": "T-0018",
+            "title": "Add local_only mode to build-code",
+            "type": "AFK",
+            "task_type": "code",
+            "description": "Add a local_only boolean field to the task file schema (in task-schema.json top-level properties). When build-code reads local_only: true from the task file, it skips the push/PR step entirely. Belt-and-suspenders: the build-code skill also includes a prompt instruction to the build-runner agent not to push or create PRs when local_only is set. Characterization: read the current build-code push/PR logic before modifying to understand what to skip.",
+            "acceptance_criteria": [
+              "task-schema.json includes local_only as an optional boolean at the top level",
+              "build-code skill file checks local_only and skips push/PR when true",
+              "build-runner agent prompt includes explicit no-push instruction when local_only is set",
+              "Existing task files without local_only still push/PR normally"
+            ],
+            "blocked_by": [
+              "T-0014"
+            ],
+            "status": "done",
+            "branch": null,
+            "pr": null,
+            "summary": "Added local_only optional boolean to task-schema.json and updated build-code SKILL.md to skip push/PR step when local_only is true.",
+            "files_touched": [
+              "claude-code-shared/contracts/task-schema.json",
+              "claude-code-shared/skills/build-code/SKILL.md"
+            ],
+            "tests": "passed",
+            "log_path": "docs/tasks/.logs/20260828-1747-sprout-seed-v2/T-0018.md"
+          },
+          {
+            "id": "T-0019",
+            "title": "Refactor sprout-seed orchestrator to file-based handoff",
+            "type": "AFK",
+            "task_type": "code",
+            "description": "Refactor the sprout-seed SKILL.md orchestrator to use file-based handoff instead of accumulating full subagent output. Remove the dead git diff main...HEAD call (SKILL.md:133). Remove the duplicate pr-code-review findings embed (SKILL.md:185). Each phase subagent writes its output to docs/tasks/.sprout/<phase>.json (e.g. phase-1-tasks.json, phase-2-build.json, phase-3-review.json). The orchestrator reads only these compact handoff files between phases, never capturing the full Agent return text. Validate handoff files against sprout-handoff-schema.json on read. Characterization: read current orchestrator flow before restructuring to map all subagent spawn points and data flow.",
+            "acceptance_criteria": [
+              "Orchestrator does not capture full Agent() return text in any variable used for downstream logic",
+              "git diff main...HEAD call is removed from SKILL.md",
+              "Duplicate pr-code-review findings embed is removed from SKILL.md",
+              "Each phase writes to docs/tasks/.sprout/<phase>.json",
+              "Orchestrator validates handoff files against sprout-handoff-schema.json before reading"
+            ],
+            "blocked_by": [
+              "T-0015"
+            ],
+            "status": "done",
+            "branch": null,
+            "pr": null,
+            "summary": "Refactored sprout-seed SKILL.md to file-based handoff: each phase writes to docs/tasks/.sprout/<phase>.json, dead git diff call removed, duplicate pr-code-review embed removed.",
+            "files_touched": [
+              "claude-code-shared/skills/sprout-seed/SKILL.md"
+            ],
+            "tests": "passed",
+            "log_path": "docs/tasks/.logs/20260828-1747-sprout-seed-v2/T-0019.md"
+          },
+          {
+            "id": "T-0020",
+            "title": "Add structured task file output to pr-code-review",
+            "type": "AFK",
+            "task_type": "code",
+            "description": "Modify pr-code-review to produce a task file with review_finding task_type entries. The output mode is determined by caller context injection in the subagent prompt (no flags). All modes produce a task file. Downstream consumption differs by caller: sprout-seed feeds the task file to build-code for automated revision. Standalone code-review feeds the task file to dispatch-tasks for inline printing. Each review_finding task includes severity (bug|risk|nit|q|praise), category, file, line, description, suggested_fix, and optional context snippet.",
+            "acceptance_criteria": [
+              "pr-code-review produces a valid task file with review_finding entries that passes validate-schema.sh",
+              "Caller context in the subagent prompt determines the output mode without flags",
+              "review_finding entries include severity, category, file, line, and description fields",
+              "Output task file is consumable by both build-code and dispatch-tasks"
+            ],
+            "blocked_by": [
+              "T-0014"
+            ],
+            "status": "done",
+            "branch": null,
+            "pr": null,
+            "summary": "Modified pr-code-review to produce a validated task file with review_finding entries including severity, category, suggested_fix, and context fields.",
+            "files_touched": [
+              "claude-code-shared/skills/pr-code-review/SKILL.md",
+              "claude-code-shared/contracts/task-schema.json"
+            ],
+            "tests": "passed",
+            "log_path": "docs/tasks/.logs/20260828-1747-sprout-seed-v2/T-0020.md"
+          }
+        ],
+        "follow_ups": []
+      }
+    }
+  ]
+}

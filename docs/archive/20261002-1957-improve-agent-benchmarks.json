@@ -1,0 +1,411 @@
+{
+  "kind": "condensed",
+  "producer": "clean-scaffolding",
+  "slug": "improve-agent-benchmarks",
+  "title": "improve-agent-benchmarks: cheap iterative agent eval skill",
+  "condensed_at": "2026-10-03T07:36:04Z",
+  "condensed_from": [
+    "20261002-1957-improve-agent-benchmarks.json",
+    "20261002-2005-improve-agent-benchmarks.json"
+  ],
+  "artifacts": [
+    {
+      "filename": "20261002-1957-improve-agent-benchmarks.json",
+      "type": "seed",
+      "content": {
+        "schema_version": "4",
+        "producer": "to-seed",
+        "source": {
+          "type": "session",
+          "ref": null
+        },
+        "title": "improve-agent-benchmarks: cheap iterative agent eval skill",
+        "slug": "improve-agent-benchmarks",
+        "created": "2026-10-02T18:00:00Z",
+        "iteration": 1,
+        "summary": "Design for a new skill, improve-agent-benchmarks, that improves the 34+ shared agents far more cheaply and quickly than hillclimb. It runs each agent for real on its production model, on a few real inputs harvested from past session logs, in small one-fix iterations. Every grade is a script comparing output to facts under a per-agent contract.json that cites its sources and is validated against past outputs before the user approves it. Kept fixes ship as one commit each straight to main, and real production use after the fix acts as the held-out test. The skill is fully separate from hillclimb and improve-skill-benchmarks.",
+        "problem_statement": "Hillclimb took about 3 hours and 1.2M tokens per agent (1 baseline pass plus 3 rounds, 99 to 138 full agent sessions per pass, 3 reps). One run does not fit the user's 5 hour Pro window, there are 34 agents and the list is growing, and the 16 to 23 test cases give margins of error larger than most measured gains. improve-skill-benchmarks is cheap but only simulates the skill, grades against rubrics derived from the same SKILL.md, and stops at 99/100 without exposing runtime bugs.",
+        "solution": "A separate skill that runs real agent sessions in small batches, grades with deterministic scripts against a cited, user-approved contract per agent, applies one fix per iteration, and uses real production runs after shipping as the held-out confirmation.",
+        "evidence": "Hillclimb data in .claude/hillclimb/: artifact-grounding-judge test verdict 0.942 to 0.986 (paired delta +4.3, 95% CI +/-7.5), fakes caught 22/24 to 24/24, cost per pass down 33% after moving the quote check into check-anchors.py. persona-accuracy test quote_ok 0.24 to 0.59, format_ok 0.00 to 0.38, correct 0.83 to 0.81 (within noise). Session logs hold subagent spawn prompts at <config>/projects/<proj>/<session>/subagents/agent-<id>.jsonl, with about 2.5k lint-runner, 2k persona-accuracy, 800 attribution-tracer and 300 artifact-grounding-judge recorded spawns across ~/.cch and ~/.cco. A file lookup found 34 agent definitions (16 sonnet, 16 haiku, 1 opus).",
+        "decisions": [
+          "Build a new skill named improve-agent-benchmarks. It is fully separate from hillclimb and improve-skill-benchmarks: its own folder .claude/agent-bench/<agent>/, its own runner, and its own short plain-English summary page. Hillclimb stays available by hand but is not wired in. CLAUDE.md gets a matching eval-report line covering agent-bench.",
+          "Goal is many small, fast, cheap iterations instead of one giant run, so it scales to 34+ agents and growing. The user tracks the subscription usage window themselves. The skill does not track or enforce it.",
+          "Agents run for real (a claude -p --agent session with real tools) on their production model from model-tiers.json. No simulated runs.",
+          "Test inputs are harvested automatically by script from past subagent spawns in the session logs (~/.cch and ~/.cco projects/*/subagents/agent-*.jsonl, first line holds the spawn prompt). About 4 to 6 recent, varied spawns per agent are frozen as fixtures. Files a spawn referenced that no longer exist (for example /tmp/seed-*.json) are rebuilt from the parent session log, or that spawn is skipped.",
+          "Grading is scripts only. No LLM judge ever scores an output. Each agent has one contract.json of checks, compared against factual evidence: the output schema, the input file text, tool calls in the run log, files written, and the known planted verdict.",
+          "Each contract is built from three sources: role (the agent's .md), caller (the skill or agent that spawns it and what it parses), and side_effect (files written, required tool calls). Every check records its source and file:line. Disagreements between sources are shown to the user, who picks the winner. Checks with no citable source are dropped. Opus drafts the contract and the user approves it once. It is then frozen.",
+          "Before approval, each contract is run over the agent's past real outputs from the session logs. The approval screen shows each check with its source, historical pass rate, and 1 or 2 real failing examples. These pass rates become the free baseline.",
+          "For agents that make judgment calls (judges, personas), cases include planted defects. Sonnet proposes one find/replace edit per case, a script confirms it matches exactly once, and the expected verdict is known from the plant. The per-case expected answer lives in cases.jsonl.",
+          "Shared code is written once in claude-code-shared/scripts/agent-eval/ (harvester, runner, grader, shims). Each agent's folder holds only data: contract.json, cases.jsonl, fixtures, and a lock file. A rule the built-in check types cannot express gets a new check type added to the shared grade.py with user approval. Custom grading code never goes in an agent's folder.",
+          "One iteration is one agent, one failing check, one fix. A Sonnet analyzer reads only the failing traces and proposes one fix, and must consider a script fix before a prompt edit. Live runs cover only that check's cases plus a few already-passing sentinels (about 10 to 15 sessions). Then it stops. The next iteration is a new invocation.",
+          "A fix is kept only if at least half the targeted failing cases now pass, each of those passes again on a second run (2 of 2), no sentinel regresses (zero regressions), and cost stays within 1.5x tokens per case unless the user approves. Otherwise it is reverted.",
+          "The held-out test is real production use after the fix ships. At the start of each invocation for that agent, a script re-runs the free history check on runs made after the fix. The fix is marked confirmed, unconfirmed, or regressed. Regressed prints the exact git revert <sha> command. Only shape, quote and side-effect checks can be confirmed this way. Role checks rely on the planted cases alone. The confirmation clock starts when the fix is live on main.",
+          "Each kept fix is one commit with the message agent-bench(<agent>): <check> fix. The SHA is recorded in the agent's eval history. It is pushed straight to main via gxpush with no per-agent branch or PR. fixtures/ and traces are never committed. Only the agent edit, contract.json, the case list and the scores are.",
+          "Every live run is sandboxed: a temp working directory and a temp learnings file. Shims for gh, log-learning.py and external MCP write tools record the call and its arguments and return canned success. file_written and tool_called checks are graded against the shim log. An agent whose external writes cannot be faked safely gets no live runs, and is graded on historical outputs only. The report says so.",
+          "When the agent under test calls other agents, the child agents are faked: the shim returns that child's real recorded output from the same session log. Each child gets its own evals. Problems that only appear in the full chain are caught by real-world confirmation.",
+          "Models: the agent under test uses its production model. Opus drafts contracts. Sonnet proposes planted defects, analyzes fixes, and runs the skill session. Harvest, grade, shims and report are scripts with no tokens.",
+          "Invocation is /improve-agent-benchmarks <agent-name>. With no name, the first step asks which agent, showing the top 4 from the queue ranked by historical failure rate times spawn count, and accepts any typed name. Each agent moves through the stages contract, cases, iterate. The skill always runs the next stage for the chosen agent and the user never picks a stage.",
+          "A shared queue.json at .claude/agent-bench/queue.json tracks agents. /register-skill adds a new agent at the contract stage with zero history. Each invocation also checks agents/ against the queue and adds any missing agent.",
+          "Contracts store a hash of every file each check cites. At the start of each invocation a script compares hashes. If a cited file changed, only the affected checks go back to the user for review, with before/after and historical pass rates, and no live runs happen until approved. A change from a fix this skill committed is expected and needs no review.",
+          "Agent end states: passing (every check passes on planted cases and history) drops the agent to the bottom of the queue, and it reopens if a cited file changes, a fix shows regressed, or new production failures raise its failure rate. Stuck (the same check fails after 2 reverted fixes in a row) means the skill stops that check, moves to the agent's next failing check, and lists the stuck check with both failed attempts in the report."
+        ],
+        "implementation_decisions": [
+          "Build the shared runner starting from the persona-accuracy run-eval.mjs lessons: user hooks and plugins disabled in spawned runs, autoupdater off, harness errors and usage-limit notices recorded separately from scored zeros, a regrade mode for stored traces.",
+          "Existing persona-accuracy and artifact-grounding-judge cases and fixtures are imported once into the new format. Lessons carry over (hooks disabled, harness errors kept out of scores, script fixes over prompt edits). No shared code with the hillclimb runner.",
+          "Initial built-in check types (from Q5): json_parse, schema, quote_in_input, tool_called, file_written, verdict_equals, no_prose. More are added to grade.py with user approval. file_not_written, flags_field and no_refutation appeared only in the Q13 illustrative contract examples and are not yet decided as built-ins.",
+          "The skill has no flags. The only argument is the optional agent name."
+        ],
+        "risks_and_tradeoffs": [
+          "Faked child agents miss bugs that only appear when parent and child run together. Mitigation is real-world confirmation.",
+          "Rarely spawned agents stay unconfirmed longer because their post-fix production runs accumulate slowly.",
+          "Role checks (did it catch the planted fake) cannot be confirmed from production runs, since real runs have no known right answer.",
+          "With 1 rep and about 10 cases per iteration, statistics are not usable. The strict case-by-case keep rule (2 of 2, zero regressions) replaces them.",
+          "Pushing straight to main skips PR review. Mitigations are one commit per fix so git revert works, the gxpush secret scan, and fixtures/traces never committed.",
+          "Unverified gap: where contract.json, cases and fixtures live versus the results folder was not settled. The grill mentioned both claude-code-shared/evals/<agent>/ for data and .claude/agent-bench/<agent>/ for results.",
+          "Unverified gap: the user said about 31 agents. A file lookup found 34 definitions including egress, investigator and persona subfolders.",
+          "Harvested spawns may reference files that no longer exist. Rebuilding them depends on the parent session log being intact.",
+          "A contract's role source (agent .md) can disagree with real usage. Example: the .md requires bare JSON but callers parse loosely. The user must resolve each disagreement at approval time."
+        ],
+        "out_of_scope": [
+          {
+            "text": "Simulated (narrated) agent runs like improve-skill-benchmarks does",
+            "rationale": "Simulation cannot reproduce the runtime bugs hillclimb found and scores about 99 regardless."
+          },
+          {
+            "text": "LLM-as-judge grading of agent outputs",
+            "rationale": "It drifts, costs tokens every run, and the user wants a fixed contract compared against factual evidence."
+          },
+          {
+            "text": "Wiring into hillclimb, its folder layout, or eval-report.sh",
+            "rationale": "The user wants fully separate infrastructure. Hillclimb remains a manual option."
+          },
+          {
+            "text": "Skill tracking or enforcing the subscription usage window",
+            "rationale": "The user watches and maintains this independently."
+          },
+          {
+            "text": "Per-agent branches and automatic PRs",
+            "rationale": "The user chose straight to main via gxpush."
+          },
+          {
+            "text": "Custom grading code inside an agent's eval folder",
+            "rationale": "All grading logic stays in the shared grade.py, with user approval for new check types."
+          },
+          {
+            "text": "Letting the user pick the stage or pass flags",
+            "rationale": "Fixed defaults only. The skill runs the next stage for the chosen agent."
+          }
+        ],
+        "further_notes": [
+          "A 5 to 8 line terminal recap after each invocation (stage done, checks flipped, kept or reverted, commit SHA, confirmation status) was proposed before the layout was made separate. It was not re-confirmed after that change.",
+          "persona-accuracy's format_ok plateau at about 0.38 is the example of a stuck check that needed structured output, not more prompt wording."
+        ],
+        "next_action": "Run /to-tasks on this seed to slice the build: shared agent-eval scripts first, then the first agent end to end (contract, cases, iterate) before scaling to the queue.",
+        "open_threads": [],
+        "disposed_threads": [],
+        "status": "ready",
+        "verification": {
+          "iteration": 1,
+          "personas": [
+            "grounding",
+            "accuracy",
+            "completeness",
+            "coherence"
+          ],
+          "refutations_upheld": 1,
+          "refutations_screened": 1,
+          "clean": false,
+          "status": "verified"
+        }
+      }
+    },
+    {
+      "filename": "20261002-2005-improve-agent-benchmarks.json",
+      "type": "task",
+      "content": {
+        "schema_version": "2",
+        "producer": "to-tasks",
+        "source": {
+          "type": "seed",
+          "ref": "20261002-1957-improve-agent-benchmarks.json"
+        },
+        "generated_at": "2026-10-03T03:05:06Z",
+        "branching": {
+          "strategy": "single",
+          "branch": "feat/improve-agent-benchmarks"
+        },
+        "tasks": [
+          {
+            "id": "T-0038",
+            "title": "History harvest and grader engine for artifact-grounding-judge",
+            "description": "Build the zero-token history path end to end for one agent. A new script claude-code-shared/scripts/agent-eval/harvest.py takes an agent name, scans ~/.cch/projects and ~/.cco/projects for subagents/agent-*.jsonl files whose spawn matches that agent, and writes one history record per spawn (spawn prompt from the first user line, final output text, tool calls with arguments, files written, token usage, timestamp, session id) to a gitignored cache under .claude/agent-bench/<agent>/history/. A new claude-code-shared/scripts/agent-eval/grade.py reads a contract.json plus records and prints per-check pass/fail and pass rate. It implements exactly the 7 built-in check types from the seed: json_parse, schema, quote_in_input, tool_called, file_written, verdict_equals, no_prose. Grading is deterministic. No LLM is called. Per-agent data (contract.json, cases.jsonl, lock file, gitignored fixtures/) lives in claude-code-shared/evals/<agent>/. Run results, traces, history and queue live under .claude/agent-bench/. Add .gitignore and repo-policy excludes so fixtures/, traces/ and history/ are never committed.",
+            "acceptance_criteria": [
+              "harvest.py artifact-grounding-judge writes history records for its recorded spawns across both config dirs and prints the count found",
+              "grade.py runs a hand-written sample contract (format check plus tool_called log-learning.py) over those records and prints per-check pass rates without calling any model",
+              "No unit test files (per the no-unit-tests-for-infra rule). Verified by running both scripts on real artifact-grounding-judge history and spot-checking 3 records against their source agent-*.jsonl by hand",
+              "git status shows no fixtures/, traces/ or history/ paths as committable after a run"
+            ],
+            "blocked_by": [],
+            "type": "AFK",
+            "status": "done",
+            "branch": null,
+            "pr": "gh pr create --base main --head feat/improve-agent-benchmarks",
+            "task_type": "code",
+            "commit": "92f6fcabf3d5020361548734677ead8b0fda2b9f",
+            "summary": "Added harvest.py and grade.py under scripts/agent-eval/ (7 deterministic check types), sample contract, gitignore and repo-policy excludes. 21 spawns found for artifact-grounding-judge (seed expected about 300).",
+            "files_touched": [
+              "claude-code-shared/scripts/agent-eval/harvest.py",
+              "claude-code-shared/scripts/agent-eval/grade.py",
+              "claude-code-shared/evals/artifact-grounding-judge/contract.sample.json",
+              ".gitignore",
+              "claude-code-shared/resources/repo-policy.json"
+            ],
+            "tests": {
+              "passed": 0,
+              "failed": 0
+            },
+            "log_path": "docs/tasks/.logs/20261002-2005-improve-agent-benchmarks/T-0038.md"
+          },
+          {
+            "id": "T-0039",
+            "title": "Skill skeleton and contract stage with cited sources and history-validated approval",
+            "description": "Create claude-code-shared/skills/improve-agent-benchmarks/SKILL.md. /improve-agent-benchmarks <agent> targets that agent. With no name, the first step asks which agent (a simple list of agents for now; ranking comes in a later task). The skill reads .claude/agent-bench/queue.json, creates the agent's entry at stage contract if missing, and runs the contract stage. Contract stage: an Opus subagent drafts contract.json from three sources: role (the agent's .md), caller (each consumer listed in agents/registry.json and what it parses), and side_effect (files written, required tool calls). Every check records its source tag and file:line. Checks with no citable source are dropped. Source disagreements are listed for the user to pick a winner. Before approval, grade.py runs the draft over the harvested history. The approval screen shows each check with its source, historical pass rate and 1 or 2 real failing examples. On approval the contract is frozen with a sha256 of every cited file, the historical pass rates are saved as the free baseline, and the queue entry advances to stage cases. A check type the 7 built-ins cannot express is proposed as a new type in the shared grade.py and needs explicit user approval. Custom grading code never goes in an agent folder. The skill has no flags.",
+            "acceptance_criteria": [
+              "Running /improve-agent-benchmarks artifact-grounding-judge produces a draft contract where every check has a source tag and file:line citation",
+              "The approval screen shows historical pass rate and real failing examples per check before anything is frozen",
+              "The approved contract.json stores a fingerprint hash per cited file and queue.json shows the agent at stage cases",
+              "No unit test files (per the no-unit-tests-for-infra rule). Verified by running the contract stage on artifact-grounding-judge end to end and confirming the frozen baseline numbers match a fresh grade.py run"
+            ],
+            "blocked_by": [
+              "T-0038"
+            ],
+            "type": "AFK",
+            "status": "done",
+            "branch": null,
+            "pr": "gh pr create --base main --head feat/improve-agent-benchmarks",
+            "task_type": "code",
+            "commit": "8e89e916370b6e30b31431040666ce426c5e59ae",
+            "summary": "Added improve-agent-benchmarks SKILL.md and six scripts under scripts/agent-eval/ (bench_lib, bench_queue, contract_sources, contract_review, contract_resolve, contract_freeze). Freeze path verified in scratch dir, baseline matched fresh grade.py on all 7 checks. Opus draft step not run in AFK, draft contract hand-written to exercise scripts. No contract/baseline/queue for the agent committed.",
+            "files_touched": [
+              "claude-code-shared/skills/improve-agent-benchmarks/SKILL.md",
+              "claude-code-shared/scripts/agent-eval/bench_lib.py",
+              "claude-code-shared/scripts/agent-eval/bench_queue.py",
+              "claude-code-shared/scripts/agent-eval/contract_sources.py",
+              "claude-code-shared/scripts/agent-eval/contract_review.py",
+              "claude-code-shared/scripts/agent-eval/contract_resolve.py",
+              "claude-code-shared/scripts/agent-eval/contract_freeze.py"
+            ],
+            "tests": {
+              "passed": 0,
+              "failed": 0
+            },
+            "log_path": "docs/tasks/.logs/20261002-2005-improve-agent-benchmarks/T-0039.md"
+          },
+          {
+            "id": "T-0040",
+            "title": "Cases stage: frozen real inputs plus script-verified planted defects",
+            "description": "Implement the cases stage for the agent at stage cases. harvest.py selects 4 to 6 recent, varied spawns and freezes them as fixtures under claude-code-shared/evals/<agent>/fixtures/ (gitignored) with a lock file of sha256 hashes. Files a spawn referenced that no longer exist (for example /tmp/seed-*.json) are rebuilt from the parent session log, or that spawn is skipped and the reason logged. For agents that make judgment calls, a Sonnet subagent proposes one find/replace edit per planted case. A script confirms each edit matches exactly once and records the expected verdict in cases.jsonl. Clean cases carry their expected answer too. Import the existing artifact-grounding-judge and persona-accuracy test cases and fixtures once into this format. The queue entry advances to stage iterate.",
+            "acceptance_criteria": [
+              "Running the skill on artifact-grounding-judge at stage cases writes cases.jsonl with real frozen inputs and planted cases, each with an expected answer",
+              "A planted edit that matches zero or two-plus times is rejected by the script and never written to cases.jsonl",
+              "The existing artifact-grounding-judge and persona-accuracy test cases load in the new format with their expected answers intact",
+              "No unit test files (per the no-unit-tests-for-infra rule). Verified by re-hashing fixtures against the lock file and diffing 3 planted cases against their clean base"
+            ],
+            "blocked_by": [
+              "T-0039"
+            ],
+            "type": "AFK",
+            "status": "done",
+            "branch": null,
+            "pr": "gh pr create --base main --head feat/improve-agent-benchmarks",
+            "task_type": "code",
+            "commit": "bb07bc2697f11fc581a17925bfd3735d9a2427ac",
+            "log_path": "docs/tasks/.logs/20261002-2005-improve-agent-benchmarks/T-0040.md",
+            "tests": {
+              "passed": 0,
+              "failed": 0
+            },
+            "summary": "Cases stage: cases_lib/import/freeze/plant/finish.py plus SKILL.md section. artifact-grounding-judge has 55 cases (46 imported, 6 real frozen with sha256 lock, 3 planted). Zero-match and multi-match planted edits rejected. Planted edits hand-written, Sonnet proposal step not run in AFK. Legacy cases.jsonl renamed cases.legacy.jsonl for both agents, build_cases.py and run-eval.mjs updated.",
+            "files_touched": [
+              "claude-code-shared/scripts/agent-eval/cases_lib.py",
+              "claude-code-shared/scripts/agent-eval/cases_import.py",
+              "claude-code-shared/scripts/agent-eval/cases_freeze.py",
+              "claude-code-shared/scripts/agent-eval/cases_plant.py",
+              "claude-code-shared/scripts/agent-eval/cases_finish.py",
+              "claude-code-shared/skills/improve-agent-benchmarks/SKILL.md",
+              "claude-code-shared/evals/artifact-grounding-judge/",
+              "claude-code-shared/evals/persona-accuracy/"
+            ]
+          },
+          {
+            "id": "T-0041",
+            "title": "Sandboxed live runner with write shims and faked child agents",
+            "description": "Build claude-code-shared/scripts/agent-eval/run.mjs from the persona-accuracy run-eval.mjs lessons: claude -p --agent on the agent's production model from resources/model-tiers.json, user hooks and plugins disabled, autoupdater off, a temp working directory and temp learnings file per run, harness errors and usage-limit notices recorded separately from scores. Shims in claude-code-shared/scripts/agent-eval/shims/ replace gh, log-learning.py and external MCP write tools. Each shim records the call and arguments to a shim log and returns canned success. When the agent under test spawns a child agent, a shim returns that child's real recorded output from the same session log. file_written and tool_called checks grade against the shim log. An agent whose external writes cannot be faked safely is marked history-only and gets no live runs. The run writes traces under .claude/agent-bench/<agent>/traces/ (gitignored) and grade.py scores them.",
+            "acceptance_criteria": [
+              "A live baseline run of artifact-grounding-judge cases completes with every log-learning.py call captured in the shim log and nothing appended to the real unified-learnings.jsonl",
+              "A run of one attribution-tracer case returns the recorded artifact-grounding-judge output via the child shim with no real child spawn",
+              "Harness errors appear in a separate errors file and are excluded from pass rates",
+              "No unit test files (per the no-unit-tests-for-infra rule). Verified by diffing unified-learnings.jsonl before and after the live runs (no change) and grading the traces with grade.py"
+            ],
+            "blocked_by": [
+              "T-0040"
+            ],
+            "type": "AFK",
+            "status": "done",
+            "branch": null,
+            "pr": "gh pr create --base main --head feat/improve-agent-benchmarks",
+            "task_type": "code",
+            "commit": "8cdc823af28caaa01f526bf0d3efdd9802fadd50",
+            "tests": {
+              "passed": 0,
+              "failed": 0
+            },
+            "log_path": "docs/tasks/.logs/20261002-2005-improve-agent-benchmarks/T-0041.md",
+            "summary": "run.mjs sandboxed runner, shims (log-learning.py, gh, pretool_hook.py faking child agents), child_lookup.py, grade.py reads shim log. Live runs: 6 judge cases (haiku), 1 tracer case (sonnet), about $0.47 total. Real unified-learnings.jsonl byte-identical before and after. Tracer child spawn answered from recorded output.",
+            "files_touched": [
+              "claude-code-shared/scripts/agent-eval/run.mjs",
+              "claude-code-shared/scripts/agent-eval/child_lookup.py",
+              "claude-code-shared/scripts/agent-eval/shims/",
+              "claude-code-shared/scripts/agent-eval/grade.py",
+              ".gitignore"
+            ]
+          },
+          {
+            "id": "T-0042",
+            "title": "Iterate stage: one fix, strict keep rule, commit and push to main",
+            "description": "Implement one iteration for an agent at stage iterate. Choose the worst failing check from the baseline. A Sonnet analyzer reads only the failing traces and proposes one fix. It must consider a script fix before a prompt edit. Apply the fix, live-run only that check's cases plus a few already-passing sentinels (about 10 to 15 sessions). Keep the fix only if at least half the targeted failing cases now pass, each flip passes again on a second run (2 of 2), no sentinel regresses, and tokens per case stay within 1.5x unless the user approves. Otherwise revert. A kept fix is one commit with message agent-bench(<agent>): <check> fix, pushed straight to main via ~/.dotfiles/.scripts/gxpush. Only the agent edit, contract.json, the case list and scores are committed. The SHA is recorded in the agent's history. After 2 reverted fixes in a row on the same check, mark it stuck, move to the next failing check, and list both attempts in the report. Then stop. The next iteration is a new invocation.",
+            "acceptance_criteria": [
+              "One invocation on artifact-grounding-judge at stage iterate runs one analyzer call and only the targeted plus sentinel cases",
+              "A fix that flips cases but breaks a sentinel is reverted and the working tree is clean afterward",
+              "A kept fix lands as a single commit on main via gxpush with the SHA recorded in the agent's history",
+              "No unit test files (per the no-unit-tests-for-infra rule). Verified by one real iteration on artifact-grounding-judge and checking the keep/revert decision against the recorded per-case results"
+            ],
+            "blocked_by": [
+              "T-0041"
+            ],
+            "type": "AFK",
+            "status": "done",
+            "branch": null,
+            "pr": "gh pr create --base main --head feat/improve-agent-benchmarks",
+            "task_type": "code",
+            "commit": "1f0720c6ef89663bcf43cdd6eabfb0e912fe1a79",
+            "tests": {
+              "passed": 0,
+              "failed": 0
+            },
+            "log_path": "docs/tasks/.logs/20261002-2005-improve-agent-benchmarks/T-0042.md",
+            "summary": "iterate.py, iterate_lib.py, iterate_commit.py plus SKILL.md iterate section. One real iteration on artifact-grounding-judge (no_prose check): fix flipped 1 of 2 targets, failed second confirm, reverted, tree clean. Kept-fix commit path verified with --dry-run only. Live gxpush to main NOT exercised (not approved for AFK run). No frozen contract.json for the agent exists yet.",
+            "files_touched": [
+              "claude-code-shared/scripts/agent-eval/iterate.py",
+              "claude-code-shared/scripts/agent-eval/iterate_lib.py",
+              "claude-code-shared/scripts/agent-eval/iterate_commit.py",
+              "claude-code-shared/scripts/agent-eval/run.mjs",
+              "claude-code-shared/scripts/agent-eval/shims/pretool_hook.py",
+              "claude-code-shared/skills/improve-agent-benchmarks/SKILL.md"
+            ]
+          },
+          {
+            "id": "T-0043",
+            "title": "Start-of-run checks: real-world confirmation, stale contracts, end states",
+            "description": "At the start of every invocation for an agent, run three zero-token checks before any stage work. Confirmation: harvest spawns made after each kept fix's commit went live on main and grade them with the history-gradable checks (shape, quote, side effect). Mark the fix confirmed, unconfirmed or regressed. Regressed prints the exact git revert <sha>. Role checks are not confirmable this way and are labeled so. Staleness: compare the stored fingerprint of every cited file. If one changed and the change was not a commit made by this skill, re-run only the checks that cite it, show before/after and historical pass rates, and block live runs until the user approves. End states: an agent whose checks all pass on planted cases and history is passing and drops to the bottom of the queue. It reopens when a cited file changes, a fix regresses, or new production failures raise its failure rate.",
+            "acceptance_criteria": [
+              "After a kept fix and new production spawns exist, the next invocation reports confirmed, unconfirmed or regressed for that fix",
+              "Editing a file cited by the contract by hand triggers review of only the checks that cite it, and no live run starts before approval",
+              "A commit made by this skill does not trigger a stale-contract review",
+              "No unit test files (per the no-unit-tests-for-infra rule). Verified by touching a cited file on a scratch branch and by grading post-fix spawns of artifact-grounding-judge"
+            ],
+            "blocked_by": [
+              "T-0042"
+            ],
+            "type": "AFK",
+            "status": "done",
+            "branch": null,
+            "pr": "gh pr create --base main --head feat/improve-agent-benchmarks",
+            "task_type": "code",
+            "commit": "c90ae12e758368dcab85848f8fb5f62728162c6e",
+            "log_path": "docs/tasks/.logs/20261002-2005-improve-agent-benchmarks/T-0043.md",
+            "tests": {
+              "passed": 0,
+              "failed": 0
+            },
+            "summary": "preflight.py: fix confirmation (confirmed/unconfirmed/regressed with git revert sha), stale-contract review limited to citing checks, approval gate, end-state flagging. iterate.py refuses to start before approval, rank.py sorts end-state agents last. Verified on scratch branch and scratch dirs over 21 real spawns.",
+            "files_touched": [
+              "claude-code-shared/scripts/agent-eval/preflight.py",
+              "claude-code-shared/scripts/agent-eval/iterate.py",
+              "claude-code-shared/scripts/agent-eval/rank.py",
+              "claude-code-shared/skills/improve-agent-benchmarks/SKILL.md"
+            ]
+          },
+          {
+            "id": "T-0044",
+            "title": "Queue ranking, no-name prompt, and automatic agent onboarding",
+            "description": "Rank queue.json entries by historical failure rate times spawn count, with passing agents at the bottom. With no agent name, the first step asks which agent and shows the top 4 with their ranking reason, accepting any typed name. Each invocation checks claude-code-shared/agents/ (recursive) against the queue and adds any missing agent at stage contract with zero history. Update the register-skill skill so registering an agent also adds its queue entry. The skill always runs the next stage for the chosen agent. The user never picks a stage.",
+            "acceptance_criteria": [
+              "Running the skill with no name shows the top 4 agents with failure rate, spawn count and reason",
+              "Adding a new agent .md file without /register-skill puts it in the queue on the next invocation",
+              "/register-skill on a new agent adds a queue entry at stage contract",
+              "No unit test files (per the no-unit-tests-for-infra rule). Verified by running the skill with no argument against the real 34-agent tree and checking the ranking math for 2 agents by hand"
+            ],
+            "blocked_by": [
+              "T-0039"
+            ],
+            "type": "AFK",
+            "status": "done",
+            "branch": null,
+            "pr": "gh pr create --base main --head feat/improve-agent-benchmarks",
+            "task_type": "code",
+            "commit": "edc7b7700db83ba8f37243db9ca9deb6a370d001",
+            "log_path": "docs/tasks/.logs/20261002-2005-improve-agent-benchmarks/T-0044.md",
+            "tests": {
+              "passed": 0,
+              "failed": 0
+            },
+            "summary": "rank.py ranks queue by failure rate x spawns, top 4 prompt, auto-onboards agents from agents/ tree. bench_queue.py sync and ensure commands. register-skill gains step 3d. Ranking math verified by hand for lint-runner and test-runner. Agents tree has 33 .md files, not 34.",
+            "files_touched": [
+              "claude-code-shared/scripts/agent-eval/rank.py",
+              "claude-code-shared/scripts/agent-eval/bench_queue.py",
+              "claude-code-shared/skills/improve-agent-benchmarks/SKILL.md",
+              "claude-code-shared/skills/register-skill/SKILL.md"
+            ]
+          },
+          {
+            "id": "T-0045",
+            "title": "Plain-English summary page, CLAUDE.md rule, and skill registration",
+            "description": "After each invocation, a script writes a plain-English summary page for the agent under .claude/agent-bench/<agent>/ covering stage done, checks flipped, kept or reverted, commit SHA, confirmation status and any stuck checks. It is fully separate from hillclimb and eval-report.sh. Add a CLAUDE.md line saying agent-bench results get their plain-English summary from this script. Register the new skill via the register-skill chain (model-tiers.json skills map at Sonnet tier, registry entries) and add the shared learning-capture tail.",
+            "acceptance_criteria": [
+              "Every invocation writes the summary page and prints its path",
+              "The global CLAUDE.md report rule mentions agent-bench and its summary script",
+              "improve-agent-benchmarks appears in model-tiers.json and passes the register-skill verification steps",
+              "No unit test files (per the no-unit-tests-for-infra rule). Verified by opening the summary page after a real artifact-grounding-judge iteration and checking its numbers against the scores file"
+            ],
+            "blocked_by": [
+              "T-0042"
+            ],
+            "type": "AFK",
+            "status": "done",
+            "branch": null,
+            "pr": "gh pr create --base main --head feat/improve-agent-benchmarks",
+            "task_type": "code",
+            "commit": "22715a2d199b6dc8e03cc764e613519e153c9b3a",
+            "log_path": "docs/tasks/.logs/20261002-2005-improve-agent-benchmarks/T-0045.md",
+            "tests": {
+              "passed": 0,
+              "failed": 0
+            },
+            "summary": "summary.py writes .claude/agent-bench/<agent>/summary.html. CLAUDE.md rule added (global file symlinks to repo .claude/CLAUDE.md). Skill registered in model-tiers.json at T3. Page verified on synthetic data only, no real iteration scores exist.",
+            "files_touched": [
+              ".claude/CLAUDE.md",
+              "claude-code-shared/scripts/agent-eval/summary.py",
+              "claude-code-shared/skills/improve-agent-benchmarks/SKILL.md",
+              "claude-code-shared/resources/model-tiers.json",
+              "claude-code-shared/contracts/learning-contract.md",
+              "claude-code-shared/scripts/cc-usage-benchmark.py",
+              "claude-code-shared/scripts/gen-architecture.py"
+            ]
+          }
+        ],
+        "follow_ups": []
+      }
+    }
+  ]
+}
