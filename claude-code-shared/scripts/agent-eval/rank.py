@@ -9,6 +9,9 @@ Steps (zero tokens):
   4. score = failure_rate * spawn_count (= failed spawns). Highest first; agents with score 0
      (passing, or never spawned) are at the bottom, ordered by spawn count.
 
+Agents flagged end_state in the queue (set by preflight.py) sort below every other agent while no
+cited file was hand-edited.
+
 Output, one tab-separated line per agent:  rank  agent  stage  failure_rate  spawns  failed  reason
 """
 import glob
@@ -19,6 +22,7 @@ import sys
 import bench_lib as L
 import bench_queue
 import harvest
+import preflight
 
 
 def contract_for(agent):
@@ -54,6 +58,7 @@ def scan(agents):
 
 def rank(agents):
     recs = scan(agents)
+    ended = {a: e.get("end_state") for a, e in L.load_queue()["agents"].items()}
     rows = []
     for a in agents:
         c = contract_for(a)
@@ -68,7 +73,11 @@ def rank(agents):
         else:
             reason = f"{f} of {n} spawns failed ({basis}); score {rate:.3f} x {n} = {f}"
         rows.append({"agent": a, "rate": rate, "spawns": n, "failed": f, "reason": reason})
-    rows.sort(key=lambda r: (r["failed"] == 0, -r["failed"], -r["spawns"], r["agent"]))
+    for r in rows:
+        r["ended"] = r["failed"] == 0 and bool(ended.get(r["agent"])) and preflight.still_ended(r["agent"])
+        if r["ended"]:
+            r["reason"] = "end state: all checks pass on planted cases and history"
+    rows.sort(key=lambda r: (r["failed"] == 0, r["ended"], -r["failed"], -r["spawns"], r["agent"]))
     return rows
 
 

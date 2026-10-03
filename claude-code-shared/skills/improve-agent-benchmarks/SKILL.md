@@ -23,6 +23,24 @@ This first syncs the queue with `claude-code-shared/agents/` (recursive): any ag
 
 Show those 4 in chat with failure rate, spawn count and reason, then ask which agent with AskUserQuestion: the 4 as options, plus free text so any typed agent name is accepted. Never ask for a stage.
 
+<!-- preflight:start -->
+## Start-of-run checks (every invocation, before any stage work)
+
+As soon as the agent is known, and before Step 2 routes to a stage, run (zero tokens, no model calls):
+
+```bash
+python3 ~/.dotfiles/claude-code-shared/scripts/agent-eval/preflight.py <agent>
+```
+
+It harvests the agent's recorded spawns, then does three checks. Relay its full output in chat. With no frozen `contract.json` yet it says so and does nothing else.
+
+1. Confirmation. Each kept fix that is on main is graded against production spawns made after its commit, using only the history-gradable checks (shape, quote, side effect). Each fix is reported `confirmed`, `unconfirmed` or `regressed`. For `regressed` it prints the exact `git revert <sha>`: show it to the user, never run it yourself. Role checks (for example `verdict_equals`) cannot be confirmed from history and are labeled so.
+2. Staleness. Every cited file is compared with its fingerprint in `contract.json`. A change made by commits from this skill (subject `agent-bench(<agent>): ...`) is fine and silent. Any other change (uncommitted edit, hand commit) triggers a review of only the checks that cite that file: citation status, before/after historical pass rates, and the file diff. Exit code 3 and `LIVE_RUNS: BLOCKED` mean no live run (the baseline run, the iterate stage) may start. Show the review, then ask the user (AskUserQuestion: approve / hold). Only on approval run `preflight.py approve <agent>`, which refreshes the fingerprints in `contract.json` (commit that file). `approve` refuses when an edit broke a citation; then the contract needs fixing first. `iterate.py` enforces the same gate itself.
+3. End state. An agent whose contract checks all pass on planted cases and on history is flagged `end_state` in the queue and `rank.py` sorts it below every other agent. It reopens (flag cleared, reason printed) when a cited file changes by hand, a fix regresses, or production failures appear.
+
+Then continue to Step 2 unless the user holds on a stale-contract review.
+<!-- preflight:end -->
+
 ## Step 2: queue entry
 
 ```bash
