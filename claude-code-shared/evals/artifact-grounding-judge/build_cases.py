@@ -8,7 +8,7 @@ labeled variants (exact / fabricated / paraphrase / whitespace / missing
 file / absence) and asserts every label against the frozen file contents.
 
 Usage:
-  build_cases.py            # build cases.jsonl + fixtures.lock.json + fixtures/
+  build_cases.py            # build cases.legacy.jsonl + fixtures.lock.json + fixtures/
   build_cases.py --fixtures # re-materialize fixtures/ from fixtures.lock.json only
   build_cases.py --notes    # write case_notes.jsonl (plain-English per-case notes)
 """
@@ -247,7 +247,7 @@ def word_change(a, b, limit=80):
 
 def write_notes():
     """case_notes.jsonl: one plain-English line per case, read by scripts/eval-summary.py."""
-    cases = [json.loads(l) for l in (HERE / "cases.jsonl").read_text().splitlines() if l.strip()]
+    cases = [json.loads(l) for l in (HERE / "cases.legacy.jsonl").read_text().splitlines() if l.strip()]
     base = {c["fixture"]: c["record"]["evidence"] for c in cases if c["tags"][0] == "exact"}
     with open(HERE / "case_notes.jsonl", "w") as f:
         for c in cases:
@@ -298,7 +298,7 @@ def main():
                       "expected": {"verdict": verdict, "confidence": conf or bases[base]["confidence"], "write": verdict == "pass"}})
     for c in cases:
         check(c, c["fixture"], bases[c["fixture"]])
-    with open(HERE / "cases.jsonl", "w") as f:
+    with open(HERE / "cases.legacy.jsonl", "w") as f:
         for c in cases:
             f.write(json.dumps(c) + "\n")
     rej = sum(c["expected"]["verdict"] == "rejected" for c in cases)

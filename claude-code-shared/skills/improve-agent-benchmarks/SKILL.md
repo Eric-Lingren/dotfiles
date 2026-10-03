@@ -78,6 +78,50 @@ python3 ~/.dotfiles/claude-code-shared/scripts/agent-eval/contract_freeze.py <ag
 
 This writes `contract.json` with a sha256 fingerprint of every cited file, saves the historical pass rates as `baseline.json` (the free baseline, recomputed by the same engine as `grade.py`), and advances the queue entry to stage `cases`. It refuses while conflicts or proposed types remain. Report the frozen check count and baseline to the user. Commit only `contract.json` and `baseline.json`; history, drafts and fixtures are never committed.
 
+<!-- cases-stage:start -->
+## Cases stage
+
+Runs when the queue stage printed in Step 2 is `cases` (this section supersedes the "other stages are not built yet" note in Step 2). Scripts are in `~/.dotfiles/claude-code-shared/scripts/agent-eval/`. Fixtures live in `claude-code-shared/evals/<agent>/fixtures/` (gitignored); they are never committed.
+
+### 1. Import legacy cases (once, only if the agent has them)
+
+If `claude-code-shared/evals/<agent>/cases.jsonl` exists in the old shape (artifact-grounding-judge, persona-accuracy), run once:
+
+```bash
+python3 ~/.dotfiles/claude-code-shared/scripts/agent-eval/cases_import.py <agent>
+```
+
+It keeps every legacy case and its expected answer as an `imported` case and moves the old file to `cases.legacy.jsonl` (the folder's `build_cases.py` and `run-eval.mjs` read that name).
+
+### 2. Freeze real inputs
+
+```bash
+python3 ~/.dotfiles/claude-code-shared/scripts/agent-eval/harvest.py <agent>
+python3 ~/.dotfiles/claude-code-shared/scripts/agent-eval/cases_freeze.py <agent>
+```
+
+Picks 4 to 6 recent, varied spawns, freezes each prompt and the files it referenced, and writes `cases.lock.json` (sha256 per file) plus `real` cases with the agent's recorded answer as the expected answer. Files that are gone are rebuilt from the spawn's own reads or the parent session log; otherwise the spawn is skipped and the reason is printed. Relay the printed list (cases, skips, `judgment_agent`) to the user in chat.
+
+### 3. Planted defects (only when the script printed `judgment_agent: yes`)
+
+Spawn one Agent with `model: "sonnet"`. Give it the frozen real cases (`cases.jsonl`, each `fixtures/<id>/prompt.txt` and files) and the agent's contract. Have it write `.claude/agent-bench/<agent>/proposals.json`: a JSON list, one entry per planted case, 1 to 2 per real case, each a single find/replace edit that should change the correct answer:
+`{"id", "base": "<real case id>", "target": "prompt" or a path under that case's frozen files, "find": "<exact text>", "replace": "<text>", "expected": {<expected answer for the edited input, same shape as the base case's expected>}, "note": "<why the answer changes>"}`. The subagent proposes only; it never edits fixtures.
+
+```bash
+python3 ~/.dotfiles/claude-code-shared/scripts/agent-eval/cases_plant.py <agent>
+```
+
+The script rejects any edit whose `find` matches zero times or two-plus times (reason printed, never written) and prints a diff of each accepted edit against its clean base. Relay rejections and diffs to the user. If rejected proposals leave too few planted cases, send the reasons back to the Sonnet subagent for one corrected round.
+
+### 4. Verify and advance
+
+```bash
+python3 ~/.dotfiles/claude-code-shared/scripts/agent-eval/cases_finish.py advance <agent>
+```
+
+Re-hashes every fixture against `cases.lock.json`, checks every case has an expected answer and every planted edit still applies, then advances the queue entry to `iterate`. Commit `cases.jsonl`, `cases.lock.json` and any `cases.legacy.jsonl`; never fixtures, proposals or queue state.
+<!-- cases-stage:end -->
+
 <!-- learning-capture:start -->
 Read and execute `~/.dotfiles/claude-code-shared/resources/learning-capture.md`.
 This skill's slug is `improve-agent-benchmarks`.
