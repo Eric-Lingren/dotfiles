@@ -16,10 +16,12 @@ Data locations (scripts resolve them): queue `.claude/agent-bench/queue.json`, h
 If an agent name was given, use it. Otherwise run:
 
 ```bash
-python3 ~/.dotfiles/claude-code-shared/scripts/agent-eval/bench_queue.py list
+python3 ~/.dotfiles/claude-code-shared/scripts/agent-eval/rank.py 4
 ```
 
-Show the agents as a simple list (name and stage) and ask which one with AskUserQuestion, accepting any typed name. Ranking comes in a later task; do not rank.
+This first syncs the queue with `claude-code-shared/agents/` (recursive): any agent .md not yet in the queue is added at stage `contract` with zero history. It then ranks agents by historical failure rate times spawn count (passing and never-spawned agents sit at the bottom) and prints the top 4 as tab-separated `rank, agent, stage, failure_rate, spawns, failed, reason`.
+
+Show those 4 in chat with failure rate, spawn count and reason, then ask which agent with AskUserQuestion: the 4 as options, plus free text so any typed agent name is accepted. Never ask for a stage.
 
 ## Step 2: queue entry
 
@@ -27,7 +29,7 @@ Show the agents as a simple list (name and stage) and ask which one with AskUser
 python3 ~/.dotfiles/claude-code-shared/scripts/agent-eval/bench_queue.py ensure <agent>
 ```
 
-This creates the entry at stage `contract` if missing (and adds any agent missing from the queue). Read the printed `stage`. If it is `contract`, run the contract stage below. Other stages are not built yet: say so and stop.
+This creates the entry at stage `contract` if missing (and adds any agent missing from the queue, so this holds even when a name was typed and the ranking step was skipped). Read the printed `stage`. If it is `contract`, run the contract stage below. Other stages are not built yet: say so and stop.
 
 ## Contract stage
 

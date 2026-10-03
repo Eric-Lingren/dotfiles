@@ -4,7 +4,8 @@
   list                    print every agent (from agents/**/*.md) with its queue stage, tab separated
   ensure <agent>          add <agent> (and any other agent missing from the queue) at stage "contract";
                           print the agent's entry as JSON
-  get <agent>             print the entry as JSON (exit 1 if missing)
+  sync                    add every agent missing from the queue at stage "contract" and save
+  get <agent>            print the entry as JSON (exit 1 if missing)
   advance <agent> <stage> set stage (contract|cases|iterate); stage can only move forward
 """
 import json
@@ -28,6 +29,13 @@ def main():
         sync(q)
         for n, e in sorted(q["agents"].items()):
             print(f"{n}\t{e['stage']}")
+    elif a[0] == "sync":
+        before = set(q["agents"])
+        sync(q)
+        L.write_json(L.queue_path(), q)
+        for n in sorted(set(q["agents"]) - before):
+            print(f"added {n} at stage contract")
+        print(f"{len(q['agents'])} agents in queue")
     elif a[0] == "ensure" and len(a) == 2:
         if a[1] not in L.agent_names():
             sys.exit(f"unknown agent: {a[1]} (no agents/**/{a[1]}.md)")
