@@ -1,0 +1,13 @@
+{
+  "kind": "prompt",
+  "script_fix_considered": "A script cannot control the agent's final message. The failures are fences around the JSON (real-a5b6af6b4f) and prose before it (real-a985947a24, real-a9fd9ec84a), so check-anchors.py and log-learning.py can't prevent them. The only change in scope would be log-learning.py printing a ready-made verdict line, and that would not help the rejected path or the prose preamble.",
+  "rationale": "In all three traces the agent narrated its verification, or wrapped the verdict in a ```json fence, in the final message, so the output does not start with `{`. The edit makes the final message's format explicit: it must start with `{` and end with `}`, with no fences and no text before it. It also says the reasoning belongs in tool calls and not in the reply. The fences are what the Output contract's code block invites, so the edit names them as forbidden.",
+  "edits": [
+    {
+      "file": "agents/artifact-grounding-judge.md",
+      "find": "**Your output is a single JSON object. No prose. No explanation. No markdown fences.**",
+      "replace": "**Your output is a single JSON object. No prose. No explanation. No markdown fences.** Your final message must begin with the character `{` and end with `}`. Do not write any text before it (no summaries of what you verified, no \"Based on my verification\"), and do not wrap it in ``` fences. The code blocks below show the JSON shape only; never reproduce their fences. Do all reasoning silently between tool calls. Even if a file path was missing or a check was ambiguous, put the explanation inside the `reason` field and reply with the JSON object alone."
+    }
+  ],
+  "_cost_usd": 0.082605
+}

@@ -1,0 +1,122 @@
+[
+  {
+    "id": "plant-a5b6af6b4f-calendar-select-guard-inverted",
+    "base": "real-a5b6af6b4f",
+    "target": "prompt",
+    "find": "if (!date) return",
+    "replace": "if (date) return",
+    "expected": {
+      "verdict": "rejected",
+      "confidence": "confirmed"
+    },
+    "note": "Quoted DateInput.tsx code now has an inverted guard (if (date) return) while the file has if (!date) return; code must match exactly, so the anchor is fabricated."
+  },
+  {
+    "id": "plant-a5b6af6b4f-test-case-paraphrase",
+    "base": "real-a5b6af6b4f",
+    "target": "prompt",
+    "find": "New test case: typing 03/15/2024 then opening calendar shows March 2024",
+    "replace": "New test case: after typing 03/15/2024, opening the calendar shows March 2024",
+    "expected": {
+      "verdict": "pass",
+      "confidence": "candidate"
+    },
+    "note": "Task acceptance-criterion quote reworded with same claim and identical date literals; no longer verbatim but supported, so anchor is a paraphrase and confidence demotes to candidate."
+  },
+  {
+    "id": "plant-a9fd9ec84a-reset-queries-renamed",
+    "base": "real-a9fd9ec84a",
+    "target": "prompt",
+    "find": "queryClient.resetQueries({",
+    "replace": "queryClient.invalidateQueries({",
+    "expected": {
+      "verdict": "rejected",
+      "confidence": "candidate"
+    },
+    "note": "Quoted test code calls queryClient.invalidateQueries but the file calls resetQueries; renamed identifier in code is fabricated. Input confidence candidate is kept."
+  },
+  {
+    "id": "plant-aeb2d01fc0-edit-mode-negated",
+    "base": "real-aeb2d01fc0",
+    "target": "prompt",
+    "find": "is_multiple is omitted, matching current behavior",
+    "replace": "is_multiple is sent, contrary to current behavior",
+    "expected": {
+      "verdict": "rejected",
+      "confidence": "confirmed"
+    },
+    "note": "Quote now asserts is_multiple is sent on edit, reversing the seed's claim that it is omitted; the passage does not support it, so the anchor is fabricated."
+  },
+  {
+    "id": "plant-aeb2d01fc0-severity-value-changed",
+    "base": "real-aeb2d01fc0",
+    "target": "prompt",
+    "find": "\\\"severity\\\": \\\"q\\\"",
+    "replace": "\\\"severity\\\": \\\"high\\\"",
+    "expected": {
+      "verdict": "rejected",
+      "confidence": "confirmed"
+    },
+    "note": "JSON value in quoted T-0008 task entry changed from q to high; JSON keys/values are code and must match exactly, so the anchor is fabricated."
+  },
+  {
+    "id": "plant-a985947a24-date-excluded-reversed",
+    "base": "real-a985947a24",
+    "target": "prompt",
+    "find": "\\n\\n    DATE is excluded until",
+    "replace": "\\n\\n    DATE is included until",
+    "expected": {
+      "verdict": "rejected",
+      "confidence": "candidate"
+    },
+    "note": "Docstring quote reverses excluded to included; the file says DATE is excluded, so the prose claim is reversed and the anchor is fabricated. Input confidence candidate is kept."
+  },
+  {
+    "id": "plant-aad6a75db1-isvalid-claim-negated",
+    "base": "real-aad6a75db1",
+    "target": "prompt",
+    "find": "(it does \u2014 Formik computes isValid",
+    "replace": "(it does not \u2014 Formik computes isValid",
+    "expected": {
+      "verdict": "rejected",
+      "confidence": "confirmed"
+    },
+    "note": "Quote adds a negation ('it does not') to the task file's assertion that isValid accounts for setFieldError errors; claim reversed, so the anchor is fabricated."
+  },
+  {
+    "id": "plant-aad6a75db1-setfieldvalue-renamed",
+    "base": "real-aad6a75db1",
+    "target": "prompt",
+    "find": "setFieldValue(`metrics[${granularity}]`, flatData)",
+    "replace": "setFieldTouched(`metrics[${granularity}]`, flatData)",
+    "expected": {
+      "verdict": "rejected",
+      "confidence": "confirmed"
+    },
+    "note": "Quoted code call renamed from setFieldValue to setFieldTouched; the file has setFieldValue. Renamed identifier in code is fabricated."
+  },
+  {
+    "id": "plant-ae41f67b9a-string-guard-inverted",
+    "base": "real-ae41f67b9a",
+    "target": "prompt",
+    "find": "inputUnit === ValueType.STRING ? value",
+    "replace": "inputUnit !== ValueType.STRING ? value",
+    "expected": {
+      "verdict": "rejected",
+      "confidence": "candidate"
+    },
+    "note": "Quoted EditableMetrics.tsx ternary has === flipped to !==; changed operator in code is fabricated. Input confidence candidate is kept."
+  },
+  {
+    "id": "plant-ae41f67b9a-replace-regex-changed",
+    "base": "real-ae41f67b9a",
+    "target": "prompt",
+    "find": "value.replace(/,/g, '') || null",
+    "replace": "value.replace(/;/g, '') || null",
+    "expected": {
+      "verdict": "rejected",
+      "confidence": "candidate"
+    },
+    "note": "Quoted useMetricsTableCrud code strips semicolons (/;/g) instead of commas (/,/g); changed literal in code is fabricated."
+  }
+]

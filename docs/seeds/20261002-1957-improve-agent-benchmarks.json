@@ -1,0 +1,106 @@
+{
+  "schema_version": "4",
+  "producer": "to-seed",
+  "source": {
+    "type": "session",
+    "ref": null
+  },
+  "title": "improve-agent-benchmarks: cheap iterative agent eval skill",
+  "slug": "improve-agent-benchmarks",
+  "created": "2026-10-02T18:00:00Z",
+  "iteration": 1,
+  "summary": "Design for a new skill, improve-agent-benchmarks, that improves the 34+ shared agents far more cheaply and quickly than hillclimb. It runs each agent for real on its production model, on a few real inputs harvested from past session logs, in small one-fix iterations. Every grade is a script comparing output to facts under a per-agent contract.json that cites its sources and is validated against past outputs before the user approves it. Kept fixes ship as one commit each straight to main, and real production use after the fix acts as the held-out test. The skill is fully separate from hillclimb and improve-skill-benchmarks.",
+  "problem_statement": "Hillclimb took about 3 hours and 1.2M tokens per agent (1 baseline pass plus 3 rounds, 99 to 138 full agent sessions per pass, 3 reps). One run does not fit the user's 5 hour Pro window, there are 34 agents and the list is growing, and the 16 to 23 test cases give margins of error larger than most measured gains. improve-skill-benchmarks is cheap but only simulates the skill, grades against rubrics derived from the same SKILL.md, and stops at 99/100 without exposing runtime bugs.",
+  "solution": "A separate skill that runs real agent sessions in small batches, grades with deterministic scripts against a cited, user-approved contract per agent, applies one fix per iteration, and uses real production runs after shipping as the held-out confirmation.",
+  "evidence": "Hillclimb data in .claude/hillclimb/: artifact-grounding-judge test verdict 0.942 to 0.986 (paired delta +4.3, 95% CI +/-7.5), fakes caught 22/24 to 24/24, cost per pass down 33% after moving the quote check into check-anchors.py. persona-accuracy test quote_ok 0.24 to 0.59, format_ok 0.00 to 0.38, correct 0.83 to 0.81 (within noise). Session logs hold subagent spawn prompts at <config>/projects/<proj>/<session>/subagents/agent-<id>.jsonl, with about 2.5k lint-runner, 2k persona-accuracy, 800 attribution-tracer and 300 artifact-grounding-judge recorded spawns across ~/.cch and ~/.cco. A file lookup found 34 agent definitions (16 sonnet, 16 haiku, 1 opus).",
+  "decisions": [
+    "Build a new skill named improve-agent-benchmarks. It is fully separate from hillclimb and improve-skill-benchmarks: its own folder .claude/agent-bench/<agent>/, its own runner, and its own short plain-English summary page. Hillclimb stays available by hand but is not wired in. CLAUDE.md gets a matching eval-report line covering agent-bench.",
+    "Goal is many small, fast, cheap iterations instead of one giant run, so it scales to 34+ agents and growing. The user tracks the subscription usage window themselves. The skill does not track or enforce it.",
+    "Agents run for real (a claude -p --agent session with real tools) on their production model from model-tiers.json. No simulated runs.",
+    "Test inputs are harvested automatically by script from past subagent spawns in the session logs (~/.cch and ~/.cco projects/*/subagents/agent-*.jsonl, first line holds the spawn prompt). About 4 to 6 recent, varied spawns per agent are frozen as fixtures. Files a spawn referenced that no longer exist (for example /tmp/seed-*.json) are rebuilt from the parent session log, or that spawn is skipped.",
+    "Grading is scripts only. No LLM judge ever scores an output. Each agent has one contract.json of checks, compared against factual evidence: the output schema, the input file text, tool calls in the run log, files written, and the known planted verdict.",
+    "Each contract is built from three sources: role (the agent's .md), caller (the skill or agent that spawns it and what it parses), and side_effect (files written, required tool calls). Every check records its source and file:line. Disagreements between sources are shown to the user, who picks the winner. Checks with no citable source are dropped. Opus drafts the contract and the user approves it once. It is then frozen.",
+    "Before approval, each contract is run over the agent's past real outputs from the session logs. The approval screen shows each check with its source, historical pass rate, and 1 or 2 real failing examples. These pass rates become the free baseline.",
+    "For agents that make judgment calls (judges, personas), cases include planted defects. Sonnet proposes one find/replace edit per case, a script confirms it matches exactly once, and the expected verdict is known from the plant. The per-case expected answer lives in cases.jsonl.",
+    "Shared code is written once in claude-code-shared/scripts/agent-eval/ (harvester, runner, grader, shims). Each agent's folder holds only data: contract.json, cases.jsonl, fixtures, and a lock file. A rule the built-in check types cannot express gets a new check type added to the shared grade.py with user approval. Custom grading code never goes in an agent's folder.",
+    "One iteration is one agent, one failing check, one fix. A Sonnet analyzer reads only the failing traces and proposes one fix, and must consider a script fix before a prompt edit. Live runs cover only that check's cases plus a few already-passing sentinels (about 10 to 15 sessions). Then it stops. The next iteration is a new invocation.",
+    "A fix is kept only if at least half the targeted failing cases now pass, each of those passes again on a second run (2 of 2), no sentinel regresses (zero regressions), and cost stays within 1.5x tokens per case unless the user approves. Otherwise it is reverted.",
+    "The held-out test is real production use after the fix ships. At the start of each invocation for that agent, a script re-runs the free history check on runs made after the fix. The fix is marked confirmed, unconfirmed, or regressed. Regressed prints the exact git revert <sha> command. Only shape, quote and side-effect checks can be confirmed this way. Role checks rely on the planted cases alone. The confirmation clock starts when the fix is live on main.",
+    "Each kept fix is one commit with the message agent-bench(<agent>): <check> fix. The SHA is recorded in the agent's eval history. It is pushed straight to main via gxpush with no per-agent branch or PR. fixtures/ and traces are never committed. Only the agent edit, contract.json, the case list and the scores are.",
+    "Every live run is sandboxed: a temp working directory and a temp learnings file. Shims for gh, log-learning.py and external MCP write tools record the call and its arguments and return canned success. file_written and tool_called checks are graded against the shim log. An agent whose external writes cannot be faked safely gets no live runs, and is graded on historical outputs only. The report says so.",
+    "When the agent under test calls other agents, the child agents are faked: the shim returns that child's real recorded output from the same session log. Each child gets its own evals. Problems that only appear in the full chain are caught by real-world confirmation.",
+    "Models: the agent under test uses its production model. Opus drafts contracts. Sonnet proposes planted defects, analyzes fixes, and runs the skill session. Harvest, grade, shims and report are scripts with no tokens.",
+    "Invocation is /improve-agent-benchmarks <agent-name>. With no name, the first step asks which agent, showing the top 4 from the queue ranked by historical failure rate times spawn count, and accepts any typed name. Each agent moves through the stages contract, cases, iterate. The skill always runs the next stage for the chosen agent and the user never picks a stage.",
+    "A shared queue.json at .claude/agent-bench/queue.json tracks agents. /register-skill adds a new agent at the contract stage with zero history. Each invocation also checks agents/ against the queue and adds any missing agent.",
+    "Contracts store a hash of every file each check cites. At the start of each invocation a script compares hashes. If a cited file changed, only the affected checks go back to the user for review, with before/after and historical pass rates, and no live runs happen until approved. A change from a fix this skill committed is expected and needs no review.",
+    "Agent end states: passing (every check passes on planted cases and history) drops the agent to the bottom of the queue, and it reopens if a cited file changes, a fix shows regressed, or new production failures raise its failure rate. Stuck (the same check fails after 2 reverted fixes in a row) means the skill stops that check, moves to the agent's next failing check, and lists the stuck check with both failed attempts in the report."
+  ],
+  "implementation_decisions": [
+    "Build the shared runner starting from the persona-accuracy run-eval.mjs lessons: user hooks and plugins disabled in spawned runs, autoupdater off, harness errors and usage-limit notices recorded separately from scored zeros, a regrade mode for stored traces.",
+    "Existing persona-accuracy and artifact-grounding-judge cases and fixtures are imported once into the new format. Lessons carry over (hooks disabled, harness errors kept out of scores, script fixes over prompt edits). No shared code with the hillclimb runner.",
+    "Initial built-in check types (from Q5): json_parse, schema, quote_in_input, tool_called, file_written, verdict_equals, no_prose. More are added to grade.py with user approval. file_not_written, flags_field and no_refutation appeared only in the Q13 illustrative contract examples and are not yet decided as built-ins.",
+    "The skill has no flags. The only argument is the optional agent name."
+  ],
+  "risks_and_tradeoffs": [
+    "Faked child agents miss bugs that only appear when parent and child run together. Mitigation is real-world confirmation.",
+    "Rarely spawned agents stay unconfirmed longer because their post-fix production runs accumulate slowly.",
+    "Role checks (did it catch the planted fake) cannot be confirmed from production runs, since real runs have no known right answer.",
+    "With 1 rep and about 10 cases per iteration, statistics are not usable. The strict case-by-case keep rule (2 of 2, zero regressions) replaces them.",
+    "Pushing straight to main skips PR review. Mitigations are one commit per fix so git revert works, the gxpush secret scan, and fixtures/traces never committed.",
+    "Unverified gap: where contract.json, cases and fixtures live versus the results folder was not settled. The grill mentioned both claude-code-shared/evals/<agent>/ for data and .claude/agent-bench/<agent>/ for results.",
+    "Unverified gap: the user said about 31 agents. A file lookup found 34 definitions including egress, investigator and persona subfolders.",
+    "Harvested spawns may reference files that no longer exist. Rebuilding them depends on the parent session log being intact.",
+    "A contract's role source (agent .md) can disagree with real usage. Example: the .md requires bare JSON but callers parse loosely. The user must resolve each disagreement at approval time."
+  ],
+  "out_of_scope": [
+    {
+      "text": "Simulated (narrated) agent runs like improve-skill-benchmarks does",
+      "rationale": "Simulation cannot reproduce the runtime bugs hillclimb found and scores about 99 regardless."
+    },
+    {
+      "text": "LLM-as-judge grading of agent outputs",
+      "rationale": "It drifts, costs tokens every run, and the user wants a fixed contract compared against factual evidence."
+    },
+    {
+      "text": "Wiring into hillclimb, its folder layout, or eval-report.sh",
+      "rationale": "The user wants fully separate infrastructure. Hillclimb remains a manual option."
+    },
+    {
+      "text": "Skill tracking or enforcing the subscription usage window",
+      "rationale": "The user watches and maintains this independently."
+    },
+    {
+      "text": "Per-agent branches and automatic PRs",
+      "rationale": "The user chose straight to main via gxpush."
+    },
+    {
+      "text": "Custom grading code inside an agent's eval folder",
+      "rationale": "All grading logic stays in the shared grade.py, with user approval for new check types."
+    },
+    {
+      "text": "Letting the user pick the stage or pass flags",
+      "rationale": "Fixed defaults only. The skill runs the next stage for the chosen agent."
+    }
+  ],
+  "further_notes": [
+    "A 5 to 8 line terminal recap after each invocation (stage done, checks flipped, kept or reverted, commit SHA, confirmation status) was proposed before the layout was made separate. It was not re-confirmed after that change.",
+    "persona-accuracy's format_ok plateau at about 0.38 is the example of a stuck check that needed structured output, not more prompt wording."
+  ],
+  "next_action": "Run /to-tasks on this seed to slice the build: shared agent-eval scripts first, then the first agent end to end (contract, cases, iterate) before scaling to the queue.",
+  "open_threads": [],
+  "disposed_threads": [],
+  "status": "ready",
+  "verification": {
+    "iteration": 1,
+    "personas": [
+      "grounding",
+      "accuracy",
+      "completeness",
+      "coherence"
+    ],
+    "refutations_upheld": 1,
+    "refutations_screened": 1,
+    "clean": false,
+    "status": "verified"
+  }
+}

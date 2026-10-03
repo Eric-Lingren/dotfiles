@@ -81,10 +81,13 @@ link_dotfiles() {
   link "$DOTFILES/config/caveman/config.json"    "$HOME/.config/caveman/config.json"
   link "$DOTFILES/config/git/ignore"             "$HOME/.config/git/ignore"
 
-  # Cursor IDE
-  local cursor_dir="$HOME/Library/Application Support/Cursor/User"
-  link "$DOTFILES/config/vscode-cursor/settings.json"    "$cursor_dir/settings.json"
-  link "$DOTFILES/config/vscode-cursor/keybindings.json" "$cursor_dir/keybindings.json"
+  # VS Code + Cursor share one settings/keybindings pair
+  local editor_dir
+  for editor_dir in "$HOME/Library/Application Support/Code/User" \
+                    "$HOME/Library/Application Support/Cursor/User"; do
+    link "$DOTFILES/config/vscode-cursor/settings.json"    "$editor_dir/settings.json"
+    link "$DOTFILES/config/vscode-cursor/keybindings.json" "$editor_dir/keybindings.json"
+  done
 }
 
 setup_claude_accounts() {

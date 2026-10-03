@@ -1,0 +1,68 @@
+{
+  "agent": "artifact-grounding-judge",
+  "iterations": [
+    {
+      "n": 1,
+      "ts": "2026-10-03T04:55:41Z",
+      "check": "output_bare_json",
+      "kind": "prompt",
+      "rationale": "In all three traces the agent narrated its verification, or wrapped the verdict in a ```json fence, in the final message, so the output does not start with `{`. The edit makes the final message's format explicit: it must start with `{` and end with `}`, with no fences and no text before it. It also says the reasoning belongs in tool calls and not in the reply. The fences are what the Output contract's code block invites, so the edit names them as forbidden.",
+      "script_fix_considered": "A script cannot control the agent's final message. The failures are fences around the JSON (real-a5b6af6b4f) and prose before it (real-a985947a24, real-a9fd9ec84a), so check-anchors.py and log-learning.py can't prevent them. The only change in scope would be log-learning.py printing a ready-made verdict line, and that would not help the rejected path or the prose preamble.",
+      "files": [
+        "claude-code-shared/agents/artifact-grounding-judge.md"
+      ],
+      "targets": [
+        "real-a5b6af6b4f",
+        "real-a985947a24",
+        "real-a9fd9ec84a"
+      ],
+      "sentinels": [],
+      "run_dirs": [
+        "/Users/eric/.dotfiles/.claude/agent-bench/artifact-grounding-judge/iter/001/run1",
+        "/Users/eric/.dotfiles/.claude/agent-bench/artifact-grounding-judge/iter/001/run2"
+      ],
+      "analyzer_cost_usd": 0.082605,
+      "sha": null,
+      "decision": {
+        "decision": "revert",
+        "reasons": [
+          "only 0/3 targeted cases pass 2 of 2 (need 2)"
+        ],
+        "check": "output_bare_json",
+        "targets": [
+          "real-a5b6af6b4f",
+          "real-a985947a24",
+          "real-a9fd9ec84a"
+        ],
+        "sentinels": [],
+        "flipped_run1": [],
+        "confirmed_2of2": [],
+        "regressions": [],
+        "tokens_per_case": {
+          "baseline": 231184,
+          "candidate": 175948,
+          "ratio": 0.761
+        },
+        "per_case": {
+          "real-a5b6af6b4f": {
+            "role": "target",
+            "run1": false,
+            "run2": null
+          },
+          "real-a985947a24": {
+            "role": "target",
+            "run1": false,
+            "run2": null
+          },
+          "real-a9fd9ec84a": {
+            "role": "target",
+            "run1": false,
+            "run2": null
+          }
+        }
+      },
+      "status": "reverted"
+    }
+  ],
+  "stuck": []
+}

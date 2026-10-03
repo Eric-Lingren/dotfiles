@@ -360,6 +360,14 @@ python3 claude-code-shared/scripts/validate_registry.py
 
 If validation fails, fix the registry before proceeding.
 
+### 3d. Agent path — add the benchmark queue entry
+
+```bash
+python3 ~/.dotfiles/claude-code-shared/scripts/agent-eval/bench_queue.py ensure <name>
+```
+
+Adds `<name>` to `.claude/agent-bench/queue.json` at stage `contract` (idempotent; also adds any other agent missing from the queue). Do not commit queue.json. Skipping this step is safe: `/improve-agent-benchmarks` adds any missing agent on its next run.
+
 ### 4. Report
 
 Print a short summary:
@@ -374,6 +382,7 @@ Registered: <name> (<skill|agent>)
   Hooks:   tier-advisor ✓  usage-benchmark ✓  sync ✓   (skill)
            usage-benchmark ✓  sync ✓  tier-advisor n/a  (agent)
   Learning: tail-block ✓  producers-list ✓              (skill only)
+  Bench queue: entry at stage contract ✓                (agent only)
 ```
 
 ### 5. Regenerate architecture diagram

@@ -18,7 +18,7 @@ fixtures/ is gitignored (private session content). fixtures.lock.json pins
 sha256 of every fixture so a rebuild from a pruned/changed log fails loudly.
 
 Usage:
-  build_cases.py            # extract fixtures (if absent), apply mutations, write cases.jsonl
+  build_cases.py            # extract fixtures (if absent), apply mutations, write cases.legacy.jsonl
   build_cases.py --extract  # force re-extraction from session logs
 """
 import hashlib
@@ -202,9 +202,9 @@ def main():
                       "tags": [m["kind"], b, m.get("type", "")],
                       "expected": {"kind": m["kind"], "field": m["field"], "type": m.get("type"),
                                    "planted_text": m["replace"]}})
-    (HERE / "cases.jsonl").write_text("".join(json.dumps(c) + "\n" for c in cases))
+    (HERE / "cases.legacy.jsonl").write_text("".join(json.dumps(c) + "\n" for c in cases))
     write_review(cases, {m["id"]: m for m in muts})
-    print(f"{len(cases)} cases -> cases.jsonl")
+    print(f"{len(cases)} cases -> cases.legacy.jsonl")
 
 
 if __name__ == "__main__":

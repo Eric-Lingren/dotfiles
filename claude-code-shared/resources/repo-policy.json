@@ -4,7 +4,7 @@
     "account": "cch",
     "base_branch": "main",
     "domain": "personal",
-    "exclude": ["docs/prototype/", "docs/browser-checks/", "docs/offload-output/", "docs/tasks/.sprout/", "docs/tasks/*-revisions-r*.json", "docs/visual-changes/", ".claude/hillclimb/*/traces/*", ".claude/hillclimb/*/ref/*", ".claude/hillclimb/*/trajectory/*", ".claude/hillclimb/*report.html", ".claude/hillclimb/*summary.html", ".claude/hillclimb/*progress.txt", ".claude/hillclimb/*errors.jsonl", "evals/*/fixtures/*", "*/evals/*/fixtures/*"]
+    "exclude": ["docs/prototype/", "docs/browser-checks/", "docs/offload-output/", "docs/tasks/.sprout/", "docs/tasks/*-revisions-r*.json", "docs/visual-changes/", ".claude/hillclimb/*/traces/*", ".claude/hillclimb/*/ref/*", ".claude/hillclimb/*/trajectory/*", ".claude/hillclimb/*report.html", ".claude/hillclimb/*summary.html", ".claude/hillclimb/*progress.txt", ".claude/hillclimb/*errors.jsonl", "evals/*/fixtures/*", "*/evals/*/fixtures/*", ".claude/agent-bench/*/history/*", ".claude/agent-bench/*/traces/*", ".claude/agent-bench/*/fixtures/*"]
   },
   "Quaestor-Technologies/Quaestor-Web": {
     "label": "quaestor-web",
