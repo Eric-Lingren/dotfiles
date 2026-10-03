@@ -244,7 +244,7 @@
     }
   ],
   "fingerprints": {
-    "agents/artifact-grounding-judge.md": "3a9adbbd7de102e10baa5dd527506d152604b40257b618da11bf782cc05918e5",
+    "agents/artifact-grounding-judge.md": "e5924ddd57138f7d3cd0c8cf53ec882a5523d213468df21434570cfa74391c36",
     "agents/attribution-tracer.md": "ba1958086dfe54b3994ba3f50b2636374dc2fb15a8397c8fddfb0394ca92493b",
     "resources/attribution-capture.md": "b48f209903837a19ab7f14847779a9e69069025bf964477e48bbacd83db5bf9b"
   }
