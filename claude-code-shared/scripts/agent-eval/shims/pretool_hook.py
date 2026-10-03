@@ -18,6 +18,7 @@ sys.path.insert(0, HERE)
 import shim_lib  # noqa: E402
 
 LOG_LEARNING = re.compile(r"[^\s'\"|;&]*log-learning\.py")
+SHARED_SCRIPTS = re.compile(r"(?:~|\$HOME|\$\{HOME\}|/Users/[\w.-]+)/\.(?:dotfiles/)?claude-code-shared/scripts/")
 GH_ABS = re.compile(r"(?<![\w./-])/[^\s'\"|;&]*/gh(?=[\s|;&]|$)")
 WRITE_OP = re.compile(r"(>|\btee\b|\bsed\s+-i|\bmv\b|\bcp\b|\brm\b|\btruncate\b|\bdd\b)")
 
@@ -38,6 +39,8 @@ def bash(ti):
         shim_lib.record({"shim": "blocked-learnings-write", "tool": "Bash", "input": {"command": cmd}})
         out("deny", "Blocked: writing unified-learnings.jsonl directly is not allowed in this sandbox.")
     new = LOG_LEARNING.sub(os.path.join(HERE, "log-learning.py"), cmd)
+    if os.environ.get("SHIM_SCRIPTS_DIR"):
+        new = SHARED_SCRIPTS.sub(os.environ["SHIM_SCRIPTS_DIR"].rstrip("/") + "/", new)
     new = GH_ABS.sub(os.path.join(HERE, "gh"), new)
     new = f'export PATH="{HERE}:$PATH"\n{new}'
     out("allow", updated=dict(ti, command=new))

@@ -124,6 +124,29 @@ python3 ~/.dotfiles/claude-code-shared/scripts/agent-eval/cases_finish.py advanc
 Re-hashes every fixture against `cases.lock.json`, checks every case has an expected answer and every planted edit still applies, then advances the queue entry to `iterate`. Commit `cases.jsonl`, `cases.lock.json` and any `cases.legacy.jsonl`; never fixtures, proposals or queue state.
 <!-- cases-stage:end -->
 
+<!-- iterate-stage:start -->
+## Iterate stage
+
+Runs when the queue stage printed in Step 2 is `iterate`. One invocation is exactly one iteration, then stop; the next iteration is a new invocation. Requires a frozen `contract.json` and cases.
+
+```bash
+python3 ~/.dotfiles/claude-code-shared/scripts/agent-eval/iterate.py <agent>
+```
+
+The script does everything mechanical:
+
+1. Uses the baseline live traces (made once with 6 cases if absent), picks the worst failing check (stuck checks skipped), targets up to 3 of its failing cases and up to 2 all-passing sentinel cases.
+2. Makes one Sonnet analyzer call that reads only the failing traces and proposes one fix, a script fix considered before a prompt edit. The edit goes to the agent file or a shared script; `find` text must match exactly once.
+3. Live-runs only the targets and sentinels with `run.mjs` (sandboxed; the real `unified-learnings.jsonl` is hash-checked), then re-runs the flipped cases a second time.
+4. Keep rule: at least half the targets pass the check on both runs (2 of 2), no sentinel regresses on any check, tokens per case within 1.5x baseline (pass `--approve-tokens` only if the user approved a higher cost). Otherwise the edit is reverted with `git checkout` and the script proves the tree is clean.
+5. A kept fix is committed by `iterate_commit.py`: one commit `agent-bench(<agent>): <check> fix`, only the agent edit, `contract.json`, `cases.jsonl` and `scores.json`, pushed straight to main via `~/.dotfiles/.scripts/gxpush --push-only --auto`. Refuses off main. `--dry-run` prints the message, file list and commands without running them. Never run the live push without the user's approval of pushing to main.
+6. History is `.claude/agent-bench/<agent>/iterations.json` (attempt, decision, reasons, kept SHA). Two reverted fixes in a row on one check mark it stuck; the next invocation moves to the next failing check.
+
+Relay to the user in chat: the check chosen, the analyzer's kind and rationale, per-case results, the decision with reasons, the SHA (or revert), and if a check just became stuck, both attempts.
+
+`iterate.py decide <agent> <n>` recomputes the decision for iteration n from its recorded runs. `iterate.py revert <agent> <n>` reverts iteration n's edit.
+<!-- iterate-stage:end -->
+
 <!-- learning-capture:start -->
 Read and execute `~/.dotfiles/claude-code-shared/resources/learning-capture.md`.
 This skill's slug is `improve-agent-benchmarks`.

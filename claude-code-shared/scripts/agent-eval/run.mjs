@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// run.mjs <agent> [--cases id1,id2] [--kind real,planted] [--limit N] [--reps N] [--model m] [--budget usd]
+// run.mjs <agent> [--cases id1,id2] [--kind real,planted] [--limit N] [--reps N] [--model m] [--budget usd] [--out dir]
 //
 // Sandboxed live runner for improve-agent-benchmarks. One `claude -p --agent <agent>` session per
 // case (and rep) on the agent's production model, then a trace record that grade.py scores.
@@ -19,6 +19,10 @@
 // Output (gitignored): <bench>/<agent>/traces/<case_id>_rep<k>.json   (grade.py records)
 //   <bench>/<agent>/errors.jsonl   harness errors and usage-limit notices - never in traces, so never in pass rates
 //   <bench>/<agent>/runs/<ts>.json run summary incl. real-learnings sha256 before/after
+// --out <dir> writes traces there instead of <bench>/<agent>/traces (iterate runs keep baselines apart).
+// The agent file is the repo's claude-code-shared/agents copy (AGENT_BENCH_AGENT_FILE overrides), so an
+// uncommitted fix is what gets tested; shell calls to ~/.dotfiles/claude-code-shared/scripts/* are
+// rewritten to this repo's scripts/ by the hook (SHIM_SCRIPTS_DIR).
 // Paths honour AGENT_BENCH_DIR / AGENT_EVALS_DIR like bench_lib.py. AGENT_BENCH_CONFIG_DIR picks the
 // claude config dir (default: first of ~/.cch, ~/.cco that has the agent). CLAUDE_BIN overrides the binary.
 //
@@ -47,7 +51,7 @@ const sha = p => (existsSync(p) ? createHash('sha256').update(readFileSync(p)).d
 const now = () => new Date().toISOString();
 
 function parseArgs(argv) {
-  const a = { agent: null, cases: null, kinds: ['real', 'planted'], limit: Infinity, reps: 1, model: null, budget: '1.5', timeoutS: 420 };
+  const a = { agent: null, cases: null, kinds: ['real', 'planted'], limit: Infinity, reps: 1, model: null, budget: '1.5', timeoutS: 420, out: null };
   for (let i = 0; i < argv.length; i++) {
     const k = argv[i];
     const v = () => argv[++i] ?? die(`${k} needs a value`);
@@ -57,12 +61,13 @@ function parseArgs(argv) {
     else if (k === '--reps') a.reps = Number(v());
     else if (k === '--model') a.model = v();
     else if (k === '--budget') a.budget = v();
+    else if (k === '--out') a.out = v();
     else if (k === '--timeout-s') a.timeoutS = Number(v());
     else if (k.startsWith('--')) die(`unknown flag ${k}`);
     else if (!a.agent) a.agent = k;
     else die(`unexpected argument ${k}`);
   }
-  if (!a.agent) die('usage: run.mjs <agent> [--cases ids] [--kind real,planted] [--limit N] [--reps N] [--model m] [--budget usd]');
+  if (!a.agent) die('usage: run.mjs <agent> [--cases ids] [--kind real,planted] [--limit N] [--reps N] [--model m] [--budget usd] [--out dir]');
   return a;
 }
 
@@ -173,6 +178,7 @@ async function runOne({ c, rep, agent, fm, model, cfg, args, hasAgentTool }) {
       ...process.env, CLAUDE_CONFIG_DIR: cfg, DISABLE_AUTOUPDATER: '1',
       PATH: `${join(HERE, 'shims')}:${process.env.PATH}`,
       SHIM_LOG: shimLog, SHIM_LEARNINGS: learnings, SHIM_CHILDREN: childrenFile,
+      SHIM_SCRIPTS_DIR: join(SHARED, 'scripts'),
       LOG_LEARNING_DEST: join(box, 'learnings'),
     };
     const r = await runCli(cli, { cwd: box, env }, args.timeoutS * 1000);
@@ -233,9 +239,11 @@ async function main() {
   const args = parseArgs(process.argv.slice(2));
   const agent = args.agent;
   const cfg = configDirFor(agent);
-  const fm = frontmatter(findAgentFile(join(cfg, 'agents'), agent));
+  const agentFile = process.env.AGENT_BENCH_AGENT_FILE || findAgentFile(join(SHARED, 'agents'), agent) || findAgentFile(join(cfg, 'agents'), agent);
+  const fm = frontmatter(agentFile);
   const bench = join(benchDir(), agent);
-  mkdirSync(join(bench, 'traces'), { recursive: true });
+  const tracesDir = args.out || join(bench, 'traces');
+  mkdirSync(tracesDir, { recursive: true });
   mkdirSync(join(bench, 'runs'), { recursive: true });
 
   // History-only: external writes that cannot be faked safely. No live runs.
@@ -260,7 +268,7 @@ async function main() {
   const summary = { agent, started: now(), model, cases: [], errors: 0, stopped: null };
   outer: for (const c of cases) {
     for (let rep = 1; rep <= args.reps; rep++) {
-      const tracePath = join(bench, 'traces', `${c.id}_rep${rep}.json`);
+      const tracePath = join(tracesDir, `${c.id}_rep${rep}.json`);
       try {
         const rec = await runOne({ c, rep, agent, fm, model, cfg, args, hasAgentTool });
         writeFileSync(tracePath, JSON.stringify(rec, null, 1));
