@@ -20,6 +20,7 @@ All 30 shared skills. Plugin skills (caveman, chrome-devtools) are excluded.
 - `skills/grill-with-docs/`
 - `skills/handoff/`
 - `skills/how-to/`
+- `skills/improve-agent-benchmarks/`
 - `skills/improve-codebase-architecture/`
 - `skills/improve-component/`
 - `skills/improve-directory-structure/`
