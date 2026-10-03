@@ -4,10 +4,10 @@
   "records": 21,
   "checks": {
     "output_bare_json": {
-      "pass": 19,
-      "fail": 2,
+      "pass": 21,
+      "fail": 0,
       "na": 0,
-      "rate": 0.9048
+      "rate": 1.0
     },
     "output_no_prose": {
       "pass": 21,
