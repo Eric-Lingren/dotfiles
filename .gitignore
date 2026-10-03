@@ -20,5 +20,8 @@ claude-code-shared/skills/synced/
 .claude/agent-bench/*/history/
 .claude/agent-bench/*/traces/
 .claude/agent-bench/*/fixtures/
+.claude/agent-bench/*/errors.jsonl
+.claude/agent-bench/*/runs/
+.claude/agent-bench/*/history-only.json
 **/evals/*/traces/
 **/evals/*/history/
