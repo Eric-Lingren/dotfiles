@@ -24,6 +24,7 @@ import sys
 
 import bench_lib as L
 import iterate_lib as I
+import preflight
 
 HERE = L.HERE
 RUN = os.path.join(HERE, "run.mjs")
@@ -147,6 +148,10 @@ def cmd_iterate(agent, dry, approve):
     if not q or q["stage"] != "iterate":
         sys.exit(f"{agent} is at stage {q['stage'] if q else 'unqueued'}, not iterate")
     contract = I.load_contract(agent)
+    blocked = preflight.gate(agent)
+    if blocked:
+        sys.exit("BLOCKED: hand-edited cited file(s) not approved: " + ", ".join(blocked) +
+                 f". Review them, then run preflight.py approve {agent}. No live run started.")
     st = I.load_state(agent)
     ad = I.agent_dir(agent)
     n = len(st["iterations"]) + 1
