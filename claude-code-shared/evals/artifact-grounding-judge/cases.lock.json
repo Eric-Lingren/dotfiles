@@ -32,22 +32,58 @@
       "files/Users/eric/Documents/dev/worktrees/Quaestor-Web/feat/KEY-2347-4-14-multi-select-fe-ir-response-inp/clients/web/src/pages/portfolio-company/EditableMetrics.tsx": "4ba3c18c82141238ca18a7948de81b8163af4dccded5bfdf867b77d10087d7a3",
       "prompt.txt": "a7eb4951236672281ae455c3a88e754aceb5eed015dc6e31d6fe057f3080a2f8"
     },
-    "plant-a5b6af6b4f-fabricated-call": {
+    "plant-a5b6af6b4f-calendar-select-guard-inverted": {
       "files/Users/eric/Documents/dev/worktrees/Quaestor-Web/KEY-2376-1414-date-ui-component-fe-prereq/clients/web/src/components/DateInput/DateInput.tsx": "ad2042b9f0dc6f5f22d90bae8576febd221d34de0e2be747e7574a8eb32219d4",
       "files/Users/eric/Documents/dev/worktrees/Quaestor-Web/KEY-2376-1414-date-ui-component-fe-prereq/docs/seeds/20260918-1240-dateinput-calendar-shadcn-alignment.json": "402372c5c8ffe2e4c856493ff0eb049bcdafd18e98f3d7163c2c7b7938bf0e03",
       "files/Users/eric/Documents/dev/worktrees/Quaestor-Web/KEY-2376-1414-date-ui-component-fe-prereq/docs/tasks/20260918-1243-dateinput-calendar-shadcn-alignment.json": "522fbf40bb601ebe67c779f487c59f4042798b11bf49583adc9ef117b247e4a9",
-      "prompt.txt": "eb2d85ccab3588fc0929d3e99d1679d07fd1fb9e5f32644831adb7d418d45451"
+      "prompt.txt": "ae01493a03b9efee3170dc1ce4b847671224ce66ab1c5d98ce3477c99c3861a3"
     },
-    "plant-aeb2d01fc0-fabricated-claim": {
+    "plant-a5b6af6b4f-test-case-paraphrase": {
+      "files/Users/eric/Documents/dev/worktrees/Quaestor-Web/KEY-2376-1414-date-ui-component-fe-prereq/clients/web/src/components/DateInput/DateInput.tsx": "ad2042b9f0dc6f5f22d90bae8576febd221d34de0e2be747e7574a8eb32219d4",
+      "files/Users/eric/Documents/dev/worktrees/Quaestor-Web/KEY-2376-1414-date-ui-component-fe-prereq/docs/seeds/20260918-1240-dateinput-calendar-shadcn-alignment.json": "402372c5c8ffe2e4c856493ff0eb049bcdafd18e98f3d7163c2c7b7938bf0e03",
+      "files/Users/eric/Documents/dev/worktrees/Quaestor-Web/KEY-2376-1414-date-ui-component-fe-prereq/docs/tasks/20260918-1243-dateinput-calendar-shadcn-alignment.json": "522fbf40bb601ebe67c779f487c59f4042798b11bf49583adc9ef117b247e4a9",
+      "prompt.txt": "722e5758722af7f946445057f30edc40cfbb2c5b950bcff67dd299b8c3096f8a"
+    },
+    "plant-a9fd9ec84a-reset-queries-renamed": {
+      "files/Users/eric/Documents/dev/worktrees/Quaestor-Web/chore/remove-current-user-hook-mocks/clients/web/src/components/legacy/components/InnerApp.test.tsx": "c9c22dc1c8ab5b039e708acd14136efd7740a309624ba932c12c0f674cfc6b7b",
+      "prompt.txt": "dd78ec2a48c55712f8801a5eb515ec22c45b8ed8ccef69ab384d3209ab4ba88a"
+    },
+    "plant-aeb2d01fc0-edit-mode-negated": {
       "files/Users/eric/Documents/dev/worktrees/Quaestor-Web/feat/KEY-2980-7-14a-multi-select-field-type-picker/docs/seeds/20260928-1222-multi-select-field-type-picker-7-14a.json": "1c8cf12dbb71fb0e421829c0191555b9c1827d6b2750f7d0ff94c1e9c7742b78",
       "files/Users/eric/Documents/dev/worktrees/Quaestor-Web/feat/KEY-2980-7-14a-multi-select-field-type-picker/docs/tasks/20260929-1704-pr-review.json": "17a5eb7a7e0e3207539ea7a7d0a070c9823800c34cfec698171b6f39940fb07e",
-      "prompt.txt": "ffd92a2133da35d9542c1e1433de170631d73a769a03048af002b98ba0fcdeb2"
+      "prompt.txt": "54443e9a8abd00697b07e90483450f2c9fad9edcab1d7a4be2d1bf87a69103cb"
     },
-    "plant-aad6a75db1-fabricated-quote": {
+    "plant-aeb2d01fc0-severity-value-changed": {
+      "files/Users/eric/Documents/dev/worktrees/Quaestor-Web/feat/KEY-2980-7-14a-multi-select-field-type-picker/docs/seeds/20260928-1222-multi-select-field-type-picker-7-14a.json": "1c8cf12dbb71fb0e421829c0191555b9c1827d6b2750f7d0ff94c1e9c7742b78",
+      "files/Users/eric/Documents/dev/worktrees/Quaestor-Web/feat/KEY-2980-7-14a-multi-select-field-type-picker/docs/tasks/20260929-1704-pr-review.json": "17a5eb7a7e0e3207539ea7a7d0a070c9823800c34cfec698171b6f39940fb07e",
+      "prompt.txt": "7c822b876d1f304195424781ce21962dcb2da55a2898d2ae58d1c2ec78e2cee8"
+    },
+    "plant-a985947a24-date-excluded-reversed": {
+      "files/Users/eric/Documents/dev/worktrees/Quaestor-Web/KEY-2468-date-enum-type-maps-formatting/app/api/tests/snapshots/public_openapi.json": "4246dfd71d10206c656b4f9926780aad012599589b37bdbb7591bd6a937449b2",
+      "files/Users/eric/Documents/dev/worktrees/Quaestor-Web/KEY-2468-date-enum-type-maps-formatting/app/api/views.py": "860f05b8be12e0fe745a7c53f71de8c4aec20264827a83f2b13f9db86a5eb0fb",
+      "prompt.txt": "d1f8297330b62052555d5592238278f22594dbe561456cef8715c247ef656f3b"
+    },
+    "plant-aad6a75db1-isvalid-claim-negated": {
       "files/Users/eric/Documents/dev/worktrees/Quaestor-Web/KEY-2470-datemetriccell-feature-flag-wiring/clients/web/docs/tasks/20260916-1949-debug-datemetriccell-cursor-findings.json": "12676f6bad4bb840890c9248d2666f12ed5a90b805c533a4a2fc6beb3a5cac83",
       "files/Users/eric/Documents/dev/worktrees/Quaestor-Web/KEY-2470-datemetriccell-feature-flag-wiring/clients/web/src/pages/reports/components/MetricSectionTable/index.tsx": "58b117cbf6ef9975b4a7ee086ad36d307fb124fb3799b72bc9a5f9dc4aed9021",
       "files/Users/eric/Documents/dev/worktrees/Quaestor-Web/KEY-2470-datemetriccell-feature-flag-wiring/clients/web/src/pages/reports/index.tsx": "9a29e1c7c15cb8918b047952c9919ef7e13de61dda2aa99be25b1588d95c0e47",
-      "prompt.txt": "230f725e008e878d2378f1278222fc93c490661706c4f486654d16aa46a7cee6"
+      "prompt.txt": "21f1f7e37f886d4ff2b2489c6ed5f2b99f7ef9d37d8a79172d652cc92eac1774"
+    },
+    "plant-aad6a75db1-setfieldvalue-renamed": {
+      "files/Users/eric/Documents/dev/worktrees/Quaestor-Web/KEY-2470-datemetriccell-feature-flag-wiring/clients/web/docs/tasks/20260916-1949-debug-datemetriccell-cursor-findings.json": "12676f6bad4bb840890c9248d2666f12ed5a90b805c533a4a2fc6beb3a5cac83",
+      "files/Users/eric/Documents/dev/worktrees/Quaestor-Web/KEY-2470-datemetriccell-feature-flag-wiring/clients/web/src/pages/reports/components/MetricSectionTable/index.tsx": "58b117cbf6ef9975b4a7ee086ad36d307fb124fb3799b72bc9a5f9dc4aed9021",
+      "files/Users/eric/Documents/dev/worktrees/Quaestor-Web/KEY-2470-datemetriccell-feature-flag-wiring/clients/web/src/pages/reports/index.tsx": "9a29e1c7c15cb8918b047952c9919ef7e13de61dda2aa99be25b1588d95c0e47",
+      "prompt.txt": "a298c2216c546f2b2731e066e3512203dbd7ba7b45ce29e1c35c3e53aa987b5c"
+    },
+    "plant-ae41f67b9a-string-guard-inverted": {
+      "files/Users/eric/Documents/dev/worktrees/Quaestor-Web/feat/KEY-2347-4-14-multi-select-fe-ir-response-inp/clients/web/src/pages/metrics-repository/components/DatumCategorySections/hooks/useMetricsTableCrud/index.tsx": "a59a2a9b9a8f3540a943aa8cefd19e74b0d3bbab2f35fefec45d5e4e0aa2ae63",
+      "files/Users/eric/Documents/dev/worktrees/Quaestor-Web/feat/KEY-2347-4-14-multi-select-fe-ir-response-inp/clients/web/src/pages/portfolio-company/EditableMetrics.tsx": "4ba3c18c82141238ca18a7948de81b8163af4dccded5bfdf867b77d10087d7a3",
+      "prompt.txt": "d0df228db411c848c93a60a7b7f021612a93277222ce4cf2d2061bd525c46a96"
+    },
+    "plant-ae41f67b9a-replace-regex-changed": {
+      "files/Users/eric/Documents/dev/worktrees/Quaestor-Web/feat/KEY-2347-4-14-multi-select-fe-ir-response-inp/clients/web/src/pages/metrics-repository/components/DatumCategorySections/hooks/useMetricsTableCrud/index.tsx": "a59a2a9b9a8f3540a943aa8cefd19e74b0d3bbab2f35fefec45d5e4e0aa2ae63",
+      "files/Users/eric/Documents/dev/worktrees/Quaestor-Web/feat/KEY-2347-4-14-multi-select-fe-ir-response-inp/clients/web/src/pages/portfolio-company/EditableMetrics.tsx": "4ba3c18c82141238ca18a7948de81b8163af4dccded5bfdf867b77d10087d7a3",
+      "prompt.txt": "3195658f2c2f4d7e49e9ab064c0e4cc28797adb6558eb7bf741ca5e36a588632"
     }
   },
   "skipped": []
