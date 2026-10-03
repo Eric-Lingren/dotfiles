@@ -21,7 +21,9 @@ Run at the start of every invocation for an agent, before any stage work. Steps:
      and live runs are BLOCKED (exit 3, and iterate.py refuses) until `approve`.
   3. End state. Contract checks all passing on planted cases (baseline traces) and on history, no
      pending stale edit and no regressed fix => queue entry gets end_state (rank.py drops it to the
-     bottom). It reopens on a cited-file change, a regressed fix, or production failures.
+     bottom). It reopens on a cited-file change, a regressed fix, or production failures. History here
+     is only spawns made since the agent file's last commit (bench_lib.current_history); older spawns
+     ran a different prompt.
 
 State: <bench>/<agent>/preflight.json (audit log), queue.json end_state. Env: AGENT_BENCH_DIR,
 AGENT_EVALS_DIR (bench_lib), HOME (where recorded spawns are read), AGENT_BENCH_MAIN_REF.
@@ -325,7 +327,7 @@ def end_state_problems(agent, contract, recs, manual, confirm_rows):
         probs.append("fix regressed: " + ", ".join(f"#{r['n']} {r['check']}" for r in reg))
     failed = sum(any(L.grade.check(c, r)[0] is False for c in contract["checks"]) for r in recs)
     if not recs:
-        probs.append("no production history to confirm passing")
+        probs.append("no production spawns since the agent file last changed, nothing to confirm passing")
     elif failed:
         probs.append(f"production failures: {failed} of {len(recs)} spawns fail a check (failure rate {failed / len(recs):.1%})")
     cases = [json.loads(ln) for ln in open(os.path.join(L.evals_dir(), agent, "cases.jsonl"))] \
@@ -414,7 +416,9 @@ def main():
         print("STALENESS: every cited file matches its frozen fingerprint")
     else:
         report_stale(agent, contract, recs, stale)
-    update_end_state(agent, contract, recs, stale, rows)
+    cur, note = L.current_history(agent, recs)
+    print(f"END STATE {note}")
+    update_end_state(agent, contract, cur, stale, rows)
     blocked = [f for f, c in stale.items() if c["state"] == "manual"]
     print("LIVE_RUNS: " + (f"BLOCKED until approved ({', '.join(blocked)})" if blocked else "allowed"))
     if blocked:

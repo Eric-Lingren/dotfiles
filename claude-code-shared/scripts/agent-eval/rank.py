@@ -3,7 +3,9 @@
 
 Steps (zero tokens):
   1. bench_queue.sync: any agents/**/*.md missing from queue.json is added at stage "contract" (history empty).
-  2. Scan recorded spawns (same sources as harvest.py) in memory and count spawns per agent.
+  2. Scan recorded spawns (same sources as harvest.py) in memory and count spawns per agent. Only
+     spawns made since the agent file's last commit count (bench_lib.current_history); older spawns
+     ran a different prompt.
   3. A spawn FAILS when the agent has a frozen contract (evals/<agent>/contract.json) and any check
      fails (grade.check), else (no contract yet) when its final output is blank or its last tool call errored.
   4. score = failure_rate * spawn_count (= failed spawns). Highest first; agents with score 0
@@ -62,11 +64,14 @@ def rank(agents):
     rows = []
     for a in agents:
         c = contract_for(a)
-        n = len(recs[a])
-        f = sum(failed(r, c) for r in recs[a])
+        cur, _ = L.current_history(a, recs[a])
+        n = len(cur)
+        f = sum(failed(r, c) for r in cur)
         rate = f / n if n else 0.0
         basis = "contract checks" if c else "no contract yet: blank output or errored last tool call"
-        if n == 0:
+        if n == 0 and recs[a]:
+            reason = f"no spawns since the agent file last changed ({len(recs[a])} older spawns ignored)"
+        elif n == 0:
             reason = "never spawned in recorded history"
         elif f == 0:
             reason = f"passing: 0 of {n} spawns failed ({basis})"

@@ -111,6 +111,49 @@ def load_history(agent):
     return grade.load_records([d])
 
 
+def agent_file(agent):
+    for root, _, files in os.walk(os.path.join(SHARED_DIR, "agents")):
+        if agent + ".md" in files:
+            return os.path.join(root, agent + ".md")
+    return None
+
+
+def agent_changed_at(agent):
+    """(datetime, short sha) of the last commit touching the agent's .md, or None (no file / never committed)."""
+    p = agent_file(agent)
+    if not p:
+        return None
+    try:
+        out = subprocess.check_output(["git", "log", "-1", "--format=%cI %h", "--", p], text=True,
+                                      cwd=os.path.dirname(p), stderr=subprocess.DEVNULL).strip()
+    except (subprocess.CalledProcessError, OSError):
+        return None
+    if not out:
+        return None
+    ts, sha = out.split()
+    return datetime.fromisoformat(ts), sha
+
+
+def rec_time(rec):
+    try:
+        return datetime.fromisoformat((rec.get("timestamp") or "").replace("Z", "+00:00"))
+    except ValueError:
+        return None
+
+
+def current_history(agent, recs):
+    """Spawns made by the agent's current version: timestamp at or after the last commit to its .md.
+    Older spawns graded a different prompt, so they say nothing about the agent as it is now. Undated
+    spawns are dropped. Returns (kept records, note for the caller to print)."""
+    ch = agent_changed_at(agent)
+    if not ch:
+        return recs, "history window: all spawns (agent file has no commit)"
+    since, sha = ch
+    kept = [r for r in recs if (rec_time(r) or since.min.replace(tzinfo=timezone.utc)) >= since]
+    return kept, (f"history window: {len(kept)} of {len(recs)} spawns since the agent file last changed "
+                  f"({since.astimezone(timezone.utc):%Y-%m-%d %H:%M}Z, {sha})")
+
+
 def grade_contract(contract, recs):
     """Per-check stats using grade.check (same engine as grade.py). Returns list of dicts."""
     out = []

@@ -25,6 +25,12 @@ Built-in check types (exactly these 8):
 
 A check may set "when": {"field": ..., "equals": ...} on the parsed output to skip
 (not applicable) records. Skipped records are excluded from the pass rate.
+
+Format checks (json_parse, no_prose) are n/a on a live run (record "source": "live") that has no
+SubagentHandback call. Production spawns return their answer as the handback tool's argument, which
+models write bare. `claude -p` runs have no handback tool, so the answer is a chat message that models
+fence and narrate around. Grading format there measures the bench, not the agent. These checks grade
+from production history only.
 """
 import fnmatch
 import json
@@ -33,6 +39,13 @@ import re
 import sys
 
 FENCE = re.compile(r"^\s*```(?:json)?\s*\n(.*?)\n\s*```\s*$", re.S)
+FORMAT_TYPES = ("json_parse", "no_prose")
+
+
+def chat_channel(rec):
+    """True for a live run whose answer came back as a chat message, not through SubagentHandback."""
+    return rec.get("source") == "live" and not any(
+        c.get("name") == "SubagentHandback" for c in rec.get("tool_calls", []))
 
 
 def parse_output(text, strict=False):
@@ -49,10 +62,10 @@ def parse_output(text, strict=False):
             except ValueError as e:
                 err = str(e)
         else:
-            m = re.search(r"```(?:json)?\s*\n(.*?)\n\s*```", t, re.S)
-            if m:
+            # narration can hold its own code fences before the answer; the answer comes last
+            for body in reversed(re.findall(r"```(?:json)?\s*\n(.*?)\n\s*```", t, re.S)):
                 try:
-                    return json.loads(m.group(1)), None
+                    return json.loads(body), None
                 except ValueError as e:
                     err = str(e)
     return None, err
@@ -141,6 +154,8 @@ def matching_call(c, rec, tool):
 # each returns (result, detail); result True/False/None(n/a)
 def check(c, rec):
     typ = c["type"]
+    if typ in FORMAT_TYPES and chat_channel(rec):
+        return None, "n/a: live run has no SubagentHandback; format graded from production history"
     out = rec.get("final_output") or ""
     parsed, perr = parse_output(out, strict=c.get("strict", False))
     when = c.get("when")
