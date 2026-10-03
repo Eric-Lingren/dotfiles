@@ -15,7 +15,8 @@ Built-in check types (exactly these 7):
                   input text (spawn prompt + tool results; param "input": "prompt"|"all")
   tool_called     a tool call exists: "tool" (default Bash) whose JSON args contain "match"
                   (substring) or match "regex"
-  file_written    a file was written whose path matches "glob" (fnmatch)
+  file_written    a file was written whose path matches "glob" (fnmatch); live runs include shim writes
+                  (the temp unified-learnings.jsonl)
   verdict_equals  value at "field" equals "expected", or record["expected"][field] when
                   "expected_from": "case"
   no_prose        final output is only JSON (no text outside one optional fence)
@@ -150,7 +151,9 @@ def check(c, rec):
         return not bad, f"{len(bad)}/{len(qs)} quotes not in input: {bad[0][:80]!r}" if bad else ""
     if typ == "tool_called":
         tool = c.get("tool", "Bash")
-        for call in rec.get("tool_calls", []):
+        # live runs also carry the shim log: shimmed calls (log-learning.py, gh, child agents) grade from it
+        shimmed = [{"name": x.get("tool"), "input": x.get("input")} for x in rec.get("shim_calls", []) if x.get("input")]
+        for call in rec.get("tool_calls", []) + shimmed:
             if call.get("name") != tool:
                 continue
             args = json.dumps(call.get("input"), ensure_ascii=False)
