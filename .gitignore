@@ -14,3 +14,11 @@ claude-code-shared/skills/synced/
 .claude/hillclimb/**/progress.txt
 .claude/hillclimb/**/errors.jsonl
 **/evals/*/fixtures/
+
+# agent-bench (improve-agent-benchmarks): history, traces and fixtures hold
+# real session content from other repos. Never commit.
+.claude/agent-bench/*/history/
+.claude/agent-bench/*/traces/
+.claude/agent-bench/*/fixtures/
+**/evals/*/traces/
+**/evals/*/history/
