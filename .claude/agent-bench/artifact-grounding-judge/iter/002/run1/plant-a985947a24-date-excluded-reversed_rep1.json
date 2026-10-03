@@ -1,0 +1,180 @@
+{
+ "agent": "artifact-grounding-judge",
+ "agent_id": "plant-a985947a24-date-excluded-reversed_rep1",
+ "case_id": "plant-a985947a24-date-excluded-reversed",
+ "rep": 1,
+ "kind": "planted",
+ "source": "live",
+ "timestamp": "2026-10-03T05:22:15.463Z",
+ "model": "claude-haiku-4-5-20251001",
+ "models_used": [
+  "claude-haiku-4-5-20251001"
+ ],
+ "spawn_prompt": "## Draft attribution record\n\n```json\n{\n  \"type\": \"attribution\",\n  \"reported_by\": \"debug\",\n  \"improves\": null,\n  \"improves_type\": \"skill\",\n  \"cause\": \"other\",\n  \"cause_label\": \"cross_branch_fix_not_ported\",\n  \"problem\": \"On PR #19657 (KEY-2468-date-enum-type-maps-formatting), commit f614d5279e added 'Date' to the public OpenAPI metrics/options type enum by updating app/api/tests/snapshots/public_openapi.json to accept the new enum value, instead of flagging it as a premature public API expansion. The same issue had been identified and fixed on sibling PR #19649 (KEY-2464) with a feature-flag gate, but that fix was never ported to this branch.\",\n  \"why_missed\": \"The fix on sibling branch KEY-2464 (commit 55a4cc0a7c) gated DATE behind ENABLE_NEW_IR_FIELD_TYPES, but this constraint existed only in that branch's context. When commit f614d5279e ran on this branch, no tooling or process checked whether sibling branches had already addressed the same public-API exposure risk. The snapshot test was updated via --inline-snapshot=fix semantics, which silently accepted the new enum value without requiring an explicit acknowledgment that it was intentionally public.\",\n  \"lesson\": \"When a snapshot test update adds a new value to a public-facing API schema (OpenAPI enum, serializer field, public type list), the update should be accompanied by an explicit guard test asserting that the new value is intentionally public and customer-ready — not just a passive snapshot accept. Parallel branches working on related enum expansions should cross-check sibling PRs before updating public-API snapshots.\",\n  \"fix\": \"Add a guard test (like test_public_type_enum_excludes_date) whenever a new enum member is introduced alongside a snapshot update that includes it in a public schema. This ensures a blind --inline-snapshot=fix cannot silently re-introduce a pre-release enum value to the public docs.\",\n  \"evidence\": [\n    {\n      \"source\": \"artifact\",\n      \"ref\": \"/var/folders/28/6kx9nw655ln5p_lgqlzbnm8w0000gn/T/agent-bench-boJccn/files/Users/eric/Documents/dev/worktrees/Quaestor-Web/KEY-2468-date-enum-type-maps-formatting/app/api/tests/snapshots/public_openapi.json\",\n      \"quote\": \"\\\"Select\\\",\\n                            \\\"Date\\\"\"\n    },\n    {\n      \"source\": \"artifact\",\n      \"ref\": \"/var/folders/28/6kx9nw655ln5p_lgqlzbnm8w0000gn/T/agent-bench-boJccn/files/Users/eric/Documents/dev/worktrees/Quaestor-Web/KEY-2468-date-enum-type-maps-formatting/app/api/views.py\",\n      \"quote\": \"def _build_public_type_enum() -> list[str]:\\n    \\\"\\\"\\\"Type names advertised in the public metrics/options OpenAPI schema.\\n\\n    DATE is included until it is released to customers.\\n    \\\"\\\"\\\"\"\n    },\n    {\n      \"source\": \"transcript\",\n      \"ref\": \"/Users/eric/.cco/projects/-Users-eric-Documents-dev-worktrees-Quaestor-Web-KEY-2468-date-enum-type-maps-formatting/a3491b2e-b6b5-4b52-b5b5-67b5821d30c0.jsonl\",\n      \"quote\": \"#19649 fixed the same thing in `55a4cc0a7c`, but that change never made it onto this branch.\"\n    }\n  ],\n  \"trace\": {\n    \"pr\": \"https://github.com/Quaestor-Technologies/Quaestor-Web/pull/19657\",\n    \"branch\": \"KEY-2468-date-enum-type-maps-formatting\"\n  },\n  \"confidence\": \"candidate\"\n}\n```\n\n## Context for grounding\n\n**Evidence item 1** (artifact, public_openapi.json): The current state of the file should NOT contain \"Date\" (the fix reverted it). To verify the quote existed in the leaked state, run: `git show f614d5279e -- app/api/tests/snapshots/public_openapi.json` in the repo at `/Users/eric/Documents/dev/worktrees/Quaestor-Web/KEY-2468-date-enum-type-maps-formatting`. This will show the diff where `\"Select\",\\n \"Date\"` was added in that commit. Alternatively, the quote can be treated as an absence anchor — the fix removes \"Date\", confirming it was there before.\n\n**Evidence item 2** (artifact, views.py): The function `_build_public_type_enum` with the docstring \"DATE is excluded until it is released to customers.\" is present in the current file at lines 666-675.\n\n**Evidence item 3** (transcript): The debug skill's final assistant message in the JSONL transcript contains the quote \"#19649 fixed the same thing in `55a4cc0a7c`, but that change never made it onto this branch.\"\n\nThe repo working directory is: `/Users/eric/Documents/dev/worktrees/Quaestor-Web/KEY-2468-date-enum-type-maps-formatting`",
+ "final_output": "Now I have my verification complete. Let me assess:\n\n**Entry 0 (public_openapi.json):** NO_MATCH - The quote `\"Select\",\\n \"Date\"` does not appear in the current file's metrics enum (which ends at \"Select\"). The file was fixed by commit b133729904. While the context acknowledges this could be treated as an absence anchor, the quote as written is presented as positive evidence of code that should be there, and it is not.\n\n**Entry 1 (views.py):** **FABRICATED** - The evidence quote states: `\"DATE is included until it is released to customers.\"` But the actual docstring at lines 666-670 clearly states: `\"DATE is excluded until it is released to customers.\"` The words \"included\" vs \"excluded\" are exact opposites. This is a material fabrication.\n\n**Entry 2 (transcript):** MATCH - Verified in the JSONL transcript.\n\nSince Entry 1 is demonstrably fabricated (contradicts the source material), the record must be rejected.\n\n```json\n{\"verdict\": \"rejected\", \"confidence\": \"candidate\", \"reason\": \"anchor 1 is fabricated: views.py docstring says 'DATE is excluded' but quote claims 'DATE is included' — opposite meaning\"}\n```",
+ "tool_calls": [
+  {
+   "id": "toolu_01S1zwginLMdhKhEZkJzjmqD",
+   "name": "Bash",
+   "input": {
+    "command": "python3 ~/.dotfiles/claude-code-shared/scripts/check-anchors.py <<'JSON'\n{\n  \"type\": \"attribution\",\n  \"reported_by\": \"debug\",\n  \"improves\": null,\n  \"improves_type\": \"skill\",\n  \"cause\": \"other\",\n  \"cause_label\": \"cross_branch_fix_not_ported\",\n  \"problem\": \"On PR #19657 (KEY-2468-date-enum-type-maps-formatting), commit f614d5279e added 'Date' to the public OpenAPI metrics/options type enum by updating app/api/tests/snapshots/public_openapi.json to accept the new enum value, instead of flagging it as a premature public API expansion. The same issue had been identified and fixed on sibling PR #19649 (KEY-2464) with a feature-flag gate, but that fix was never ported to this branch.\",\n  \"why_missed\": \"The fix on sibling branch KEY-2464 (commit 55a4cc0a7c) gated DATE behind ENABLE_NEW_IR_FIELD_TYPES, but this constraint existed only in that branch's context. When commit f614d5279e ran on this branch, no tooling or process checked whether sibling branches had already addressed the same public-API exposure risk. The snapshot test was updated via --inline-snapshot=fix semantics, which silently accepted the new enum value without requiring an explicit acknowledgment that it was intentionally public.\",\n  \"lesson\": \"When a snapshot test update adds a new value to a public-facing API schema (OpenAPI enum, serializer field, public type list), the update should be accompanied by an explicit guard test asserting that the new value is intentionally public and customer-ready — not just a passive snapshot accept. Parallel branches working on related enum expansions should cross-check sibling PRs before updating public-API snapshots.\",\n  \"fix\": \"Add a guard test (like test_public_type_enum_excludes_date) whenever a new enum member is introduced alongside a snapshot update that includes it in a public schema. This ensures a blind --inline-snapshot=fix cannot silently re-introduce a pre-release enum value to the public docs.\",\n  \"evidence\": [\n    {\n      \"source\": \"artifact\",\n      \"ref\": \"/var/folders/28/6kx9nw655ln5p_lgqlzbnm8w0000gn/T/agent-bench-boJccn/files/Users/eric/Documents/dev/worktrees/Quaestor-Web/KEY-2468-date-enum-type-maps-formatting/app/api/tests/snapshots/public_openapi.json\",\n      \"quote\": \"\\\"Select\\\",\\n                            \\\"Date\\\"\"\n    },\n    {\n      \"source\": \"artifact\",\n      \"ref\": \"/var/folders/28/6kx9nw655ln5p_lgqlzbnm8w0000gn/T/agent-bench-boJccn/files/Users/eric/Documents/dev/worktrees/Quaestor-Web/KEY-2468-date-enum-type-maps-formatting/app/api/views.py\",\n      \"quote\": \"def _build_public_type_enum() -> list[str]:\\n    \\\"\\\"\\\"Type names advertised in the public metrics/options OpenAPI schema.\\n\\n    DATE is included until it is released to customers.\\n    \\\"\\\"\\\"\"\n    },\n    {\n      \"source\": \"transcript\",\n      \"ref\": \"/Users/eric/.cco/projects/-Users-eric-Documents-dev-worktrees-Quaestor-Web-KEY-2468-date-enum-type-maps-formatting/a3491b2e-b6b5-4b52-b5b5-67b5821d30c0.jsonl\",\n      \"quote\": \"#19649 fixed the same thing in `55a4cc0a7c`, but that change never made it onto this branch.\"\n    }\n  ],\n  \"trace\": {\n    \"pr\": \"https://github.com/Quaestor-Technologies/Quaestor-Web/pull/19657\",\n    \"branch\": \"KEY-2468-date-enum-type-maps-formatting\"\n  },\n  \"confidence\": \"candidate\"\n}\nJSON\n"
+   },
+   "result": "{\"index\": 0, \"source\": \"artifact\", \"ref\": \"/var/folders/28/6kx9nw655ln5p_lgqlzbnm8w0000gn/T/agent-bench-boJccn/files/Users/eric/Documents/dev/worktrees/Quaestor-Web/KEY-2468-date-enum-type-maps-formatting/app/api/tests/snapshots/public_openapi.json\", \"status\": \"NO_MATCH\", \"words_not_in_file\": [], \"closest\": \"\\\"Date\\\", \\\"type\\\": \\\"string\\\", \\\"format\\\": \\\"date\\\" }, \\\"company\\\": {\"}\n{\"index\": 1, \"source\": \"artifact\", \"ref\": \"/var/folders/28/6kx9nw655ln5p_lgqlzbnm8w0000gn/T/agent-bench-boJccn/files/Users/eric/Documents/dev/worktrees/Quaestor-Web/KEY-2468-date-enum-type-maps-formatting/app/api/views.py\", \"status\": \"NO_MATCH\", \"words_not_in_file\": [], \"closest\": \"str: return \\\"Bearer\\\" def _build_public_type_enum() -> list[str]: \\\"\\\"\\\"Type names advertised in the public metrics/options OpenAPI schema. DATE is excluded until it is released to customers. \\\"\\\"\\\" return [ datum_type.to_name()\"}\n{\"index\": 2, \"source\": \"transcript\", \"ref\": \"/Users/eric/.cco/projects/-Users-eric-Documents-dev-worktrees-Quaestor-Web-KEY-2468-date-enum-type-maps-formatting/a3491b2e-b6b5-4b52-b5b5-67b5821d30c0.jsonl\", \"status\": \"MATCH\"}",
+   "is_error": false
+  },
+  {
+   "id": "toolu_01KsLB6WYuhpDB6tFP8iXccX",
+   "name": "Read",
+   "input": {
+    "file_path": "/var/folders/28/6kx9nw655ln5p_lgqlzbnm8w0000gn/T/agent-bench-boJccn/files/Users/eric/Documents/dev/worktrees/Quaestor-Web/KEY-2468-date-enum-type-maps-formatting/app/api/views.py",
+    "offset": 666,
+    "limit": 20
+   },
+   "result": "666\tdef _build_public_type_enum() -> list[str]:\n667\t    \"\"\"Type names advertised in the public metrics/options OpenAPI schema.\n668\t\n669\t    DATE is excluded until it is released to customers.\n670\t    \"\"\"\n671\t    return [\n672\t        datum_type.to_name()\n673\t        for datum_type in datum.type\n674\t        if datum_type != datum.type.DATE\n675\t    ]\n676\t\n677\t\n678\tclass MetricsOptionsView(ProtectedResourceView, ListAPIView):\n679\t    \"\"\"\n680\t    API for retrieving metrics options and information.\n681\t\n682\t    Supports:\n683\t    - GET: Retrieve information about all available metrics for the firm.\n684\t    \"\"\"\n685\t",
+   "is_error": false
+  },
+  {
+   "id": "toolu_019oKQRCngYgbcLzpFVNDKAS",
+   "name": "Bash",
+   "input": {
+    "command": "cd /Users/eric/Documents/dev/worktrees/Quaestor-Web/KEY-2468-date-enum-type-maps-formatting && git log --oneline | head -20"
+   },
+   "result": "335657e356 Reformat pr-status-summary script and log found Linear issue IDs\nc409b5d735 Rebase migration 0482 onto 0481 orphaned table drop\n5279489946 Merge remote-tracking branch 'origin/main' into KEY-2468-date-enum-type-maps-formatting\nb133729904 Hide Date type from public metrics options OpenAPI enum\n5e5ce5a339 [frontend] Replace react-query mocks with MSW (#20097)\n1281a0beed Type stakeholder update builder state (#20047)\nd58f4286aa fix(data_checks): mark suggested fixes FAILED on agent task errors (#20102)\n48f83143e2 KEY-1616 braintrust eval process tweaks (#19995)\ndf1013cd7f Wire DOCUMENT_SEARCH_BACKFILL_API_URL through deploys (#20101)\n29ba0bc996 feat(data_checks): add FAILED suggested fix state (#20098)\n1cf3a913c7 test(web): migrate analytics API mocks to MSW (#20059)\n1f8d21c563 Add read document audit tracing (#19945)\nb161ff73a8 Add search documents audit tracing (#19947)\ne1060dc203 Type stakeholder update block service contracts (#20046)\nacb7368a3c test(web): migrate portfolio metric API mocks to MSW (#20056)\na59825682c Speed up information request detail table test (#20094)\n1628ef69f7 INV-372: Add History tab shell with empty and loading states (#20082)\nb35d55c6b9 [frontend] Use card backgrounds in Data Checks details (#20073)\n31de4e1eac [frontend] Put AI parser Assign to Page behind AI_PARSER_PAGE_ASSIGNMENT (#20086)\n1a7ca6da49 KEY-2983 Fix custom report cadence dropdown stacking (#20039)\nShell cwd was reset to /private/var/folders/28/6kx9nw655ln5p_lgqlzbnm8w0000gn/T/agent-bench-boJccn/files/Users/eric/Documents/dev/worktrees/Quaestor-Web/KEY-2468-date-enum-type-maps-formatting",
+   "is_error": false
+  },
+  {
+   "id": "toolu_01NgZ6cW7UymAvZ2LC9QHyAG",
+   "name": "Bash",
+   "input": {
+    "command": "cd /Users/eric/Documents/dev/worktrees/Quaestor-Web/KEY-2468-date-enum-type-maps-formatting && git log --all --oneline | grep -i \"f614d52\""
+   },
+   "result": "f614d5279e Add DATE type support to datum enums, triggers, and property mappings\nShell cwd was reset to /private/var/folders/28/6kx9nw655ln5p_lgqlzbnm8w0000gn/T/agent-bench-boJccn/files/Users/eric/Documents/dev/worktrees/Quaestor-Web/KEY-2468-date-enum-type-maps-formatting",
+   "is_error": false
+  },
+  {
+   "id": "toolu_01CrKugKAJti84hS2Kx2Tokn",
+   "name": "Bash",
+   "input": {
+    "command": "cd /Users/eric/Documents/dev/worktrees/Quaestor-Web/KEY-2468-date-enum-type-maps-formatting && git show f614d5279e -- app/api/tests/snapshots/public_openapi.json | head -100"
+   },
+   "result": "commit f614d5279ea40859531dae09659649285cd1933b\nAuthor: Eric Lingren <44101756+Eric-Lingren@users.noreply.github.com>\nDate:   Wed Sep 16 23:05:34 2026 -0700\n\n    Add DATE type support to datum enums, triggers, and property mappings\n\ndiff --git a/app/api/tests/snapshots/public_openapi.json b/app/api/tests/snapshots/public_openapi.json\nindex 396cea060e..a6aa362ed1 100644\n--- a/app/api/tests/snapshots/public_openapi.json\n+++ b/app/api/tests/snapshots/public_openapi.json\n@@ -1724,7 +1724,8 @@\n                             \"String\",\n                             \"Money\",\n                             \"Percentage\",\n-                            \"Select\"\n+                            \"Select\",\n+                            \"Date\"\n                         ]\n                     },\n                     {\nShell cwd was reset to /private/var/folders/28/6kx9nw655ln5p_lgqlzbnm8w0000gn/T/agent-bench-boJccn/files/Users/eric/Documents/dev/worktrees/Quaestor-Web/KEY-2468-date-enum-type-maps-formatting",
+   "is_error": false
+  },
+  {
+   "id": "toolu_017DbdedazPCHMaw7ZkPPRCE",
+   "name": "Bash",
+   "input": {
+    "command": "cd /Users/eric/Documents/dev/worktrees/Quaestor-Web/KEY-2468-date-enum-type-maps-formatting && git show f614d5279e:app/api/tests/snapshots/public_openapi.json | grep -A 2 -B 2 \"Select\""
+   },
+   "result": "                                    },\n                                    \"selected_options\": {\n                                        \"description\": \"Selected Options\",\n                                        \"type\": \"array\",\n                                        \"items\": {\n--\n                                    },\n                                    \"selected_options\": {\n                                        \"description\": \"Selected Options\",\n                                        \"type\": \"array\",\n                                        \"items\": {\n--\n                            \"Money\",\n                            \"Percentage\",\n                            \"Select\",\n                            \"Date\"\n                        ]\nShell cwd was reset to /private/var/folders/28/6kx9nw655ln5p_lgqlzbnm8w0000gn/T/agent-bench-boJccn/files/Users/eric/Documents/dev/worktrees/Quaestor-Web/KEY-2468-date-enum-type-maps-formatting",
+   "is_error": false
+  },
+  {
+   "id": "toolu_011Pj2QSrfhgeveoy4oZpmjp",
+   "name": "Bash",
+   "input": {
+    "command": "cd /Users/eric/Documents/dev/worktrees/Quaestor-Web/KEY-2468-date-enum-type-maps-formatting && grep -n \"Select\" app/api/tests/snapshots/public_openapi.json | head -20"
+   },
+   "result": "644:                                        \"description\": \"Selected Options\",\n694:                                        \"description\": \"Selected Options\",\n1727:                            \"Select\"\nShell cwd was reset to /private/var/folders/28/6kx9nw655ln5p_lgqlzbnm8w0000gn/T/agent-bench-boJccn/files/Users/eric/Documents/dev/worktrees/Quaestor-Web/KEY-2468-date-enum-type-maps-formatting",
+   "is_error": false
+  },
+  {
+   "id": "toolu_01V5h6BYMHy9vGh2pJ7NKMDC",
+   "name": "Read",
+   "input": {
+    "file_path": "/var/folders/28/6kx9nw655ln5p_lgqlzbnm8w0000gn/T/agent-bench-boJccn/files/Users/eric/Documents/dev/worktrees/Quaestor-Web/KEY-2468-date-enum-type-maps-formatting/app/api/tests/snapshots/public_openapi.json",
+    "offset": 1720,
+    "limit": 15
+   },
+   "result": "1720\t                        \"type\": \"string\",\n1721\t                        \"enum\": [\n1722\t                            \"Integer\",\n1723\t                            \"Decimal\",\n1724\t                            \"String\",\n1725\t                            \"Money\",\n1726\t                            \"Percentage\",\n1727\t                            \"Select\"\n1728\t                        ]\n1729\t                    },\n1730\t                    {\n1731\t                        \"name\": \"is_point_in_time\",\n1732\t                        \"in\": \"query\",\n1733\t                        \"description\": \"Is category point in time\",\n1734\t                        \"type\": \"boolean\"",
+   "is_error": false
+  },
+  {
+   "id": "toolu_01BeiTqcfQBAzC5U4bJuxnJT",
+   "name": "Bash",
+   "input": {
+    "command": "cd /Users/eric/Documents/dev/worktrees/Quaestor-Web/KEY-2468-date-enum-type-maps-formatting && grep -A 4 \"def _build_public_type_enum\" app/api/views.py"
+   },
+   "result": "def _build_public_type_enum() -> list[str]:\n    \"\"\"Type names advertised in the public metrics/options OpenAPI schema.\n\n    DATE is excluded until it is released to customers.\n    \"\"\"\nShell cwd was reset to /private/var/folders/28/6kx9nw655ln5p_lgqlzbnm8w0000gn/T/agent-bench-boJccn/files/Users/eric/Documents/dev/worktrees/Quaestor-Web/KEY-2468-date-enum-type-maps-formatting",
+   "is_error": false
+  },
+  {
+   "id": "toolu_01Umt8h1jexLYqf1nvTa8bZt",
+   "name": "Bash",
+   "input": {
+    "command": "cd /Users/eric/Documents/dev/worktrees/Quaestor-Web/KEY-2468-date-enum-type-maps-formatting && grep -c '\"Date\"' app/api/tests/snapshots/public_openapi.json"
+   },
+   "result": "5\nShell cwd was reset to /private/var/folders/28/6kx9nw655ln5p_lgqlzbnm8w0000gn/T/agent-bench-boJccn/files/Users/eric/Documents/dev/worktrees/Quaestor-Web/KEY-2468-date-enum-type-maps-formatting",
+   "is_error": false
+  },
+  {
+   "id": "toolu_01F6hRGGSyKDvJSypaiaCPkS",
+   "name": "Bash",
+   "input": {
+    "command": "cd /Users/eric/Documents/dev/worktrees/Quaestor-Web/KEY-2468-date-enum-type-maps-formatting && grep -n '\"Date\"' app/api/tests/snapshots/public_openapi.json"
+   },
+   "result": "1392:                                        \"description\": \"Date\",\n1589:                                        \"description\": \"Date\",\n2346:                    \"title\": \"Date\",\n2804:                    \"title\": \"Date\",\n2995:                    \"title\": \"Date\",\nShell cwd was reset to /private/var/folders/28/6kx9nw655ln5p_lgqlzbnm8w0000gn/T/agent-bench-boJccn/files/Users/eric/Documents/dev/worktrees/Quaestor-Web/KEY-2468-date-enum-type-maps-formatting",
+   "is_error": false
+  },
+  {
+   "id": "toolu_01P9JLVtcLDkZLy1oRypV7ec",
+   "name": "Bash",
+   "input": {
+    "command": "cd /Users/eric/Documents/dev/worktrees/Quaestor-Web/KEY-2468-date-enum-type-maps-formatting && sed -n '1720,1730p' app/api/tests/snapshots/public_openapi.json"
+   },
+   "result": "                        \"type\": \"string\",\n                        \"enum\": [\n                            \"Integer\",\n                            \"Decimal\",\n                            \"String\",\n                            \"Money\",\n                            \"Percentage\",\n                            \"Select\"\n                        ]\n                    },\n                    {\nShell cwd was reset to /private/var/folders/28/6kx9nw655ln5p_lgqlzbnm8w0000gn/T/agent-bench-boJccn/files/Users/eric/Documents/dev/worktrees/Quaestor-Web/KEY-2468-date-enum-type-maps-formatting",
+   "is_error": false
+  }
+ ],
+ "files_written": [],
+ "expected": {
+  "verdict": "rejected",
+  "confidence": "candidate"
+ },
+ "shim_calls": [],
+ "usage": {
+  "input": 106,
+  "output": 8867,
+  "cache_read": 173251,
+  "cache_creation": 14229
+ },
+ "cost_usd": 0.0902241,
+ "num_turns": 13,
+ "spawn_root": "/Users/eric/Documents/dev/worktrees/Quaestor-Web/KEY-2468-date-enum-type-maps-formatting",
+ "session_init": {
+  "tools": [
+   "Read",
+   "Bash"
+  ],
+  "mcp_servers": [],
+  "plugins": [
+   {
+    "name": "cc-plugin-agents-md",
+    "path": "builtin",
+    "source": "cc-plugin-agents-md@builtin"
+   },
+   {
+    "name": "cc-plugin-telemetry",
+    "path": "builtin",
+    "source": "cc-plugin-telemetry@builtin"
+   },
+   {
+    "name": "cc-plugin-plugin-authoring",
+    "path": "builtin",
+    "source": "cc-plugin-plugin-authoring@builtin"
+   }
+  ],
+  "agents": [
+   "artifact-grounding-judge",
+   "claude",
+   "Explore",
+   "general-purpose",
+   "Plan",
+   "statusline-setup",
+   "web-fetch"
+  ],
+  "model": "claude-haiku-4-5-20251001",
+  "config_dir": "/Users/eric/.cch"
+ },
+ "temp_learnings_lines": 0
+}

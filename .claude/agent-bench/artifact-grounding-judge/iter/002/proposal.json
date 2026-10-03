@@ -1,0 +1,13 @@
+{
+  "kind": "prompt",
+  "script_fix_considered": "The agent's final reply is text the model writes itself, and no script it calls produces that reply, so a script change cannot control the output format. Cases 1 and 2 add a ```json fence around valid JSON, and case 3 adds prose before the fence, so the fix has to be a stronger output-format instruction in the agent file.",
+  "rationale": "All three failures break bare-JSON parsing: two wrap the JSON in a ```json fence and one writes an analysis paragraph before it. The current one-line ban is too easy to skip, and the output contract itself is shown inside a fenced block, which the model copies. The edit says the reply is machine-parsed, that the first character must be `{` and the last `}`, and that no fence or text may appear before or after it, including after a rejection. The reasoning stays in tool calls and is never written into the reply.",
+  "edits": [
+    {
+      "file": "agents/artifact-grounding-judge.md",
+      "find": "**Your output is a single JSON object. No prose. No explanation. No markdown fences.**",
+      "replace": "**Your final reply is parsed by a machine with `json.loads`. It must be a single JSON object: the first character of the reply is `{` and the last is `}`. Never wrap it in ``` fences, never write ```json, and never write any text before or after it (no findings summary, no per-entry analysis, no \"Based on the results...\"). This applies to rejections as well as passes. Do your reasoning silently, and write only the JSON object as your final message. The code blocks below only show the shape of the object; do not copy their fences.**"
+    }
+  ],
+  "_cost_usd": 0.06854
+}

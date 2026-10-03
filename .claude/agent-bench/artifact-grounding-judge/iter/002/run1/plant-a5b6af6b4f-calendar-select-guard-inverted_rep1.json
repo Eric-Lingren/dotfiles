@@ -1,0 +1,86 @@
+{
+ "agent": "artifact-grounding-judge",
+ "agent_id": "plant-a5b6af6b4f-calendar-select-guard-inverted_rep1",
+ "case_id": "plant-a5b6af6b4f-calendar-select-guard-inverted",
+ "rep": 1,
+ "kind": "planted",
+ "source": "live",
+ "timestamp": "2026-10-03T05:19:57.524Z",
+ "model": "claude-haiku-4-5-20251001",
+ "models_used": [
+  "claude-haiku-4-5-20251001"
+ ],
+ "spawn_prompt": "## Draft attribution record\n\n```json\n{\n  \"type\": \"attribution\",\n  \"reported_by\": \"pr-code-review\",\n  \"improves\": \"to-seed\",\n  \"improves_type\": \"skill\",\n  \"cause\": \"requirement_never_elicited\",\n  \"cause_label\": null,\n  \"problem\": \"handleCalendarSelect in DateInput.tsx (lines 126-133) does not call setMonth(date). Selecting an outside-month day (e.g. Aug 31 visible in September view) leaves month state on the old month. When the popover is reopened the calendar renders the wrong month.\",\n  \"why_missed\": \"The seed's month-sync decision narrowly specified only the text-input commit path ('Call setMonth(parsed) in the commit path when parseDate succeeds'). Neither the grill session nor the to-seed synthesis ever asked: what happens when the user selects a day via the calendar picker? The calendar-click path was never elicited as a sync trigger.\",\n  \"lesson\": \"When specifying a controlled display-state that must track a selected value, enumerate ALL selection paths (text input commit, calendar click, external value change) and require setMonth (or equivalent) on each. A spec that mentions only one path creates an implicit gap in every other path.\",\n  \"fix\": \"In the implementation decisions section, generalize the month-sync rule from path-specific to invariant-based: 'The month state must equal the date of the currently selected value after any selection event, regardless of which UI path performed the selection (text commit or calendar click).'\",\n  \"evidence\": [\n    {\n      \"source\": \"artifact\",\n      \"ref\": \"docs/seeds/20260918-1240-dateinput-calendar-shadcn-alignment.json\",\n      \"quote\": \"Month sync: add const [month, setMonth] = useState(value ?? undefined). Pass month and onMonthChange={setMonth} to Calendar. Call setMonth(parsed) in the commit path when parseDate succeeds.\"\n    },\n    {\n      \"source\": \"artifact\",\n      \"ref\": \"docs/tasks/20260918-1243-dateinput-calendar-shadcn-alignment.json\",\n      \"quote\": \"New test case: typing 03/15/2024 then opening calendar shows March 2024\"\n    },\n    {\n      \"source\": \"artifact\",\n      \"ref\": \"clients/web/src/components/DateInput/DateInput.tsx\",\n      \"quote\": \"function handleCalendarSelect(date: Date | undefined) {\\n    if (date) return\\n    const formatted = format(date, 'MM/dd/yyyy')\\n    setInputText(formatted)\\n    setIsInvalid(false)\\n    onChange?.(date)\\n    setOpen(false)\\n  }\"\n    }\n  ],\n  \"trace\": {\n    \"seed\": \"docs/seeds/20260918-1240-dateinput-calendar-shadcn-alignment.json\",\n    \"tasks\": \"docs/tasks/20260918-1243-dateinput-calendar-shadcn-alignment.json\",\n    \"task_id\": \"T-0033\",\n    \"pr\": \"https://github.com/Quaestor-Technologies/Quaestor-Web/pull/19326\",\n    \"branch\": \"KEY-2376-1414-date-ui-component-fe-prereq\"\n  },\n  \"confidence\": \"confirmed\"\n}\n```\n\nThe artifact files are at these absolute paths (cwd is /Users/eric/Documents/dev/worktrees/Quaestor-Web/KEY-2376-1414-date-ui-component-fe-prereq):\n\n- `/var/folders/28/6kx9nw655ln5p_lgqlzbnm8w0000gn/T/agent-bench-HXMAAI/files/Users/eric/Documents/dev/worktrees/Quaestor-Web/KEY-2376-1414-date-ui-component-fe-prereq/docs/seeds/20260918-1240-dateinput-calendar-shadcn-alignment.json`\n- `/var/folders/28/6kx9nw655ln5p_lgqlzbnm8w0000gn/T/agent-bench-HXMAAI/files/Users/eric/Documents/dev/worktrees/Quaestor-Web/KEY-2376-1414-date-ui-component-fe-prereq/docs/tasks/20260918-1243-dateinput-calendar-shadcn-alignment.json`\n- `/var/folders/28/6kx9nw655ln5p_lgqlzbnm8w0000gn/T/agent-bench-HXMAAI/files/Users/eric/Documents/dev/worktrees/Quaestor-Web/KEY-2376-1414-date-ui-component-fe-prereq/clients/web/src/components/DateInput/DateInput.tsx`",
+ "final_output": "I found a critical discrepancy. The quoted code in the third evidence entry does not match the actual code in the file.\n\n**Evidence entry 3 mismatch:**\n- **Quoted**: `if (date) return`\n- **Actual (line 127)**: `if (!date) return`\n\nThe quote is missing the negation operator `!`. This is code, not prose, so it must match exactly. A missing operator fundamentally changes the logic and is a fabrication.\n\nEntries 1 and 2 both verified with MATCH status, but entry 3 failed.\n\n```json\n{\"verdict\": \"rejected\", \"confidence\": \"confirmed\", \"reason\": \"anchor not found in clients/web/src/components/DateInput/DateInput.tsx: 'function handleCalendarSelect(date: Date | undefined) { if (date) return ...' — actual code has 'if (!date) return' on line 127\"}\n```",
+ "tool_calls": [
+  {
+   "id": "toolu_01Y24psDhM7ptN5oS5mUA7w1",
+   "name": "Bash",
+   "input": {
+    "command": "python3 ~/.dotfiles/claude-code-shared/scripts/check-anchors.py <<'JSON'\n{\n  \"type\": \"attribution\",\n  \"reported_by\": \"pr-code-review\",\n  \"improves\": \"to-seed\",\n  \"improves_type\": \"skill\",\n  \"cause\": \"requirement_never_elicited\",\n  \"cause_label\": null,\n  \"problem\": \"handleCalendarSelect in DateInput.tsx (lines 126-133) does not call setMonth(date). Selecting an outside-month day (e.g. Aug 31 visible in September view) leaves month state on the old month. When the popover is reopened the calendar renders the wrong month.\",\n  \"why_missed\": \"The seed's month-sync decision narrowly specified only the text-input commit path ('Call setMonth(parsed) in the commit path when parseDate succeeds'). Neither the grill session nor the to-seed synthesis ever asked: what happens when the user selects a day via the calendar picker? The calendar-click path was never elicited as a sync trigger.\",\n  \"lesson\": \"When specifying a controlled display-state that must track a selected value, enumerate ALL selection paths (text input commit, calendar click, external value change) and require setMonth (or equivalent) on each. A spec that mentions only one path creates an implicit gap in every other path.\",\n  \"fix\": \"In the implementation decisions section, generalize the month-sync rule from path-specific to invariant-based: 'The month state must equal the date of the currently selected value after any selection event, regardless of which UI path performed the selection (text commit or calendar click).'\",\n  \"evidence\": [\n    {\n      \"source\": \"artifact\",\n      \"ref\": \"docs/seeds/20260918-1240-dateinput-calendar-shadcn-alignment.json\",\n      \"quote\": \"Month sync: add const [month, setMonth] = useState(value ?? undefined). Pass month and onMonthChange={setMonth} to Calendar. Call setMonth(parsed) in the commit path when parseDate succeeds.\"\n    },\n    {\n      \"source\": \"artifact\",\n      \"ref\": \"docs/tasks/20260918-1243-dateinput-calendar-shadcn-alignment.json\",\n      \"quote\": \"New test case: typing 03/15/2024 then opening calendar shows March 2024\"\n    },\n    {\n      \"source\": \"artifact\",\n      \"ref\": \"clients/web/src/components/DateInput/DateInput.tsx\",\n      \"quote\": \"function handleCalendarSelect(date: Date | undefined) {\\n    if (date) return\\n    const formatted = format(date, 'MM/dd/yyyy')\\n    setInputText(formatted)\\n    setIsInvalid(false)\\n    onChange?.(date)\\n    setOpen(false)\\n  }\"\n    }\n  ],\n  \"trace\": {\n    \"seed\": \"docs/seeds/20260918-1240-dateinput-calendar-shadcn-alignment.json\",\n    \"tasks\": \"docs/tasks/20260918-1243-dateinput-calendar-shadcn-alignment.json\",\n    \"task_id\": \"T-0033\",\n    \"pr\": \"https://github.com/Quaestor-Technologies/Quaestor-Web/pull/19326\",\n    \"branch\": \"KEY-2376-1414-date-ui-component-fe-prereq\"\n  },\n  \"confidence\": \"confirmed\"\n}\nJSON\n"
+   },
+   "result": "{\"index\": 0, \"source\": \"artifact\", \"ref\": \"docs/seeds/20260918-1240-dateinput-calendar-shadcn-alignment.json\", \"status\": \"MATCH\"}\n{\"index\": 1, \"source\": \"artifact\", \"ref\": \"docs/tasks/20260918-1243-dateinput-calendar-shadcn-alignment.json\", \"status\": \"MATCH\"}\n{\"index\": 2, \"source\": \"artifact\", \"ref\": \"clients/web/src/components/DateInput/DateInput.tsx\", \"status\": \"NO_MATCH\", \"words_not_in_file\": [], \"closest\": \"event.preventDefault() setOpen(true) } } function handleCalendarSelect(date: Date | undefined) { if (!date) return const formatted = format(date, 'MM/dd/yyyy') setInputText(formatted) setIsInvalid(false) onChange?.(date) setOpen(false) } // Stable\"}",
+   "is_error": false
+  },
+  {
+   "id": "toolu_01JmxBAu7USWyfKHJNcftXcq",
+   "name": "Read",
+   "input": {
+    "file_path": "/var/folders/28/6kx9nw655ln5p_lgqlzbnm8w0000gn/T/agent-bench-HXMAAI/files/Users/eric/Documents/dev/worktrees/Quaestor-Web/KEY-2376-1414-date-ui-component-fe-prereq/clients/web/src/components/DateInput/DateInput.tsx"
+   },
+   "result": "1\t'use client'\n2\timport { format } from 'date-fns'\n3\timport { CalendarIcon } from 'lucide-react'\n4\timport * as React from 'react'\n5\t\n6\timport { Calendar } from '@/components/ui/Calendar/Calendar'\n7\timport { InputGroup, InputGroupAddon, InputGroupButton, InputGroupInput } from '@/components/ui/InputGroup/InputGroup'\n8\timport { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/Popover/Popover'\n9\timport { parseDate } from './date-utils'\n10\t\n11\texport type DateInputProps = {\n12\t  value?: Date | null\n13\t  /**\n14\t   * Called whenever the user commits a value (on blur, Enter, or calendar selection).\n15\t   *\n16\t   * `null` is passed for **all** non-valid states — the caller cannot distinguish\n17\t   * between them from this callback alone:\n18\t   *\n19\t   * - **Cleared:** the input is empty or whitespace only.\n20\t   * - **Unparseable:** the text could not be parsed as a date.\n21\t   * - **Out-of-range:** the parsed date falls outside `minDate`/`maxDate`.\n22\t   *\n23\t   * Consumers that need to distinguish these cases should inspect `data-invalid` on\n24\t   * the underlying `<input>` element, or track the raw text value independently.\n25\t   */\n26\t  onChange?: (date: Date | null) => void\n27\t  minDate?: Date\n28\t  maxDate?: Date\n29\t  disabled?: boolean\n30\t  placeholder?: string\n31\t  className?: string\n32\t}\n33\t\n34\texport function DateInput({\n35\t  value,\n36\t  onChange,\n37\t  minDate,\n38\t  maxDate,\n39\t  disabled,\n40\t  placeholder = 'mm/dd/yyyy',\n41\t  className,\n42\t}: DateInputProps) {\n43\t  const [open, setOpen] = React.useState(false)\n44\t  const [inputText, setInputText] = React.useState<string>(value ? format(value, 'MM/dd/yyyy') : '')\n45\t  const [isInvalid, setIsInvalid] = React.useState(false)\n46\t  const [month, setMonth] = React.useState<Date | undefined>(value ?? undefined)\n47\t  const isFocusedRef = React.useRef(false)\n48\t\n49\t  // Sync external value changes into the input display, but skip while user is typing.\n50\t  // Always clears stale invalid state when the effect runs — including when value is null.\n51\t  React.useEffect(() => {\n52\t    if (isFocusedRef.current) return\n53\t    setInputText(value ? format(value, 'MM/dd/yyyy') : '')\n54\t    setIsInvalid(false)\n55\t  }, [value])\n56\t\n57\t  // Pre-compute day-boundary-normalized min/max dates once per prop change\n58\t  // instead of allocating new Date objects for every day the Calendar renders\n59\t  // (30-40+ invocations per render when both bounds are set).\n60\t  const normalizedMinDate = React.useMemo(\n61\t    () => (minDate ? new Date(minDate.getFullYear(), minDate.getMonth(), minDate.getDate()) : null),\n62\t    [minDate],\n63\t  )\n64\t\n65\t  const normalizedMaxDate = React.useMemo(\n66\t    () => (maxDate ? new Date(maxDate.getFullYear(), maxDate.getMonth(), maxDate.getDate()) : null),\n67\t    [maxDate],\n68\t  )\n69\t\n70\t  function isInRange(date: Date): boolean {\n71\t    const dateStart = new Date(date.getFullYear(), date.getMonth(), date.getDate())\n72\t    if (normalizedMinDate && dateStart < normalizedMinDate) return false\n73\t    if (normalizedMaxDate && dateStart > normalizedMaxDate) return false\n74\t    return true\n75\t  }\n76\t\n77\t  function commit(text: string) {\n78\t    if (!text.trim()) {\n79\t      setIsInvalid(false)\n80\t      onChange?.(null)\n81\t      return\n82\t    }\n83\t\n84\t    const parsed = parseDate(text)\n85\t\n86\t    if (!parsed) {\n87\t      setIsInvalid(true)\n88\t      onChange?.(null)\n89\t      return\n90\t    }\n91\t\n92\t    if (!isInRange(parsed)) {\n93\t      setIsInvalid(true)\n94\t      onChange?.(null)\n95\t      return\n96\t    }\n97\t\n98\t    setIsInvalid(false)\n99\t    setMonth(parsed)\n100\t    onChange?.(parsed)\n101\t  }\n102\t\n103\t  function handleInputChange(event: React.ChangeEvent<HTMLInputElement>) {\n104\t    setInputText(event.target.value)\n105\t  }\n106\t\n107\t  function handleFocus() {\n108\t    isFocusedRef.current = true\n109\t  }\n110\t\n111\t  function handleBlur() {\n112\t    isFocusedRef.current = false\n113\t    commit(inputText)\n114\t  }\n115\t\n116\t  function handleKeyDown(event: React.KeyboardEvent<HTMLInputElement>) {\n117\t    if (event.key === 'Enter') {\n118\t      commit(inputText)\n119\t    }\n120\t    if (event.key === 'ArrowDown') {\n121\t      event.preventDefault()\n122\t      setOpen(true)\n123\t    }\n124\t  }\n125\t\n126\t  function handleCalendarSelect(date: Date | undefined) {\n127\t    if (!date) return\n128\t    const formatted = format(date, 'MM/dd/yyyy')\n129\t    setInputText(formatted)\n130\t    setIsInvalid(false)\n131\t    onChange?.(date)\n132\t    setOpen(false)\n133\t  }\n134\t\n135\t  // Stable callback referencing memoized boundary dates — avoids allocating\n136\t  // new Date objects for every day the Calendar renders (30-40+ per render).\n137\t  // Normalize the incoming date to local midnight so that any time-of-day value\n138\t  // DayPicker passes does not cause a boundary day to be incorrectly disabled,\n139\t  // consistent with the normalization isInRange applies.\n140\t  const isCalendarDateDisabled = React.useCallback(\n141\t    (date: Date) => {\n142\t      const dateStart = new Date(date.getFullYear(), date.getMonth(), date.getDate())\n143\t      return (\n144\t        Boolean(normalizedMinDate && dateStart < normalizedMinDate) ||\n145\t        Boolean(normalizedMaxDate && dateStart > normalizedMaxDate)\n146\t      )\n147\t    },\n148\t    [normalizedMinDate, normalizedMaxDate],\n149\t  )\n150\t\n151\t  return (\n152\t    <InputGroup className={className}>\n153\t      <InputGroupInput\n154\t        type=\"text\"\n155\t        value={inputText}\n156\t        onChange={handleInputChange}\n157\t        onFocus={handleFocus}\n158\t        onBlur={handleBlur}\n159\t        onKeyDown={handleKeyDown}\n160\t        placeholder={placeholder}\n161\t        disabled={disabled}\n162\t        data-invalid={isInvalid || undefined}\n163\t        aria-invalid={isInvalid || undefined}\n164\t      />\n165\t      <InputGroupAddon align=\"inline-end\">\n166\t        <Popover open={open} onOpenChange={setOpen}>\n167\t          <PopoverTrigger render={<InputGroupButton size=\"icon-xs\" aria-label=\"Open calendar\" disabled={disabled} />}>\n168\t            <CalendarIcon />\n169\t          </PopoverTrigger>\n170\t          <PopoverContent className=\"w-auto p-0\" align=\"end\">\n171\t            <Calendar\n172\t              mode=\"single\"\n173\t              selected={value ?? undefined}\n174\t              month={month}\n175\t              onMonthChange={setMonth}\n176\t              onSelect={handleCalendarSelect}\n177\t              disabled={isCalendarDateDisabled}\n178\t            />\n179\t          </PopoverContent>\n180\t        </Popover>\n181\t      </InputGroupAddon>\n182\t    </InputGroup>\n183\t  )\n184\t}\n185\t\n186\t",
+   "is_error": false
+  }
+ ],
+ "files_written": [],
+ "expected": {
+  "verdict": "rejected",
+  "confidence": "confirmed"
+ },
+ "shim_calls": [],
+ "usage": {
+  "input": 26,
+  "output": 2427,
+  "cache_read": 18058,
+  "cache_creation": 12585
+ },
+ "cost_usd": 0.0391368,
+ "num_turns": 3,
+ "spawn_root": "/Users/eric/Documents/dev/worktrees/Quaestor-Web/KEY-2376-1414-date-ui-component-fe-prereq",
+ "session_init": {
+  "tools": [
+   "Read",
+   "Bash"
+  ],
+  "mcp_servers": [],
+  "plugins": [
+   {
+    "name": "cc-plugin-agents-md",
+    "path": "builtin",
+    "source": "cc-plugin-agents-md@builtin"
+   },
+   {
+    "name": "cc-plugin-telemetry",
+    "path": "builtin",
+    "source": "cc-plugin-telemetry@builtin"
+   },
+   {
+    "name": "cc-plugin-plugin-authoring",
+    "path": "builtin",
+    "source": "cc-plugin-plugin-authoring@builtin"
+   }
+  ],
+  "agents": [
+   "artifact-grounding-judge",
+   "claude",
+   "Explore",
+   "general-purpose",
+   "Plan",
+   "statusline-setup",
+   "web-fetch"
+  ],
+  "model": "claude-haiku-4-5-20251001",
+  "config_dir": "/Users/eric/.cch"
+ },
+ "temp_learnings_lines": 0
+}

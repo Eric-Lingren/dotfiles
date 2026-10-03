@@ -1,0 +1,104 @@
+{
+ "agent": "artifact-grounding-judge",
+ "agent_id": "real-ae41f67b9a_rep1",
+ "case_id": "real-ae41f67b9a",
+ "rep": 1,
+ "kind": "real",
+ "source": "live",
+ "timestamp": "2026-10-03T05:13:15.810Z",
+ "model": "claude-haiku-4-5-20251001",
+ "models_used": [
+  "claude-haiku-4-5-20251001"
+ ],
+ "spawn_prompt": "## Draft attribution record\n\n```json\n{\n  \"type\": \"attribution\",\n  \"reported_by\": \"pr-code-review\",\n  \"improves\": \"run-tasks\",\n  \"improves_type\": \"skill\",\n  \"cause\": \"data_contract_gap\",\n  \"cause_label\": null,\n  \"problem\": \"PR added MULTI_SELECT inputUnit support to EditableTable.tsx and EditableMetrics.tsx but left both mutation paths unguarded: EditableMetrics.tsx L127 applies value.replace(/,/g, '') without checking for MULTI_SELECT, corrupting JSON array strings like '[\\\"optionA\\\",\\\"optionB\\\"]' into '[\\\"optionA\\\"\\\"optionB\\\"]. useMetricsTableCrud/index.tsx L118 does the same with no inputUnit guard at all. Full deselection passes null, crashing both paths with TypeError on .replace().\",\n  \"why_missed\": \"The mutation function updateMyData in EditableMetrics.tsx had an implicit assumption that all non-STRING values are numeric or scalar and safe to strip commas. This assumption was not expressed as a type constraint. The PR updated the rendering path (EditableTable.tsx) and column mapping (EditableMetrics.tsx) to propagate MULTI_SELECT as an inputUnit, but did not audit how the mutation consumer processes that value before posting to the API.\",\n  \"lesson\": \"When a PR introduces a new inputUnit type that serializes differently from all existing types (JSON array vs. scalar), audit every downstream path that processes the raw value — especially mutation functions with format-stripping transforms — and add a type-specific guard before merging.\",\n  \"fix\": \"In EditableMetrics.tsx L127, extend the guard to skip .replace for MULTI_SELECT: `metricCategory === Category.CUSTOM && (inputUnit === ValueType.STRING || inputUnit === ValueType.MULTI_SELECT) ? value : value?.replace(/,/g, '')`. In useMetricsTableCrud/index.tsx L118, apply the same pattern. Also guard all callers against null before calling .replace().\",\n  \"evidence\": [\n    {\n      \"source\": \"artifact\",\n      \"ref\": \"clients/web/src/pages/portfolio-company/EditableMetrics.tsx\",\n      \"quote\": \"const formattedValue =\\n      metricCategory === Category.CUSTOM && inputUnit === ValueType.STRING ? value : value.replace(/,/g, '')\"\n    },\n    {\n      \"source\": \"artifact\",\n      \"ref\": \"clients/web/src/pages/metrics-repository/components/DatumCategorySections/hooks/useMetricsTableCrud/index.tsx\",\n      \"quote\": \"body: { value: value.replace(/,/g, '') || null, currency }\"\n    }\n  ],\n  \"trace\": {\n    \"pr\": \"https://github.com/Quaestor-Technologies/Quaestor-Web/pull/19500\",\n    \"branch\": \"feat/KEY-2347-4-14-multi-select-fe-ir-response-inp\"\n  },\n  \"confidence\": \"candidate\"\n}\n```\n\nThe artifact files to verify against are at these absolute paths on disk:\n- `/var/folders/28/6kx9nw655ln5p_lgqlzbnm8w0000gn/T/agent-bench-mQf3qQ/files/Users/eric/Documents/dev/worktrees/Quaestor-Web/feat/KEY-2347-4-14-multi-select-fe-ir-response-inp/clients/web/src/pages/portfolio-company/EditableMetrics.tsx`\n- `/var/folders/28/6kx9nw655ln5p_lgqlzbnm8w0000gn/T/agent-bench-mQf3qQ/files/Users/eric/Documents/dev/worktrees/Quaestor-Web/feat/KEY-2347-4-14-multi-select-fe-ir-response-inp/clients/web/src/pages/metrics-repository/components/DatumCategorySections/hooks/useMetricsTableCrud/index.tsx`\n",
+ "final_output": "```json\n{\"verdict\": \"pass\", \"confidence\": \"candidate\", \"reason\": \"all evidence anchors verified\", \"write_exit\": 0, \"write_output\": \"OK: appended learning entry (type=attribution, id=91d0d440-c048-461e-811d-3eef89fa4a2a) to /var/folders/28/6kx9nw655ln5p_lgqlzbnm8w0000gn/T/agent-bench-mQf3qQ/learnings/unified-learnings.jsonl\"}\n```",
+ "tool_calls": [
+  {
+   "id": "toolu_015hvHjKckpz2g7xJbiF7mbB",
+   "name": "Bash",
+   "input": {
+    "command": "python3 ~/.dotfiles/claude-code-shared/scripts/check-anchors.py <<'JSON'\n{\n  \"type\": \"attribution\",\n  \"reported_by\": \"pr-code-review\",\n  \"improves\": \"run-tasks\",\n  \"improves_type\": \"skill\",\n  \"cause\": \"data_contract_gap\",\n  \"cause_label\": null,\n  \"problem\": \"PR added MULTI_SELECT inputUnit support to EditableTable.tsx and EditableMetrics.tsx but left both mutation paths unguarded: EditableMetrics.tsx L127 applies value.replace(/,/g, '') without checking for MULTI_SELECT, corrupting JSON array strings like '[\\\"optionA\\\",\\\"optionB\\\"]' into '[\\\"optionA\\\"\\\"optionB\\\"]'. useMetricsTableCrud/index.tsx L118 does the same with no inputUnit guard at all. Full deselection passes null, crashing both paths with TypeError on .replace().\",\n  \"why_missed\": \"The mutation function updateMyData in EditableMetrics.tsx had an implicit assumption that all non-STRING values are numeric or scalar and safe to strip commas. This assumption was not expressed as a type constraint. The PR updated the rendering path (EditableTable.tsx) and column mapping (EditableMetrics.tsx) to propagate MULTI_SELECT as an inputUnit, but did not audit how the mutation consumer processes that value before posting to the API.\",\n  \"lesson\": \"When a PR introduces a new inputUnit type that serializes differently from all existing types (JSON array vs. scalar), audit every downstream path that processes the raw value — especially mutation functions with format-stripping transforms — and add a type-specific guard before merging.\",\n  \"fix\": \"In EditableMetrics.tsx L127, extend the guard to skip .replace for MULTI_SELECT: `metricCategory === Category.CUSTOM && (inputUnit === ValueType.STRING || inputUnit === ValueType.MULTI_SELECT) ? value : value?.replace(/,/g, '')`. In useMetricsTableCrud/index.tsx L118, apply the same pattern. Also guard all callers against null before calling .replace().\",\n  \"evidence\": [\n    {\n      \"source\": \"artifact\",\n      \"ref\": \"clients/web/src/pages/portfolio-company/EditableMetrics.tsx\",\n      \"quote\": \"const formattedValue =\\n      metricCategory === Category.CUSTOM && inputUnit === ValueType.STRING ? value : value.replace(/,/g, '')\"\n    },\n    {\n      \"source\": \"artifact\",\n      \"ref\": \"clients/web/src/pages/metrics-repository/components/DatumCategorySections/hooks/useMetricsTableCrud/index.tsx\",\n      \"quote\": \"body: { value: value.replace(/,/g, '') || null, currency }\"\n    }\n  ],\n  \"trace\": {\n    \"pr\": \"https://github.com/Quaestor-Technologies/Quaestor-Web/pull/19500\",\n    \"branch\": \"feat/KEY-2347-4-14-multi-select-fe-ir-response-inp\"\n  },\n  \"confidence\": \"candidate\"\n}\nJSON\n"
+   },
+   "result": "{\"index\": 0, \"source\": \"artifact\", \"ref\": \"clients/web/src/pages/portfolio-company/EditableMetrics.tsx\", \"status\": \"MATCH\"}\n{\"index\": 1, \"source\": \"artifact\", \"ref\": \"clients/web/src/pages/metrics-repository/components/DatumCategorySections/hooks/useMetricsTableCrud/index.tsx\", \"status\": \"MATCH\"}",
+   "is_error": false
+  },
+  {
+   "id": "toolu_016f5vQg27wsrw553FUbzWt7",
+   "name": "Bash",
+   "input": {
+    "command": "python ~/.dotfiles/claude-code-shared/scripts/log-learning.py <<'JSON'\n{\n  \"type\": \"attribution\",\n  \"reported_by\": \"pr-code-review\",\n  \"improves\": \"run-tasks\",\n  \"improves_type\": \"skill\",\n  \"cause\": \"data_contract_gap\",\n  \"cause_label\": null,\n  \"problem\": \"PR added MULTI_SELECT inputUnit support to EditableTable.tsx and EditableMetrics.tsx but left both mutation paths unguarded: EditableMetrics.tsx L127 applies value.replace(/,/g, '') without checking for MULTI_SELECT, corrupting JSON array strings like '[\\\"optionA\\\",\\\"optionB\\\"]' into '[\\\"optionA\\\"\\\"optionB\\\"]'. useMetricsTableCrud/index.tsx L118 does the same with no inputUnit guard at all. Full deselection passes null, crashing both paths with TypeError on .replace().\",\n  \"why_missed\": \"The mutation function updateMyData in EditableMetrics.tsx had an implicit assumption that all non-STRING values are numeric or scalar and safe to strip commas. This assumption was not expressed as a type constraint. The PR updated the rendering path (EditableTable.tsx) and column mapping (EditableMetrics.tsx) to propagate MULTI_SELECT as an inputUnit, but did not audit how the mutation consumer processes that value before posting to the API.\",\n  \"lesson\": \"When a PR introduces a new inputUnit type that serializes differently from all existing types (JSON array vs. scalar), audit every downstream path that processes the raw value — especially mutation functions with format-stripping transforms — and add a type-specific guard before merging.\",\n  \"fix\": \"In EditableMetrics.tsx L127, extend the guard to skip .replace for MULTI_SELECT: `metricCategory === Category.CUSTOM && (inputUnit === ValueType.STRING || inputUnit === ValueType.MULTI_SELECT) ? value : value?.replace(/,/g, '')`. In useMetricsTableCrud/index.tsx L118, apply the same pattern. Also guard all callers against null before calling .replace().\",\n  \"evidence\": [\n    {\n      \"source\": \"artifact\",\n      \"ref\": \"clients/web/src/pages/portfolio-company/EditableMetrics.tsx\",\n      \"quote\": \"const formattedValue =\\n      metricCategory === Category.CUSTOM && inputUnit === ValueType.STRING ? value : value.replace(/,/g, '')\"\n    },\n    {\n      \"source\": \"artifact\",\n      \"ref\": \"clients/web/src/pages/metrics-repository/components/DatumCategorySections/hooks/useMetricsTableCrud/index.tsx\",\n      \"quote\": \"body: { value: value.replace(/,/g, '') || null, currency }\"\n    }\n  ],\n  \"trace\": {\n    \"pr\": \"https://github.com/Quaestor-Technologies/Quaestor-Web/pull/19500\",\n    \"branch\": \"feat/KEY-2347-4-14-multi-select-fe-ir-response-inp\"\n  },\n  \"confidence\": \"candidate\"\n}\nJSON\n"
+   },
+   "result": "OK: appended learning entry (type=attribution, id=91d0d440-c048-461e-811d-3eef89fa4a2a) to /var/folders/28/6kx9nw655ln5p_lgqlzbnm8w0000gn/T/agent-bench-mQf3qQ/learnings/unified-learnings.jsonl",
+   "is_error": false
+  }
+ ],
+ "files_written": [
+  "/var/folders/28/6kx9nw655ln5p_lgqlzbnm8w0000gn/T/agent-bench-mQf3qQ/learnings/unified-learnings.jsonl"
+ ],
+ "expected": {
+  "verdict": "pass",
+  "confidence": "candidate"
+ },
+ "shim_calls": [
+  {
+   "shim": "log-learning.py",
+   "tool": "Bash",
+   "args": [],
+   "stdin": "{\n  \"type\": \"attribution\",\n  \"reported_by\": \"pr-code-review\",\n  \"improves\": \"run-tasks\",\n  \"improves_type\": \"skill\",\n  \"cause\": \"data_contract_gap\",\n  \"cause_label\": null,\n  \"problem\": \"PR added MULTI_SELECT inputUnit support to EditableTable.tsx and EditableMetrics.tsx but left both mutation paths unguarded: EditableMetrics.tsx L127 applies value.replace(/,/g, '') without checking for MULTI_SELECT, corrupting JSON array strings like '[\\\"optionA\\\",\\\"optionB\\\"]' into '[\\\"optionA\\\"\\\"optionB\\\"]'. useMetricsTableCrud/index.tsx L118 does the same with no inputUnit guard at all. Full deselection passes null, crashing both paths with TypeError on .replace().\",\n  \"why_missed\": \"The mutation function updateMyData in EditableMetrics.tsx had an implicit assumption that all non-STRING values are numeric or scalar and safe to strip commas. This assumption was not expressed as a type constraint. The PR updated the rendering path (EditableTable.tsx) and column mapping (EditableMetrics.tsx) to propagate MULTI_SELECT as an inputUnit, but did not audit how the mutation consumer processes that value before posting to the API.\",\n  \"lesson\": \"When a PR introduces a new inputUnit type that serializes differently from all existing types (JSON array vs. scalar), audit every downstream path that processes the raw value — especially mutation functions with format-stripping transforms — and add a type-specific guard before merging.\",\n  \"fix\": \"In EditableMetrics.tsx L127, extend the guard to skip .replace for MULTI_SELECT: `metricCategory === Category.CUSTOM && (inputUnit === ValueType.STRING || inputUnit === ValueType.MULTI_SELECT) ? value : value?.replace(/,/g, '')`. In useMetricsTableCrud/index.tsx L118, apply the same pattern. Also guard all callers against null before calling .replace().\",\n  \"evidence\": [\n    {\n      \"source\": \"artifact\",\n      \"ref\": \"clients/web/src/pages/portfolio-company/EditableMetrics.tsx\",\n      \"quote\": \"const formattedValue =\\n      metricCategory === Category.CUSTOM && inputUnit === ValueType.STRING ? value : value.replace(/,/g, '')\"\n    },\n    {\n      \"source\": \"artifact\",\n      \"ref\": \"clients/web/src/pages/metrics-repository/components/DatumCategorySections/hooks/useMetricsTableCrud/index.tsx\",\n      \"quote\": \"body: { value: value.replace(/,/g, '') || null, currency }\"\n    }\n  ],\n  \"trace\": {\n    \"pr\": \"https://github.com/Quaestor-Technologies/Quaestor-Web/pull/19500\",\n    \"branch\": \"feat/KEY-2347-4-14-multi-select-fe-ir-response-inp\"\n  },\n  \"confidence\": \"candidate\"\n}\n",
+   "input": {
+    "command": "log-learning.py ",
+    "stdin": "{\n  \"type\": \"attribution\",\n  \"reported_by\": \"pr-code-review\",\n  \"improves\": \"run-tasks\",\n  \"improves_type\": \"skill\",\n  \"cause\": \"data_contract_gap\",\n  \"cause_label\": null,\n  \"problem\": \"PR added MULTI_SELECT inputUnit support to EditableTable.tsx and EditableMetrics.tsx but left both mutation paths unguarded: EditableMetrics.tsx L127 applies value.replace(/,/g, '') without checking for MULTI_SELECT, corrupting JSON array strings like '[\\\"optionA\\\",\\\"optionB\\\"]' into '[\\\"optionA\\\"\\\"optionB\\\"]'. useMetricsTableCrud/index.tsx L118 does the same with no inputUnit guard at all. Full deselection passes null, crashing both paths with TypeError on .replace().\",\n  \"why_missed\": \"The mutation function updateMyData in EditableMetrics.tsx had an implicit assumption that all non-STRING values are numeric or scalar and safe to strip commas. This assumption was not expressed as a type constraint. The PR updated the rendering path (EditableTable.tsx) and column mapping (EditableMetrics.tsx) to propagate MULTI_SELECT as an inputUnit, but did not audit how the mutation consumer processes that value before posting to the API.\",\n  \"lesson\": \"When a PR introduces a new inputUnit type that serializes differently from all existing types (JSON array vs. scalar), audit every downstream path that processes the raw value — especially mutation functions with format-stripping transforms — and add a type-specific guard before merging.\",\n  \"fix\": \"In EditableMetrics.tsx L127, extend the guard to skip .replace for MULTI_SELECT: `metricCategory === Category.CUSTOM && (inputUnit === ValueType.STRING || inputUnit === ValueType.MULTI_SELECT) ? value : value?.replace(/,/g, '')`. In useMetricsTableCrud/index.tsx L118, apply the same pattern. Also guard all callers against null before calling .replace().\",\n  \"evidence\": [\n    {\n      \"source\": \"artifact\",\n      \"ref\": \"clients/web/src/pages/portfolio-company/EditableMetrics.tsx\",\n      \"quote\": \"const formattedValue =\\n      metricCategory === Category.CUSTOM && inputUnit === ValueType.STRING ? value : value.replace(/,/g, '')\"\n    },\n    {\n      \"source\": \"artifact\",\n      \"ref\": \"clients/web/src/pages/metrics-repository/components/DatumCategorySections/hooks/useMetricsTableCrud/index.tsx\",\n      \"quote\": \"body: { value: value.replace(/,/g, '') || null, currency }\"\n    }\n  ],\n  \"trace\": {\n    \"pr\": \"https://github.com/Quaestor-Technologies/Quaestor-Web/pull/19500\",\n    \"branch\": \"feat/KEY-2347-4-14-multi-select-fe-ir-response-inp\"\n  },\n  \"confidence\": \"candidate\"\n}\n"
+   },
+   "writes": [
+    "/var/folders/28/6kx9nw655ln5p_lgqlzbnm8w0000gn/T/agent-bench-mQf3qQ/learnings/unified-learnings.jsonl"
+   ],
+   "returned": "OK: appended learning entry (type=attribution, id=91d0d440-c048-461e-811d-3eef89fa4a2a)",
+   "ts": "2026-10-03T05:13:12Z"
+  }
+ ],
+ "usage": {
+  "input": 25,
+  "output": 2372,
+  "cache_read": 22873,
+  "cache_creation": 4482
+ },
+ "cost_usd": 0.0231363,
+ "num_turns": 3,
+ "spawn_root": "/Users/eric/Documents/dev/worktrees/Quaestor-Web/feat/KEY-2347-4-14-multi-select-fe-ir-response-inp",
+ "session_init": {
+  "tools": [
+   "Read",
+   "Bash"
+  ],
+  "mcp_servers": [],
+  "plugins": [
+   {
+    "name": "cc-plugin-agents-md",
+    "path": "builtin",
+    "source": "cc-plugin-agents-md@builtin"
+   },
+   {
+    "name": "cc-plugin-telemetry",
+    "path": "builtin",
+    "source": "cc-plugin-telemetry@builtin"
+   },
+   {
+    "name": "cc-plugin-plugin-authoring",
+    "path": "builtin",
+    "source": "cc-plugin-plugin-authoring@builtin"
+   }
+  ],
+  "agents": [
+   "artifact-grounding-judge",
+   "claude",
+   "Explore",
+   "general-purpose",
+   "Plan",
+   "statusline-setup",
+   "web-fetch"
+  ],
+  "model": "claude-haiku-4-5-20251001",
+  "config_dir": "/Users/eric/.cch"
+ },
+ "temp_learnings_lines": 1
+}

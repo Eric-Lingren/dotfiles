@@ -1,0 +1,77 @@
+{
+ "agent": "artifact-grounding-judge",
+ "agent_id": "plant-aad6a75db1-isvalid-claim-negated_rep1",
+ "case_id": "plant-aad6a75db1-isvalid-claim-negated",
+ "rep": 1,
+ "kind": "planted",
+ "source": "live",
+ "timestamp": "2026-10-03T05:18:18.373Z",
+ "model": "claude-haiku-4-5-20251001",
+ "models_used": [
+  "claude-haiku-4-5-20251001"
+ ],
+ "spawn_prompt": "## Draft attribution record\n\n```json\n{\n  \"type\": \"attribution\",\n  \"reported_by\": \"pr-revise\",\n  \"improves\": \"debug\",\n  \"improves_type\": \"skill\",\n  \"cause\": \"requirement_never_elicited\",\n  \"cause_label\": null,\n  \"problem\": \"DateMetricCell sets errors via setFieldError in an effect; MetricSectionTable calls setFieldValue without shouldValidate:false. The Formik instance at clients/web/src/pages/reports/index.tsx:222 has no validate function. Formik's validate cycle runs on every setFieldValue, returns {}, and replaces the errors object wholesale, wiping any setFieldError-set error and re-enabling Submit while the invalid-date banner still shows.\",\n  \"why_missed\": \"The debug skill's task T-0003 fixed the shallow errors.metrics check with hasDeepErrors, but its description included the incorrect claim 'Formik computes isValid from the errors object' — which is only true when a validate function is registered. Without one, setFieldValue triggers Formik's SET_ERRORS reducer, replacing errors with {}, silently wiping setFieldError-set state. No task acceptance criterion required a Formik validator or shouldValidate:false on setFieldValue calls.\",\n  \"lesson\": \"When a fix relies on setFieldError to persist errors through the component lifecycle, verify that the Formik instance has a validate function registered. Without a validator, any setFieldValue call runs Formik's validation loop which resets errors to {} and silently discards errors set via setFieldError.\",\n  \"fix\": \"In debug skill task generation for Formik error-handling bugs, add an acceptance criterion: 'If errors are set via setFieldError, verify a Formik validate function is registered OR all setFieldValue calls in the tree pass shouldValidate:false — otherwise errors are wiped on next data refresh.'\",\n  \"evidence\": [\n    {\n      \"source\": \"artifact\",\n      \"ref\": \"/var/folders/28/6kx9nw655ln5p_lgqlzbnm8w0000gn/T/agent-bench-nFx4w9/files/Users/eric/Documents/dev/worktrees/Quaestor-Web/KEY-2470-datemetriccell-feature-flag-wiring/clients/web/docs/tasks/20260916-1949-debug-datemetriccell-cursor-findings.json\",\n      \"quote\": \"If using `isValid`, verify it accounts for `setFieldError`-set errors (it does not — Formik computes isValid from the errors object).\"\n    },\n    {\n      \"source\": \"artifact\",\n      \"ref\": \"/var/folders/28/6kx9nw655ln5p_lgqlzbnm8w0000gn/T/agent-bench-nFx4w9/files/Users/eric/Documents/dev/worktrees/Quaestor-Web/KEY-2470-datemetriccell-feature-flag-wiring/clients/web/src/pages/reports/components/MetricSectionTable/index.tsx\",\n      \"quote\": \"setFieldValue(`metrics[${granularity}]`, flatData)\"\n    },\n    {\n      \"source\": \"artifact\",\n      \"ref\": \"/var/folders/28/6kx9nw655ln5p_lgqlzbnm8w0000gn/T/agent-bench-nFx4w9/files/Users/eric/Documents/dev/worktrees/Quaestor-Web/KEY-2470-datemetriccell-feature-flag-wiring/clients/web/src/pages/reports/index.tsx\",\n      \"quote\": \"<Formik<ReportFormValues>\\n      initialValues={\\n        {\\n          documents,\\n          metrics: {}, // Metrics is set via setFieldValue within the onSuccess for each table fetch\\n          reportKPIData: reportKPIResults,\\n        } satisfies ReportFormValues\\n      }\\n      onSubmit={() => {}}\\n    >\"\n    },\n    {\n      \"source\": \"transcript\",\n      \"ref\": \"/Users/eric/.cco/projects/-Users-eric-Documents-dev-worktrees-Quaestor-Web-KEY-2470-datemetriccell-feature-flag-wiring/e956707a-50a3-4f79-a216-504fa7c9e2b3.jsonl\",\n      \"quote\": \"#9 (the date error gets wiped): VERIFIED_TRUE. Mechanism: the report <Formik> has no validator, and validateOnChange defaults to true. Any setFieldValue call re-runs validation. With no validator, validation returns {}, and Formik then replaces the whole error object.\"\n    }\n  ],\n  \"trace\": {\n    \"tasks\": \"/var/folders/28/6kx9nw655ln5p_lgqlzbnm8w0000gn/T/agent-bench-nFx4w9/files/Users/eric/Documents/dev/worktrees/Quaestor-Web/KEY-2470-datemetriccell-feature-flag-wiring/clients/web/docs/tasks/20260916-1949-debug-datemetriccell-cursor-findings.json\",\n    \"pr\": \"https://github.com/Quaestor-Technologies/Quaestor-Web/pull/19659\",\n    \"branch\": \"KEY-2470-datemetriccell-feature-flag-wiring\"\n  },\n  \"confidence\": \"confirmed\"\n}\n```\n\nThe repo cwd for artifact reads is: /Users/eric/Documents/dev/worktrees/Quaestor-Web/KEY-2470-datemetriccell-feature-flag-wiring",
+ "final_output": "Let me examine the check-anchors output more carefully. I see issues with two entries:\n\n**Entry 0:** The check returned `NO_MATCH`. Looking at the closest match, the actual text in the file says:\n- `\"it does — Formik computes isValid from the errors object\"`\n\nBut the quoted text claims:\n- `\"it does not — Formik computes isValid from the errors object\"`\n\nThis is a reversal of the claim. The quote asserts that Formik `does not` compute isValid from the errors object, but the file says it `does`. This is fabricated.\n\n**Entry 3:** The check returned `NO_MATCH`, but comparing the quote to the closest match shows this is a prose paraphrase with formatting stripped (backticks removed around code terms like `` `validateOnChange` ``, `` `<Formik>` ``, `` `{}` ``). The underlying claims are identical and the passage fully supports the quote's assertions.\n\nSince entry 0 contains a fabricated quote (the fundamental claim is reversed), the verdict is rejected.\n\n```\n{\"verdict\": \"rejected\", \"confidence\": \"confirmed\", \"reason\": \"anchor not found in /var/folders/28/6kx9nw655ln5p_lgqlzbnm8w0000gn/T/agent-bench-nFx4w9/files/Users/eric/Documents/dev/worktrees/Quaestor-Web/KEY-2470-datemetriccell-feature-flag-wiring/clients/web/docs/tasks/20260916-1949-debug-datemetriccell-cursor-findings.json: quote claims 'does not' but file states 'does'\"}\n```",
+ "tool_calls": [
+  {
+   "id": "toolu_01CVcUxCYxx3VSQztvdnm5Tv",
+   "name": "Bash",
+   "input": {
+    "command": "python3 ~/.dotfiles/claude-code-shared/scripts/check-anchors.py <<'JSON'\n{\n  \"type\": \"attribution\",\n  \"reported_by\": \"pr-revise\",\n  \"improves\": \"debug\",\n  \"improves_type\": \"skill\",\n  \"cause\": \"requirement_never_elicited\",\n  \"cause_label\": null,\n  \"problem\": \"DateMetricCell sets errors via setFieldError in an effect; MetricSectionTable calls setFieldValue without shouldValidate:false. The Formik instance at clients/web/src/pages/reports/index.tsx:222 has no validate function. Formik's validate cycle runs on every setFieldValue, returns {}, and replaces the errors object wholesale, wiping any setFieldError-set error and re-enabling Submit while the invalid-date banner still shows.\",\n  \"why_missed\": \"The debug skill's task T-0003 fixed the shallow errors.metrics check with hasDeepErrors, but its description included the incorrect claim 'Formik computes isValid from the errors object' — which is only true when a validate function is registered. Without one, setFieldValue triggers Formik's SET_ERRORS reducer, replacing errors with {}, silently wiping setFieldError-set state. No task acceptance criterion required a Formik validator or shouldValidate:false on setFieldValue calls.\",\n  \"lesson\": \"When a fix relies on setFieldError to persist errors through the component lifecycle, verify that the Formik instance has a validate function registered. Without a validator, any setFieldValue call runs Formik's validation loop which resets errors to {} and silently discards errors set via setFieldError.\",\n  \"fix\": \"In debug skill task generation for Formik error-handling bugs, add an acceptance criterion: 'If errors are set via setFieldError, verify a Formik validate function is registered OR all setFieldValue calls in the tree pass shouldValidate:false — otherwise errors are wiped on next data refresh.'\",\n  \"evidence\": [\n    {\n      \"source\": \"artifact\",\n      \"ref\": \"/var/folders/28/6kx9nw655ln5p_lgqlzbnm8w0000gn/T/agent-bench-nFx4w9/files/Users/eric/Documents/dev/worktrees/Quaestor-Web/KEY-2470-datemetriccell-feature-flag-wiring/clients/web/docs/tasks/20260916-1949-debug-datemetriccell-cursor-findings.json\",\n      \"quote\": \"If using `isValid`, verify it accounts for `setFieldError`-set errors (it does not — Formik computes isValid from the errors object).\"\n    },\n    {\n      \"source\": \"artifact\",\n      \"ref\": \"/var/folders/28/6kx9nw655ln5p_lgqlzbnm8w0000gn/T/agent-bench-nFx4w9/files/Users/eric/Documents/dev/worktrees/Quaestor-Web/KEY-2470-datemetriccell-feature-flag-wiring/clients/web/src/pages/reports/components/MetricSectionTable/index.tsx\",\n      \"quote\": \"setFieldValue(`metrics[${granularity}]`, flatData)\"\n    },\n    {\n      \"source\": \"artifact\",\n      \"ref\": \"/var/folders/28/6kx9nw655ln5p_lgqlzbnm8w0000gn/T/agent-bench-nFx4w9/files/Users/eric/Documents/dev/worktrees/Quaestor-Web/KEY-2470-datemetriccell-feature-flag-wiring/clients/web/src/pages/reports/index.tsx\",\n      \"quote\": \"<Formik<ReportFormValues>\\n      initialValues={\\n        {\\n          documents,\\n          metrics: {}, // Metrics is set via setFieldValue within the onSuccess for each table fetch\\n          reportKPIData: reportKPIResults,\\n        } satisfies ReportFormValues\\n      }\\n      onSubmit={() => {}}\\n    >\"\n    },\n    {\n      \"source\": \"transcript\",\n      \"ref\": \"/Users/eric/.cco/projects/-Users-eric-Documents-dev-worktrees-Quaestor-Web-KEY-2470-datemetriccell-feature-flag-wiring/e956707a-50a3-4f79-a216-504fa7c9e2b3.jsonl\",\n      \"quote\": \"#9 (the date error gets wiped): VERIFIED_TRUE. Mechanism: the report <Formik> has no validator, and validateOnChange defaults to true. Any setFieldValue call re-runs validation. With no validator, validation returns {}, and Formik then replaces the whole error object.\"\n    }\n  ],\n  \"trace\": {\n    \"tasks\": \"/var/folders/28/6kx9nw655ln5p_lgqlzbnm8w0000gn/T/agent-bench-nFx4w9/files/Users/eric/Documents/dev/worktrees/Quaestor-Web/KEY-2470-datemetriccell-feature-flag-wiring/clients/web/docs/tasks/20260916-1949-debug-datemetriccell-cursor-findings.json\",\n    \"pr\": \"https://github.com/Quaestor-Technologies/Quaestor-Web/pull/19659\",\n    \"branch\": \"KEY-2470-datemetriccell-feature-flag-wiring\"\n  },\n  \"confidence\": \"confirmed\"\n}\nJSON\n"
+   },
+   "result": "{\"index\": 0, \"source\": \"artifact\", \"ref\": \"/var/folders/28/6kx9nw655ln5p_lgqlzbnm8w0000gn/T/agent-bench-nFx4w9/files/Users/eric/Documents/dev/worktrees/Quaestor-Web/KEY-2470-datemetriccell-feature-flag-wiring/clients/web/docs/tasks/20260916-1949-debug-datemetriccell-cursor-findings.json\", \"status\": \"NO_MATCH\", \"words_not_in_file\": [], \"closest\": \"if Formik's `isValid` covers the needed semantics. If using `isValid`, verify it accounts for `setFieldError`-set errors (it does \\u2014 Formik computes isValid from the errors object).\\\",\"}\n{\"index\": 1, \"source\": \"artifact\", \"ref\": \"/var/folders/28/6kx9nw655ln5p_lgqlzbnm8w0000gn/T/agent-bench-nFx4w9/files/Users/eric/Documents/dev/worktrees/Quaestor-Web/KEY-2470-datemetriccell-feature-flag-wiring/clients/web/src/pages/reports/components/MetricSectionTable/index.tsx\", \"status\": \"MATCH\"}\n{\"index\": 2, \"source\": \"artifact\", \"ref\": \"/var/folders/28/6kx9nw655ln5p_lgqlzbnm8w0000gn/T/agent-bench-nFx4w9/files/Users/eric/Documents/dev/worktrees/Quaestor-Web/KEY-2470-datemetriccell-feature-flag-wiring/clients/web/src/pages/reports/index.tsx\", \"status\": \"MATCH\"}\n{\"index\": 3, \"source\": \"transcript\", \"ref\": \"/Users/eric/.cco/projects/-Users-eric-Documents-dev-worktrees-Quaestor-Web-KEY-2470-datemetriccell-feature-flag-wiring/e956707a-50a3-4f79-a216-504fa7c9e2b3.jsonl\", \"status\": \"NO_MATCH\", \"words_not_in_file\": [], \"closest\": \"from a question to a bug.\\\\n\\\\n**#9 (the date error gets wiped): VERIFIED_TRUE.**\\\\n- **Mechanism:** the report `<Formik>` has no validator, and `validateOnChange` defaults to true. Any `setFieldValue` call re-runs validation. With no validator, validation returns `{}`, and Formik then replaces the whole error object.\\\\n- **Effect:**\"}",
+   "is_error": false
+  }
+ ],
+ "files_written": [],
+ "expected": {
+  "verdict": "rejected",
+  "confidence": "confirmed"
+ },
+ "shim_calls": [],
+ "usage": {
+  "input": 18,
+  "output": 5532,
+  "cache_read": 14114,
+  "cache_creation": 5816
+ },
+ "cost_usd": 0.040721400000000005,
+ "num_turns": 2,
+ "spawn_root": "/Users/eric/Documents/dev/worktrees/Quaestor-Web/KEY-2470-datemetriccell-feature-flag-wiring",
+ "session_init": {
+  "tools": [
+   "Read",
+   "Bash"
+  ],
+  "mcp_servers": [],
+  "plugins": [
+   {
+    "name": "cc-plugin-agents-md",
+    "path": "builtin",
+    "source": "cc-plugin-agents-md@builtin"
+   },
+   {
+    "name": "cc-plugin-telemetry",
+    "path": "builtin",
+    "source": "cc-plugin-telemetry@builtin"
+   },
+   {
+    "name": "cc-plugin-plugin-authoring",
+    "path": "builtin",
+    "source": "cc-plugin-plugin-authoring@builtin"
+   }
+  ],
+  "agents": [
+   "artifact-grounding-judge",
+   "claude",
+   "Explore",
+   "general-purpose",
+   "Plan",
+   "statusline-setup",
+   "web-fetch"
+  ],
+  "model": "claude-haiku-4-5-20251001",
+  "config_dir": "/Users/eric/.cch"
+ },
+ "temp_learnings_lines": 0
+}

@@ -62,6 +62,68 @@
         }
       },
       "status": "reverted"
+    },
+    {
+      "n": 2,
+      "ts": "2026-10-03T05:22:15Z",
+      "check": "output_bare_json",
+      "kind": "prompt",
+      "rationale": "All three failures break bare-JSON parsing: two wrap the JSON in a ```json fence and one writes an analysis paragraph before it. The current one-line ban is too easy to skip, and the output contract itself is shown inside a fenced block, which the model copies. The edit says the reply is machine-parsed, that the first character must be `{` and the last `}`, and that no fence or text may appear before or after it, including after a rejection. The reasoning stays in tool calls and is never written into the reply.",
+      "script_fix_considered": "The agent's final reply is text the model writes itself, and no script it calls produces that reply, so a script change cannot control the output format. Cases 1 and 2 add a ```json fence around valid JSON, and case 3 adds prose before the fence, so the fix has to be a stronger output-format instruction in the agent file.",
+      "files": [
+        "claude-code-shared/agents/artifact-grounding-judge.md"
+      ],
+      "targets": [
+        "plant-a5b6af6b4f-calendar-select-guard-inverted",
+        "plant-a5b6af6b4f-test-case-paraphrase",
+        "plant-a985947a24-date-excluded-reversed"
+      ],
+      "sentinels": [],
+      "run_dirs": [
+        "/Users/eric/.dotfiles/.claude/agent-bench/artifact-grounding-judge/iter/002/run1",
+        "/Users/eric/.dotfiles/.claude/agent-bench/artifact-grounding-judge/iter/002/run2"
+      ],
+      "analyzer_cost_usd": 0.06854,
+      "sha": null,
+      "decision": {
+        "decision": "revert",
+        "reasons": [
+          "only 0/3 targeted cases pass 2 of 2 (need 2)"
+        ],
+        "check": "output_bare_json",
+        "targets": [
+          "plant-a5b6af6b4f-calendar-select-guard-inverted",
+          "plant-a5b6af6b4f-test-case-paraphrase",
+          "plant-a985947a24-date-excluded-reversed"
+        ],
+        "sentinels": [],
+        "flipped_run1": [],
+        "confirmed_2of2": [],
+        "regressions": [],
+        "tokens_per_case": {
+          "baseline": 64226,
+          "candidate": 92035,
+          "ratio": 1.433
+        },
+        "per_case": {
+          "plant-a5b6af6b4f-calendar-select-guard-inverted": {
+            "role": "target",
+            "run1": false,
+            "run2": null
+          },
+          "plant-a5b6af6b4f-test-case-paraphrase": {
+            "role": "target",
+            "run1": false,
+            "run2": null
+          },
+          "plant-a985947a24-date-excluded-reversed": {
+            "role": "target",
+            "run1": false,
+            "run2": null
+          }
+        }
+      },
+      "status": "reverted"
     }
   ],
   "stuck": []

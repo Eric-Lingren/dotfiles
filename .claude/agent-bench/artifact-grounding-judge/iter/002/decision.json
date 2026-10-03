@@ -1,0 +1,38 @@
+{
+  "decision": "revert",
+  "reasons": [
+    "only 0/3 targeted cases pass 2 of 2 (need 2)"
+  ],
+  "check": "output_bare_json",
+  "targets": [
+    "plant-a5b6af6b4f-calendar-select-guard-inverted",
+    "plant-a5b6af6b4f-test-case-paraphrase",
+    "plant-a985947a24-date-excluded-reversed"
+  ],
+  "sentinels": [],
+  "flipped_run1": [],
+  "confirmed_2of2": [],
+  "regressions": [],
+  "tokens_per_case": {
+    "baseline": 64226,
+    "candidate": 92035,
+    "ratio": 1.433
+  },
+  "per_case": {
+    "plant-a5b6af6b4f-calendar-select-guard-inverted": {
+      "role": "target",
+      "run1": false,
+      "run2": null
+    },
+    "plant-a5b6af6b4f-test-case-paraphrase": {
+      "role": "target",
+      "run1": false,
+      "run2": null
+    },
+    "plant-a985947a24-date-excluded-reversed": {
+      "role": "target",
+      "run1": false,
+      "run2": null
+    }
+  }
+}

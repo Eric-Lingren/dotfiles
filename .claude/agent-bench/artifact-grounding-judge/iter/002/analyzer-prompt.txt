@@ -1,0 +1,533 @@
+You are the analyzer for one iteration of an agent-improvement loop. The agent is `artifact-grounding-judge`. One of its checks keeps failing in live runs. Read ONLY the failing traces below and propose ONE fix.
+
+## The failing check
+{
+ "id": "output_bare_json",
+ "type": "json_parse",
+ "strict": true
+}
+
+## Rules
+- Consider a SCRIPT fix before a prompt edit. A script fix means changing a script the agent calls (listed under "Scripts the agent calls") so the failure cannot happen, or the agent no longer has to do the fragile step by hand. Choose a prompt edit only when no script change would fix the failures, and say why in `script_fix_considered`.
+- Exactly one fix, as exact find/replace edits. Each `find` must appear EXACTLY ONCE in its file (copy it verbatim from the file contents given). Keep edits small. Do not add steps that cost many more tokens per run (tokens per case must stay within 1.5x).
+- Editable files (paths relative to claude-code-shared/): `agents/artifact-grounding-judge.md` or a script under `scripts/` that the agent calls. Never edit tests, contracts, cases or the benchmark harness.
+- The fix must address the cause seen in the traces, not special-case these inputs.
+
+## Output
+Reply with a single JSON object and nothing else (no fences):
+{"kind": "script" or "prompt", "script_fix_considered": "<one or two sentences: what script change you weighed and why you chose or rejected it>", "rationale": "<which failure cause the fix removes>", "edits": [{"file": "<path relative to claude-code-shared/>", "find": "<exact text, once>", "replace": "<new text>"}]}
+
+## Agent file: agents/artifact-grounding-judge.md
+```
+---
+name: artifact-grounding-judge
+description: Artifact-evidence grounding judge. Receives a draft v2 attribution record from the attribution-tracer. Verifies each evidence entry against its cited artifact file — positive anchors (quote present) or absence anchors (criterion confirmed absent). Rejects fabricated evidence. On pass, calls log-learning.py to append the record. Never grades a record it drafted. Artifact-evidence counterpart to verify-anchors.py, which grounds transcript quotes for self records.
+tools: Read, Bash
+model: haiku
+---
+
+You are the Artifact Grounding Judge. Your job is to verify that the evidence entries in a draft v2 attribution record actually hold up against the cited artifact files. You confirm or deny what the attribution-tracer drafted; you do not free-discover new evidence or modify the record's claims.
+
+**You never grade a record you drafted.** This agent is always spawned by a separate agent (attribution-tracer). The attribution-tracer never grades its own drafts.
+
+**Your output is a single JSON object. No prose. No explanation. No markdown fences.**
+
+## Input contract
+
+You will receive a draft v2 attribution record inlined in `## Draft attribution record`. The record has:
+- `evidence`: array of `{source, ref, quote}` entries (source is `transcript` or `artifact`)
+- `confidence`: `confirmed` or `candidate` (set by the attribution-tracer)
+- All other v2 fields from learning-schema.json
+
+## Output contract
+
+Return exactly this JSON object and nothing else:
+
+```
+{"verdict": "pass"|"rejected", "confidence": "confirmed"|"candidate", "reason": "<one sentence>"}
+```
+
+- `verdict: pass` — all evidence anchors verified. Confidence may be stamped down to `candidate` if anchors are real but weak.
+- `verdict: rejected` — at least one evidence anchor is fabricated (claimed quote does not appear in the cited file). Name the specific anchor in `reason`.
+- `confidence` — return the input confidence unchanged, OR demote to `candidate` if anchors are real but the quote is a paraphrase rather than verbatim.
+
+## Verification procedure
+
+Check every evidence entry before you write anything. Settle the verdict for the whole record first; only then go to "After verification".
+
+Do not judge a quote by reading the file and comparing by eye. One changed word (`updated_at` vs `updatedAt`, `newest` vs `oldest`) is easy to miss that way. Run the check below for each entry and decide from its output.
+
+### Positive anchors (source `artifact` or `transcript`)
+
+Run the check script once on the whole record. Paste the draft record from `## Draft attribution record` unchanged. The script reads each quote from the record itself; never type a quote or file text into the check.
+
+```bash
+python3 ~/.dotfiles/claude-code-shared/scripts/check-anchors.py <<'JSON'
+<draft record JSON exactly as given>
+JSON
+```
+
+It prints one line per evidence entry with `status` and, on `NO_MATCH`, `words_not_in_file` and `closest`. Whitespace and line breaks are ignored, so a multi-line passage quoted on one line still matches.
+
+- `MATCH`: the anchor is verified. Confidence unchanged.
+- `MISSING`: see "File not found" below.
+- `NO_MATCH`: the quote is not in the file as written. It is either fabricated or a paraphrase. `closest` shows the passage that shares the most words with the quote. If it is about something else, run `grep -niF` on a distinctive term from the quote to find the right one. Then apply these tests in order and stop at the first one that decides:
+  1. **No passage → fabricated.** Nothing in the file covers the same subject as the quote.
+  2. **Code or names differ → fabricated.** If the quote is code (statements, expressions, signatures, config or JSON keys and values, lists of literals), it must equal the passage exactly. A renamed identifier, a changed operator or value, or an item added, dropped or reordered is fabricated. Code has no paraphrase. Comments and prose are not code, even inside a source file. In prose, each identifier, path, number and quoted string the quote names must appear in the passage character for character (surrounding backticks or quote marks do not count). If one differs, it is fabricated.
+  3. **Prose → compare claims, not words.** State in one line what the passage asserts and in one line what the quote asserts. A paraphrase swaps in synonyms, restructures sentences, and drops or adds filler, so it always has words listed as "not in file". That list is never a reason to reject on its own.
+     - **Fabricated** if the quote asserts something the passage does not: a direction, order, quantity, comparison or yes/no reversed (a word swapped for its opposite, a negation added or removed), a different thing acting or acted on, a changed condition, or a claim the passage never makes.
+     - **Paraphrase** if the passage, read on its own, supports every claim in the quote.
+
+  Fabricated → return `{"verdict": "rejected", "confidence": "<input>", "reason": "anchor not found in <ref>: '<exact quote text>'"}`.
+  Paraphrase → the anchor is verified. Set confidence to `candidate` and go on to the next entry.
+
+### Absence anchors (checking that something does NOT appear)
+
+When the `quote` describes an absence (e.g., "criterion X does not appear in this file", "missing from tasks"):
+
+1. Pick the key terms of the claimed criterion (the identifiers or phrases that would have to appear if it were present).
+2. Search for each with `grep -niF -- '<term>' "<ref>"`. Check synonyms or alternate spellings the file could use.
+3. If the criterion IS present: return `{"verdict": "rejected", "confidence": "<input>", "reason": "absence claim is false: '<criterion>' found in <ref>"}`.
+4. If it is absent: the anchor is verified.
+
+### File not found
+
+A missing file is not a fabrication. If the check prints `MISSING` (or `ref` cannot be read), that anchor does not cause a reject. The verdict stays `pass` unless another anchor is rejected, and confidence becomes `candidate`. Use the reason `"artifact not found at <ref> - demoted to candidate"`.
+
+### Combining entries
+
+- Any entry rejected → verdict `rejected`. This holds even when other entries matched or their files are missing.
+- Otherwise → verdict `pass`. Confidence is `candidate` if any entry was a paraphrase or missing, else the input confidence.
+
+## After verification
+
+**If verdict is `pass`:**
+
+You must call `log-learning.py`. A `pass` reply without `write_exit` and `write_output` loses the record. Call it with the draft record (minus server-injected fields: schema_version, id, timestamp — the writer injects those):
+
+```bash
+python ~/.dotfiles/claude-code-shared/scripts/log-learning.py <<'JSON'
+<draft JSON without schema_version/id/timestamp>
+JSON
+```
+
+Use a quoted heredoc, not `echo '...'`. Record text often contains single quotes.
+
+Then return the verdict with the script's stdout and exit code copied verbatim:
+```
+{"verdict": "pass", "confidence": "<final>", "reason": "all evidence anchors verified", "write_exit": <exit code>, "write_output": "<stdout, e.g. OK: appended ... id=<uuid> ...>"}
+```
+
+A pass verdict is not a write confirmation. The caller treats a missing `OK:` line in `write_output` as a failed write.
+
+**If verdict is `rejected`:**
+
+Do NOT call `log-learning.py`. Return:
+```
+{"verdict": "rejected", "confidence": "<input>", "reason": "<specific rejection reason>"}
+```
+
+## What you must not do
+
+- Do not suggest edits to the draft record.
+- Do not invent or add new evidence.
+- Do not evaluate whether the learning is useful or actionable — only whether the evidence is real.
+- Do not call `log-learning.py` when the verdict is `rejected`.
+- Do not grade a record you drafted yourself (this agent is always downstream of attribution-tracer).
+- Do not return anything other than the single JSON object.
+
+```
+
+## Scripts the agent calls (claude-code-shared/scripts/)
+### scripts/check-anchors.py
+```
+#!/usr/bin/env python3
+"""check-anchors.py — mechanical quote check for artifact-grounding-judge.
+
+Reads a draft v2 attribution record (JSON) on stdin, or from --record-file,
+and checks every evidence entry's quote against the file at its ref. The quote
+is read straight from the record, so the caller never re-types it.
+
+Matching: whitespace runs collapsed on both sides, then exact substring.
+
+Usage:
+  check-anchors.py [--record-file PATH] <<'JSON'
+  <draft record JSON>
+  JSON
+
+Output: one JSON line per evidence entry:
+  {"index": i, "source": ..., "ref": ..., "status": "MATCH"|"MISSING"|"NO_MATCH",
+   "words_not_in_file": [...], "closest": "..."}   (last two only on NO_MATCH)
+Absence claims ("X does not appear ...") normally report NO_MATCH; the caller
+checks them separately.
+
+Exit codes: 0 checked, 1 bad input.
+"""
+import argparse
+import json
+import os
+import re
+import sys
+
+norm = lambda s: re.sub(r"\s+", " ", s).strip()
+low = lambda ws: {w.lower() for w in ws}
+
+
+def check(entry):
+    ref = os.path.expanduser(str(entry.get("ref", "")))
+    out = {"source": entry.get("source"), "ref": entry.get("ref")}
+    if not os.path.isfile(ref):
+        return {**out, "status": "MISSING"}
+    q = norm(str(entry.get("quote", "")))
+    with open(ref, errors="replace") as fh:
+        t = norm(fh.read())
+    if q and q in t:
+        return {**out, "status": "MATCH"}
+    words = low(re.findall(r"\w+", t))
+    missing = [w for w in re.findall(r"\w+", q) if w.lower() not in words]
+    tw, qw = t.split(" "), q.split(" ")
+    qs, n = low(qw), len(qw)
+    i = max(range(max(1, len(tw) - n + 1)), key=lambda k: len(qs & low(tw[k:k + n])))
+    closest = " ".join(tw[max(0, i - 3):i + n + 3])
+    return {**out, "status": "NO_MATCH", "words_not_in_file": missing, "closest": closest}
+
+
+def main():
+    ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
+    ap.add_argument("--record-file", help="read the record from PATH instead of stdin")
+    a = ap.parse_args()
+    try:
+        raw = open(a.record_file).read() if a.record_file else sys.stdin.read()
+        evidence = json.loads(raw).get("evidence")
+        if not isinstance(evidence, list):
+            raise ValueError("record has no evidence array")
+    except (OSError, ValueError) as e:
+        print(f"ERROR: {e}", file=sys.stderr)
+        return 1
+    for i, entry in enumerate(evidence):
+        print(json.dumps({"index": i, **check(entry)}))
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
+
+```
+### scripts/log-learning.py
+```
+#!/usr/bin/env python3
+"""log-learning.py — validate and atomically append a v2 learning entry to unified-learnings.jsonl.
+
+Reads a partial learning entry as JSON from stdin. Rejects any caller-provided
+server-injected fields (schema_version, id, timestamp), injects them, validates
+against learning-schema.json, then atomically appends to
+claude-code-shared/learnings/unified-learnings.jsonl.
+
+Usage:
+    echo '{...}' | python log-learning.py
+
+Caller supplies all fields EXCEPT: schema_version, id, timestamp.
+
+Required caller fields (see learning-schema.json for full contract):
+    type, reported_by, improves_type, cause, problem, why_missed, lesson,
+    fix, evidence, confidence
+    Plus: improves (nullable), cause_label (null unless cause=='other'),
+    and optionally trace (attribution records) and status.
+
+Environment:
+    LOG_LEARNING_DEST — override the learnings/ directory (used by tests).
+
+Exit 0 on success. Exit 1 on any error (printed to stderr).
+"""
+
+import fcntl
+import json
+import os
+import pathlib
+import sys
+import tempfile
+import uuid
+from datetime import datetime, timezone
+
+
+SCRIPT_DIR = pathlib.Path(__file__).resolve().parent
+CONTRACTS_DIR = SCRIPT_DIR.parent / "contracts"
+SCHEMA_PATH = CONTRACTS_DIR / "learning-schema.json"
+
+_dest_override = os.environ.get("LOG_LEARNING_DEST")
+LEARNINGS_DIR = pathlib.Path(_dest_override) if _dest_override else SCRIPT_DIR.parent / "learnings"
+
+SERVER_FIELDS = {"schema_version", "id", "timestamp"}
+
+
+def _build_validator(schema):
+    import re
+    try:
+        from importlib.metadata import version as pkg_version
+        v = pkg_version("jsonschema")
+    except Exception:
+        import jsonschema
+        v = jsonschema.__version__
+    m = re.match(r"(\d+)\.(\d+)", v)
+    major, minor = (int(m.group(1)), int(m.group(2))) if m else (0, 0)
+
+    use_registry = (major > 4) or (major == 4 and minor >= 18)
+    if use_registry:
+        try:
+            from referencing import Registry, Resource
+            from referencing.jsonschema import DRAFT7
+            from jsonschema import Draft7Validator
+
+            all_schemas = {}
+            for sf in sorted(CONTRACTS_DIR.glob("*.json")):
+                try:
+                    data = json.loads(sf.read_text())
+                    if "$id" in data:
+                        all_schemas[data["$id"]] = data
+                except Exception:
+                    pass
+
+            resources = [
+                (sid, Resource.from_contents(sdata, default_specification=DRAFT7))
+                for sid, sdata in all_schemas.items()
+            ]
+            registry = Registry().with_resources(resources)
+            return Draft7Validator(schema, registry=registry)
+        except ImportError:
+            pass
+
+    from jsonschema import Draft7Validator, RefResolver
+    return Draft7Validator(schema, resolver=RefResolver(
+        base_uri=schema.get("$id", ""), referrer=schema, store={}
+    ))
+
+
+def main():
+    raw = sys.stdin.read().strip()
+    if not raw:
+        print("ERROR: no input on stdin", file=sys.stderr)
+        sys.exit(1)
+
+    try:
+        entry = json.loads(raw)
+    except json.JSONDecodeError as e:
+        print(f"ERROR: stdin is not valid JSON: {e}", file=sys.stderr)
+        sys.exit(1)
+
+    if not isinstance(entry, dict):
+        print("ERROR: input must be a JSON object", file=sys.stderr)
+        sys.exit(1)
+
+    # Reject caller-provided server-injected fields
+    caller_server_fields = SERVER_FIELDS & entry.keys()
+    if caller_server_fields:
+        bad = ", ".join(sorted(caller_server_fields))
+        print(
+            f"ERROR: caller must not supply server-injected fields: {bad}",
+            file=sys.stderr,
+        )
+        sys.exit(1)
+
+    # Inject server-side fields
+    entry["schema_version"] = "2"
+    entry["id"] = str(uuid.uuid4())
+    entry["timestamp"] = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+    # Load schema
+    try:
+        schema = json.loads(SCHEMA_PATH.read_text())
+    except Exception as e:
+        print(f"ERROR: could not load learning-schema.json: {e}", file=sys.stderr)
+        sys.exit(1)
+
+    # Validate
+    try:
+        validator = _build_validator(schema)
+        errors = sorted(validator.iter_errors(entry), key=lambda e: list(e.absolute_path))
+    except Exception as e:
+        print(f"ERROR: validator setup failed: {e}", file=sys.stderr)
+        sys.exit(1)
+
+    if errors:
+        for err in errors:
+            path = ".".join(str(p) for p in err.absolute_path) or "(root)"
+            print(f"ERROR: validation failed at {path}: {err.message}", file=sys.stderr)
+        sys.exit(1)
+
+    # Atomic append: write to temp file then rename (append semantics via lock)
+    LEARNINGS_DIR.mkdir(parents=True, exist_ok=True)
+    out_path = LEARNINGS_DIR / "unified-learnings.jsonl"
+    line = json.dumps(entry, ensure_ascii=False, separators=(",", ":")) + "\n"
+
+    try:
+        with open(out_path, "a", encoding="utf-8") as fh:
+            fcntl.flock(fh, fcntl.LOCK_EX)
+            try:
+                fh.write(line)
+                fh.flush()
+                os.fsync(fh.fileno())
+            finally:
+                fcntl.flock(fh, fcntl.LOCK_UN)
+    except OSError as e:
+        print(f"ERROR: could not write to {out_path}: {e}", file=sys.stderr)
+        sys.exit(1)
+
+    print(f"OK: appended learning entry (type={entry['type']}, id={entry['id']}) to {out_path}")
+
+
+if __name__ == "__main__":
+    main()
+
+```
+## Failing traces (check `output_bare_json`)
+### case plant-a5b6af6b4f-calendar-select-guard-inverted
+Grader detail: Expecting value: line 1 column 1 (char 0)
+Spawn prompt (agent input):
+## Draft attribution record
+
+```json
+{
+  "type": "attribution",
+  "reported_by": "pr-code-review",
+  "improves": "to-seed",
+  "improves_type": "skill",
+  "cause": "requirement_never_elicited",
+  "cause_label": null,
+  "problem": "handleCalendarSelect in DateInput.tsx (lines 126-133) does not call setMonth(date). Selecting an outside-month day (e.g. Aug 31 visible in September view) leaves month state on the old month. When the popover is reopened the calendar renders the wrong month.",
+  "why_missed": "The seed's month-sync decision narrowly specified only the text-input commit path ('Call setMonth(parsed) in the commit path when parseDate succeeds'). Neither the grill session nor the to-seed synthesis ever asked: what happens when the user selects a day via the calendar picker? The calendar-click path was never elicited as a sync trigger.",
+  "lesson": "When specifying a controlled display-state that must track a selected value, enumerate ALL selection paths (text input commit, calendar click, external value change) and require setMonth (or equivalent) on each. A spec that mentions only one path creates an implicit gap in every other path.",
+  "fix": "In the implementation decisions section, generalize the month-sync rule from path-specific to invariant-based: 'The month state must equal the date of the currently selected value after any selection event, regardless of which UI path performed the selection (text commit or calendar click).'",
+  "evidence": [
+    {
+      "source": "artifact",
+      "ref": "docs/seeds/20260918-1240-dateinput-calendar-shadcn-alignment.json",
+      "quote": "Month sync: add const [month, setMonth] = useState(value ?? undefined). Pass month and onMonthChange={setMonth} to Calendar. Call setMonth(parsed) in the commit path when parseDate succeeds."
+    },
+    {
+      "source": "artifact",
+      "ref": "docs/tasks/20260918-1243-dateinput-calendar-shadcn-alignment.json",
+      "quote": "New test case: typing 03/15/2024 then opening calendar shows March 2024"
+    },
+    {
+      "source": "artifact",
+      "ref": "clients/web/src/components/DateInput/DateInput.tsx",
+      "quote": "function handleCalendarSelect(date: Date | undefined) {\n    if (date) return\n    const formatted = format(date, 'MM/dd/yyyy')\n    setInputText(formatted)\n    setIsInvalid(false)\n    onChange?.(date)\n    setOpen(false)\n  }"
+    }
+  ],
+  "trace": {
+    "seed": "docs/seeds/20260918-1240-dateinput-calendar-shadcn-alignment.json",
+    "tasks": "docs/task
+...[1095 more chars]
+Tool calls (1):
+Bash: {"command": "python3 ~/.dotfiles/claude-code-shared/scripts/check-anchors.py <<'JSON'\n{\n  \"type\": \"attribution\",\n  \"reported_by\": \"pr-code-review\",\n  \"improves\": \"to-seed\",\n  \"improves_type\": \"skill\",\n  \"cause\": \"requirement_never_elicited\",\n  \"cause_label\": null,\n  \"p
+...[2659 more chars]
+Final output:
+```json
+{"verdict": "rejected", "confidence": "confirmed", "reason": "anchor not found in clients/web/src/components/DateInput/DateInput.tsx: the quoted condition is 'if (date) return' but the actual code has 'if (!date) return' - the logic is inverted"}
+```
+
+### case plant-a5b6af6b4f-test-case-paraphrase
+Grader detail: Expecting value: line 1 column 1 (char 0)
+Spawn prompt (agent input):
+## Draft attribution record
+
+```json
+{
+  "type": "attribution",
+  "reported_by": "pr-code-review",
+  "improves": "to-seed",
+  "improves_type": "skill",
+  "cause": "requirement_never_elicited",
+  "cause_label": null,
+  "problem": "handleCalendarSelect in DateInput.tsx (lines 126-133) does not call setMonth(date). Selecting an outside-month day (e.g. Aug 31 visible in September view) leaves month state on the old month. When the popover is reopened the calendar renders the wrong month.",
+  "why_missed": "The seed's month-sync decision narrowly specified only the text-input commit path ('Call setMonth(parsed) in the commit path when parseDate succeeds'). Neither the grill session nor the to-seed synthesis ever asked: what happens when the user selects a day via the calendar picker? The calendar-click path was never elicited as a sync trigger.",
+  "lesson": "When specifying a controlled display-state that must track a selected value, enumerate ALL selection paths (text input commit, calendar click, external value change) and require setMonth (or equivalent) on each. A spec that mentions only one path creates an implicit gap in every other path.",
+  "fix": "In the implementation decisions section, generalize the month-sync rule from path-specific to invariant-based: 'The month state must equal the date of the currently selected value after any selection event, regardless of which UI path performed the selection (text commit or calendar click).'",
+  "evidence": [
+    {
+      "source": "artifact",
+      "ref": "docs/seeds/20260918-1240-dateinput-calendar-shadcn-alignment.json",
+      "quote": "Month sync: add const [month, setMonth] = useState(value ?? undefined). Pass month and onMonthChange={setMonth} to Calendar. Call setMonth(parsed) in the commit path when parseDate succeeds."
+    },
+    {
+      "source": "artifact",
+      "ref": "docs/tasks/20260918-1243-dateinput-calendar-shadcn-alignment.json",
+      "quote": "New test case: after typing 03/15/2024, opening the calendar shows March 2024"
+    },
+    {
+      "source": "artifact",
+      "ref": "clients/web/src/components/DateInput/DateInput.tsx",
+      "quote": "function handleCalendarSelect(date: Date | undefined) {\n    if (!date) return\n    const formatted = format(date, 'MM/dd/yyyy')\n    setInputText(formatted)\n    setIsInvalid(false)\n    onChange?.(date)\n    setOpen(false)\n  }"
+    }
+  ],
+  "trace": {
+    "seed": "docs/seeds/20260918-1240-dateinput-calendar-shadcn-alignment.json",
+    "tasks": "do
+...[1102 more chars]
+Tool calls (3):
+Bash: {"command": "python3 ~/.dotfiles/claude-code-shared/scripts/check-anchors.py <<'JSON'\n{\n  \"type\": \"attribution\",\n  \"reported_by\": \"pr-code-review\",\n  \"improves\": \"to-seed\",\n  \"improves_type\": \"skill\",\n  \"cause\": \"requirement_never_elicited\",\n  \"cause_label\": null,\n  \"p
+...[2666 more chars]
+Read: {"file_path": "/var/folders/28/6kx9nw655ln5p_lgqlzbnm8w0000gn/T/agent-bench-fDrR89/files/Users/eric/Documents/dev/worktrees/Quaestor-Web/KEY-2376-1414-date-ui-component-fe-prereq/docs/tasks/20260918-1243-dateinput-calendar-shadcn-alignment.json"}
+Bash: {"command": "python ~/.dotfiles/claude-code-shared/scripts/log-learning.py <<'JSON'\n{\n  \"type\": \"attribution\",\n  \"reported_by\": \"pr-code-review\",\n  \"improves\": \"to-seed\",\n  \"improves_type\": \"skill\",\n  \"cause\": \"requirement_never_elicited\",\n  \"cause_label\": null,\n  \"pro
+...[2664 more chars]
+Final output:
+```json
+{"verdict": "pass", "confidence": "candidate", "reason": "all evidence anchors verified", "write_exit": 0, "write_output": "OK: appended learning entry (type=attribution, id=b5082788-d258-4963-8957-e034ce83f0c2) to /var/folders/28/6kx9nw655ln5p_lgqlzbnm8w0000gn/T/agent-bench-fDrR89/learnings/unified-learnings.jsonl"}
+```
+
+### case plant-a985947a24-date-excluded-reversed
+Grader detail: Expecting value: line 1 column 1 (char 0)
+Spawn prompt (agent input):
+## Draft attribution record
+
+```json
+{
+  "type": "attribution",
+  "reported_by": "debug",
+  "improves": null,
+  "improves_type": "skill",
+  "cause": "other",
+  "cause_label": "cross_branch_fix_not_ported",
+  "problem": "On PR #19657 (KEY-2468-date-enum-type-maps-formatting), commit f614d5279e added 'Date' to the public OpenAPI metrics/options type enum by updating app/api/tests/snapshots/public_openapi.json to accept the new enum value, instead of flagging it as a premature public API expansion. The same issue had been identified and fixed on sibling PR #19649 (KEY-2464) with a feature-flag gate, but that fix was never ported to this branch.",
+  "why_missed": "The fix on sibling branch KEY-2464 (commit 55a4cc0a7c) gated DATE behind ENABLE_NEW_IR_FIELD_TYPES, but this constraint existed only in that branch's context. When commit f614d5279e ran on this branch, no tooling or process checked whether sibling branches had already addressed the same public-API exposure risk. The snapshot test was updated via --inline-snapshot=fix semantics, which silently accepted the new enum value without requiring an explicit acknowledgment that it was intentionally public.",
+  "lesson": "When a snapshot test update adds a new value to a public-facing API schema (OpenAPI enum, serializer field, public type list), the update should be accompanied by an explicit guard test asserting that the new value is intentionally public and customer-ready — not just a passive snapshot accept. Parallel branches working on related enum expansions should cross-check sibling PRs before updating public-API snapshots.",
+  "fix": "Add a guard test (like test_public_type_enum_excludes_date) whenever a new enum member is introduced alongside a snapshot update that includes it in a public schema. This ensures a blind --inline-snapshot=fix cannot silently re-introduce a pre-release enum value to the public docs.",
+  "evidence": [
+    {
+      "source": "artifact",
+      "ref": "/var/folders/28/6kx9nw655ln5p_lgqlzbnm8w0000gn/T/agent-bench-PPZdYG/files/Users/eric/Documents/dev/worktrees/Quaestor-Web/KEY-2468-date-enum-type-maps-formatting/app/api/tests/snapshots/public_openapi.json",
+      "quote": "\"Select\",\n                            \"Date\""
+    },
+    {
+      "source": "artifact",
+      "ref": "/var/folders/28/6kx9nw655ln5p_lgqlzbnm8w0000gn/T/agent-bench-PPZdYG/files/Users/eric/Documents/dev/worktrees/Quaestor-Web/KEY-2468-date-enum-type-maps-formatting/app/api/views.py",
+      "quote": "def _bu
+...[1838 more chars]
+Tool calls (9):
+Read: {"file_path": "/private/var/folders/28/6kx9nw655ln5p_lgqlzbnm8w0000gn/T/agent-bench-PPZdYG/files/Users/eric/Documents/dev/worktrees/Quaestor-Web/KEY-2468-date-enum-type-maps-formatting/app/api/views.py", "offset": 660, "limit": 30}
+Read: {"file_path": "/Users/eric/.cco/projects/-Users-eric-Documents-dev-worktrees-Quaestor-Web-KEY-2468-date-enum-type-maps-formatting/a3491b2e-b6b5-4b52-b5b5-67b5821d30c0.jsonl"}
+Bash: {"command": "grep -F \"#19649 fixed the same thing in\" \"/Users/eric/.cco/projects/-Users-eric-Documents-dev-worktrees-Quaestor-Web-KEY-2468-date-enum-type-maps-formatting/a3491b2e-b6b5-4b52-b5b5-67b5821d30c0.jsonl\""}
+Read: {"file_path": "/private/var/folders/28/6kx9nw655ln5p_lgqlzbnm8w0000gn/T/agent-bench-PPZdYG/files/Users/eric/Documents/dev/worktrees/Quaestor-Web/KEY-2468-date-enum-type-maps-formatting/app/api/tests/snapshots/public_openapi.json", "limit": 200}
+Bash: {"command": "grep -n \"\\\"Date\\\"\" \"/private/var/folders/28/6kx9nw655ln5p_lgqlzbnm8w0000gn/T/agent-bench-PPZdYG/files/Users/eric/Documents/dev/worktrees/Quaestor-Web/KEY-2468-date-enum-type-maps-formatting/app/api/tests/snapshots/public_openapi.json\" | head -20"}
+Bash: {"command": "grep -n \"\\\"Select\\\"\" \"/private/var/folders/28/6kx9nw655ln5p_lgqlzbnm8w0000gn/T/agent-bench-PPZdYG/files/Users/eric/Documents/dev/worktrees/Quaestor-Web/KEY-2468-date-enum-type-maps-formatting/app/api/tests/snapshots/public_openapi.json\""}
+Read: {"file_path": "/private/var/folders/28/6kx9nw655ln5p_lgqlzbnm8w0000gn/T/agent-bench-PPZdYG/files/Users/eric/Documents/dev/worktrees/Quaestor-Web/KEY-2468-date-enum-type-maps-formatting/app/api/tests/snapshots/public_openapi.json", "offset": 1720, "limit": 20}
+Bash: {"command": "cd /Users/eric/Documents/dev/worktrees/Quaestor-Web/KEY-2468-date-enum-type-maps-formatting && git show f614d5279e -- app/api/tests/snapshots/public_openapi.json 2>&1 | head -100"}
+Bash: {"command": "python3 ~/.dotfiles/claude-code-shared/scripts/check-anchors.py <<'JSON'\n{\n  \"type\": \"attribution\",\n  \"reported_by\": \"debug\",\n  \"improves\": null,\n  \"improves_type\": \"skill\",\n  \"cause\": \"other\",\n  \"cause_label\": \"cross_branch_fix_not_ported\",\n  \"problem\": 
+...[3115 more chars]
+Final output:
+Based on the check-anchors.py verification results, I have identified fabrications in the evidence:
+
+**Evidence item 1** (public_openapi.json): `NO_MATCH`
+- The quote references the current file but it does not contain `"Select",\n "Date"` as an enum. The `"Date"` value was added in commit f614d5279e but has since been removed (the fix reverted it). The evidence should have either referenced that specific commit or been framed as an absence anchor.
+
+**Evidence item 2** (views.py): `NO_MATCH` 
+- The quote asserts "DATE is **included** until it is released to customers" but the file at lines 666-670 actually states "DATE is **excluded** until it is released to customers." This is a critical word substitution—the opposite meaning.
+
+**Evidence item 3** (transcript): `MATCH`
+- Verified successfully in the final assistant message.
+
+Since at least one evidence anchor is fabricated, the record must be rejected.
+
+```json
+{"verdict": "rejected", "confidence": "candidate", "reason": "anchor not found in app/api/views.py: evidence claims 'DATE is included' but file states 'DATE is excluded' (opposite meaning)"}
+```

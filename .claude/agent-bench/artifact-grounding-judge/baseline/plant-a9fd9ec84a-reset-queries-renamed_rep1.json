@@ -1,0 +1,77 @@
+{
+ "agent": "artifact-grounding-judge",
+ "agent_id": "plant-a9fd9ec84a-reset-queries-renamed_rep1",
+ "case_id": "plant-a9fd9ec84a-reset-queries-renamed",
+ "rep": 1,
+ "kind": "planted",
+ "source": "live",
+ "timestamp": "2026-10-03T05:14:25.545Z",
+ "model": "claude-haiku-4-5-20251001",
+ "models_used": [
+  "claude-haiku-4-5-20251001"
+ ],
+ "spawn_prompt": "## Draft attribution record\n\n```json\n{\n  \"type\": \"attribution\",\n  \"reported_by\": \"pr-code-review\",\n  \"improves\": null,\n  \"improves_type\": null,\n  \"cause\": \"general_best_practice\",\n  \"cause_label\": null,\n  \"problem\": \"In InnerApp.test.tsx, the logout test (L231-232) was converted from mocking useCurrentUser to calling queryClient.resetQueries. The beforeEach MSW handler getGetCurrentUserMockHandler(currentUser) remains registered (L63-64), so the query refetches immediately and the user comes back. deactivateExitEvents fires only during the brief no-data gap, and initialzeExitEvents fires again right after. The waitFor passes on that transient state, not a stable logged-out state.\",\n  \"why_missed\": \"The implementation was done without a task file or TDD acceptance criterion requiring stable logged-out state. When converting hook-mock to MSW style, no criterion verified that deactivateExitEvents fires only when the user is durably absent. The beforeEach MSW handler was left unoverridden.\",\n  \"lesson\": \"When converting a test that simulates logout from hook-mock style to MSW/query-cache style, always override the current-user MSW handler to return a 401 before clearing the cache. Without this override, queryClient.resetQueries creates only a transient undefined gap; the registered beforeEach handler refetches the user immediately, causing assertions to validate a race condition rather than a stable terminal state.\",\n  \"fix\": null,\n  \"evidence\": [\n    {\n      \"source\": \"artifact\",\n      \"ref\": \"clients/web/src/components/legacy/components/InnerApp.test.tsx\",\n      \"quote\": \"server.use(\\n    getGetCurrentUserMockHandler(currentUser),\"\n    },\n    {\n      \"source\": \"artifact\",\n      \"ref\": \"clients/web/src/components/legacy/components/InnerApp.test.tsx\",\n      \"quote\": \"vi.mocked(deactivateExitEvents).mockClear()\\n    await act(() => queryClient.invalidateQueries({ queryKey: getGetCurrentUserQueryKey() }))\"\n    }\n  ],\n  \"trace\": {\n    \"tasks\": \"docs/tasks/20260928-1039-pr-review.json\",\n    \"task_id\": \"T-0001\",\n    \"pr\": \"https://github.com/Quaestor-Technologies/Quaestor-Web/pull/19999\",\n    \"branch\": \"chore/remove-current-user-hook-mocks\"\n  },\n  \"confidence\": \"candidate\"\n}\n```\n\nThe artifact file is at the absolute path:\n/var/folders/28/6kx9nw655ln5p_lgqlzbnm8w0000gn/T/agent-bench-gXCnij/files/Users/eric/Documents/dev/worktrees/Quaestor-Web/chore/remove-current-user-hook-mocks/clients/web/src/components/legacy/components/InnerApp.test.tsx\n\nPlease verify each evidence entry's quote appears verbatim in the cited artifact file. If both anchors are grounded, call log-learning.py to write the record. Return your verdict JSON.",
+ "final_output": "The check-anchors script shows that the second evidence entry contains a fabricated quote. The record claims `queryClient.invalidateQueries` but the actual file contains `queryClient.resetQueries`. These are different method calls, which constitutes a code-level difference that cannot be considered a paraphrase.\n\n```json\n{\"verdict\": \"rejected\", \"confidence\": \"candidate\", \"reason\": \"anchor not found in clients/web/src/components/legacy/components/InnerApp.test.tsx: 'queryClient.invalidateQueries' should be 'queryClient.resetQueries'\"}\n```",
+ "tool_calls": [
+  {
+   "id": "toolu_015McKnkwfxMiV1dKykZMaXR",
+   "name": "Bash",
+   "input": {
+    "command": "python3 ~/.dotfiles/claude-code-shared/scripts/check-anchors.py <<'JSON'\n{\n  \"type\": \"attribution\",\n  \"reported_by\": \"pr-code-review\",\n  \"improves\": null,\n  \"improves_type\": null,\n  \"cause\": \"general_best_practice\",\n  \"cause_label\": null,\n  \"problem\": \"In InnerApp.test.tsx, the logout test (L231-232) was converted from mocking useCurrentUser to calling queryClient.resetQueries. The beforeEach MSW handler getGetCurrentUserMockHandler(currentUser) remains registered (L63-64), so the query refetches immediately and the user comes back. deactivateExitEvents fires only during the brief no-data gap, and initialzeExitEvents fires again right after. The waitFor passes on that transient state, not a stable logged-out state.\",\n  \"why_missed\": \"The implementation was done without a task file or TDD acceptance criterion requiring stable logged-out state. When converting hook-mock to MSW style, no criterion verified that deactivateExitEvents fires only when the user is durably absent. The beforeEach MSW handler was left unoverridden.\",\n  \"lesson\": \"When converting a test that simulates logout from hook-mock style to MSW/query-cache style, always override the current-user MSW handler to return a 401 before clearing the cache. Without this override, queryClient.resetQueries creates only a transient undefined gap; the registered beforeEach handler refetches the user immediately, causing assertions to validate a race condition rather than a stable terminal state.\",\n  \"fix\": null,\n  \"evidence\": [\n    {\n      \"source\": \"artifact\",\n      \"ref\": \"clients/web/src/components/legacy/components/InnerApp.test.tsx\",\n      \"quote\": \"server.use(\\n    getGetCurrentUserMockHandler(currentUser),\"\n    },\n    {\n      \"source\": \"artifact\",\n      \"ref\": \"clients/web/src/components/legacy/components/InnerApp.test.tsx\",\n      \"quote\": \"vi.mocked(deactivateExitEvents).mockClear()\\n    await act(() => queryClient.invalidateQueries({ queryKey: getGetCurrentUserQueryKey() }))\"\n    }\n  ],\n  \"trace\": {\n    \"tasks\": \"docs/tasks/20260928-1039-pr-review.json\",\n    \"task_id\": \"T-0001\",\n    \"pr\": \"https://github.com/Quaestor-Technologies/Quaestor-Web/pull/19999\",\n    \"branch\": \"chore/remove-current-user-hook-mocks\"\n  },\n  \"confidence\": \"candidate\"\n}\nJSON\n"
+   },
+   "result": "{\"index\": 0, \"source\": \"artifact\", \"ref\": \"clients/web/src/components/legacy/components/InnerApp.test.tsx\", \"status\": \"MATCH\"}\n{\"index\": 1, \"source\": \"artifact\", \"ref\": \"clients/web/src/components/legacy/components/InnerApp.test.tsx\", \"status\": \"NO_MATCH\", \"words_not_in_file\": [\"invalidateQueries\"], \"closest\": \"{ expect(initialzeExitEvents).toHaveBeenCalled() }) vi.mocked(deactivateExitEvents).mockClear() await act(() => queryClient.resetQueries({ queryKey: getGetCurrentUserQueryKey() })) await waitFor(() =>\"}",
+   "is_error": false
+  }
+ ],
+ "files_written": [],
+ "expected": {
+  "verdict": "rejected",
+  "confidence": "candidate"
+ },
+ "shim_calls": [],
+ "usage": {
+  "input": 18,
+  "output": 1396,
+  "cache_read": 13503,
+  "cache_creation": 3075
+ },
+ "cost_usd": 0.014498299999999999,
+ "num_turns": 2,
+ "spawn_root": "/Users/eric/Documents/dev/worktrees/Quaestor-Web/chore/remove-current-user-hook-mocks",
+ "session_init": {
+  "tools": [
+   "Read",
+   "Bash"
+  ],
+  "mcp_servers": [],
+  "plugins": [
+   {
+    "name": "cc-plugin-agents-md",
+    "path": "builtin",
+    "source": "cc-plugin-agents-md@builtin"
+   },
+   {
+    "name": "cc-plugin-telemetry",
+    "path": "builtin",
+    "source": "cc-plugin-telemetry@builtin"
+   },
+   {
+    "name": "cc-plugin-plugin-authoring",
+    "path": "builtin",
+    "source": "cc-plugin-plugin-authoring@builtin"
+   }
+  ],
+  "agents": [
+   "artifact-grounding-judge",
+   "claude",
+   "Explore",
+   "general-purpose",
+   "Plan",
+   "statusline-setup",
+   "web-fetch"
+  ],
+  "model": "claude-haiku-4-5-20251001",
+  "config_dir": "/Users/eric/.cch"
+ },
+ "temp_learnings_lines": 0
+}
