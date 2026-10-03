@@ -1,0 +1,38 @@
+{
+  "decision": "revert",
+  "reasons": [
+    "only 0/3 targeted cases pass 2 of 2 (need 2)"
+  ],
+  "check": "output_bare_json",
+  "targets": [
+    "real-a5b6af6b4f",
+    "real-a985947a24",
+    "real-a9fd9ec84a"
+  ],
+  "sentinels": [],
+  "flipped_run1": [],
+  "confirmed_2of2": [],
+  "regressions": [],
+  "tokens_per_case": {
+    "baseline": 231184,
+    "candidate": 175948,
+    "ratio": 0.761
+  },
+  "per_case": {
+    "real-a5b6af6b4f": {
+      "role": "target",
+      "run1": false,
+      "run2": null
+    },
+    "real-a985947a24": {
+      "role": "target",
+      "run1": false,
+      "run2": null
+    },
+    "real-a9fd9ec84a": {
+      "role": "target",
+      "run1": false,
+      "run2": null
+    }
+  }
+}

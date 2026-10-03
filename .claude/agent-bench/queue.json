@@ -1,0 +1,137 @@
+{
+  "version": 1,
+  "agents": {
+    "answer-composer": {
+      "stage": "contract",
+      "updated": "2026-10-03T04:28:49Z"
+    },
+    "architecture-auditor": {
+      "stage": "contract",
+      "updated": "2026-10-03T04:28:49Z"
+    },
+    "artifact-grounding-judge": {
+      "stage": "iterate",
+      "updated": "2026-10-03T04:42:30Z"
+    },
+    "attribution-tracer": {
+      "stage": "contract",
+      "updated": "2026-10-03T04:28:49Z"
+    },
+    "browser-checker": {
+      "stage": "contract",
+      "updated": "2026-10-03T04:28:49Z"
+    },
+    "build-code": {
+      "stage": "contract",
+      "updated": "2026-10-03T04:28:49Z"
+    },
+    "build-runner": {
+      "stage": "contract",
+      "updated": "2026-10-03T04:28:49Z"
+    },
+    "capture-learning": {
+      "stage": "contract",
+      "updated": "2026-10-03T04:28:49Z"
+    },
+    "context-loader": {
+      "stage": "contract",
+      "updated": "2026-10-03T04:28:49Z"
+    },
+    "e2e-runner": {
+      "stage": "contract",
+      "updated": "2026-10-03T04:28:49Z"
+    },
+    "export-tasks": {
+      "stage": "contract",
+      "updated": "2026-10-03T04:28:49Z"
+    },
+    "export-tasks-gh": {
+      "stage": "contract",
+      "updated": "2026-10-03T04:28:49Z"
+    },
+    "export-tasks-linear": {
+      "stage": "contract",
+      "updated": "2026-10-03T04:28:49Z"
+    },
+    "export-tasks-notion": {
+      "stage": "contract",
+      "updated": "2026-10-03T04:28:49Z"
+    },
+    "investigator": {
+      "stage": "contract",
+      "updated": "2026-10-03T04:28:49Z"
+    },
+    "investigator-code": {
+      "stage": "contract",
+      "updated": "2026-10-03T04:28:49Z"
+    },
+    "investigator-github": {
+      "stage": "contract",
+      "updated": "2026-10-03T04:28:49Z"
+    },
+    "investigator-linear": {
+      "stage": "contract",
+      "updated": "2026-10-03T04:28:49Z"
+    },
+    "investigator-notion": {
+      "stage": "contract",
+      "updated": "2026-10-03T04:28:49Z"
+    },
+    "investigator-web": {
+      "stage": "contract",
+      "updated": "2026-10-03T04:28:49Z"
+    },
+    "lint-runner": {
+      "stage": "contract",
+      "updated": "2026-10-03T04:28:49Z"
+    },
+    "persona-accuracy": {
+      "stage": "contract",
+      "updated": "2026-10-03T04:28:49Z"
+    },
+    "persona-coherence": {
+      "stage": "contract",
+      "updated": "2026-10-03T04:28:49Z"
+    },
+    "persona-completeness": {
+      "stage": "contract",
+      "updated": "2026-10-03T04:28:49Z"
+    },
+    "persona-grounding": {
+      "stage": "contract",
+      "updated": "2026-10-03T04:28:49Z"
+    },
+    "persona-judge": {
+      "stage": "contract",
+      "updated": "2026-10-03T04:28:49Z"
+    },
+    "post-github": {
+      "stage": "contract",
+      "updated": "2026-10-03T04:28:49Z"
+    },
+    "post-linear": {
+      "stage": "contract",
+      "updated": "2026-10-03T04:28:49Z"
+    },
+    "post-slack": {
+      "stage": "contract",
+      "updated": "2026-10-03T04:28:49Z"
+    },
+    "pr-code-review": {
+      "stage": "contract",
+      "updated": "2026-10-03T04:28:49Z"
+    },
+    "test-runner": {
+      "stage": "contract",
+      "updated": "2026-10-03T04:28:49Z"
+    },
+    "to-tasks": {
+      "stage": "contract",
+      "updated": "2026-10-03T04:28:49Z"
+    },
+    "visual-judge": {
+      "stage": "contract",
+      "updated": "2026-10-03T04:28:49Z"
+    }
+  }
+}
