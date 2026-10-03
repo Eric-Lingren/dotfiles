@@ -4,7 +4,8 @@ iterate.py decide <agent> <n>                         re-apply the keep rule to 
 iterate.py revert <agent> <n>                         revert iteration n's edit and prove the tree is clean
 
 One iteration:
-  1. baseline: live traces under <bench>/<agent>/baseline/ (made once with run.mjs --limit 6 if absent)
+  1. baseline: live traces under <bench>/<agent>/baseline/ (made once if absent: up to 6 real cases plus
+     every planted case)
   2. pick the worst failing check (stuck checks skipped); targets = up to 3 failing cases of it,
      sentinels = up to 2 cases that pass every check
   3. ONE Sonnet analyzer call reads only the failing traces and proposes one fix, a script fix considered first
@@ -23,18 +24,27 @@ import subprocess
 import sys
 
 import bench_lib as L
+import cases_lib as C
 import iterate_lib as I
 import preflight
 
 HERE = L.HERE
 RUN = os.path.join(HERE, "run.mjs")
-BASELINE_LIMIT = 6
+BASELINE_REAL = 6
 CLAUDE_BIN = os.environ.get("CLAUDE_BIN") or os.path.expanduser(
     "~/.local/share/fnm/node-versions/v24.19.0/installation/bin/claude")
 
 
 def say(*a):
     print(*a, flush=True)
+
+
+def baseline_cases(agent):
+    """Up to BASELINE_REAL real cases plus every planted case. Planted cases carry the judgment tests, so
+    they need a live trace too (cases.jsonl lists real cases first, so a plain --limit would skip them)."""
+    cases = C.load_cases(agent)
+    real = [c["id"] for c in cases if c["kind"] == "real"][:BASELINE_REAL]
+    return real + [c["id"] for c in cases if c["kind"] == "planted"]
 
 
 def live_run(agent, cases, out, limit=None):
@@ -159,8 +169,9 @@ def cmd_iterate(agent, dry, approve):
     base_dir = os.path.join(ad, "baseline")
     base = I.load_traces(base_dir)
     if not base:
-        say(f"no baseline traces; making one ({BASELINE_LIMIT} cases)")
-        live_run(agent, None, base_dir, BASELINE_LIMIT)
+        ids = baseline_cases(agent)
+        say(f"no baseline traces; making one ({len(ids)} cases: real and planted)")
+        live_run(agent, ids, base_dir)
         base = I.load_traces(base_dir)
         if not base:
             sys.exit("baseline run produced no traces (see errors.jsonl)")

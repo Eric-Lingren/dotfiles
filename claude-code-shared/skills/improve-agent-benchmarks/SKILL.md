@@ -155,7 +155,7 @@ python3 ~/.dotfiles/claude-code-shared/scripts/agent-eval/iterate.py <agent>
 
 The script does everything mechanical:
 
-1. Uses the baseline live traces (made once with 6 cases if absent), picks the worst failing check (stuck checks skipped), targets up to 3 of its failing cases and up to 2 all-passing sentinel cases.
+1. Uses the baseline live traces (made once if absent, from up to 6 real cases plus every planted case), picks the worst failing check (stuck checks skipped), targets up to 3 of its failing cases and up to 2 all-passing sentinel cases.
 2. Makes one Sonnet analyzer call that reads only the failing traces and proposes one fix, a script fix considered before a prompt edit. The edit goes to the agent file or a shared script; `find` text must match exactly once.
 3. Live-runs only the targets and sentinels with `run.mjs` (sandboxed; the real `unified-learnings.jsonl` is hash-checked), then re-runs the flipped cases a second time.
 4. Keep rule: at least half the targets pass the check on both runs (2 of 2), no sentinel regresses on any check, tokens per case within 1.5x baseline (pass `--approve-tokens` only if the user approved a higher cost). Otherwise the edit is reverted with `git checkout` and the script proves the tree is clean.
