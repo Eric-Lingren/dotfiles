@@ -5,7 +5,8 @@
 // case (and rep) on the agent's production model, then a trace record that grade.py scores.
 //
 // Isolation, per run (lessons from evals/persona-accuracy/run-eval.mjs):
-//   - temp working dir holding the frozen fixture files (prompt paths are rewritten into it)
+//   - temp working dir holding the frozen fixture files (prompt paths are rewritten into it); the run
+//     starts in the spawn's original root mapped into that dir, so relative refs still resolve
 //   - user settings, hooks and plugins off: --setting-sources project,local, plus --strict-mcp-config
 //     with no servers and --disable-slash-commands. The only hook is shims/pretool_hook.py.
 //   - DISABLE_AUTOUPDATER=1, --no-session-persistence (runs never become harvestable history)
@@ -116,12 +117,39 @@ function loadCases(agent) {
   return readFileSync(p, 'utf8').split('\n').filter(Boolean).map(l => JSON.parse(l));
 }
 
+const reEscape = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+// The directory the original spawn ran in. Relative paths in a prompt (e.g. evidence refs like
+// clients/web/x.tsx) resolve against it, so the sandbox must run from the same spot. c.input.cwd wins;
+// otherwise a relative path in the prompt that is the tail of a frozen file's absolute path gives that
+// root (most votes across files). Null when the prompt only uses absolute paths.
+function spawnRoot(c, prompt) {
+  if (c.input.cwd) return c.input.cwd;
+  const votes = new Map();
+  for (const f of c.input.files || []) {
+    const parts = f.path.split('/');
+    for (let i = 2; i < parts.length - 1; i++) {  // longest tail first; tails keep at least one dir
+      const tail = parts.slice(i).join('/');
+      if (new RegExp(`(^|[^\\w./~-])${reEscape(tail)}`).test(prompt)) {
+        const root = parts.slice(0, i).join('/');
+        votes.set(root, (votes.get(root) || 0) + 1);
+        break;
+      }
+    }
+  }
+  return [...votes].sort((a, b) => b[1] - a[1])[0]?.[0] ?? null;
+}
+
 // Copy the frozen files into the sandbox and rewrite the recorded absolute paths in the prompt.
+// Returns the prompt and the dir to run in (the spawn's root mapped into the sandbox, else the box).
 function stageCase(c, agent, box) {
   const fx = join(evalsDir(), agent, 'fixtures', c.id);
   const promptFile = join(evalsDir(), agent, c.input.prompt_file);
   if (!existsSync(promptFile)) throw Object.assign(new Error(`fixture missing: ${promptFile} (rebuild with cases_freeze.py)`), { failure_class: 'harness' });
   let prompt = readFileSync(promptFile, 'utf8');
+  const root = spawnRoot(c, prompt);
+  const cwd = root ? join(box, 'files', root.replace(/^\/+/, '')) : box;
+  mkdirSync(cwd, { recursive: true });
   for (const f of c.input.files || []) {
     const src = join(fx, f.fixture);
     if (!existsSync(src)) throw Object.assign(new Error(`fixture file missing: ${src}`), { failure_class: 'harness' });
@@ -131,7 +159,7 @@ function stageCase(c, agent, box) {
     prompt = prompt.split(f.path).join(dst);
     if (f.path.startsWith(HOME + '/')) prompt = prompt.split('~' + f.path.slice(HOME.length)).join(dst);
   }
-  return prompt;
+  return { prompt, cwd, root };
 }
 
 // --- one run ------------------------------------------------------------------------------------
@@ -158,7 +186,7 @@ async function runOne({ c, rep, agent, fm, model, cfg, args, hasAgentTool }) {
   mkdirSync(join(box, 'learnings'), { recursive: true });
   writeFileSync(shimLog, '');
   try {
-    const prompt = stageCase(c, agent, box);
+    const { prompt, cwd, root } = stageCase(c, agent, box);
     if (hasAgentTool && c.source?.session_id) {
       execFileSync('python3', [join(HERE, 'child_lookup.py'), c.source.session_id, c.source.agent_id, agent, childrenFile],
         { cwd: HERE, env: process.env, encoding: 'utf8' });
@@ -181,7 +209,7 @@ async function runOne({ c, rep, agent, fm, model, cfg, args, hasAgentTool }) {
       SHIM_SCRIPTS_DIR: join(SHARED, 'scripts'),
       LOG_LEARNING_DEST: join(box, 'learnings'),
     };
-    const r = await runCli(cli, { cwd: box, env }, args.timeoutS * 1000);
+    const r = await runCli(cli, { cwd, env }, args.timeoutS * 1000);
     if (r.timedOut) throw Object.assign(new Error(`timeout after ${args.timeoutS}s`), { failure_class: 'harness' });
     const events = r.out.split('\n').filter(Boolean).flatMap(l => { try { return [JSON.parse(l)]; } catch { return []; } });
     const result = events.findLast(e => e.type === 'result');
@@ -224,7 +252,7 @@ async function runOne({ c, rep, agent, fm, model, cfg, args, hasAgentTool }) {
       model: billed, models_used: Object.keys(mu), spawn_prompt: prompt, final_output: final, tool_calls: calls,
       files_written: filesWritten, expected: c.expected, shim_calls: shimCalls,
       usage: { input: u.input_tokens || 0, output: u.output_tokens || 0, cache_read: u.cache_read_input_tokens || 0, cache_creation: u.cache_creation_input_tokens || 0 },
-      cost_usd: result.total_cost_usd, num_turns: result.num_turns,
+      cost_usd: result.total_cost_usd, num_turns: result.num_turns, spawn_root: root,
       session_init: init ? { tools: init.tools, mcp_servers: init.mcp_servers, plugins: init.plugins, agents: init.agents, model: init.model, config_dir: cfg } : null,
       temp_learnings_lines: existsSync(learnings) ? readFileSync(learnings, 'utf8').split('\n').filter(Boolean).length : 0,
     };
