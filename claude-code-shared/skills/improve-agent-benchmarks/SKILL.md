@@ -1,6 +1,8 @@
 ---
 name: improve-agent-benchmarks
 description: Cheap iterative improvement of a shared agent. Runs the next stage for the chosen agent (contract, cases, iterate). Contract stage drafts a cited, history-validated contract.json with an Opus subagent, shows each check with its source, historical pass rate and real failing examples, and freezes it on approval. Use when the user invokes /improve-agent-benchmarks [agent-name].
+model: sonnet
+effort: high
 ---
 
 # improve-agent-benchmarks
@@ -146,6 +148,18 @@ Relay to the user in chat: the check chosen, the analyzer's kind and rationale, 
 
 `iterate.py decide <agent> <n>` recomputes the decision for iteration n from its recorded runs. `iterate.py revert <agent> <n>` reverts iteration n's edit.
 <!-- iterate-stage:end -->
+
+<!-- summary:start -->
+## Summary page (every invocation)
+
+As the last step of every invocation, whatever stage ran, write the plain-English summary page and print its path:
+
+```bash
+python3 ~/.dotfiles/claude-code-shared/scripts/agent-eval/summary.py <agent>
+```
+
+It writes `.claude/agent-bench/<agent>/summary.html`: stage, the check worked on, checks flipped, kept or reverted, commit SHA, 2-of-2 confirmation, stuck checks, and current pass rates from `scores.json`. Hand the user that path. It is separate from hillclimb and `eval-report.sh`. Never commit the page.
+<!-- summary:end -->
 
 <!-- learning-capture:start -->
 Read and execute `~/.dotfiles/claude-code-shared/resources/learning-capture.md`.
