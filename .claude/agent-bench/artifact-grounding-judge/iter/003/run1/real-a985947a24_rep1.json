@@ -1,0 +1,77 @@
+{
+ "agent": "artifact-grounding-judge",
+ "agent_id": "real-a985947a24_rep1",
+ "case_id": "real-a985947a24",
+ "rep": 1,
+ "kind": "real",
+ "source": "live",
+ "timestamp": "2026-10-03T05:41:52.383Z",
+ "model": "claude-haiku-4-5-20251001",
+ "models_used": [
+  "claude-haiku-4-5-20251001"
+ ],
+ "spawn_prompt": "## Draft attribution record\n\n```json\n{\n  \"type\": \"attribution\",\n  \"reported_by\": \"debug\",\n  \"improves\": null,\n  \"improves_type\": \"skill\",\n  \"cause\": \"other\",\n  \"cause_label\": \"cross_branch_fix_not_ported\",\n  \"problem\": \"On PR #19657 (KEY-2468-date-enum-type-maps-formatting), commit f614d5279e added 'Date' to the public OpenAPI metrics/options type enum by updating app/api/tests/snapshots/public_openapi.json to accept the new enum value, instead of flagging it as a premature public API expansion. The same issue had been identified and fixed on sibling PR #19649 (KEY-2464) with a feature-flag gate, but that fix was never ported to this branch.\",\n  \"why_missed\": \"The fix on sibling branch KEY-2464 (commit 55a4cc0a7c) gated DATE behind ENABLE_NEW_IR_FIELD_TYPES, but this constraint existed only in that branch's context. When commit f614d5279e ran on this branch, no tooling or process checked whether sibling branches had already addressed the same public-API exposure risk. The snapshot test was updated via --inline-snapshot=fix semantics, which silently accepted the new enum value without requiring an explicit acknowledgment that it was intentionally public.\",\n  \"lesson\": \"When a snapshot test update adds a new value to a public-facing API schema (OpenAPI enum, serializer field, public type list), the update should be accompanied by an explicit guard test asserting that the new value is intentionally public and customer-ready — not just a passive snapshot accept. Parallel branches working on related enum expansions should cross-check sibling PRs before updating public-API snapshots.\",\n  \"fix\": \"Add a guard test (like test_public_type_enum_excludes_date) whenever a new enum member is introduced alongside a snapshot update that includes it in a public schema. This ensures a blind --inline-snapshot=fix cannot silently re-introduce a pre-release enum value to the public docs.\",\n  \"evidence\": [\n    {\n      \"source\": \"artifact\",\n      \"ref\": \"/var/folders/28/6kx9nw655ln5p_lgqlzbnm8w0000gn/T/agent-bench-s083Qf/files/Users/eric/Documents/dev/worktrees/Quaestor-Web/KEY-2468-date-enum-type-maps-formatting/app/api/tests/snapshots/public_openapi.json\",\n      \"quote\": \"\\\"Select\\\",\\n                            \\\"Date\\\"\"\n    },\n    {\n      \"source\": \"artifact\",\n      \"ref\": \"/var/folders/28/6kx9nw655ln5p_lgqlzbnm8w0000gn/T/agent-bench-s083Qf/files/Users/eric/Documents/dev/worktrees/Quaestor-Web/KEY-2468-date-enum-type-maps-formatting/app/api/views.py\",\n      \"quote\": \"def _build_public_type_enum() -> list[str]:\\n    \\\"\\\"\\\"Type names advertised in the public metrics/options OpenAPI schema.\\n\\n    DATE is excluded until it is released to customers.\\n    \\\"\\\"\\\"\"\n    },\n    {\n      \"source\": \"transcript\",\n      \"ref\": \"/Users/eric/.cco/projects/-Users-eric-Documents-dev-worktrees-Quaestor-Web-KEY-2468-date-enum-type-maps-formatting/a3491b2e-b6b5-4b52-b5b5-67b5821d30c0.jsonl\",\n      \"quote\": \"#19649 fixed the same thing in `55a4cc0a7c`, but that change never made it onto this branch.\"\n    }\n  ],\n  \"trace\": {\n    \"pr\": \"https://github.com/Quaestor-Technologies/Quaestor-Web/pull/19657\",\n    \"branch\": \"KEY-2468-date-enum-type-maps-formatting\"\n  },\n  \"confidence\": \"candidate\"\n}\n```\n\n## Context for grounding\n\n**Evidence item 1** (artifact, public_openapi.json): The current state of the file should NOT contain \"Date\" (the fix reverted it). To verify the quote existed in the leaked state, run: `git show f614d5279e -- app/api/tests/snapshots/public_openapi.json` in the repo at `/Users/eric/Documents/dev/worktrees/Quaestor-Web/KEY-2468-date-enum-type-maps-formatting`. This will show the diff where `\"Select\",\\n \"Date\"` was added in that commit. Alternatively, the quote can be treated as an absence anchor — the fix removes \"Date\", confirming it was there before.\n\n**Evidence item 2** (artifact, views.py): The function `_build_public_type_enum` with the docstring \"DATE is excluded until it is released to customers.\" is present in the current file at lines 666-675.\n\n**Evidence item 3** (transcript): The debug skill's final assistant message in the JSONL transcript contains the quote \"#19649 fixed the same thing in `55a4cc0a7c`, but that change never made it onto this branch.\"\n\nThe repo working directory is: `/Users/eric/Documents/dev/worktrees/Quaestor-Web/KEY-2468-date-enum-type-maps-formatting`",
+ "final_output": "The check-anchors results show:\n\n1. **Evidence item 1 (public_openapi.json)**: `NO_MATCH` — the quote `\"Select\",\\n \"Date\"` does not appear in the current snapshot file. The closest match shows Date appears elsewhere in the file (as a type definition: `\"Date\", \"type\": \"string\", \"format\": \"date\"`), but not as an enum value in the context of the quoted passage.\n\n2. **Evidence item 2 (views.py)**: `MATCH` — the function and docstring are verified.\n\n3. **Evidence item 3 (transcript)**: `MATCH` — the quote is verified.\n\nThe first evidence anchor is fabricated. Although the context suggests I could verify it via git history (`git show f614d5279e`), the instruction explicitly forbids that: \"Judge only against the cited file: never run git or cd into a repo.\" The quoted passage does not exist in the current state of the cited file, and no passage in that file covers the same subject (Date as an enum value alongside \"Select\"). This is a fabrication.\n\n```json\n{\"verdict\": \"rejected\", \"confidence\": \"candidate\", \"reason\": \"anchor not found in /var/folders/28/6kx9nw655ln5p_lgqlzbnm8w0000gn/T/agent-bench-s083Qf/files/Users/eric/Documents/dev/worktrees/Quaestor-Web/KEY-2468-date-enum-type-maps-formatting/app/api/tests/snapshots/public_openapi.json: '\\\"Select\\\",\\\\n                            \\\"Date\\\"'\"}\n```",
+ "tool_calls": [
+  {
+   "id": "toolu_01EXY2Z51HRBswqx3QgAoe44",
+   "name": "Bash",
+   "input": {
+    "command": "python3 ~/.dotfiles/claude-code-shared/scripts/check-anchors.py <<'JSON'\n{\n  \"type\": \"attribution\",\n  \"reported_by\": \"debug\",\n  \"improves\": null,\n  \"improves_type\": \"skill\",\n  \"cause\": \"other\",\n  \"cause_label\": \"cross_branch_fix_not_ported\",\n  \"problem\": \"On PR #19657 (KEY-2468-date-enum-type-maps-formatting), commit f614d5279e added 'Date' to the public OpenAPI metrics/options type enum by updating app/api/tests/snapshots/public_openapi.json to accept the new enum value, instead of flagging it as a premature public API expansion. The same issue had been identified and fixed on sibling PR #19649 (KEY-2464) with a feature-flag gate, but that fix was never ported to this branch.\",\n  \"why_missed\": \"The fix on sibling branch KEY-2464 (commit 55a4cc0a7c) gated DATE behind ENABLE_NEW_IR_FIELD_TYPES, but this constraint existed only in that branch's context. When commit f614d5279e ran on this branch, no tooling or process checked whether sibling branches had already addressed the same public-API exposure risk. The snapshot test was updated via --inline-snapshot=fix semantics, which silently accepted the new enum value without requiring an explicit acknowledgment that it was intentionally public.\",\n  \"lesson\": \"When a snapshot test update adds a new value to a public-facing API schema (OpenAPI enum, serializer field, public type list), the update should be accompanied by an explicit guard test asserting that the new value is intentionally public and customer-ready — not just a passive snapshot accept. Parallel branches working on related enum expansions should cross-check sibling PRs before updating public-API snapshots.\",\n  \"fix\": \"Add a guard test (like test_public_type_enum_excludes_date) whenever a new enum member is introduced alongside a snapshot update that includes it in a public schema. This ensures a blind --inline-snapshot=fix cannot silently re-introduce a pre-release enum value to the public docs.\",\n  \"evidence\": [\n    {\n      \"source\": \"artifact\",\n      \"ref\": \"/var/folders/28/6kx9nw655ln5p_lgqlzbnm8w0000gn/T/agent-bench-s083Qf/files/Users/eric/Documents/dev/worktrees/Quaestor-Web/KEY-2468-date-enum-type-maps-formatting/app/api/tests/snapshots/public_openapi.json\",\n      \"quote\": \"\\\"Select\\\",\\n                            \\\"Date\\\"\"\n    },\n    {\n      \"source\": \"artifact\",\n      \"ref\": \"/var/folders/28/6kx9nw655ln5p_lgqlzbnm8w0000gn/T/agent-bench-s083Qf/files/Users/eric/Documents/dev/worktrees/Quaestor-Web/KEY-2468-date-enum-type-maps-formatting/app/api/views.py\",\n      \"quote\": \"def _build_public_type_enum() -> list[str]:\\n    \\\"\\\"\\\"Type names advertised in the public metrics/options OpenAPI schema.\\n\\n    DATE is excluded until it is released to customers.\\n    \\\"\\\"\\\"\"\n    },\n    {\n      \"source\": \"transcript\",\n      \"ref\": \"/Users/eric/.cco/projects/-Users-eric-Documents-dev-worktrees-Quaestor-Web-KEY-2468-date-enum-type-maps-formatting/a3491b2e-b6b5-4b52-b5b5-67b5821d30c0.jsonl\",\n      \"quote\": \"#19649 fixed the same thing in `55a4cc0a7c`, but that change never made it onto this branch.\"\n    }\n  ],\n  \"trace\": {\n    \"pr\": \"https://github.com/Quaestor-Technologies/Quaestor-Web/pull/19657\",\n    \"branch\": \"KEY-2468-date-enum-type-maps-formatting\"\n  },\n  \"confidence\": \"candidate\"\n}\nJSON\n"
+   },
+   "result": "{\"index\": 0, \"source\": \"artifact\", \"ref\": \"/var/folders/28/6kx9nw655ln5p_lgqlzbnm8w0000gn/T/agent-bench-s083Qf/files/Users/eric/Documents/dev/worktrees/Quaestor-Web/KEY-2468-date-enum-type-maps-formatting/app/api/tests/snapshots/public_openapi.json\", \"status\": \"NO_MATCH\", \"words_not_in_file\": [], \"closest\": \"\\\"Date\\\", \\\"type\\\": \\\"string\\\", \\\"format\\\": \\\"date\\\" }, \\\"company\\\": {\"}\n{\"index\": 1, \"source\": \"artifact\", \"ref\": \"/var/folders/28/6kx9nw655ln5p_lgqlzbnm8w0000gn/T/agent-bench-s083Qf/files/Users/eric/Documents/dev/worktrees/Quaestor-Web/KEY-2468-date-enum-type-maps-formatting/app/api/views.py\", \"status\": \"MATCH\"}\n{\"index\": 2, \"source\": \"transcript\", \"ref\": \"/Users/eric/.cco/projects/-Users-eric-Documents-dev-worktrees-Quaestor-Web-KEY-2468-date-enum-type-maps-formatting/a3491b2e-b6b5-4b52-b5b5-67b5821d30c0.jsonl\", \"status\": \"MATCH\"}",
+   "is_error": false
+  }
+ ],
+ "files_written": [],
+ "expected": {
+  "verdict": "rejected",
+  "confidence": "candidate"
+ },
+ "shim_calls": [],
+ "usage": {
+  "input": 18,
+  "output": 2989,
+  "cache_read": 14411,
+  "cache_creation": 4297
+ },
+ "cost_usd": 0.0249981,
+ "num_turns": 2,
+ "spawn_root": "/Users/eric/Documents/dev/worktrees/Quaestor-Web/KEY-2468-date-enum-type-maps-formatting",
+ "session_init": {
+  "tools": [
+   "Read",
+   "Bash"
+  ],
+  "mcp_servers": [],
+  "plugins": [
+   {
+    "name": "cc-plugin-agents-md",
+    "path": "builtin",
+    "source": "cc-plugin-agents-md@builtin"
+   },
+   {
+    "name": "cc-plugin-telemetry",
+    "path": "builtin",
+    "source": "cc-plugin-telemetry@builtin"
+   },
+   {
+    "name": "cc-plugin-plugin-authoring",
+    "path": "builtin",
+    "source": "cc-plugin-plugin-authoring@builtin"
+   }
+  ],
+  "agents": [
+   "artifact-grounding-judge",
+   "claude",
+   "Explore",
+   "general-purpose",
+   "Plan",
+   "statusline-setup",
+   "web-fetch"
+  ],
+  "model": "claude-haiku-4-5-20251001",
+  "config_dir": "/Users/eric/.cch"
+ },
+ "temp_learnings_lines": 0
+}

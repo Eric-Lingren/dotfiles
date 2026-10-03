@@ -1,0 +1,116 @@
+{
+ "agent": "artifact-grounding-judge",
+ "agent_id": "real-a985947a24_rep1",
+ "case_id": "real-a985947a24",
+ "rep": 1,
+ "kind": "real",
+ "source": "live",
+ "timestamp": "2026-10-03T05:45:24.642Z",
+ "model": "claude-haiku-4-5-20251001",
+ "models_used": [
+  "claude-haiku-4-5-20251001"
+ ],
+ "spawn_prompt": "## Draft attribution record\n\n```json\n{\n  \"type\": \"attribution\",\n  \"reported_by\": \"debug\",\n  \"improves\": null,\n  \"improves_type\": \"skill\",\n  \"cause\": \"other\",\n  \"cause_label\": \"cross_branch_fix_not_ported\",\n  \"problem\": \"On PR #19657 (KEY-2468-date-enum-type-maps-formatting), commit f614d5279e added 'Date' to the public OpenAPI metrics/options type enum by updating app/api/tests/snapshots/public_openapi.json to accept the new enum value, instead of flagging it as a premature public API expansion. The same issue had been identified and fixed on sibling PR #19649 (KEY-2464) with a feature-flag gate, but that fix was never ported to this branch.\",\n  \"why_missed\": \"The fix on sibling branch KEY-2464 (commit 55a4cc0a7c) gated DATE behind ENABLE_NEW_IR_FIELD_TYPES, but this constraint existed only in that branch's context. When commit f614d5279e ran on this branch, no tooling or process checked whether sibling branches had already addressed the same public-API exposure risk. The snapshot test was updated via --inline-snapshot=fix semantics, which silently accepted the new enum value without requiring an explicit acknowledgment that it was intentionally public.\",\n  \"lesson\": \"When a snapshot test update adds a new value to a public-facing API schema (OpenAPI enum, serializer field, public type list), the update should be accompanied by an explicit guard test asserting that the new value is intentionally public and customer-ready — not just a passive snapshot accept. Parallel branches working on related enum expansions should cross-check sibling PRs before updating public-API snapshots.\",\n  \"fix\": \"Add a guard test (like test_public_type_enum_excludes_date) whenever a new enum member is introduced alongside a snapshot update that includes it in a public schema. This ensures a blind --inline-snapshot=fix cannot silently re-introduce a pre-release enum value to the public docs.\",\n  \"evidence\": [\n    {\n      \"source\": \"artifact\",\n      \"ref\": \"/var/folders/28/6kx9nw655ln5p_lgqlzbnm8w0000gn/T/agent-bench-5bXIUS/files/Users/eric/Documents/dev/worktrees/Quaestor-Web/KEY-2468-date-enum-type-maps-formatting/app/api/tests/snapshots/public_openapi.json\",\n      \"quote\": \"\\\"Select\\\",\\n                            \\\"Date\\\"\"\n    },\n    {\n      \"source\": \"artifact\",\n      \"ref\": \"/var/folders/28/6kx9nw655ln5p_lgqlzbnm8w0000gn/T/agent-bench-5bXIUS/files/Users/eric/Documents/dev/worktrees/Quaestor-Web/KEY-2468-date-enum-type-maps-formatting/app/api/views.py\",\n      \"quote\": \"def _build_public_type_enum() -> list[str]:\\n    \\\"\\\"\\\"Type names advertised in the public metrics/options OpenAPI schema.\\n\\n    DATE is excluded until it is released to customers.\\n    \\\"\\\"\\\"\"\n    },\n    {\n      \"source\": \"transcript\",\n      \"ref\": \"/Users/eric/.cco/projects/-Users-eric-Documents-dev-worktrees-Quaestor-Web-KEY-2468-date-enum-type-maps-formatting/a3491b2e-b6b5-4b52-b5b5-67b5821d30c0.jsonl\",\n      \"quote\": \"#19649 fixed the same thing in `55a4cc0a7c`, but that change never made it onto this branch.\"\n    }\n  ],\n  \"trace\": {\n    \"pr\": \"https://github.com/Quaestor-Technologies/Quaestor-Web/pull/19657\",\n    \"branch\": \"KEY-2468-date-enum-type-maps-formatting\"\n  },\n  \"confidence\": \"candidate\"\n}\n```\n\n## Context for grounding\n\n**Evidence item 1** (artifact, public_openapi.json): The current state of the file should NOT contain \"Date\" (the fix reverted it). To verify the quote existed in the leaked state, run: `git show f614d5279e -- app/api/tests/snapshots/public_openapi.json` in the repo at `/Users/eric/Documents/dev/worktrees/Quaestor-Web/KEY-2468-date-enum-type-maps-formatting`. This will show the diff where `\"Select\",\\n \"Date\"` was added in that commit. Alternatively, the quote can be treated as an absence anchor — the fix removes \"Date\", confirming it was there before.\n\n**Evidence item 2** (artifact, views.py): The function `_build_public_type_enum` with the docstring \"DATE is excluded until it is released to customers.\" is present in the current file at lines 666-675.\n\n**Evidence item 3** (transcript): The debug skill's final assistant message in the JSONL transcript contains the quote \"#19649 fixed the same thing in `55a4cc0a7c`, but that change never made it onto this branch.\"\n\nThe repo working directory is: `/Users/eric/Documents/dev/worktrees/Quaestor-Web/KEY-2468-date-enum-type-maps-formatting`",
+ "final_output": "Based on the check-anchors.py results and further investigation:\n\n**Evidence item 0 (public_openapi.json):** The script returned `NO_MATCH` for the quote `\"Select\",\\n \"Date\"`. Looking at the current file around line 1727, I can see \"Select\" is the last element in the enum array with no \"Date\" following it. The context indicates the fix reverted the \"Date\" addition, so the quote does not exist in the cited file's current state.\n\n**Evidence item 1 (views.py):** The script returned `MATCH` - the docstring about `_build_public_type_enum()` is verified.\n\n**Evidence item 2 (transcript):** The script returned `MATCH` - the quote about PR #19649 and commit 55a4cc0a7c is verified.\n\nThe critical issue is with Evidence item 0. The evidence cites the current state of public_openapi.json but quotes a passage that only existed in a past commit state (before the fix reverted it). According to the verification procedure, I must judge only against the cited file and cannot use git commits to rescue quotes that don't appear in the current file.\n\n```json\n{\"verdict\": \"rejected\", \"confidence\": \"candidate\", \"reason\": \"anchor not found in public_openapi.json: '\\\"Select\\\",\\\\n                            \\\"Date\\\"'\"}\n```",
+ "tool_calls": [
+  {
+   "id": "toolu_01QL3VoeXHhUhsFsvuVG5AF7",
+   "name": "Bash",
+   "input": {
+    "command": "python3 ~/.dotfiles/claude-code-shared/scripts/check-anchors.py <<'JSON'\n{\n  \"type\": \"attribution\",\n  \"reported_by\": \"debug\",\n  \"improves\": null,\n  \"improves_type\": \"skill\",\n  \"cause\": \"other\",\n  \"cause_label\": \"cross_branch_fix_not_ported\",\n  \"problem\": \"On PR #19657 (KEY-2468-date-enum-type-maps-formatting), commit f614d5279e added 'Date' to the public OpenAPI metrics/options type enum by updating app/api/tests/snapshots/public_openapi.json to accept the new enum value, instead of flagging it as a premature public API expansion. The same issue had been identified and fixed on sibling PR #19649 (KEY-2464) with a feature-flag gate, but that fix was never ported to this branch.\",\n  \"why_missed\": \"The fix on sibling branch KEY-2464 (commit 55a4cc0a7c) gated DATE behind ENABLE_NEW_IR_FIELD_TYPES, but this constraint existed only in that branch's context. When commit f614d5279e ran on this branch, no tooling or process checked whether sibling branches had already addressed the same public-API exposure risk. The snapshot test was updated via --inline-snapshot=fix semantics, which silently accepted the new enum value without requiring an explicit acknowledgment that it was intentionally public.\",\n  \"lesson\": \"When a snapshot test update adds a new value to a public-facing API schema (OpenAPI enum, serializer field, public type list), the update should be accompanied by an explicit guard test asserting that the new value is intentionally public and customer-ready — not just a passive snapshot accept. Parallel branches working on related enum expansions should cross-check sibling PRs before updating public-API snapshots.\",\n  \"fix\": \"Add a guard test (like test_public_type_enum_excludes_date) whenever a new enum member is introduced alongside a snapshot update that includes it in a public schema. This ensures a blind --inline-snapshot=fix cannot silently re-introduce a pre-release enum value to the public docs.\",\n  \"evidence\": [\n    {\n      \"source\": \"artifact\",\n      \"ref\": \"/var/folders/28/6kx9nw655ln5p_lgqlzbnm8w0000gn/T/agent-bench-5bXIUS/files/Users/eric/Documents/dev/worktrees/Quaestor-Web/KEY-2468-date-enum-type-maps-formatting/app/api/tests/snapshots/public_openapi.json\",\n      \"quote\": \"\\\"Select\\\",\\n                            \\\"Date\\\"\"\n    },\n    {\n      \"source\": \"artifact\",\n      \"ref\": \"/var/folders/28/6kx9nw655ln5p_lgqlzbnm8w0000gn/T/agent-bench-5bXIUS/files/Users/eric/Documents/dev/worktrees/Quaestor-Web/KEY-2468-date-enum-type-maps-formatting/app/api/views.py\",\n      \"quote\": \"def _build_public_type_enum() -> list[str]:\\n    \\\"\\\"\\\"Type names advertised in the public metrics/options OpenAPI schema.\\n\\n    DATE is excluded until it is released to customers.\\n    \\\"\\\"\\\"\"\n    },\n    {\n      \"source\": \"transcript\",\n      \"ref\": \"/Users/eric/.cco/projects/-Users-eric-Documents-dev-worktrees-Quaestor-Web-KEY-2468-date-enum-type-maps-formatting/a3491b2e-b6b5-4b52-b5b5-67b5821d30c0.jsonl\",\n      \"quote\": \"#19649 fixed the same thing in `55a4cc0a7c`, but that change never made it onto this branch.\"\n    }\n  ],\n  \"trace\": {\n    \"pr\": \"https://github.com/Quaestor-Technologies/Quaestor-Web/pull/19657\",\n    \"branch\": \"KEY-2468-date-enum-type-maps-formatting\"\n  },\n  \"confidence\": \"candidate\"\n}\nJSON\n"
+   },
+   "result": "{\"index\": 0, \"source\": \"artifact\", \"ref\": \"/var/folders/28/6kx9nw655ln5p_lgqlzbnm8w0000gn/T/agent-bench-5bXIUS/files/Users/eric/Documents/dev/worktrees/Quaestor-Web/KEY-2468-date-enum-type-maps-formatting/app/api/tests/snapshots/public_openapi.json\", \"status\": \"NO_MATCH\", \"words_not_in_file\": [], \"closest\": \"\\\"Date\\\", \\\"type\\\": \\\"string\\\", \\\"format\\\": \\\"date\\\" }, \\\"company\\\": {\"}\n{\"index\": 1, \"source\": \"artifact\", \"ref\": \"/var/folders/28/6kx9nw655ln5p_lgqlzbnm8w0000gn/T/agent-bench-5bXIUS/files/Users/eric/Documents/dev/worktrees/Quaestor-Web/KEY-2468-date-enum-type-maps-formatting/app/api/views.py\", \"status\": \"MATCH\"}\n{\"index\": 2, \"source\": \"transcript\", \"ref\": \"/Users/eric/.cco/projects/-Users-eric-Documents-dev-worktrees-Quaestor-Web-KEY-2468-date-enum-type-maps-formatting/a3491b2e-b6b5-4b52-b5b5-67b5821d30c0.jsonl\", \"status\": \"MATCH\"}",
+   "is_error": false
+  },
+  {
+   "id": "toolu_01SSKz62L8SvCbJUVsY9LB4P",
+   "name": "Read",
+   "input": {
+    "file_path": "/var/folders/28/6kx9nw655ln5p_lgqlzbnm8w0000gn/T/agent-bench-5bXIUS/files/Users/eric/Documents/dev/worktrees/Quaestor-Web/KEY-2468-date-enum-type-maps-formatting/app/api/tests/snapshots/public_openapi.json",
+    "limit": 100
+   },
+   "result": "1\t{\n2\t    \"swagger\": \"2.0\",\n3\t    \"info\": {\n4\t        \"title\": \"Standard Metrics API Documentation\",\n5\t        \"description\": \"Welcome to Standard Metric's API docs!\\n\\nTo use our API you will need to make an OAuth appliction (or use an existing one) in the developer settings tab on your settings page and then exchange your client id and secret for an access token (via the `/o/token/` endpoint. This token can then be sent in the `Authorization` header to authenticate your requests to our api. See below for an example.\\n\\n All endpoints are paginated and will return a maximum of 100 results per page. See the endpoints below and example responses for more details on pagination parameters. A maximum of 120 requests per minute can be made to our API.\\n\\nAuthentication example (with python):\\n```python\\nimport base64\\n\\nimport requests\\n\\nclient_id = \\\"YOUR_CLIENT_ID\\\"\\nclient_secret = \\\"YOUR_CLIENT_SECRET\\\"\\ncredential = f\\\"{client_id}:{client_secret}\\\"\\nencoded_credential = base64.b64encode(credential.encode(\\\"utf-8\\\")).decode(\\\"utf-8\\\")\\n\\nresponse = requests.post(\\n    \\\"https://api.standardmetrics.io/o/token/\\\",\\n    headers={\\n        \\\"Authorization\\\": f\\\"Basic {encoded_credential}\\\",\\n        \\\"Cache-Control\\\": \\\"no-cache\\\",\\n        \\\"Content-Type\\\": \\\"application/x-www-form-urlencoded\\\",\\n    },\\n    data={\\\"grant_type\\\": \\\"client_credentials\\\"},\\n)\\n```\\n\\nYou will receive the following response:\\n\\n{\\n    \\\"access_token\\\": \\\"YOUR_ACCESS_TOKEN\\\",\\n    \\\"expires_in\\\": 3600,\\n    \\\"token_type\\\": \\\"Bearer\\\",\\n    \\\"scope\\\": \\\"read write\\\"\\n}\\n\\nMake sure not to forget to prepend \\\"Bearer \\\" to your access token in the Authorization header while making requests.\",\n6\t        \"version\": \"1.0\"\n7\t    },\n8\t    \"host\": \"api.standardmetrics.io\",\n9\t    \"schemes\": [\n10\t        \"https\"\n11\t    ],\n12\t    \"basePath\": \"/v1\",\n13\t    \"consumes\": [\n14\t        \"application/json\"\n15\t    ],\n16\t    \"produces\": [\n17\t        \"application/json\"\n18\t    ],\n19\t    \"securityDefinitions\": {\n20\t        \"Client Credentials\": {\n21\t            \"type\": \"oauth2\",\n22\t            \"description\": \"Input the client id and secret for one of your client credentials OAuth applications to authorize test api calls.\",\n23\t            \"flow\": \"application\",\n24\t            \"tokenUrl\": \"/o/token/\",\n25\t            \"scopes\": {\n26\t                \"read\": \"read\"\n27\t            }\n28\t        },\n29\t        \"Bearer\": {\n30\t            \"type\": \"apiKey\",\n31\t            \"name\": \"Authorization\",\n32\t            \"in\": \"header\"\n33\t        }\n34\t    },\n35\t    \"security\": [\n36\t        {\n37\t            \"Bearer\": []\n38\t        },\n39\t        {\n40\t            \"Client Credentials\": []\n41\t        }\n42\t    ],\n43\t    \"paths\": {\n44\t        \"/budgets/\": {\n45\t            \"get\": {\n46\t                \"operationId\": \"budgets_list\",\n47\t                \"summary\": \"Get budgets\",\n48\t                \"description\": \"Retrieve all budgets associated with the firm. Each budget is associated with a company.\\n\\n**Permissions:**\\n- User must be authenticated via OAuth.\\n- User must have access to the companies.\",\n49\t                \"parameters\": [\n50\t                    {\n51\t                        \"name\": \"page\",\n52\t                        \"in\": \"query\",\n53\t                        \"description\": \"A page number within the paginated result set.\",\n54\t                        \"required\": false,\n55\t                        \"type\": \"integer\"\n56\t                    },\n57\t                    {\n58\t                        \"name\": \"page_size\",\n59\t                        \"in\": \"query\",\n60\t                        \"description\": \"Number of results to return per page.\",\n61\t                        \"required\": false,\n62\t                        \"type\": \"integer\"\n63\t                    },\n64\t                    {\n65\t                        \"name\": \"company_slug\",\n66\t                        \"in\": \"query\",\n67\t                        \"description\": \"The slug of the company to fetch budgets for. You can find the slug for a company by going to that company's portfolio page, and then the last portion of the URL will be the unique slug for said company. For example: in the url: `app.standardmetrics.io/venture/fund-slug/portfolio/example-slug/`, `\\\"example-slug\\\"` would the the slug. This endpoint will return all budget data for your firm if a company slug isn't included. You can also make a request to the `/companies` endpoint to get a list of all your firm's companies and their slugs.\",\n68\t                        \"type\": \"string\"\n69\t                    },\n70\t                    {\n71\t                        \"name\": \"company_id\",\n72\t                        \"in\": \"query\",\n73\t                        \"description\": \"The id for the company to fetch budget data for. You can get a company's id by making a request to the `/companies` endpoint. This endpoint will return all budget data for your firm if a company id isn't included. You can get a company's id by making a request to the `/companies` endpoint.\",\n74\t                        \"type\": \"string\"\n75\t                    },\n76\t                    {\n77\t                        \"name\": \"sort_by\",\n78\t                        \"in\": \"query\",\n79\t                        \"description\": \"The field to sort your query by. Currently, `created_at` is the only supported field. To sort in descending order, prepend the field you're sorting by with a `-`. Ascending order is implied, but you can also prepend the field you're sorting by with `+` to sort in ascending order. E.g. to sort by created_at in ascending order use `\\\"sort_by=-created_at\\\"` and to sort by created_at in descending order use `\\\"sort_by=+created_at\\\"` or just `\\\"sort_by=created_at\\\"`.\",\n80\t                        \"type\": \"string\"\n81\t                    }\n82\t                ],\n83\t                \"responses\": {\n84\t                    \"200\": {\n85\t                        \"description\": \"\",\n86\t                        \"schema\": {\n87\t                            \"required\": [\n88\t                                \"count\",\n89\t                                \"results\"\n90\t                            ],\n91\t                            \"type\": \"object\",\n92\t                            \"properties\": {\n93\t                                \"count\": {\n94\t                                    \"type\": \"integer\"\n95\t                                },\n96\t                                \"next\": {\n97\t                                    \"type\": \"string\",\n98\t                                    \"format\": \"uri\",\n99\t                                    \"x-nullable\": true\n100\t                                },",
+   "is_error": false
+  },
+  {
+   "id": "toolu_01VbZXZG5LctUXT9GHqLGYbe",
+   "name": "Bash",
+   "input": {
+    "command": "grep -n \"Select\" \"/var/folders/28/6kx9nw655ln5p_lgqlzbnm8w0000gn/T/agent-bench-5bXIUS/files/Users/eric/Documents/dev/worktrees/Quaestor-Web/KEY-2468-date-enum-type-maps-formatting/app/api/tests/snapshots/public_openapi.json\" | head -20"
+   },
+   "result": "644:                                        \"description\": \"Selected Options\",\n694:                                        \"description\": \"Selected Options\",\n1727:                            \"Select\"",
+   "is_error": false
+  },
+  {
+   "id": "toolu_013rbg8pzAfdwxSwDpVHaAPo",
+   "name": "Read",
+   "input": {
+    "file_path": "/var/folders/28/6kx9nw655ln5p_lgqlzbnm8w0000gn/T/agent-bench-5bXIUS/files/Users/eric/Documents/dev/worktrees/Quaestor-Web/KEY-2468-date-enum-type-maps-formatting/app/api/tests/snapshots/public_openapi.json",
+    "offset": 1720,
+    "limit": 20
+   },
+   "result": "1720\t                        \"type\": \"string\",\n1721\t                        \"enum\": [\n1722\t                            \"Integer\",\n1723\t                            \"Decimal\",\n1724\t                            \"String\",\n1725\t                            \"Money\",\n1726\t                            \"Percentage\",\n1727\t                            \"Select\"\n1728\t                        ]\n1729\t                    },\n1730\t                    {\n1731\t                        \"name\": \"is_point_in_time\",\n1732\t                        \"in\": \"query\",\n1733\t                        \"description\": \"Is category point in time\",\n1734\t                        \"type\": \"boolean\"\n1735\t                    },\n1736\t                    {\n1737\t                        \"name\": \"is_archived\",\n1738\t                        \"in\": \"query\",\n1739\t                        \"description\": \"Is category archived\",",
+   "is_error": false
+  },
+  {
+   "id": "toolu_01VGfBrWQWQUWqxF3xbXZ3sH",
+   "name": "Bash",
+   "input": {
+    "command": "grep -n -C 3 \"Date\" \"/var/folders/28/6kx9nw655ln5p_lgqlzbnm8w0000gn/T/agent-bench-5bXIUS/files/Users/eric/Documents/dev/worktrees/Quaestor-Web/KEY-2468-date-enum-type-maps-formatting/app/api/tests/snapshots/public_openapi.json\" | grep -A 3 -B 3 \"enum\""
+   },
+   "result": "(Bash completed with no output)",
+   "is_error": false
+  }
+ ],
+ "files_written": [],
+ "expected": {
+  "verdict": "rejected",
+  "confidence": "candidate"
+ },
+ "shim_calls": [],
+ "usage": {
+  "input": 50,
+  "output": 5087,
+  "cache_read": 66032,
+  "cache_creation": 9463
+ },
+ "cost_usd": 0.051014199999999996,
+ "num_turns": 6,
+ "spawn_root": "/Users/eric/Documents/dev/worktrees/Quaestor-Web/KEY-2468-date-enum-type-maps-formatting",
+ "session_init": {
+  "tools": [
+   "Read",
+   "Bash"
+  ],
+  "mcp_servers": [],
+  "plugins": [
+   {
+    "name": "cc-plugin-agents-md",
+    "path": "builtin",
+    "source": "cc-plugin-agents-md@builtin"
+   },
+   {
+    "name": "cc-plugin-telemetry",
+    "path": "builtin",
+    "source": "cc-plugin-telemetry@builtin"
+   },
+   {
+    "name": "cc-plugin-plugin-authoring",
+    "path": "builtin",
+    "source": "cc-plugin-plugin-authoring@builtin"
+   }
+  ],
+  "agents": [
+   "artifact-grounding-judge",
+   "claude",
+   "Explore",
+   "general-purpose",
+   "Plan",
+   "statusline-setup",
+   "web-fetch"
+  ],
+  "model": "claude-haiku-4-5-20251001",
+  "config_dir": "/Users/eric/.cch"
+ },
+ "temp_learnings_lines": 0
+}

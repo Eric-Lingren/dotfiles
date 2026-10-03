@@ -1,0 +1,47 @@
+{
+  "decision": "keep",
+  "reasons": [],
+  "check": "verdict_matches_case",
+  "targets": [
+    "real-a985947a24",
+    "real-aeb2d01fc0"
+  ],
+  "sentinels": [
+    "plant-a5b6af6b4f-calendar-select-guard-inverted",
+    "plant-a5b6af6b4f-test-case-paraphrase"
+  ],
+  "flipped_run1": [
+    "real-a985947a24",
+    "real-aeb2d01fc0"
+  ],
+  "confirmed_2of2": [
+    "real-a985947a24",
+    "real-aeb2d01fc0"
+  ],
+  "regressions": [],
+  "tokens_per_case": {
+    "baseline": 57953,
+    "candidate": 55038,
+    "ratio": 0.95
+  },
+  "per_case": {
+    "real-a985947a24": {
+      "role": "target",
+      "run1": true,
+      "run2": true
+    },
+    "real-aeb2d01fc0": {
+      "role": "target",
+      "run1": true,
+      "run2": true
+    },
+    "plant-a5b6af6b4f-calendar-select-guard-inverted": {
+      "role": "sentinel",
+      "regressed": []
+    },
+    "plant-a5b6af6b4f-test-case-paraphrase": {
+      "role": "sentinel",
+      "regressed": []
+    }
+  }
+}

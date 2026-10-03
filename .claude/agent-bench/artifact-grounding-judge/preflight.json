@@ -1,5 +1,24 @@
 {
   "agent": "artifact-grounding-judge",
-  "approvals": [],
+  "approvals": [
+    {
+      "ts": "2026-10-03T05:39:16Z",
+      "files": [
+        "agents/artifact-grounding-judge.md"
+      ],
+      "checks": [
+        "output_no_prose",
+        "output_core_schema",
+        "rejected_output_shape",
+        "check_anchors_invoked",
+        "log_learning_called_on_pass",
+        "log_learning_quoted_heredoc",
+        "no_log_learning_on_rejected",
+        "verdict_matches_case",
+        "confidence_matches_case",
+        "pass_output_has_write_fields"
+      ]
+    }
+  ],
   "confirmations": []
 }

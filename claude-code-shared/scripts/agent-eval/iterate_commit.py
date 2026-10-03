@@ -58,7 +58,7 @@ def main():
     run = lambda c: subprocess.run(c, cwd=root, check=True)
     run(cmds[0])
     staged = subprocess.check_output(["git", "diff", "--cached", "--name-only"], text=True, cwd=root).split()
-    if sorted(staged) != sorted(files):
+    if not staged or not set(staged) <= set(files):
         subprocess.run(["git", "reset", "-q"], cwd=root)
         sys.exit(f"refusing: staged set {staged} differs from the allowed files {files}")
     run(cmds[1])
