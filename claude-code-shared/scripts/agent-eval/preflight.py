@@ -8,7 +8,7 @@ Run at the start of every invocation for an agent, before any stage work. Steps:
   1. Confirmation. For each kept fix (iterations.json, status kept, with sha) that is on main
      (origin/main, else main; override with AGENT_BENCH_MAIN_REF), grade the spawns made after the
      fix commit with the history-gradable checks (shape: json_parse/schema/no_prose, quote:
-     quote_in_input, side effect: tool_called/file_written). Verdict per fix:
+     quote_in_input, side effect: tool_called/tool_not_called/file_written). Verdict per fix:
        confirmed    >= 2 post-fix spawns and the fixed check never fails after the fix
        regressed    fixed check's pass rate fell below its pre-fix rate, or a check that passed every
                     pre-fix spawn fails after the fix. Prints the exact `git revert <sha>`.
@@ -37,9 +37,9 @@ from datetime import datetime, timezone
 import bench_lib as L
 import harvest
 
-GRADABLE = {"json_parse", "schema", "no_prose", "quote_in_input", "tool_called", "file_written"}
+GRADABLE = {"json_parse", "schema", "no_prose", "quote_in_input", "tool_called", "tool_not_called", "file_written"}
 FAMILY = {"json_parse": "shape", "schema": "shape", "no_prose": "shape", "quote_in_input": "quote",
-          "tool_called": "side effect", "file_written": "side effect"}
+          "tool_called": "side effect", "tool_not_called": "side effect", "file_written": "side effect"}
 SKILL_PREFIX = "agent-bench("
 MIN_CONFIRM = 2
 WALK_CAP = 200

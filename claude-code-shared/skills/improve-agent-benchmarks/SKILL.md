@@ -71,7 +71,7 @@ Spawn one Agent with `model: "opus"` (general-purpose). Give it the bundler outp
 
 - Three sources only: `role` (the agent's .md), `caller` (each consumer and what it parses), `side_effect` (files written, required tool calls).
 - Every check carries `source: {"tag": "role|caller|side_effect", "file": "<path relative to claude-code-shared/>", "line": "N" or "N-M", "quote": "<verbatim text from those lines>"}`. A check with no citable source must not be written.
-- Check types: exactly these 7 built-ins, with the params documented in the `grade.py` header: `json_parse`, `schema`, `quote_in_input`, `tool_called`, `file_written`, `verdict_equals`, `no_prose`. Use `when` for checks that only apply to some outputs (for example a side effect only on a pass verdict).
+- Check types: exactly these 8 built-ins, with the params documented in the `grade.py` header: `json_parse`, `schema`, `quote_in_input`, `tool_called`, `tool_not_called`, `file_written`, `verdict_equals`, `no_prose`. Use `when` for checks that only apply to some outputs (for example a side effect only on a pass verdict).
 - If a rule cannot be expressed by a built-in, write the check with `"type": "proposed:<name>"` and a `"proposal"` string explaining the rule. Do not write grading code.
 - Where two sources disagree (for example the role file says bare JSON, a caller parses loosely), do not choose. Add an entry to `conflicts`: `{"id", "description", "options": [{"label", "check": {<full check with its own source>}}, ...]}` with at least two options.
 - Output shape: `{"agent": "<agent>", "checks": [...], "conflicts": [...]}`.

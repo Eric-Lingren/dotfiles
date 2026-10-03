@@ -18,7 +18,7 @@ SHARED_DIR = os.path.dirname(os.path.dirname(HERE))
 sys.path.insert(0, HERE)
 import grade  # noqa: E402  (shared deterministic grader)
 
-BUILTIN_TYPES = ["json_parse", "schema", "quote_in_input", "tool_called", "file_written", "verdict_equals", "no_prose"]
+BUILTIN_TYPES = ["json_parse", "schema", "quote_in_input", "tool_called", "tool_not_called", "file_written", "verdict_equals", "no_prose"]
 SOURCE_TAGS = ["role", "caller", "side_effect"]
 STAGES = ["contract", "cases", "iterate"]
 

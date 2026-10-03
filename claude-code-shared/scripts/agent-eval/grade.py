@@ -7,7 +7,7 @@ pass/fail and pass rate. Exit 0 always unless usage error.
 contract.json:
   {"agent": "...", "checks": [{"id": "...", "type": "<type>", "source": {...}, ...params}]}
 
-Built-in check types (exactly these 7):
+Built-in check types (exactly these 8):
   json_parse      final output parses as JSON (bare, or one ```json fence). param: strict (bool, bare only)
   schema          parsed output matches "schema" (JSON-Schema subset: type, required,
                   properties, items, enum, additionalProperties:false)
@@ -15,6 +15,8 @@ Built-in check types (exactly these 7):
                   input text (spawn prompt + tool results; param "input": "prompt"|"all")
   tool_called     a tool call exists: "tool" (default Bash) whose JSON args contain "match"
                   (substring) or match "regex"
+  tool_not_called no such tool call exists (same params as tool_called); use with "when"
+                  for calls forbidden on one verdict
   file_written    a file was written whose path matches "glob" (fnmatch); live runs include shim writes
                   (the temp unified-learnings.jsonl)
   verdict_equals  value at "field" equals "expected", or record["expected"][field] when
@@ -120,6 +122,22 @@ def input_text(rec, mode):
     return "\n".join(parts)
 
 
+def matching_call(c, rec, tool):
+    # live runs also carry the shim log: shimmed calls (log-learning.py, gh, child agents) grade from it
+    shimmed = [{"name": x.get("tool"), "input": x.get("input")} for x in rec.get("shim_calls", []) if x.get("input")]
+    for call in rec.get("tool_calls", []) + shimmed:
+        if call.get("name") != tool:
+            continue
+        args = json.dumps(call.get("input"), ensure_ascii=False)
+        if "match" in c and c["match"] in args:
+            return True
+        if "regex" in c and re.search(c["regex"], args):
+            return True
+        if "match" not in c and "regex" not in c:
+            return True
+    return False
+
+
 # each returns (result, detail); result True/False/None(n/a)
 def check(c, rec):
     typ = c["type"]
@@ -149,21 +167,13 @@ def check(c, rec):
         qs = [q for q in values_at(parsed, c["path"]) if isinstance(q, str)]
         bad = [q for q in qs if q not in text]
         return not bad, f"{len(bad)}/{len(qs)} quotes not in input: {bad[0][:80]!r}" if bad else ""
-    if typ == "tool_called":
+    if typ in ("tool_called", "tool_not_called"):
         tool = c.get("tool", "Bash")
-        # live runs also carry the shim log: shimmed calls (log-learning.py, gh, child agents) grade from it
-        shimmed = [{"name": x.get("tool"), "input": x.get("input")} for x in rec.get("shim_calls", []) if x.get("input")]
-        for call in rec.get("tool_calls", []) + shimmed:
-            if call.get("name") != tool:
-                continue
-            args = json.dumps(call.get("input"), ensure_ascii=False)
-            if "match" in c and c["match"] in args:
-                return True, ""
-            if "regex" in c and re.search(c["regex"], args):
-                return True, ""
-            if "match" not in c and "regex" not in c:
-                return True, ""
-        return False, f"no {tool} call matching {c.get('match') or c.get('regex')!r}"
+        pat = c.get("match") or c.get("regex")
+        found = matching_call(c, rec, tool)
+        if typ == "tool_called":
+            return found, "" if found else f"no {tool} call matching {pat!r}"
+        return not found, f"forbidden {tool} call matching {pat!r}" if found else ""
     if typ == "file_written":
         for p in rec.get("files_written", []):
             if fnmatch.fnmatch(p, c["glob"]):
