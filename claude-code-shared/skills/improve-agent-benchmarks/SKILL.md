@@ -49,7 +49,7 @@ Then continue to Step 2 unless the user holds on a stale-contract review.
 python3 ~/.dotfiles/claude-code-shared/scripts/agent-eval/bench_queue.py ensure <agent>
 ```
 
-This creates the entry at stage `contract` if missing (and adds any agent missing from the queue, so this holds even when a name was typed and the ranking step was skipped). Read the printed `stage`. If it is `contract`, run the contract stage below. Other stages are not built yet: say so and stop.
+This creates the entry at stage `contract` if missing (and adds any agent missing from the queue, so this holds even when a name was typed and the ranking step was skipped). Read the printed `stage` and run exactly that stage, then stop (one stage per invocation): `contract` runs the Contract stage below, `cases` runs the Cases stage, `iterate` runs the Iterate stage. If the preflight reported an `END STATE` (the agent is passing), say it has no failing checks and stop. After the stage finishes, run the Summary page step.
 
 ## Contract stage
 
@@ -103,7 +103,7 @@ This writes `contract.json` with a sha256 fingerprint of every cited file, saves
 <!-- cases-stage:start -->
 ## Cases stage
 
-Runs when the queue stage printed in Step 2 is `cases` (this section supersedes the "other stages are not built yet" note in Step 2). Scripts are in `~/.dotfiles/claude-code-shared/scripts/agent-eval/`. Fixtures live in `claude-code-shared/evals/<agent>/fixtures/` (gitignored); they are never committed.
+Runs when the queue stage printed in Step 2 is `cases`. Scripts are in `~/.dotfiles/claude-code-shared/scripts/agent-eval/`. Fixtures live in `claude-code-shared/evals/<agent>/fixtures/` (gitignored); they are never committed.
 
 ### 1. Import legacy cases (once, only if the agent has them)
 
