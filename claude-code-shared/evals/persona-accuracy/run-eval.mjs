@@ -184,7 +184,7 @@ function textOf(base) {
 const norm = s => String(s).replace(/\s+/g, ' ').trim();
 
 async function loadCases() {
-  return readFileSync(join(EVAL_DIR, 'cases.jsonl'), 'utf8').split('\n').filter(Boolean)
+  return readFileSync(join(EVAL_DIR, 'cases.legacy.jsonl'), 'utf8').split('\n').filter(Boolean)
     .filter(l => !ONLY || ONLY.has(JSON.parse(l).id)).map(l => {
       const c = JSON.parse(l);
       c.prompt = PROMPT('<sandbox>/seed.json', '<sandbox>/transcript.jsonl');
