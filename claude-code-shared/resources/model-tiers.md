@@ -44,7 +44,7 @@ consistency between the tier config, the frontmatter, and the registry.
 | File | Role |
 |------|------|
 | `resources/model-tiers.json` | **Source of truth.** Tier definitions + per-skill assignment + per-agent assignment + delegate list. |
-| `scripts/sync-model-tiers.py` | Stamps `model:`/`effort:` into each skill's frontmatter + `model:` into each agent's frontmatter + updates `registry.json` model fields. Injects delegation blocks into delegate-list skills. |
+| `scripts/registration/sync-model-tiers.py` | Stamps `model:`/`effort:` into each skill's frontmatter + `model:` into each agent's frontmatter + updates `registry.json` model fields. Injects delegation blocks into delegate-list skills. |
 | `.githooks/pre-commit` | Auto-runs the sync on every commit. Re-stages anything it changed. No drift, ever. |
 | `hooks/tier-advisor.sh` | `UserPromptSubmit` advisory. Nudges `/model opus` (deep) or `/model haiku` (lookup). |
 | each `skills/*/SKILL.md` | Carries explicit `model:`/`effort:` (stamped, do not hand-edit). |
@@ -54,7 +54,7 @@ consistency between the tier config, the frontmatter, and the registry.
 ## Re-tiering a skill or agent
 
 1. Edit `resources/model-tiers.json` (move a skill/agent between tiers, or change what a tier's model/effort is).
-2. `python3 ~/.dotfiles/claude-code-shared/scripts/sync-model-tiers.py --check`  (preview)
+2. `python3 ~/.dotfiles/claude-code-shared/scripts/registration/sync-model-tiers.py --check`  (preview)
 3. `... --apply`  (write).
 
 Or just edit the json and commit. The pre-commit hook applies it for you.

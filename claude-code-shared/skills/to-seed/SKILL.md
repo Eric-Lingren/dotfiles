@@ -104,7 +104,7 @@ Set `producer: "to-seed"`. Set `source: {"type": "session", "ref": null}` for fr
 
 Run this step only when a handoff path was passed in ARGUMENTS. Skip it entirely in Mode 1.
 
-1. Route the handoff path through resolve-ref.sh before reading (see `resources/resolve-ref-pattern.md`): Run `bash ~/.dotfiles/claude-code-shared/scripts/resolve-ref.sh $(basename <handoff-path>)`. On archive hit (output starts with `ARCHIVE:`), use the extracted content. On not-found (exit non-zero), surface the diagnostic and ask "Continue anyway?" — bypass rebuilds context from conversation.
+1. Route the handoff path through resolve-ref.sh before reading (see `resources/resolve-ref-pattern.md`): Run `bash ~/.dotfiles/claude-code-shared/scripts/scaffolding/resolve-ref.sh $(basename <handoff-path>)`. On archive hit (output starts with `ARCHIVE:`), use the extracted content. On not-found (exit non-zero), surface the diagnostic and ask "Continue anyway?" — bypass rebuilds context from conversation.
 2. Read the handoff doc (active path or archive content from step 1).
 3. Find the machine-readable seed-context block inside it (a fenced ```json block under a `## Seed Context` heading). Parse out `base_seed` (the path to the original seed file).
 3. Read the base seed JSON. This is the merge foundation — it carries every decision and field from the original session, so nothing from that conversation is lost.
@@ -131,11 +131,11 @@ Before spawning any persona, produce two temp files:
 
 **Cleaned transcript:**
 
-1. Resolve the session JSONL path using `$CLAUDE_CODE_SESSION_ID` and `$CLAUDE_CONFIG_DIR` (or the hook-provided `transcript_path` env var). The filter script handles resolution — see `~/.dotfiles/claude-code-shared/scripts/filter-session-transcript.sh --help`. Store the resolved session JSONL path as `RAW_TRANSCRIPT_PATH`.
+1. Resolve the session JSONL path using `$CLAUDE_CODE_SESSION_ID` and `$CLAUDE_CONFIG_DIR` (or the hook-provided `transcript_path` env var). The filter script handles resolution — see `~/.dotfiles/claude-code-shared/scripts/seed-review/filter-session-transcript.sh --help`. Store the resolved session JSONL path as `RAW_TRANSCRIPT_PATH`.
 
 2. Run:
    ```bash
-   bash ~/.dotfiles/claude-code-shared/scripts/filter-session-transcript.sh /tmp/cleaned-transcript-${CLAUDE_CODE_SESSION_ID}.jsonl
+   bash ~/.dotfiles/claude-code-shared/scripts/seed-review/filter-session-transcript.sh /tmp/cleaned-transcript-${CLAUDE_CODE_SESSION_ID}.jsonl
    ```
    Store the output path as `CLEANED_TRANSCRIPT_PATH`.
 
@@ -182,7 +182,7 @@ Each persona returns a JSON array of refutation objects (`[]` if nothing found).
 2. Write the merged list (each object including its `ref_id`) to `/tmp/refutations-${CLAUDE_CODE_SESSION_ID}.json`. Store as `REFUTATIONS_PATH`.
 3. Build the windowed evidence pack:
    ```bash
-   bash ~/.dotfiles/claude-code-shared/scripts/window-transcript-spans.sh \
+   bash ~/.dotfiles/claude-code-shared/scripts/seed-review/window-transcript-spans.sh \
      "${CLEANED_TRANSCRIPT_PATH}" "${REFUTATIONS_PATH}" \
      "/tmp/evidence-pack-${CLAUDE_CODE_SESSION_ID}.txt"
    ```
@@ -246,7 +246,7 @@ Abort is never an option. The seed is always written. If the user picks option 2
 ### 4. Write the seed file
 
 1. Derive a slug from the title (lowercase, kebab-case, max ~40 chars).
-2. Run `~/.dotfiles/claude-code-shared/scripts/doc-filename.sh <slug> json` to get the filename (`YYYYMMDD-HHMM-<slug>.json`).
+2. Run `~/.dotfiles/claude-code-shared/scripts/scaffolding/doc-filename.sh <slug> json` to get the filename (`YYYYMMDD-HHMM-<slug>.json`).
 3. Resolve the output path: `docs/seeds/<filename>`. Create `docs/seeds/` if it does not exist.
 4. Write the JSON file with all required fields including `schema_version: "4"`, `producer`, `source`, `status`, and `verification`. Never auto-commit.
 
@@ -271,7 +271,7 @@ To resolve:
 ```
 
 Then stop. If the user responds "write a handoff" (or similar), write the handoff doc:
-  1. Generate a handoff doc (same logic as `/handoff`). Save it under `docs/handoffs/` using `~/.dotfiles/claude-code-shared/scripts/doc-filename.sh <slug> md`.
+  1. Generate a handoff doc (same logic as `/handoff`). Save it under `docs/handoffs/` using `~/.dotfiles/claude-code-shared/scripts/scaffolding/doc-filename.sh <slug> md`.
   2. Frame the open threads as the explicit agenda for the next session.
   3. Name `grill-me` and `grill-with-docs` in the handoff's "suggested skills" section.
   4. Embed a machine-readable seed-context block so the Mode 2 return trip can find the base seed:
@@ -294,7 +294,7 @@ Then stop. If the user responds "write a handoff" (or similar), write the handof
 
 **If `status` is `"ready"` (open_threads empty):**
 
-Run `python3 ~/.dotfiles/claude-code-shared/scripts/print-skill-next-steps.py to-seed` and print the output as the closing suggestion. Do not use `AskUserQuestion`. Output text like:
+Run `python3 ~/.dotfiles/claude-code-shared/scripts/shared/print-skill-next-steps.py to-seed` and print the output as the closing suggestion. Do not use `AskUserQuestion`. Output text like:
 
 ```
 Seed written to docs/seeds/<filename> (status: ready)

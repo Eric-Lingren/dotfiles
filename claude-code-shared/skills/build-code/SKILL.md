@@ -31,7 +31,7 @@ Execute tasks from a `docs/tasks/` JSON file sequentially. Each AFK task is exec
 
 **Step-0 — validate input before processing:**
 ```bash
-bash ~/.dotfiles/claude-code-shared/scripts/validate-schema.sh \
+bash ~/.dotfiles/claude-code-shared/scripts/shared/validate-schema.sh \
   --instance ~/.dotfiles/claude-code-shared/contracts/task-schema.json \
   <input-path>
 ```
@@ -50,7 +50,7 @@ Always ask explicitly. Do not infer from context:
    Show every file found regardless of prefix format. Present them as numbered options with the full filename.
 2. **Which task ID?** Ask for a specific task ID (e.g. `T-0005`) or leave blank to run all `not_started` tasks in order.
 
-Route the chosen path through resolve-ref.sh before reading (see `resources/resolve-ref-pattern.md`): Run `bash ~/.dotfiles/claude-code-shared/scripts/resolve-ref.sh $(basename <path>)`. On archive hit (output starts with `ARCHIVE:`), use the extracted content. On not-found (exit non-zero), surface the diagnostic and ask "Continue anyway?" — bypass rebuilds context from conversation.
+Route the chosen path through resolve-ref.sh before reading (see `resources/resolve-ref-pattern.md`): Run `bash ~/.dotfiles/claude-code-shared/scripts/scaffolding/resolve-ref.sh $(basename <path>)`. On archive hit (output starts with `ARCHIVE:`), use the extracted content. On not-found (exit non-zero), surface the diagnostic and ask "Continue anyway?" — bypass rebuilds context from conversation.
 
 Read the chosen JSON file.
 
@@ -96,7 +96,7 @@ Reuse this same `context_brief` for every `build-runner` spawn in this run — n
 
 **Detect tooling (once for the entire run):**
 ```bash
-python3 ~/.dotfiles/claude-code-shared/scripts/tooling-detection/detect_tooling.py <project_root>
+python3 ~/.dotfiles/claude-code-shared/scripts/build/detect-tooling.py <project_root>
 ```
 Capture the JSON array as `tooling_manifest`. Reuse it for every `build-runner` spawn. Do not re-run detection per task.
 
@@ -153,7 +153,7 @@ If any task has `browser_verify`:
 
 2. **Auth ensure:** For each unique role, run:
    ```bash
-   python3 ~/.dotfiles/claude-code-shared/scripts/browser-auth.py ensure --repo <repo> --role <role>
+   python3 ~/.dotfiles/claude-code-shared/scripts/build/browser-auth.py ensure --repo <repo> --role <role>
    ```
    - Exit 0: state is fresh. Continue.
    - Exit 1 (`SKIPPED: auth_expired` in output): log which role expired. Build-code continues — browser-checker will skip affected tasks and report `status: "skipped"`. Collect expired roles in `expired_roles` for the end-of-run summary.
@@ -164,7 +164,7 @@ If any task has `browser_verify`:
    ```
    Look up the candidate server's primary port from `resources/app-launch-detection.md`. Use port `<primary_port + 1000>` as the base server's offset port. Then start the base server:
    ```bash
-   bash ~/.dotfiles/claude-code-shared/scripts/base-server.sh up "$base_sha" <project_root> <offset_port>
+   bash ~/.dotfiles/claude-code-shared/scripts/build/base-server.sh up "$base_sha" <project_root> <offset_port>
    ```
    Capture the URL printed by the script as `base_server_url` (e.g., `http://localhost:4173`).
    - If `base-server.sh up` fails (non-zero exit): set `base_server_url = null`. Note in the end-of-run summary that baselines will fall back to pre-build snapshot path.
@@ -254,7 +254,7 @@ For each task in the wave (in order):
   If this exits non-zero, the worktree branched from somewhere else (e.g. an advanced `main`). Do NOT merge, since `--no-ff` would pull in unrelated history. Cherry-pick only the task's own commits instead:
   `git cherry-pick $(git rev-list --reverse <task-worktree-branch> ^HEAD ^main)`.
   On cherry-pick conflict, run `git cherry-pick --abort` and treat it like a merge conflict (below).
-  After a clean cherry-pick that touched any `package.json`, run `python3 ~/.dotfiles/claude-code-shared/scripts/check-json-dupe-keys.py <each touched package.json>`. On non-zero exit, fix the duplicate keys and amend before the next task.
+  After a clean cherry-pick that touched any `package.json`, run `python3 ~/.dotfiles/claude-code-shared/scripts/build/check-json-dupe-keys.py <each touched package.json>`. On non-zero exit, fix the duplicate keys and amend before the next task.
   If it exits 0, confirm the worktree branch has its own commits:
   ```bash
   git log --oneline HEAD..<task-worktree-branch>
@@ -314,7 +314,7 @@ If `browser_run` is null, skip this section.
 #### a. Shut down the base server
 
 ```bash
-bash ~/.dotfiles/claude-code-shared/scripts/base-server.sh down
+bash ~/.dotfiles/claude-code-shared/scripts/build/base-server.sh down
 ```
 
 This is a best-effort call — log any errors but do not halt the run.
@@ -414,7 +414,7 @@ Next steps:
 
 Then run:
 ```bash
-python3 ~/.dotfiles/claude-code-shared/scripts/print-skill-next-steps.py build-code
+python3 ~/.dotfiles/claude-code-shared/scripts/shared/print-skill-next-steps.py build-code
 ```
 
 Append that output under the Next steps header. Do not hardcode skill names.

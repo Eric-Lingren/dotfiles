@@ -2,7 +2,7 @@
 
 **Format name:** Learning entry file (`claude-code-shared/learnings/unified-learnings.jsonl`)
 **Schema:** `contracts/learning-schema.json` (schema_version: `"2"`)
-**Writer:** `scripts/log-learning.py` — the only path for writing entries; agents never write JSONL directly.
+**Writer:** `scripts/learning/log-learning.py` — the only path for writing entries; agents never write JSONL directly.
 
 ## Producers
 

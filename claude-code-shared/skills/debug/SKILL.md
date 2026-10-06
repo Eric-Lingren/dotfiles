@@ -31,7 +31,7 @@ A discipline for hard bugs. Skip phases only when explicitly justified.
 
 **Step-0 fires only when a tasks file is actually written:**
 ```bash
-bash ~/.dotfiles/claude-code-shared/scripts/validate-schema.sh \
+bash ~/.dotfiles/claude-code-shared/scripts/shared/validate-schema.sh \
   --instance ~/.dotfiles/claude-code-shared/contracts/task-schema.json \
   <output-path>
 ```
@@ -263,9 +263,9 @@ If a seam genuinely does not exist, set the first acceptance criterion to: `"Vis
 
 If a seam exists but Phase 1 could not build a feedback loop, set the first acceptance criterion to: `"Failing test written at <path> — seam at <file:line>"` using a test you write now.
 
-**Get the next task ID:** Run `~/.dotfiles/claude-code-shared/scripts/next-task-id.sh docs/tasks/`
+**Get the next task ID:** Run `~/.dotfiles/claude-code-shared/scripts/scaffolding/next-task-id.sh docs/tasks/`
 
-**Generate the filename:** Run `~/.dotfiles/claude-code-shared/scripts/task-filename.sh debug-<slug>`
+**Generate the filename:** Run `~/.dotfiles/claude-code-shared/scripts/scaffolding/task-filename.sh debug-<slug>`
 
 Write to `docs/tasks/<filename>`.
 
@@ -292,7 +292,7 @@ Next steps:
 
 Then run:
 ```bash
-python3 ~/.dotfiles/claude-code-shared/scripts/print-skill-next-steps.py debug
+python3 ~/.dotfiles/claude-code-shared/scripts/shared/print-skill-next-steps.py debug
 ```
 
 Append that output (one `/skill — when` line per edge) under the Next steps header. Do not hardcode skill names.

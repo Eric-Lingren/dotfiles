@@ -16,7 +16,7 @@ The caller passes all context in the prompt. Expect:
 - `breadcrumb` — an array of compact receipts from previously completed tasks in this run (id, title, summary, files_touched). Use this only as background — do not re-verify or redo prior tasks.
 - `taskfile_basename` — basename of the task file (e.g. `20260709-1341-dispatch-execution-isolation.json`), used to build the log path.
 - `project_root` — absolute path to the project root.
-- `tooling_manifest` — JSON array from `detect_tooling.py`, one entry per workspace with resolved lint/format/typecheck/test/test_affected/e2e commands. Pre-computed once by build-code. Do not re-run detection.
+- `tooling_manifest` — JSON array from `detect-tooling.py`, one entry per workspace with resolved lint/format/typecheck/test/test_affected/e2e commands. Pre-computed once by build-code. Do not re-run detection.
 - `wave_base` — SHA of the shared branch tip. Your worktree must start from it.
 - `base_server_url` — URL of the shared base server (merge-base SHA) started by build-code (e.g. `http://localhost:6173`). Present only when the run has tasks with `browser_verify`.
 - `repo` — Org/Repo string for the target repo (e.g. `Eric-Lingren/SpawnedSapien`). Passed from build-code. Present when `base_server_url` is present.
@@ -38,7 +38,7 @@ The caller passes all context in the prompt. Expect:
 Run from your worktree:
 
 ```bash
-~/.dotfiles/claude-code-shared/scripts/sync-worktree-base.sh "<wave_base>"
+~/.dotfiles/claude-code-shared/scripts/build/sync-worktree-base.sh "<wave_base>"
 ```
 
 - Exit 0: continue.
@@ -48,7 +48,7 @@ Run from your worktree:
 Then install deps in the worktree. A fresh agent worktree has no `node_modules`:
 
 ```bash
-~/.dotfiles/claude-code-shared/scripts/ensure-worktree-deps.sh --quiet
+~/.dotfiles/claude-code-shared/scripts/shared/ensure-worktree-deps.sh --quiet
 ```
 
 - Exit 0: continue.
@@ -130,7 +130,7 @@ If `/tdd` cannot complete (stuck, acceptance criteria unmeetable, blocked on mis
 
 ### 3. Runner-based validation gate
 
-1. **Use the tooling manifest** passed by the caller as `tooling_manifest`. Do not run `detect_tooling.py`. The caller already ran it once for the entire run.
+1. **Use the tooling manifest** passed by the caller as `tooling_manifest`. Do not run `detect-tooling.py`. The caller already ran it once for the entire run.
 2. **Map touched workspaces** from `git diff --name-only` against the manifest's workspace roots.
 3. **Spawn all runners in a single parallel Agent call.** For each touched workspace, spawn one test-runner AND up to two lint-runners in the same Agent tool invocation:
    - One lint-runner with `check_type: "lint"` and the manifest's `lint` command (if non-null).
@@ -140,7 +140,7 @@ If `/tdd` cannot complete (stuck, acceptance criteria unmeetable, blocked on mis
 5. Append every verdict to the trace log.
 6. **Gate decision:**
    - `pass` or `warn`: continue.
-   - `deps-missing`: run `~/.dotfiles/claude-code-shared/scripts/ensure-worktree-deps.sh` once, then re-spawn only the runners that reported it. If they report `deps-missing` again, treat it as `fail`.
+   - `deps-missing`: run `~/.dotfiles/claude-code-shared/scripts/shared/ensure-worktree-deps.sh` once, then re-spawn only the runners that reported it. If they report `deps-missing` again, treat it as `fail`.
    - `fail` or `timeout`: stop. Log the violations/failures in the trace. Return a receipt with `status: "failed"`.
 
 ### 4. Browser verify (only when `task.browser_verify` is present)

@@ -111,7 +111,7 @@ Determine the output directory and file extension:
 Generate a filename:
 
 ```bash
-~/.dotfiles/claude-code-shared/scripts/doc-filename.sh <target-skill>-offload <ext>
+~/.dotfiles/claude-code-shared/scripts/scaffolding/doc-filename.sh <target-skill>-offload <ext>
 ```
 
 Write the agent's response verbatim to that path.

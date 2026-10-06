@@ -359,7 +359,7 @@ After the investigator gate, write all verified findings to a task file with `ta
 
 **ID assignment:** Call `next-task-id.sh` once to get the first available ID, then increment numerically for each additional finding:
 ```bash
-FIRST_ID=$(bash ~/.dotfiles/claude-code-shared/scripts/next-task-id.sh docs/tasks)
+FIRST_ID=$(bash ~/.dotfiles/claude-code-shared/scripts/scaffolding/next-task-id.sh docs/tasks)
 ```
 
 **Shape of each task entry** (one per verified finding):
@@ -390,10 +390,10 @@ Then call `create-task-envelope.py` to build the validated envelope:
 ```bash
 # Generate the task file slug
 SLUG="pr-review"
-FILENAME=$(bash ~/.dotfiles/claude-code-shared/scripts/task-filename.sh "$SLUG")
+FILENAME=$(bash ~/.dotfiles/claude-code-shared/scripts/scaffolding/task-filename.sh "$SLUG")
 
 # Build the envelope (validates against task-schema.json automatically)
-python3 ~/.dotfiles/claude-code-shared/scripts/create-task-envelope.py \
+python3 ~/.dotfiles/claude-code-shared/scripts/scaffolding/create-task-envelope.py \
   --producer pr-code-review \
   --source-type session \
   --strategy per-task \
@@ -473,7 +473,7 @@ Posted bodies use a plain-text label (`bug:`, `risk:`, `q:`, `nit -`). Praise ha
 Write each `body` in the Step 1a voice. Then post with no `--summary`:
 
 ```bash
-python3 ~/.dotfiles/claude-code-shared/scripts/post-pr-review.py \
+python3 ~/.dotfiles/claude-code-shared/scripts/egress/post-pr-review.py \
   --pr <number> \
   --findings /tmp/pr-review-comments.json
 ```

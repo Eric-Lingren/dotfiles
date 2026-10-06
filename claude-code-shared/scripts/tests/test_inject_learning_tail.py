@@ -10,7 +10,7 @@ import tempfile
 import pytest
 
 SHARED = pathlib.Path(__file__).resolve().parents[3] / "claude-code-shared"
-INJECTOR = SHARED / "scripts" / "inject-learning-tail.py"
+INJECTOR = SHARED / "scripts" / "learning" / "inject-learning-tail.py"
 PIPELINE_FILE = SHARED / "skill-pipeline.json"
 SKILLS_DIR = SHARED / "skills"
 

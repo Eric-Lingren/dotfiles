@@ -53,14 +53,14 @@ Ordered discovery:
 
 ## 3. storageState path
 
-Storage state is always obtained via `scripts/browser-auth.py`. Do not probe filesystem paths directly.
+Storage state is always obtained via `scripts/build/browser-auth.py`. Do not probe filesystem paths directly.
 
 The `role` comes from the Check Spec's `role` field (e.g. `admin`, `firm`, `anonymous`). For `anonymous` checks, skip this step — no storage state is needed.
 
 For all other roles, run:
 
 ```bash
-python3 ~/.dotfiles/claude-code-shared/scripts/browser-auth.py ensure \
+python3 ~/.dotfiles/claude-code-shared/scripts/build/browser-auth.py ensure \
   --repo "<Org/Repo>" \
   --role "<role>"
 ```
@@ -94,7 +94,7 @@ When a Base server (serving the merge-base SHA) is needed alongside the Candidat
 | 3000 (Next.js / CRA / Express default) | 4000 |
 | 8000 | 9000 |
 
-The Base server URL becomes `base_server_url` in the browser-checker agent's input. Health-poll this URL before spawning the browser-checker (use the same polling logic as the Caller responsibilities section: `curl`, 60 s cap). Manage the Base server lifecycle via `~/.dotfiles/claude-code-shared/scripts/base-server.sh`.
+The Base server URL becomes `base_server_url` in the browser-checker agent's input. Health-poll this URL before spawning the browser-checker (use the same polling logic as the Caller responsibilities section: `curl`, 60 s cap). Manage the Base server lifecycle via `~/.dotfiles/claude-code-shared/scripts/build/base-server.sh`.
 
 The Base server is needed only when `base_server_url` is passed to the browser-checker. The debug skill (diagnostic use) omits `base_server_url` and performs candidate-only checks.
 

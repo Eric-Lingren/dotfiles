@@ -15,11 +15,11 @@ import sys
 import pytest
 
 SCRIPTS = pathlib.Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(SCRIPTS))
+sys.path.insert(0, str(SCRIPTS / "dependency-graph"))
 
 import claude_tooling_extractor as extractor  # noqa: E402
 
-SCANNER = SCRIPTS / "scanner.py"
+SCANNER = SCRIPTS / "dependency-graph" / "scanner.py"
 
 
 def build_repo(root, agents=(), scripts=()):

@@ -17,7 +17,7 @@ Convert a `docs/tasks/` JSON file into Linear tickets. Creates one issue per tas
 
 **Step-0 — validate input before processing:**
 ```bash
-bash ~/.dotfiles/claude-code-shared/scripts/validate-schema.sh \
+bash ~/.dotfiles/claude-code-shared/scripts/shared/validate-schema.sh \
   --instance ~/.dotfiles/claude-code-shared/contracts/task-schema.json \
   <input-path>
 ```

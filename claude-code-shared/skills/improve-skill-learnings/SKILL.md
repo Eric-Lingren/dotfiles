@@ -286,13 +286,13 @@ Return ONLY the JSON object. No prose.
 - **`stale` or `invalid`:** Run update-learning.py to mark it. Print a one-line
   note. Remove from the picker list. Return to Step 5.
   ```bash
-  python3 ~/.dotfiles/claude-code-shared/scripts/update-learning.py \
+  python3 ~/.dotfiles/claude-code-shared/scripts/learning/update-learning.py \
     --id <id> --status <stale|invalid>
   ```
 - **`misrouted`:** Retarget via update-learning.py (status stays `captured`).
   Print a one-line note. Remove from the picker list. Return to Step 5.
   ```bash
-  python3 ~/.dotfiles/claude-code-shared/scripts/update-learning.py \
+  python3 ~/.dotfiles/claude-code-shared/scripts/learning/update-learning.py \
     --id <id> \
     --improves <suggested_improves> \
     --improves-type <suggested_improves_type>
@@ -300,7 +300,7 @@ Return ONLY the JSON object. No prose.
 - **`no_applicable_target`:** No file owns the fix. Mark it `invalid`. Print a
   one-line note. Remove from the picker list. Return to Step 5.
   ```bash
-  python3 ~/.dotfiles/claude-code-shared/scripts/update-learning.py \
+  python3 ~/.dotfiles/claude-code-shared/scripts/learning/update-learning.py \
     --id <id> --status invalid
   ```
 - **Malformed verdict:** Read its prose. If it names another owner, handle as
@@ -439,7 +439,7 @@ the backlog for a later run). Jump back to Step 5 with the remaining list.
 Mark the learning as applied:
 
 ```bash
-python3 ~/.dotfiles/claude-code-shared/scripts/update-learning.py \
+python3 ~/.dotfiles/claude-code-shared/scripts/learning/update-learning.py \
   --id <id> --status applied
 ```
 

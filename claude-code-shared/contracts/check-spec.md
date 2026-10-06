@@ -18,7 +18,7 @@ Check Specs are ephemeral. They live in excluded `docs/browser-checks/` scaffold
 
 ## Consumers
 
-- `scripts/browser-verify.mjs` — executes the spec against a given `base_url` and `storageState`
+- `scripts/build/browser-verify.mjs` — executes the spec against a given `base_url` and `storageState`
 - `browser-checker` agent — orchestrates `browser-verify.mjs` for Baseline and Candidate and assembles the `browser-check-result` v2
 - `visual-judge` agent — receives the spec's `expected_visual_change` field to apply the zero-diff shortcut
 

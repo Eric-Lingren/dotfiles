@@ -8,7 +8,7 @@
 set -uo pipefail
 
 SCRIPTS_DIR="$(cd "$(dirname "$0")/.." && pwd)"
-SCRIPT="$SCRIPTS_DIR/fetch-github-standup.sh"
+SCRIPT="$SCRIPTS_DIR/standup/fetch-github-standup.sh"
 FIXTURES="$(dirname "$0")/fixtures/fetch-github-standup"
 
 PASS=0

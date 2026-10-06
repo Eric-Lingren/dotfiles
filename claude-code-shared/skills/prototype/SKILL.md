@@ -17,7 +17,7 @@ A prototype is **throwaway code that answers a question**.
 
 **Step-0 fires only when a seed file is chosen:**
 ```bash
-bash ~/.dotfiles/claude-code-shared/scripts/validate-schema.sh \
+bash ~/.dotfiles/claude-code-shared/scripts/shared/validate-schema.sh \
   --instance ~/.dotfiles/claude-code-shared/contracts/seed-schema.json \
   <output-path>
 ```
@@ -26,7 +26,7 @@ On non-zero exit: STOP. Report stderr to the user. Do not write the file. It sit
 ## Setup
 
 1. **Derive a slug** from the feature or question being explored. Lowercase, kebab-case, max ~40 chars (e.g. `cart-state-model`).
-2. **Determine the output filename** by running `~/.dotfiles/claude-code-shared/scripts/doc-filename.sh <slug> md`. This produces `YYYYMMDD-HHMM-<slug>.md`.
+2. **Determine the output filename** by running `~/.dotfiles/claude-code-shared/scripts/scaffolding/doc-filename.sh <slug> md`. This produces `YYYYMMDD-HHMM-<slug>.md`.
 3. **Create a local git branch**: `prototype/proto-<slug>`. Never push this git branch. Never PR it. It is local scaffolding only. See `branching-strategy.md` for the local-only prefix contract.
 4. **Pick a mode** (see below).
 

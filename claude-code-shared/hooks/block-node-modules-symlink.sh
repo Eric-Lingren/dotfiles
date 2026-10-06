@@ -21,7 +21,7 @@ if [ -n "$MATCHED" ]; then
   echo "" >&2
   echo "Worktrees need their own node_modules. Run this instead:" >&2
   echo "" >&2
-  echo "  ~/.dotfiles/claude-code-shared/scripts/ensure-worktree-deps.sh [worktree-path]" >&2
+  echo "  ~/.dotfiles/claude-code-shared/scripts/shared/ensure-worktree-deps.sh [worktree-path]" >&2
   exit 2
 fi
 

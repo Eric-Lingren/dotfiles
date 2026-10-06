@@ -276,8 +276,8 @@ precmd_functions+=(_fix_cursor)
 
 
 # Weekly Claude Code usage digest nudge (once per new report). Re-read: ccusage
-[[ -f ~/.dotfiles/claude-code-shared/scripts/cc-usage-nudge.sh ]] && \
-  source ~/.dotfiles/claude-code-shared/scripts/cc-usage-nudge.sh
+[[ -f ~/.dotfiles/claude-code-shared/scripts/usage/cc-usage-nudge.sh ]] && \
+  source ~/.dotfiles/claude-code-shared/scripts/usage/cc-usage-nudge.sh
 
 
 # ─────────────────────────────────────────#

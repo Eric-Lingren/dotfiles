@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
-detect_tooling.py: Scan a repo and emit a JSON tooling manifest.
+detect-tooling.py: Scan a repo and emit a JSON tooling manifest.
 
-Usage: python detect_tooling.py <repo_root>
+Usage: python detect-tooling.py <repo_root>
 
 Output: JSON array, one entry per detected workspace, each with resolved
 lint / format / typecheck / test / e2e commands (or null when absent).
@@ -298,7 +298,7 @@ def scan(root: Path) -> list[dict]:
 
 def main() -> None:
     if len(sys.argv) < 2:
-        print("Usage: detect_tooling.py <repo_root>", file=sys.stderr)
+        print("Usage: detect-tooling.py <repo_root>", file=sys.stderr)
         sys.exit(1)
 
     root = Path(sys.argv[1]).resolve()

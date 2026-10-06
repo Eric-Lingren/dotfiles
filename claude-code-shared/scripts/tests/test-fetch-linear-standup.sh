@@ -4,7 +4,7 @@
 set -euo pipefail
 
 SCRIPTS_DIR="$(cd "$(dirname "$0")/.." && pwd)"
-SCRIPT="$SCRIPTS_DIR/fetch-linear-standup.sh"
+SCRIPT="$SCRIPTS_DIR/standup/fetch-linear-standup.sh"
 
 TMP=$(mktemp -d)
 PASS=0

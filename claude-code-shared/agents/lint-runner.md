@@ -14,7 +14,7 @@ Your verdict MUST include `"schema_version": "1"` as a top-level field. Before r
 ```bash
 echo '<your-json>' | python3 -c "import sys,json; json.load(sys.stdin)" && \
   printf '%s' '<your-json>' > /tmp/lint-verdict.json && \
-  bash ~/.dotfiles/claude-code-shared/scripts/validate-schema.sh \
+  bash ~/.dotfiles/claude-code-shared/scripts/shared/validate-schema.sh \
     --instance ~/.dotfiles/claude-code-shared/contracts/runner-result-schema.json \
     /tmp/lint-verdict.json
 ```

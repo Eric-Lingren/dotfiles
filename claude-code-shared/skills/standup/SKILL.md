@@ -15,7 +15,7 @@ Generate a standup report from today's GitHub PR and Linear ticket data.
 ### 1. Resolve the standups directory
 
 ```bash
-STANDUPS_DIR=$(bash ~/.dotfiles/claude-code-shared/scripts/resolve-standups-dir.sh)
+STANDUPS_DIR=$(bash ~/.dotfiles/claude-code-shared/scripts/standup/resolve-standups-dir.sh)
 ```
 
 If the script exits non-zero, print its stderr hint and stop.
@@ -23,7 +23,7 @@ If the script exits non-zero, print its stderr hint and stop.
 ### 2. Fetch GitHub PR data
 
 ```bash
-GH_JSON=$(bash ~/.dotfiles/claude-code-shared/scripts/fetch-github-standup.sh)
+GH_JSON=$(bash ~/.dotfiles/claude-code-shared/scripts/standup/fetch-github-standup.sh)
 ```
 
 Extract `key_ids` (a JSON array of Linear KEY strings):
@@ -35,7 +35,7 @@ KEY_IDS=$(echo "$GH_JSON" | python3 -c "import json,sys; print(','.join(json.loa
 ### 3. Fetch Linear ticket data
 
 ```bash
-LINEAR_JSON=$(bash ~/.dotfiles/claude-code-shared/scripts/fetch-linear-standup.sh "$KEY_IDS")
+LINEAR_JSON=$(bash ~/.dotfiles/claude-code-shared/scripts/standup/fetch-linear-standup.sh "$KEY_IDS")
 ```
 
 ### 4. Build structured standup data
@@ -46,7 +46,7 @@ Write the JSON inputs to temp files, then run:
 TMP=$(mktemp -d)
 echo "$GH_JSON"     > "$TMP/github.json"
 echo "$LINEAR_JSON" > "$TMP/linear.json"
-DATA_JSON=$(bash ~/.dotfiles/claude-code-shared/scripts/build-standup-data.sh \
+DATA_JSON=$(bash ~/.dotfiles/claude-code-shared/scripts/standup/build-standup-data.sh \
   "$TMP/linear.json" "$TMP/github.json" \
   --standups-dir "$STANDUPS_DIR")
 ```
@@ -96,7 +96,7 @@ Write `prose.json` to a scratch path, e.g. `/tmp/standup-prose-YYYYMMDD.json`.
 ### 6. Render the report
 
 ```bash
-REPORT=$(bash ~/.dotfiles/claude-code-shared/scripts/render-standup.sh \
+REPORT=$(bash ~/.dotfiles/claude-code-shared/scripts/standup/render-standup.sh \
   "$TMP/data.json" "/tmp/standup-prose-YYYYMMDD.json")
 ```
 
@@ -109,7 +109,7 @@ Print `$REPORT` verbatim (the full markdown report).
 ### 8. Save to standups directory
 
 ```bash
-bash ~/.dotfiles/claude-code-shared/scripts/resolve-standups-dir.sh --ensure
+bash ~/.dotfiles/claude-code-shared/scripts/standup/resolve-standups-dir.sh --ensure
 TODAY=$(date +%Y-%m-%d)
 echo "$REPORT" > "$STANDUPS_DIR/$TODAY.md"
 echo "Saved to $STANDUPS_DIR/$TODAY.md"

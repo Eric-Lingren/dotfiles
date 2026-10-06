@@ -40,7 +40,7 @@ This prints the full grouped file list and a total to the terminal.
 Run the lineage scanner to get a complete chain map in one call — do NOT read seed/task/handoff files individually during the scan phase:
 
 ```bash
-python3 ~/.dotfiles/claude-code-shared/scripts/lineage-scan.py --root <project-root>
+python3 ~/.dotfiles/claude-code-shared/scripts/scaffolding/lineage-scan.py --root <project-root>
 ```
 
 Use the JSON output for all chain traversal. The output shape is:

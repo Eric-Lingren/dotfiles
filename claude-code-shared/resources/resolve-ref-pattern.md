@@ -11,7 +11,7 @@ Before reading any docs/ file argument, route its basename through `resolve-ref.
 
 ```bash
 BASENAME=$(basename <path>)
-bash ~/.dotfiles/claude-code-shared/scripts/resolve-ref.sh "$BASENAME"
+bash ~/.dotfiles/claude-code-shared/scripts/scaffolding/resolve-ref.sh "$BASENAME"
 ```
 
 ## Outcomes

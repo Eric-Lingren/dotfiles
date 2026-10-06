@@ -9,7 +9,7 @@ import json
 import sys
 from pathlib import Path
 
-PIPELINE = Path(__file__).parent.parent / "skill-pipeline.json"
+PIPELINE = Path(__file__).parents[2] / "skill-pipeline.json"
 
 
 def main() -> None:

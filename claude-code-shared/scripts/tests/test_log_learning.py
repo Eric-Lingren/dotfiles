@@ -13,7 +13,7 @@ import pytest
 DOTFILES = pathlib.Path(__file__).resolve().parents[3]
 SHARED = DOTFILES / "claude-code-shared"
 SCHEMA = SHARED / "contracts" / "learning-schema.json"
-LOG_LEARNING = SHARED / "scripts" / "log-learning.py"
+LOG_LEARNING = SHARED / "scripts" / "learning" / "log-learning.py"
 LEARNINGS_DIR = SHARED / "learnings"
 
 MINIMAL_SELF = {

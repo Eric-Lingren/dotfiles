@@ -41,7 +41,7 @@ Do not judge a quote by reading the file and comparing by eye. One changed word 
 Run the check script once on the whole record. Paste the draft record from `## Draft attribution record` unchanged. The script reads each quote from the record itself; never type a quote or file text into the check.
 
 ```bash
-python3 ~/.dotfiles/claude-code-shared/scripts/check-anchors.py <<'JSON'
+python3 ~/.dotfiles/claude-code-shared/scripts/learning/check-anchors.py <<'JSON'
 <draft record JSON exactly as given>
 JSON
 ```
@@ -85,7 +85,7 @@ A missing file is not a fabrication. If the check prints `MISSING` (or `ref` can
 You must call `log-learning.py`. A `pass` reply without `write_exit` and `write_output` loses the record. Call it with the draft record (minus server-injected fields: schema_version, id, timestamp — the writer injects those):
 
 ```bash
-python ~/.dotfiles/claude-code-shared/scripts/log-learning.py <<'JSON'
+python ~/.dotfiles/claude-code-shared/scripts/learning/log-learning.py <<'JSON'
 <draft JSON without schema_version/id/timestamp>
 JSON
 ```

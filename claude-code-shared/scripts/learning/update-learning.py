@@ -29,11 +29,11 @@ import tempfile
 
 
 SCRIPT_DIR = pathlib.Path(__file__).resolve().parent
-CONTRACTS_DIR = SCRIPT_DIR.parent / "contracts"
+CONTRACTS_DIR = SCRIPT_DIR.parents[1] / "contracts"
 SCHEMA_PATH = CONTRACTS_DIR / "learning-schema.json"
 
 _dest_override = os.environ.get("LOG_LEARNING_DEST")
-LEARNINGS_DIR = pathlib.Path(_dest_override) if _dest_override else SCRIPT_DIR.parent / "learnings"
+LEARNINGS_DIR = pathlib.Path(_dest_override) if _dest_override else SCRIPT_DIR.parents[1] / "learnings"
 
 
 def _get_enum(field):

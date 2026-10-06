@@ -32,7 +32,7 @@ each outcome (posted / skipped / failed / copy-only) and prints a result summary
 
 **Step-0 — validate input before processing:**
 ```bash
-bash ~/.dotfiles/claude-code-shared/scripts/validate-schema.sh \
+bash ~/.dotfiles/claude-code-shared/scripts/shared/validate-schema.sh \
   --instance ~/.dotfiles/claude-code-shared/contracts/task-schema.json \
   <input-path>
 ```

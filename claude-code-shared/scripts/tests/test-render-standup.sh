@@ -9,7 +9,7 @@
 set -uo pipefail
 
 SCRIPTS_DIR="$(cd "$(dirname "$0")/.." && pwd)"
-SCRIPT="$SCRIPTS_DIR/render-standup.sh"
+SCRIPT="$SCRIPTS_DIR/standup/render-standup.sh"
 FIXTURES="$(dirname "$0")/fixtures/standup"
 
 DATA_FIXTURE="$FIXTURES/data.json"

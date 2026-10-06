@@ -67,7 +67,7 @@ seed_path: <absolute path to the seed JSON file produced in step 3a>
 The cleaned transcript is produced by running:
 
 ```bash
-bash ~/.dotfiles/claude-code-shared/scripts/filter-session-transcript.sh <output-path>
+bash ~/.dotfiles/claude-code-shared/scripts/seed-review/filter-session-transcript.sh <output-path>
 ```
 
 before spawning any persona. The path is reused for all personas and all judge instances in the same verification run. The orchestrator is responsible for:

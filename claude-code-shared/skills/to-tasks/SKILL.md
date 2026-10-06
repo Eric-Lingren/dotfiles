@@ -19,7 +19,7 @@ When input is a seed file (`.json`), apply Step-0a directly. When input is an HT
 
 **Step-0a — validate seed input before processing:**
 ```bash
-bash ~/.dotfiles/claude-code-shared/scripts/validate-schema.sh \
+bash ~/.dotfiles/claude-code-shared/scripts/shared/validate-schema.sh \
   --instance ~/.dotfiles/claude-code-shared/contracts/seed-schema.json \
   <seed-path-or-extracted-json>
 ```
@@ -31,7 +31,7 @@ Gate is deterministic:
 
 **Step-0b — validate task output after writing:**
 ```bash
-bash ~/.dotfiles/claude-code-shared/scripts/validate-schema.sh \
+bash ~/.dotfiles/claude-code-shared/scripts/shared/validate-schema.sh \
   --instance ~/.dotfiles/claude-code-shared/contracts/task-schema.json \
   <output-path>
 ```
@@ -49,7 +49,7 @@ Otherwise, list all available source files and ask the user to choose. Never aut
 
 Show all files found across both directories as a numbered list.
 
-Route the path through resolve-ref.sh before reading (see `resources/resolve-ref-pattern.md`): Run `bash ~/.dotfiles/claude-code-shared/scripts/resolve-ref.sh $(basename <path>)`. On archive hit (output starts with `ARCHIVE:`), use the extracted content in place of the file. On not-found (exit non-zero), surface the diagnostic and ask "Continue anyway?" — bypass rebuilds context from conversation.
+Route the path through resolve-ref.sh before reading (see `resources/resolve-ref-pattern.md`): Run `bash ~/.dotfiles/claude-code-shared/scripts/scaffolding/resolve-ref.sh $(basename <path>)`. On archive hit (output starts with `ARCHIVE:`), use the extracted content in place of the file. On not-found (exit non-zero), surface the diagnostic and ask "Continue anyway?" — bypass rebuilds context from conversation.
 
 Run `~/.dotfiles/claude-code-shared/skills/to-tasks/scripts/extract-prd-json.sh <path>` on the selected file to extract and validate the JSON. Use that output as the primary source. Do NOT use inline python or other ad-hoc extraction. The script handles `.html`, `.md`, and `.json` files.
 
@@ -290,7 +290,7 @@ Check `~/.dotfiles/claude-code-shared/resources/hitl-steps-runbooks.md` for exis
 
 ### 4. Determine the next task ID
 
-Run `~/.dotfiles/claude-code-shared/scripts/next-task-id.sh docs/tasks/` to get the next available ID. The script scans all JSON files in the directory and returns the next globally unique ID.
+Run `~/.dotfiles/claude-code-shared/scripts/scaffolding/next-task-id.sh docs/tasks/` to get the next available ID. The script scans all JSON files in the directory and returns the next globally unique ID.
 
 ### 5. Derive branch name
 
@@ -308,7 +308,7 @@ Record in the JSON: `{"strategy": "single", "branch": "{confirmed-name}"}`.
 
 Derive the slug from the source artifact filename by stripping the leading timestamp prefix and extension (e.g. `20260511-1423-user-auth-flow.json` → slug `user-auth-flow`). The timestamp prefix format is `YYYYMMDD-HHMM-`.
 
-Run `~/.dotfiles/claude-code-shared/scripts/task-filename.sh <slug>` to generate the filename.
+Run `~/.dotfiles/claude-code-shared/scripts/scaffolding/task-filename.sh <slug>` to generate the filename.
 
 If a file for this slug already exists (any prefix), ask the user whether to:
 - **Overwrite** — replace the file entirely with the new breakdown (re-scan all other files to find the next task ID, excluding this file; keep the existing filename prefix)
@@ -330,7 +330,7 @@ python3 -c "import json; json.dump(tasks_array, open('/tmp/to-tasks-tasks.json',
 python3 -c "import json; json.dump(follow_ups_array, open('/tmp/to-tasks-followups.json','w'), indent=2)"
 
 # Build the envelope (validates against task-schema.json automatically)
-python3 ~/.dotfiles/claude-code-shared/scripts/create-task-envelope.py \
+python3 ~/.dotfiles/claude-code-shared/scripts/scaffolding/create-task-envelope.py \
   --producer to-tasks \
   --source-type <seed|prd> \
   --source-ref "<basename>" \
@@ -349,7 +349,7 @@ After writing, output a single line:
 docs created here: docs/tasks/<filename>
 ```
 
-Run `python3 ~/.dotfiles/claude-code-shared/scripts/print-skill-next-steps.py to-tasks` and print the output as the closing suggestion. Output text like:
+Run `python3 ~/.dotfiles/claude-code-shared/scripts/shared/print-skill-next-steps.py to-tasks` and print the output as the closing suggestion. Output text like:
 
 ```
 docs created here: docs/tasks/<filename>

@@ -9,13 +9,13 @@ invokedBy: human
 ## Contract
 
 **Consumes:** seed file — see `contracts/seed-contract.md` (schema_version: `"2"`)
-**Produces:** HTML PRD (`docs/prd/<filename>`, filename via `scripts/doc-filename.sh <slug> html`)
+**Produces:** HTML PRD (`docs/prd/<filename>`, filename via `scripts/scaffolding/doc-filename.sh <slug> html`)
 
 The HTML PRD embeds the seed JSON verbatim. `to-tasks` can read the HTML PRD as an alternate input via `scripts/extract-prd-json.sh`, making the chain `seed → HTML PRD → tasks` valid.
 
 **Step-0 — validate seed input before processing:**
 ```bash
-bash ~/.dotfiles/claude-code-shared/scripts/validate-schema.sh \
+bash ~/.dotfiles/claude-code-shared/scripts/shared/validate-schema.sh \
   --instance ~/.dotfiles/claude-code-shared/contracts/seed-schema.json \
   <input-path>
 ```
@@ -33,7 +33,7 @@ If a seed path was passed as an argument (e.g. `/to-spec docs/seeds/20260602-123
 
 Otherwise, list `docs/seeds/*.json` and ask the user to choose one.
 
-Route the seed path through resolve-ref.sh before reading (see `resources/resolve-ref-pattern.md`): Run `bash ~/.dotfiles/claude-code-shared/scripts/resolve-ref.sh $(basename <seed-path>)`. On archive hit (output starts with `ARCHIVE:`), use the extracted content in place of the file. On not-found (exit non-zero), surface the diagnostic and ask "Continue anyway?" — bypass rebuilds context from conversation.
+Route the seed path through resolve-ref.sh before reading (see `resources/resolve-ref-pattern.md`): Run `bash ~/.dotfiles/claude-code-shared/scripts/scaffolding/resolve-ref.sh $(basename <seed-path>)`. On archive hit (output starts with `ARCHIVE:`), use the extracted content in place of the file. On not-found (exit non-zero), surface the diagnostic and ask "Continue anyway?" — bypass rebuilds context from conversation.
 
 Run `~/.dotfiles/claude-code-shared/skills/to-tasks/scripts/extract-prd-json.sh <seed-path>` to validate and read the seed JSON (use active path or write archive content to a temp file if archived). Fail if the script exits non-zero.
 
@@ -74,7 +74,7 @@ If the user picks **1**, continue on the current branch.
 
 ### 4. Determine the output filename
 
-Derive the slug from `seed.slug`. Run `~/.dotfiles/claude-code-shared/scripts/doc-filename.sh <slug> html` to get `YYYYMMDD-HHMM-{slug}.html`.
+Derive the slug from `seed.slug`. Run `~/.dotfiles/claude-code-shared/scripts/scaffolding/doc-filename.sh <slug> html` to get `YYYYMMDD-HHMM-{slug}.html`.
 
 Resolve the absolute path of `docs/prd/` relative to the current working directory. Create it if it doesn't exist.
 

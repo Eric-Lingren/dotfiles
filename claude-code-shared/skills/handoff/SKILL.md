@@ -12,7 +12,7 @@ Write a handoff document summarising the current conversation so a fresh agent c
 Name the file by running:
 
 ```bash
-~/.dotfiles/claude-code-shared/scripts/doc-filename.sh <slug> md
+~/.dotfiles/claude-code-shared/scripts/scaffolding/doc-filename.sh <slug> md
 ```
 
 Where `<slug>` is a short kebab-case description of the work (e.g. `auth-refactor`). The output is `YYYYMMDD-HHMM-<slug>.md`.

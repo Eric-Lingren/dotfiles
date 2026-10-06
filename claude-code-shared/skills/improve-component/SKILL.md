@@ -31,7 +31,7 @@ Analyze specific files or components for modularity, reusability, and hygiene. P
 
 **Step-0 — validate output before returning:**
 ```bash
-bash ~/.dotfiles/claude-code-shared/scripts/validate-schema.sh \
+bash ~/.dotfiles/claude-code-shared/scripts/shared/validate-schema.sh \
   --instance ~/.dotfiles/claude-code-shared/contracts/task-schema.json \
   <output-path>
 ```
@@ -287,7 +287,7 @@ If single: ask "Branch name?" and suggest `refactor/<component-slug>-improvement
 
 See `~/.dotfiles/claude-code-shared/resources/branching-strategy.md` for branch naming rules, derivation format, and JSON recording format.
 
-**Step 7b: Write the file.** Run `~/.dotfiles/claude-code-shared/scripts/next-task-id.sh docs/tasks/` and `~/.dotfiles/claude-code-shared/scripts/task-filename.sh improve-<component-slug>`.
+**Step 7b: Write the file.** Run `~/.dotfiles/claude-code-shared/scripts/scaffolding/next-task-id.sh docs/tasks/` and `~/.dotfiles/claude-code-shared/scripts/scaffolding/task-filename.sh improve-<component-slug>`.
 
 Write one task per approved finding (or group tightly coupled findings into one task with compound acceptance criteria). Each task must be self-contained. Embed the specific file path, line numbers, principle violated, and exact fix approach in the description.
 
@@ -320,7 +320,7 @@ Next steps:
 
 Then run:
 ```bash
-python3 ~/.dotfiles/claude-code-shared/scripts/print-skill-next-steps.py improve-component
+python3 ~/.dotfiles/claude-code-shared/scripts/shared/print-skill-next-steps.py improve-component
 ```
 
 Append that output under the Next steps header. Do not hardcode skill names. Do not invoke `/tdd` directly. Do not make any code changes. All execution happens in `/dispatch-tasks`.

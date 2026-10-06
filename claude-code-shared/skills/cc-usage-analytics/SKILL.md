@@ -12,15 +12,15 @@ not the raw dump.
 
 ## Commands
 
-Benchmark (`scripts/cc-usage-benchmark.py`):
-- Full report, both profiles: `python3 ~/.dotfiles/claude-code-shared/scripts/cc-usage-benchmark.py`
+Benchmark (`scripts/usage/cc-usage-benchmark.py`):
+- Full report, both profiles: `python3 ~/.dotfiles/claude-code-shared/scripts/usage/cc-usage-benchmark.py`
 - One profile: add `--profile office` or `--profile personal`
 - Weekly model trend (mix + est cost): append `--trend`
 - Tier adherence (expected vs actual model per skill): append `--adherence`
 - Per-skill wall-clock latency + parallelism shape: append `--latency` (add `--min-n 3` to drop rare skills)
 
-Weekly report (`scripts/weekly-usage-report.sh`):
-- Regenerate now: `bash ~/.dotfiles/claude-code-shared/scripts/weekly-usage-report.sh`
+Weekly report (`scripts/usage/weekly-usage-report.sh`):
+- Regenerate now: `bash ~/.dotfiles/claude-code-shared/scripts/usage/weekly-usage-report.sh`
 - Latest saved report: read the newest file in `~/.cache/cc-usage-reports/usage-*.txt`
 - Auto-runs Mondays 9am via launchd (`com.ericlingren.cc-usage-report`)
 
@@ -41,7 +41,7 @@ Weekly report (`scripts/weekly-usage-report.sh`):
 
 If the data suggests a skill or agent should move tiers:
 1. Edit `~/.dotfiles/claude-code-shared/resources/model-tiers.json` (skills map for skills, agents map for agents).
-2. `python3 ~/.dotfiles/claude-code-shared/scripts/sync-model-tiers.py --apply`
+2. `python3 ~/.dotfiles/claude-code-shared/scripts/registration/sync-model-tiers.py --apply`
 3. Full tiering docs: `~/.dotfiles/claude-code-shared/resources/model-tiers.md`
 
 ## Notes

@@ -97,12 +97,12 @@ Fire both in the same turn — they are independent:
 
 **Scanner** (Bash) — run with the extractor chosen in step 1:
 ```bash
-python3 ~/.dotfiles/claude-code-shared/scripts/scanner.py --extractor <claude-tooling|generic-code> [root] --out /tmp/graph-<slug>.json
+python3 ~/.dotfiles/claude-code-shared/scripts/dependency-graph/scanner.py --extractor <claude-tooling|generic-code> [root] --out /tmp/graph-<slug>.json
 ```
 
 Wait for both to complete, then capture the reference-integrity baseline:
 ```bash
-python3 ~/.dotfiles/claude-code-shared/scripts/scanner.py --check [--extractor <name>] [root]
+python3 ~/.dotfiles/claude-code-shared/scripts/dependency-graph/scanner.py --check [--extractor <name>] [root]
 ```
 
 Use `vocabulary` terms from context-loader throughout your analysis and candidate write-ups — name clusters and proposed destinations the way the project's own `CONTEXT.md` names its nouns (e.g. this repo's own vocabulary: Skill, Agent, Contract, Hook, Resource, Registry, Pipeline stage, Tier), not generic architecture jargon. From `adrs[]`, deep-read the full text of any ADR relevant to the area you're analyzing via its `path` — a decision recorded there is not up for re-litigation. Do not glob `docs/adr/` directly.
@@ -119,7 +119,7 @@ new candidates.
 Pipe the graph into the findings engine:
 
 ```bash
-python3 ~/.dotfiles/claude-code-shared/scripts/dependency-graph-findings.py /tmp/graph-<slug>.json --out /tmp/findings-<slug>.json
+python3 ~/.dotfiles/claude-code-shared/scripts/dependency-graph/dependency-graph-findings.py /tmp/graph-<slug>.json --out /tmp/findings-<slug>.json
 ```
 
 Read [resources/LITMUS.md](resources/LITMUS.md)'s "Known non-findings" section before
@@ -132,7 +132,7 @@ inconsistencies the edge graph can't see (see the "SHAPE — a companion finding
 note above):
 
 ```bash
-python3 ~/.dotfiles/claude-code-shared/scripts/scanner.py --consistency [root] --out /tmp/shape-<slug>.json
+python3 ~/.dotfiles/claude-code-shared/scripts/dependency-graph/scanner.py --consistency [root] --out /tmp/shape-<slug>.json
 ```
 
 This is advisory (always exits 0). Its `findings[]` share the same shape as the litmus
@@ -202,7 +202,7 @@ This skill's output is a plan, not a diff. When the grilling loop settles:
 3. Explicitly note, as part of what gets captured (so it survives into
    `implementation_decisions` or equivalent): **every reorg task that `to-tasks` later
    generates from this seed must cite
-   `python3 ~/.dotfiles/claude-code-shared/scripts/scanner.py --check` (with the same
+   `python3 ~/.dotfiles/claude-code-shared/scripts/dependency-graph/scanner.py --check` (with the same
    extractor/root used in step 3) as its acceptance gate.** This is the mechanical proof
    that a move didn't dangle a reference or introduce a cycle — it is not optional per
    task, and it is the reason this skill never performs moves itself: a move without that
