@@ -161,8 +161,8 @@ const FIX = join(EVAL_DIR, 'fixtures');
 // through the grader, a free check that the pipeline scores ~100% / ~0%.
 const ONLY = process.env.EVAL_ONLY ? new Set(process.env.EVAL_ONLY.split(',')) : null;
 const FAKE = process.env.EVAL_FAKE;
-if (!FAKE && !existsSync(join(CLAUDE_CONFIG_DIR, 'agents', 'personas', 'persona-accuracy.md'))) {
-  eprint(`refusing to run: persona-accuracy agent not found under ${CLAUDE_CONFIG_DIR}/agents/personas/`);
+if (!FAKE && !existsSync(join(CLAUDE_CONFIG_DIR, 'agents', 'seed-review', 'persona-accuracy.md'))) {
+  eprint(`refusing to run: persona-accuracy agent not found under ${CLAUDE_CONFIG_DIR}/agents/seed-review/`);
   process.exit(2);
 }
 

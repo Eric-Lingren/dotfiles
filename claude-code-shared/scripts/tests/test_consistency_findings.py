@@ -73,8 +73,8 @@ class TestAgentWrapping:
 
     def test_uniform_bare_group_is_not_flagged(self, tmp_path):
         build_repo(tmp_path, agents=[
-            ("persona-accuracy", "agents/personas/persona-accuracy.md"),
-            ("persona-judge", "agents/personas/persona-judge.md"),
+            ("persona-accuracy", "agents/seed-review/persona-accuracy.md"),
+            ("persona-judge", "agents/seed-review/persona-judge.md"),
         ])
         assert extractor.consistency_findings(str(tmp_path)) == []
 
@@ -92,8 +92,8 @@ class TestAgentWrapping:
         build_repo(tmp_path, agents=[
             ("context-loader", "agents/context-loader.md"),
             ("build-runner", "agents/build/build-runner.md"),
-            ("persona-accuracy", "agents/personas/persona-accuracy.md"),
-            ("persona-judge", "agents/personas/persona-judge.md"),
+            ("persona-accuracy", "agents/seed-review/persona-accuracy.md"),
+            ("persona-judge", "agents/seed-review/persona-judge.md"),
         ])
         assert extractor.consistency_findings(str(tmp_path)) == []
 
