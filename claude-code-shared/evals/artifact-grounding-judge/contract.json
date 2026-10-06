@@ -8,7 +8,7 @@
       "strict": false,
       "source": {
         "tag": "caller",
-        "file": "agents/attribution-tracer.md",
+        "file": "agents/learning/attribution-tracer.md",
         "line": "38",
         "quote": "echo the judge's raw verdict JSON verbatim"
       }
@@ -18,7 +18,7 @@
       "type": "no_prose",
       "source": {
         "tag": "role",
-        "file": "agents/artifact-grounding-judge.md",
+        "file": "agents/learning/artifact-grounding-judge.md",
         "line": "116",
         "quote": "Do not return anything other than the single JSON object."
       }
@@ -53,7 +53,7 @@
       },
       "source": {
         "tag": "role",
-        "file": "agents/artifact-grounding-judge.md",
+        "file": "agents/learning/artifact-grounding-judge.md",
         "line": "26",
         "quote": "{\"verdict\": \"pass\"|\"rejected\", \"confidence\": \"confirmed\"|\"candidate\", \"reason\": \"<one sentence>\"}"
       }
@@ -92,7 +92,7 @@
       },
       "source": {
         "tag": "role",
-        "file": "agents/artifact-grounding-judge.md",
+        "file": "agents/learning/artifact-grounding-judge.md",
         "line": "104-106",
         "quote": "{\"verdict\": \"rejected\", \"confidence\": \"<input>\", \"reason\": \"<specific rejection reason>\"}"
       }
@@ -104,7 +104,7 @@
       "match": "check-anchors.py",
       "source": {
         "tag": "side_effect",
-        "file": "agents/artifact-grounding-judge.md",
+        "file": "agents/learning/artifact-grounding-judge.md",
         "line": "41-44",
         "quote": "python3 ~/.dotfiles/claude-code-shared/scripts/check-anchors.py <<'JSON'"
       }
@@ -120,7 +120,7 @@
       },
       "source": {
         "tag": "side_effect",
-        "file": "agents/artifact-grounding-judge.md",
+        "file": "agents/learning/artifact-grounding-judge.md",
         "line": "85",
         "quote": "You must call `log-learning.py`."
       }
@@ -136,7 +136,7 @@
       },
       "source": {
         "tag": "side_effect",
-        "file": "agents/artifact-grounding-judge.md",
+        "file": "agents/learning/artifact-grounding-judge.md",
         "line": "93",
         "quote": "Use a quoted heredoc, not `echo '...'`."
       }
@@ -167,7 +167,7 @@
       },
       "source": {
         "tag": "role",
-        "file": "agents/artifact-grounding-judge.md",
+        "file": "agents/learning/artifact-grounding-judge.md",
         "line": "104",
         "quote": "Do NOT call `log-learning.py`."
       }
@@ -179,7 +179,7 @@
       "expected_from": "case",
       "source": {
         "tag": "role",
-        "file": "agents/artifact-grounding-judge.md",
+        "file": "agents/learning/artifact-grounding-judge.md",
         "line": "78-79",
         "quote": "Any entry rejected \u2192 verdict `rejected`."
       }
@@ -191,7 +191,7 @@
       "expected_from": "case",
       "source": {
         "tag": "role",
-        "file": "agents/artifact-grounding-judge.md",
+        "file": "agents/learning/artifact-grounding-judge.md",
         "line": "79",
         "quote": "Confidence is `candidate` if any entry was a paraphrase or missing, else the input confidence."
       }
@@ -237,15 +237,15 @@
       },
       "source": {
         "tag": "role",
-        "file": "agents/artifact-grounding-judge.md",
+        "file": "agents/learning/artifact-grounding-judge.md",
         "line": "85",
         "quote": "A `pass` reply without `write_exit` and `write_output` loses the record."
       }
     }
   ],
   "fingerprints": {
-    "agents/artifact-grounding-judge.md": "e5924ddd57138f7d3cd0c8cf53ec882a5523d213468df21434570cfa74391c36",
-    "agents/attribution-tracer.md": "ba1958086dfe54b3994ba3f50b2636374dc2fb15a8397c8fddfb0394ca92493b",
+    "agents/learning/artifact-grounding-judge.md": "e5924ddd57138f7d3cd0c8cf53ec882a5523d213468df21434570cfa74391c36",
+    "agents/learning/attribution-tracer.md": "ba1958086dfe54b3994ba3f50b2636374dc2fb15a8397c8fddfb0394ca92493b",
     "resources/attribution-capture.md": "b48f209903837a19ab7f14847779a9e69069025bf964477e48bbacd83db5bf9b"
   }
 }
