@@ -16,7 +16,7 @@
       "name": "architecture-auditor",
       "file": "agents/architecture-auditor.md",
       "model": "sonnet",
-      "description": "Read-only agent that audits a target SKILL.md for architecture anti-patterns and agent extraction opportunities. Detects 7 signals (A1-A7). Returns a JSON array of structured finding records.",
+      "description": "Read-only agent that audits a target SKILL.md for architecture anti-patterns and agent extraction opportunities. Detects 8 signals (A1-A8). Returns a JSON array of structured finding records.",
       "consumers": [
         "improve-skill-benchmarks",
         "register-skill"
@@ -155,9 +155,9 @@
       "name": "export-tasks-linear",
       "file": "agents/egress/linear/export-tasks-linear.md",
       "model": "haiku",
-      "description": "Linear write adapter. Creates a single Linear issue from structured JSON input using the Linear MCP tool. Spawned by tasks-to-linear per task item. Returns the created issue URL as the sole response line.",
+      "description": "Linear write adapter. Creates a single Linear issue from structured JSON input using the Linear MCP tool. Spawned by the export-tasks coordinator per linear item. Returns the created issue URL as the sole response line.",
       "consumers": [
-        "tasks-to-linear"
+        "export-tasks"
       ]
     },
     {
@@ -206,6 +206,126 @@
       "description": "Vision-model judge that evaluates a Baseline/Candidate capture pair against declared intent and returns a visual-verdict JSON object. One verdict per (capture_ref, viewport) pair.",
       "consumers": [
         "build-runner"
+      ]
+    },
+    {
+      "name": "artifact-grounding-judge",
+      "file": "agents/artifact-grounding-judge.md",
+      "model": "haiku",
+      "description": "Artifact-evidence grounding judge. Receives a draft v2 attribution record from the attribution-tracer. Verifies each evidence entry against its cited artifact file \u2014 positive anchors (quote present) or absence anchors (criterion confirmed absent). Rejects fabricated evidence. On pass, calls log-learning.py to append the record. Never grades a record it drafted. Artifact-evidence counterpart to verify-anchors.py, which grounds transcript quotes for self records.",
+      "consumers": [
+        "attribution-tracer"
+      ]
+    },
+    {
+      "name": "attribution-tracer",
+      "file": "agents/attribution-tracer.md",
+      "model": "sonnet",
+      "description": "Attribution tracing agent. Receives a confirmed issue description and fix, walks the provenance chain backward to find the earliest escape point, classifies the cause, and drafts a v2 attribution learning record. Passes the draft to the artifact-grounding-judge for verification before writing. Spawned by skills (debug, pr-code-review) after confirming a root cause.",
+      "consumers": [
+        "debug",
+        "pr-code-review"
+      ]
+    },
+    {
+      "name": "build-code",
+      "file": "agents/build-code.md",
+      "model": "sonnet",
+      "description": "Execute tasks from a tasks JSON file sequentially, one build-runner spawn per task. Handles branching, status updates, blocker detection, leaf/blocker failure policy, and deferred HITL tasks without halting independent work. Use when user wants to run AI tasks from a docs/tasks/ file.",
+      "consumers": [
+        "sprout-seed",
+        "dispatch-tasks"
+      ]
+    },
+    {
+      "name": "pr-code-review",
+      "file": "agents/pr-code-review.md",
+      "model": "sonnet",
+      "description": "Review the current diff, or a PR number/branch/path target, for correctness bugs and reuse/simplification/efficiency cleanups at the given effort level. Spawnable by any skill via subagent_type pr-code-review.",
+      "consumers": [
+        "sprout-seed",
+        "pr-revise"
+      ]
+    },
+    {
+      "name": "to-tasks",
+      "file": "agents/to-tasks.md",
+      "model": "sonnet",
+      "description": "Break a seed or PRD into independently-grabbable tasks using tracer-bullet vertical slices, then write a JSON task file to docs/tasks/. Use when user wants to convert a seed file or PRD into AI-ready tasks.",
+      "consumers": [
+        "sprout-seed"
+      ]
+    },
+    {
+      "name": "post-github",
+      "file": "agents/egress/github/post-github.md",
+      "model": "haiku",
+      "description": ">",
+      "consumers": [
+        "relay"
+      ]
+    },
+    {
+      "name": "post-linear",
+      "file": "agents/egress/linear/post-linear.md",
+      "model": "haiku",
+      "description": ">",
+      "consumers": [
+        "relay"
+      ]
+    },
+    {
+      "name": "post-slack",
+      "file": "agents/egress/slack/post-slack.md",
+      "model": "haiku",
+      "description": ">",
+      "consumers": [
+        "relay"
+      ]
+    },
+    {
+      "name": "investigator-code",
+      "file": "agents/investigators/investigator-code.md",
+      "model": "sonnet",
+      "description": ">",
+      "consumers": [
+        "investigator"
+      ]
+    },
+    {
+      "name": "investigator-github",
+      "file": "agents/investigators/investigator-github.md",
+      "model": "sonnet",
+      "description": ">",
+      "consumers": [
+        "investigator"
+      ]
+    },
+    {
+      "name": "investigator-linear",
+      "file": "agents/investigators/investigator-linear.md",
+      "model": "sonnet",
+      "description": ">",
+      "consumers": [
+        "investigator"
+      ]
+    },
+    {
+      "name": "investigator-notion",
+      "file": "agents/investigators/investigator-notion.md",
+      "model": "sonnet",
+      "description": ">",
+      "consumers": [
+        "investigator"
+      ]
+    },
+    {
+      "name": "investigator-web",
+      "file": "agents/investigators/investigator-web.md",
+      "model": "sonnet",
+      "description": ">",
+      "consumers": [
+        "investigator"
       ]
     }
   ]
