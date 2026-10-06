@@ -1,6 +1,6 @@
 ---
 name: export-tasks-linear
-description: Linear write adapter. Creates a single Linear issue from structured JSON input using the Linear MCP tool. Spawned by tasks-to-linear per task item. Returns the created issue URL as the sole response line.
+description: Linear write adapter. Creates a single Linear issue from structured JSON input using the Linear MCP tool. Spawned by the export-tasks coordinator per linear item. Returns the created issue URL as the sole response line.
 tools: mcp__claude_ai_Linear__create_issue
 model: haiku
 ---
