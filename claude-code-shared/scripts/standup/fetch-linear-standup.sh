@@ -11,7 +11,10 @@
 #   2. Source ~/.dotfiles/local/secrets.env
 #   3. Exit with a setup hint
 #
-# Output: JSON array of {id, key, title, status, url, parentKey, epicKey, projectName} to stdout.
+# Output: JSON array of {id, key, title, status, statusType, completedAt,
+#   cycleStartsAt, url, parentKey, epicKey, projectName} to stdout.
+#   statusType is Linear's workflow state type: triage|backlog|unstarted|started|completed|canceled.
+#   cycleStartsAt is set only when the issue's cycle is the active one.
 # Errors go to stderr. LINEAR_API_KEY is never printed or written.
 
 set -euo pipefail
@@ -116,7 +119,9 @@ gql = '''
       id
       identifier
       title
-      state { name }
+      state { name type }
+      completedAt
+      cycle { startsAt isActive }
       url
       project { name }
       parent {
@@ -141,11 +146,17 @@ _fetch_issues_by_keys() {
   query=$(python3 -c "
 keys = '$key_list'.split(',')
 keys = [k.strip() for k in keys if k.strip()]
-filter_parts = ' '.join('{identifier: {eq: \"%s\"}}' % k for k in keys)
-if len(keys) == 1:
-    filter_clause = '{identifier: {eq: \"%s\"}}' % keys[0]
-else:
-    filter_clause = '{or: [%s]}' % filter_parts
+# IssueFilter has no identifier field: match team key + issue number instead.
+by_team = {}
+for k in keys:
+    team, _, num = k.rpartition('-')
+    if team and num.isdigit():
+        by_team.setdefault(team, []).append(num)
+filter_parts = ' '.join(
+    '{team: {key: {eq: \"%s\"}}, number: {in: [%s]}}' % (team, ', '.join(nums))
+    for team, nums in by_team.items()
+)
+filter_clause = '{or: [%s]}' % filter_parts
 gql = '''
 {
   issues(filter: %s first: 50) {
@@ -153,7 +164,9 @@ gql = '''
       id
       identifier
       title
-      state { name }
+      state { name type }
+      completedAt
+      cycle { startsAt isActive }
       url
       project { name }
       parent {
@@ -186,6 +199,9 @@ for n in nodes:
         'key': n.get('identifier', ''),
         'title': n.get('title', ''),
         'status': (n.get('state') or {}).get('name', ''),
+        'statusType': (n.get('state') or {}).get('type') or None,
+        'completedAt': n.get('completedAt') or None,
+        'cycleStartsAt': (n.get('cycle') or {}).get('startsAt') if (n.get('cycle') or {}).get('isActive') else None,
         'url': n.get('url', ''),
         'parentKey': parent.get('identifier') or None,
         'epicKey': grandparent.get('identifier') or None,

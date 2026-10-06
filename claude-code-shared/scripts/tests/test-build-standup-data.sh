@@ -116,7 +116,7 @@ echo "=== T3: output shape ==="
 KEYS=$(echo "$OUT" | python3 -c "
 import json, sys
 d = json.load(sys.stdin)
-expected = {'in_review','done_new','done_earlier','in_progress','blockers','theme_signals','violations','since_last_standup_cutoff'}
+expected = {'in_review','done_new','done_earlier','in_progress','todo','blockers','theme_signals','violations','since_last_standup_cutoff'}
 actual = set(d.keys())
 missing = expected - actual
 extra = actual - expected
