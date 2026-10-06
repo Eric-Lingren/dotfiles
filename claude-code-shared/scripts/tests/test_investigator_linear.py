@@ -14,7 +14,7 @@ import pytest
 DOTFILES = pathlib.Path(__file__).resolve().parents[3]
 SHARED = DOTFILES / "claude-code-shared"
 SCHEMA_PATH = SHARED / "contracts" / "investigation-result-schema.json"
-AGENT_PATH = SHARED / "agents" / "investigators" / "investigator-linear.md"
+AGENT_PATH = SHARED / "agents" / "investigate" / "investigator-linear.md"
 
 LINEAR_URL_RE = re.compile(r"https://linear\.app/[^/]+/issue/[A-Z]+-\d+")
 

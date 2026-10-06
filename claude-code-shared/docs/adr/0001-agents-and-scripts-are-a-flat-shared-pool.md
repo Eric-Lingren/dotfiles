@@ -29,7 +29,7 @@ and the uniform pool keeps agent/script discovery and the tiering registry
   filter CCP/CRP-into-a-skill-directory the same way `pipeline_next` ADP cycles and
   shared-bucket MODULARITY findings are already filtered.
 - Locality is still achievable **inside** the bucket: grouping related nodes under an
-  owner-named subdirectory (`agents/personas/`, `agents/task-exporters/`,
+  owner-named subdirectory (`agents/seed-review/`, `agents/egress/`,
   `scripts/architecture-skill-audit/`, `scripts/agent-eval/`) is the established
   pattern and does not violate this decision. This ADR rejects moving nodes *out* of the
   pool into `skills/<name>/`, not grouping them *within* it.

@@ -90,7 +90,7 @@
 
 <header class="hdr">
   <h1>Claude Code Shared Architecture</h1>
-  <span class="stats">31 Skills &middot; 33+ Agents &middot; 6 Contracts &middot; 13 Hooks &middot; 28 Scripts</span>
+  <span class="stats">35 Skills &middot; 33+ Agents &middot; 6 Contracts &middot; 15 Hooks &middot; 0 Scripts</span>
   <div class="legend">
     <span class="legend-item"><span class="legend-swatch sw-skill"></span>Skill</span>
     <span class="legend-item"><span class="legend-swatch sw-agent"></span>Agent</span>
@@ -117,12 +117,14 @@
 <rect x="25" y="40" width="155" height="28" rx="5" class="sk"/><text x="102.5" y="54.0" class="sn">grill-me</text>
 <rect x="25" y="78" width="155" height="28" rx="5" class="sk"/><text x="102.5" y="92.0" class="sn">grill-with-docs</text>
 <rect x="25" y="116" width="155" height="28" rx="5" class="sk"/><text x="102.5" y="130.0" class="sn">debug</text>
-<rect x="25" y="154" width="155" height="28" rx="5" class="sk"/><text x="102.5" y="168.0" class="sn">pr-code-review</text>
+<rect x="25" y="154" width="155" height="28" rx="5" class="sk"/><text x="102.5" y="168.0" class="sn">ci-fix</text>
+<rect x="25" y="192" width="155" height="28" rx="5" class="sk"/><text x="102.5" y="206.0" class="sn">pr-code-review</text>
 <rect x="230" y="68" width="130" height="28" rx="5" class="sk"/><text x="295.0" y="82.0" class="sn">to-seed</text>
 <line x1="180" y1="54" x2="228" y2="76" class="ln" marker-end="url(#a)"/>
 <line x1="180" y1="92" x2="228" y2="79" class="ln" marker-end="url(#a)"/>
 <line x1="180" y1="130" x2="228" y2="82" class="ln" marker-end="url(#a)"/>
 <line x1="180" y1="168" x2="228" y2="85" class="ln" marker-end="url(#a)"/>
+<line x1="180" y1="206" x2="228" y2="88" class="ln" marker-end="url(#a)"/>
 <line x1="360" y1="83" x2="418" y2="83" class="ln" marker-end="url(#a)"/>
 <rect x="420" y="32" width="675" height="312" rx="8" class="vb"/>
 <rect x="435" y="52" width="193" height="26" rx="5" class="ag" style="stroke:var(--red)"/><text x="531" y="65" class="an" style="fill:var(--red)">persona-grounding</text><rect x="593" y="58" width="22" height="14" rx="3" class="bH"/><text x="604" y="66" class="bt btH">H</text>
@@ -217,7 +219,7 @@
 <line x1="100" y1="70" x2="100" y2="100" class="ln" marker-end="url(#a)"/>
 <rect x="20" y="103" width="160" height="26" rx="5" class="ag"/><text x="100.0" y="116.0" class="an">export-tasks</text><rect x="145" y="109.0" width="22" height="14" rx="3" class="bS"/><text x="156" y="117.0" class="bt btS">S</text>
 <line x1="60" y1="129" x2="60" y2="155" class="ln" marker-end="url(#a)"/><line x1="100" y1="129" x2="225" y2="155" class="ln" marker-end="url(#a)"/><line x1="140" y1="129" x2="390" y2="155" class="ln" marker-end="url(#a)"/>
-<rect x="15" y="158" width="160" height="24" rx="4" class="ag"/><text x="95" y="170" class="an" style="font-size:9px">export-tasks-gh</text><rect x="142" y="162" width="22" height="14" rx="3" class="bH"/><text x="153" y="170" class="bt btH">H</text>
+<rect x="15" y="158" width="160" height="24" rx="4" class="ag"/><text x="95" y="170" class="an" style="font-size:9px">export-tasks-github</text><rect x="142" y="162" width="22" height="14" rx="3" class="bH"/><text x="153" y="170" class="bt btH">H</text>
 <rect x="190" y="158" width="175" height="24" rx="4" class="ag"/><text x="277" y="170" class="an" style="font-size:9px">export-tasks-linear</text><rect x="332" y="162" width="22" height="14" rx="3" class="bH"/><text x="343" y="170" class="bt btH">H</text>
 <rect x="380" y="158" width="175" height="24" rx="4" class="ag"/><text x="467" y="170" class="an" style="font-size:9px">export-tasks-notion</text><rect x="522" y="162" width="22" height="14" rx="3" class="bH"/><text x="533" y="170" class="bt btH">H</text>
 <text x="100" y="205" class="sl" style="fill:var(--tx-d)">EGRESS ADAPTERS (copy-only)</text>
@@ -234,11 +236,12 @@
 <g transform="translate(20,745)">
 <rect width="580" height="250" rx="10" class="grp"/>
 <text x="290" y="20" class="gl">IMPROVE</text>
-<rect x="20" y="42" width="137" height="28" rx="5" class="sk"/><text x="88.5" y="56.0" class="sn">improve-skill</text>
-<rect x="172" y="42" width="173" height="28" rx="5" class="sk"/><text x="258.5" y="56.0" class="sn">improve-component</text>
-<rect x="360" y="42" width="146" height="28" rx="5" class="sk"/><text x="433.0" y="56.0" class="sn">register-skill</text>
-<rect x="20" y="82" width="281" height="28" rx="5" class="sk"/><text x="160.5" y="96.0" class="sn">improve-codebase-architecture</text>
-<rect x="316" y="82" width="263" height="28" rx="5" class="sk"/><text x="447.5" y="96.0" class="sn">improve-directory-structure</text>
+<rect x="20" y="42" width="236" height="28" rx="5" class="sk"/><text x="138.0" y="56.0" class="sn">improve-skill-benchmarks</text>
+<rect x="271" y="42" width="236" height="28" rx="5" class="sk"/><text x="389.0" y="56.0" class="sn">improve-agent-benchmarks</text>
+<rect x="522" y="42" width="173" height="28" rx="5" class="sk"/><text x="608.5" y="56.0" class="sn">improve-component</text>
+<rect x="20" y="82" width="160" height="28" rx="5" class="sk"/><text x="100.0" y="96.0" class="sn">register-skill</text>
+<rect x="195" y="82" width="281" height="28" rx="5" class="sk"/><text x="335.5" y="96.0" class="sn">improve-codebase-architecture</text>
+<rect x="491" y="82" width="263" height="28" rx="5" class="sk"/><text x="622.5" y="96.0" class="sn">improve-directory-structure</text>
 <line x1="90" y1="70" x2="220" y2="138" class="ln" marker-end="url(#a)"/>
 <rect x="140" y="140" width="180" height="26" rx="5" class="ag"/><text x="230.0" y="153.0" class="an">architecture-auditor</text><rect x="285" y="146.0" width="22" height="14" rx="3" class="bS"/><text x="296" y="154.0" class="bt btS">S</text>
 <text x="290" y="195" class="sub">Produces audit reports, feeds back into to-tasks pipeline</text>
@@ -250,7 +253,8 @@
 <text x="250" y="36" class="sl">from all skills (universal tail)</text>
 <rect x="20" y="55" width="175" height="26" rx="5" class="ag"/><text x="107.5" y="68.0" class="an">capture-learning</text><rect x="160" y="61.0" width="22" height="14" rx="3" class="bS"/><text x="171" y="69.0" class="bt btS">S</text>
 <line x1="107" y1="81" x2="107" y2="105" class="ln" marker-end="url(#a)"/>
-<rect x="20" y="108" width="195" height="26" rx="5" class="ag"/><text x="117.5" y="121.0" class="an">learn-ground-judge</text><rect x="180" y="114.0" width="22" height="14" rx="3" class="bH"/><text x="191" y="122.0" class="bt btH">H</text>
+<rect x="20" y="108" width="195" height="26" rx="5" class="ct"/>
+<text x="117" y="121" class="cn">verify-anchors.py</text>
 <rect x="270" y="55" width="175" height="26" rx="5" class="ag"/><text x="357.5" y="68.0" class="an">attribution-tracer</text><rect x="410" y="61.0" width="22" height="14" rx="3" class="bS"/><text x="421" y="69.0" class="bt btS">S</text>
 <line x1="357" y1="81" x2="357" y2="105" class="ln" marker-end="url(#a)"/>
 <rect x="260" y="108" width="200" height="26" rx="5" class="ag"/><text x="360.0" y="121.0" class="an">artifact-ground-judge</text><rect x="425" y="114.0" width="22" height="14" rx="3" class="bS"/><text x="436" y="122.0" class="bt btS">S</text>
@@ -277,30 +281,24 @@
 <g transform="translate(20,1025)">
 <rect width="1980" height="255" rx="10" class="grp"/>
 <text x="990" y="20" class="gl">INFRASTRUCTURE</text>
-<text x="100" y="42" class="sl" style="fill:var(--red);text-anchor:start;font-weight:700;letter-spacing:0.08em">HOOKS (13 BLOCKING GATES)</text>
+<text x="100" y="42" class="sl" style="fill:var(--red);text-anchor:start;font-weight:700;letter-spacing:0.08em">HOOKS (15 BLOCKING GATES)</text>
 <rect x="20" y="55" width="145" height="22" rx="4" class="hk"/><text x="92.5" y="66.0" class="hn">block-data-exfil</text>
 <rect x="175" y="55" width="145" height="22" rx="4" class="hk"/><text x="247.5" y="66.0" class="hn">block-destructive-fs</text>
 <rect x="330" y="55" width="145" height="22" rx="4" class="hk"/><text x="402.5" y="66.0" class="hn">block-destructive-git</text>
 <rect x="485" y="55" width="145" height="22" rx="4" class="hk"/><text x="557.5" y="66.0" class="hn">block-destructive-sed</text>
 <rect x="640" y="55" width="145" height="22" rx="4" class="hk"/><text x="712.5" y="66.0" class="hn">block-destructive-sql</text>
 <rect x="795" y="55" width="145" height="22" rx="4" class="hk"/><text x="867.5" y="66.0" class="hn">block-edit-on-trunk</text>
-<rect x="950" y="55" width="145" height="22" rx="4" class="hk"/><text x="1022.5" y="66.0" class="hn">block-package-publish</text>
-<rect x="20" y="85" width="145" height="22" rx="4" class="hk"/><text x="92.5" y="96.0" class="hn">block-remote-exec</text>
-<rect x="175" y="85" width="145" height="22" rx="4" class="hk"/><text x="247.5" y="96.0" class="hn">block-var-keyword</text>
-<rect x="330" y="85" width="145" height="22" rx="4" class="hk"/><text x="402.5" y="96.0" class="hn">lint-edited-file</text>
-<rect x="485" y="85" width="145" height="22" rx="4" class="hk"/><text x="557.5" y="96.0" class="hn">stop-hook</text>
-<rect x="640" y="85" width="145" height="22" rx="4" class="hk"/><text x="712.5" y="96.0" class="hn">test-hook</text>
-<rect x="795" y="85" width="145" height="22" rx="4" class="hk"/><text x="867.5" y="96.0" class="hn">tier-advisor</text>
-<text x="100" y="130" class="sl" style="fill:var(--tx-m);text-anchor:start;font-weight:700;letter-spacing:0.08em">KEY SCRIPTS (28 TOTAL)</text>
-<rect x="20" y="142" width="177.5" height="20" rx="3" fill="var(--bg-s)" stroke="var(--bdr)" stroke-width="1"/><text x="108.75" y="152.0" class="hn">cc-usage-benchmark.py</text>
-<rect x="207.5" y="142" width="147.5" height="20" rx="3" fill="var(--bg-s)" stroke="var(--bdr)" stroke-width="1"/><text x="281.25" y="152.0" class="hn">cc-usage-nudge.sh</text>
-<rect x="365.0" y="142" width="222.5" height="20" rx="3" fill="var(--bg-s)" stroke="var(--bdr)" stroke-width="1"/><text x="476.25" y="152.0" class="hn">claude_tooling_extractor.py</text>
-<rect x="597.5" y="142" width="125.0" height="20" rx="3" fill="var(--bg-s)" stroke="var(--bdr)" stroke-width="1"/><text x="660.0" y="152.0" class="hn">context-bar.sh</text>
-<rect x="732.5" y="142" width="305.0" height="20" rx="3" fill="var(--bg-s)" stroke="var(--bdr)" stroke-width="1"/><text x="885.0" y="152.0" class="hn">dependency-graph-findings.example.json</text>
-<rect x="1047.5" y="142" width="230.0" height="20" rx="3" fill="var(--bg-s)" stroke="var(--bdr)" stroke-width="1"/><text x="1162.5" y="152.0" class="hn">dependency-graph-findings.py</text>
-<rect x="1287.5" y="142" width="132.5" height="20" rx="3" fill="var(--bg-s)" stroke="var(--bdr)" stroke-width="1"/><text x="1353.75" y="152.0" class="hn">doc-filename.sh</text>
-<rect x="1430.0" y="142" width="230.0" height="20" rx="3" fill="var(--bg-s)" stroke="var(--bdr)" stroke-width="1"/><text x="1545.0" y="152.0" class="hn">filter-session-transcript.py</text>
-<text x="100" y="185" class="sl" style="fill:var(--pur);text-anchor:start;font-weight:700;letter-spacing:0.08em">KEY RESOURCES (15 TOTAL)</text>
+<rect x="950" y="55" width="145" height="22" rx="4" class="hk"/><text x="1022.5" y="66.0" class="hn">block-node-modules-symlink</text>
+<rect x="20" y="85" width="145" height="22" rx="4" class="hk"/><text x="92.5" y="96.0" class="hn">block-package-publish</text>
+<rect x="175" y="85" width="145" height="22" rx="4" class="hk"/><text x="247.5" y="96.0" class="hn">block-remote-exec</text>
+<rect x="330" y="85" width="145" height="22" rx="4" class="hk"/><text x="402.5" y="96.0" class="hn">block-var-keyword</text>
+<rect x="485" y="85" width="145" height="22" rx="4" class="hk"/><text x="557.5" y="96.0" class="hn">lint-edited-file</text>
+<rect x="640" y="85" width="145" height="22" rx="4" class="hk"/><text x="712.5" y="96.0" class="hn">stop-hook</text>
+<rect x="795" y="85" width="145" height="22" rx="4" class="hk"/><text x="867.5" y="96.0" class="hn">test-hook</text>
+<rect x="950" y="85" width="145" height="22" rx="4" class="hk"/><text x="1022.5" y="96.0" class="hn">tier-advisor</text>
+<rect x="20" y="115" width="145" height="22" rx="4" class="hk"/><text x="92.5" y="126.0" class="hn">worktree-deps</text>
+<text x="100" y="130" class="sl" style="fill:var(--tx-m);text-anchor:start;font-weight:700;letter-spacing:0.08em">KEY SCRIPTS (0 TOTAL)</text>
+<text x="100" y="185" class="sl" style="fill:var(--pur);text-anchor:start;font-weight:700;letter-spacing:0.08em">KEY RESOURCES (16 TOTAL)</text>
 <rect x="20" y="197" width="192.5" height="20" rx="3" fill="var(--pur-d)" stroke="var(--pur)" stroke-width="1"/><text x="116.25" y="207.0" class="hn" style="fill:var(--pur)">app-launch-detection.md</text>
 <rect x="222.5" y="197" width="185.0" height="20" rx="3" fill="var(--pur-d)" stroke="var(--pur)" stroke-width="1"/><text x="315.0" y="207.0" class="hn" style="fill:var(--pur)">attribution-capture.md</text>
 <rect x="417.5" y="197" width="177.5" height="20" rx="3" fill="var(--pur-d)" stroke="var(--pur)" stroke-width="1"/><text x="506.25" y="207.0" class="hn" style="fill:var(--pur)">branching-strategy.md</text>

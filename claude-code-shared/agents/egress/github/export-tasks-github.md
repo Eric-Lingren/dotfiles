@@ -1,11 +1,11 @@
 ---
-name: export-tasks-gh
+name: export-tasks-github
 description: GitHub Issues write adapter. Creates a single GitHub issue from structured JSON input. Spawned by the export-tasks coordinator per gh-issues item. Returns the created issue URL as the sole response line.
 tools: Bash
 model: haiku
 ---
 
-# export-tasks-gh
+# export-tasks-github
 
 GitHub Issues write adapter. One item in, one issue out, one URL back.
 
@@ -43,7 +43,7 @@ No other text. No markdown. No explanation.
 
 ## Script
 
-Colocated script: `~/.dotfiles/claude-code-shared/agents/egress/github/gh-issue.sh`
+Companion script: `~/.dotfiles/claude-code-shared/scripts/egress/github-issue.sh`
 
 Args: `<title> <body> <org/repo>`
 Stdout: issue URL
@@ -56,7 +56,7 @@ Stderr: error message on failure
 3. Run:
 
 ```bash
-bash ~/.dotfiles/claude-code-shared/agents/egress/github/gh-issue.sh \
+bash ~/.dotfiles/claude-code-shared/scripts/egress/github-issue.sh \
   "$TITLE" \
   "$DESCRIPTION" \
   "$ORG_REPO"

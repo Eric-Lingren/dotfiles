@@ -1,15 +1,15 @@
 #!/usr/bin/env bash
-# Characterization tests for the export-tasks-gh adapter (gh-issue.sh).
+# Characterization tests for the export-tasks-github adapter (github-issue.sh).
 # These tests capture argument-validation behavior only — no real gh CLI calls.
 # After the move to agents/egress/github/, update GH_SCRIPT path below.
 #
-# Usage: bash test-gh-adapter.sh
+# Usage: bash test-github-adapter.sh
 # Exit 0 = all tests passed. Exit 1 = one or more failed.
 
 set -uo pipefail
 
 # ---- script under test -------------------------------------------------------
-GH_SCRIPT="$HOME/.dotfiles/claude-code-shared/agents/egress/github/gh-issue.sh"
+GH_SCRIPT="$HOME/.dotfiles/claude-code-shared/scripts/egress/github-issue.sh"
 
 # ---- harness -----------------------------------------------------------------
 PASS=0
@@ -53,12 +53,12 @@ assert_file_exists() {
   fi
 }
 
-echo "=== export-tasks-gh characterization tests ==="
+echo "=== export-tasks-github characterization tests ==="
 echo ""
 
 # Test 1: script exists at expected location
 echo "-- file existence --"
-assert_file_exists "$GH_SCRIPT" "gh-issue.sh exists at adapter location"
+assert_file_exists "$GH_SCRIPT" "github-issue.sh exists at adapter location"
 echo ""
 
 # Test 2: no arguments → exits non-zero with usage on stderr

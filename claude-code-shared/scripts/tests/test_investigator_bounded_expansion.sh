@@ -8,7 +8,7 @@
 set -euo pipefail
 
 SHARED="$(cd "$(dirname "$0")/../.." && pwd)"
-AGENT="$SHARED/agents/investigator.md"
+AGENT="$SHARED/agents/investigate/investigator.md"
 SCHEMA="$SHARED/contracts/investigation-result-schema.json"
 CONTRACT="$SHARED/contracts/investigation-result-contract.md"
 

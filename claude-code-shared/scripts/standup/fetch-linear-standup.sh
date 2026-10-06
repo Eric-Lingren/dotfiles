@@ -152,8 +152,9 @@ for k in keys:
     team, _, num = k.rpartition('-')
     if team and num.isdigit():
         by_team.setdefault(team, []).append(num)
+# Each or-branch needs an explicit and: Linear silently drops multi-field branches.
 filter_parts = ' '.join(
-    '{team: {key: {eq: \"%s\"}}, number: {in: [%s]}}' % (team, ', '.join(nums))
+    '{and: [{team: {key: {eq: \"%s\"}}}, {number: {in: [%s]}}]}' % (team, ', '.join(nums))
     for team, nums in by_team.items()
 )
 filter_clause = '{or: [%s]}' % filter_parts

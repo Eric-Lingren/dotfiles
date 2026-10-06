@@ -56,16 +56,16 @@ def titles(findings):
 class TestAgentWrapping:
     def test_mixed_wrapping_group_is_flagged(self, tmp_path):
         build_repo(tmp_path, agents=[
-            ("export-tasks", "agents/task-exporters/export-tasks.md"),
-            ("export-tasks-gh", "agents/task-exporters/export-tasks-gh/agent.md"),
-            ("export-tasks-notion", "agents/task-exporters/export-tasks-notion/agent.md"),
+            ("export-tasks", "agents/egress/export-tasks.md"),
+            ("export-tasks-github", "agents/egress/export-tasks-github/agent.md"),
+            ("export-tasks-notion", "agents/egress/export-tasks-notion/agent.md"),
         ])
         findings = extractor.consistency_findings(str(tmp_path))
         assert principles(findings) == ["SHAPE"]
         f = findings[0]
-        assert "agents/task-exporters" in f["title"]
+        assert "agents/egress" in f["title"]
         assert set(f["nodes"]) == {
-            "agent:export-tasks", "agent:export-tasks-gh", "agent:export-tasks-notion",
+            "agent:export-tasks", "agent:export-tasks-github", "agent:export-tasks-notion",
         }
         # Evidence names each member and its shape.
         facts = " ".join(e["fact"] for e in f["evidence"])
@@ -73,8 +73,8 @@ class TestAgentWrapping:
 
     def test_uniform_bare_group_is_not_flagged(self, tmp_path):
         build_repo(tmp_path, agents=[
-            ("persona-accuracy", "agents/personas/persona-accuracy.md"),
-            ("persona-judge", "agents/personas/persona-judge.md"),
+            ("persona-accuracy", "agents/seed-review/persona-accuracy.md"),
+            ("persona-judge", "agents/seed-review/persona-judge.md"),
         ])
         assert extractor.consistency_findings(str(tmp_path)) == []
 
@@ -91,9 +91,9 @@ class TestAgentWrapping:
         # the agents/ level, so agents/ stays uniformly bare.
         build_repo(tmp_path, agents=[
             ("context-loader", "agents/context-loader.md"),
-            ("build-runner", "agents/build-runner.md"),
-            ("persona-accuracy", "agents/personas/persona-accuracy.md"),
-            ("persona-judge", "agents/personas/persona-judge.md"),
+            ("build-runner", "agents/build/build-runner.md"),
+            ("persona-accuracy", "agents/seed-review/persona-accuracy.md"),
+            ("persona-judge", "agents/seed-review/persona-judge.md"),
         ])
         assert extractor.consistency_findings(str(tmp_path)) == []
 
@@ -142,8 +142,8 @@ class TestScannerCLI:
 
     def test_cli_emits_findings_envelope_and_exits_zero(self, tmp_path):
         build_repo(tmp_path, agents=[
-            ("export-tasks", "agents/task-exporters/export-tasks.md"),
-            ("export-tasks-gh", "agents/task-exporters/export-tasks-gh/agent.md"),
+            ("export-tasks", "agents/egress/export-tasks.md"),
+            ("export-tasks-github", "agents/egress/export-tasks-github/agent.md"),
         ], scripts=["scripts/graph.example.json"])
         result = self._run(tmp_path)
         assert result.returncode == 0, result.stderr

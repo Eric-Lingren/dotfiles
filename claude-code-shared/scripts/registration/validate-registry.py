@@ -52,13 +52,13 @@ def validate(agents_dir: str, registry_path: str) -> tuple:
                 f"agent '{name}' registered but file not found: {agent_file}"
             )
 
-    for md_path in glob.glob(os.path.join(agents_dir, "*.md")):
+    for md_path in glob.glob(os.path.join(agents_dir, "**", "*.md"), recursive=True):
         stem = os.path.splitext(os.path.basename(md_path))[0]
-        if stem == "registry":
+        if stem in ("registry", "README"):
             continue
         if stem not in registered_names:
             errors.append(
-                f"orphaned agent file with no registry entry: {os.path.basename(md_path)}"
+                f"orphaned agent file with no registry entry: {os.path.relpath(md_path, agents_dir)}"
             )
 
     return len(errors) == 0, errors

@@ -9,7 +9,7 @@ import pytest
 DOTFILES = pathlib.Path(__file__).resolve().parents[3]
 SHARED = DOTFILES / "claude-code-shared"
 SCHEMA_PATH = SHARED / "contracts" / "investigation-result-schema.json"
-AGENT_PATH = SHARED / "agents" / "investigators" / "investigator-web.md"
+AGENT_PATH = SHARED / "agents" / "investigate" / "investigator-web.md"
 FACT_CHECK_SKILL_PATH = SHARED / "skills" / "fact-check" / "SKILL.md"
 
 

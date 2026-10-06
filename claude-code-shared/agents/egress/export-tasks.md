@@ -16,7 +16,7 @@ Coordinator for exporting triage-typed items from a task file to external destin
 **Format:** task file — see `contracts/task-contract.md` (schema_version: `"2"`)
 **Routing config:** `~/.dotfiles/claude-code-shared/resources/task-routing.json`
 **Role:** triage branch coordinator
-**Adapters:** `export-tasks-gh` (GitHub Issues), `export-tasks-notion` (Notion MCP + API)
+**Adapters:** `export-tasks-github` (GitHub Issues), `export-tasks-notion` (Notion MCP + API)
 
 ## Process
 
@@ -66,7 +66,7 @@ Stop immediately if any required Notion DB ID is a placeholder. Do not write any
 For any `auth=api-token` Notion route, verify the token is set before showing the dry-run:
 
 ```bash
-bash ~/.dotfiles/claude-code-shared/agents/egress/notion/check-token.sh
+bash ~/.dotfiles/claude-code-shared/scripts/egress/notion-check-token.sh
 ```
 
 If the script exits non-zero, print its stderr output and stop.
@@ -145,11 +145,11 @@ body = item.description + "\n\n---\nseed: " + item.seed_ref + "\ntask: " + item.
 
 #### GitHub Issues adapter
 
-Spawn the `export-tasks-gh` adapter:
+Spawn the `export-tasks-github` adapter:
 
 ```
 Agent(
-  subagent_type="export-tasks-gh",
+  subagent_type="export-tasks-github",
   prompt=JSON.stringify({
     "title": item.title,
     "description": body,

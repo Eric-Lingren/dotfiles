@@ -21,7 +21,7 @@ run_suite() {
   fi
 }
 
-run_suite "$DIR/test-gh-adapter.sh"
+run_suite "$DIR/test-github-adapter.sh"
 run_suite "$DIR/test-notion-adapter.sh"
 run_suite "$DIR/test-linear-adapter.sh"
 

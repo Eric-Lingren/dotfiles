@@ -15,7 +15,7 @@ import pytest
 DOTFILES = pathlib.Path(__file__).resolve().parents[3]
 SHARED = DOTFILES / "claude-code-shared"
 SCHEMA_PATH = SHARED / "contracts" / "investigation-result-schema.json"
-AGENT_PATH = SHARED / "agents" / "investigators" / "investigator-github.md"
+AGENT_PATH = SHARED / "agents" / "investigate" / "investigator-github.md"
 
 # Matches https://github.com/<owner>/<repo>/issues/<N> or .../pull/<N>
 GITHUB_URL_RE = re.compile(

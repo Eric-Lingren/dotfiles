@@ -6,9 +6,9 @@ JSON verdict returned by `lint-runner` and `test-runner` agents. The caller (run
 
 ## Producers
 
-- `agents/lint-runner.md` — runs lint/format checks, returns verdict
-- `agents/test-runner.md` — runs unit/integration tests and typecheck, returns verdict
-- `agents/e2e-runner.md` — runs Playwright e2e suite, returns verdict
+- `agents/build/lint-runner.md` — runs lint/format checks, returns verdict
+- `agents/build/test-runner.md` — runs unit/integration tests and typecheck, returns verdict
+- `agents/build/e2e-runner.md` — runs Playwright e2e suite, returns verdict
 
 ## Consumers
 
