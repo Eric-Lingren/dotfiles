@@ -68,7 +68,7 @@ $HOOK_MARKER
 # Links gitignored local config into new worktrees. A null previous ref (\$1)
 # means a fresh checkout, which is what \`git worktree add\` produces.
 [[ "\$1" =~ ^0+\$ ]] || exit 0
-script="\$HOME/.dotfiles/claude-code-shared/scripts/ensure-worktree-links.sh"
+script="\$HOME/.dotfiles/claude-code-shared/scripts/shared/ensure-worktree-links.sh"
 [[ -x "\$script" ]] && "\$script" "\$PWD"
 exit 0
 EOF

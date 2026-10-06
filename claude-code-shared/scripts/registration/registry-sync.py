@@ -2,7 +2,7 @@
 """Upsert an agent entry into the agents/registry.json consumer map.
 
 Usage:
-  python3 registry_sync.py <registry-path> <entry-json>
+  python3 registry-sync.py <registry-path> <entry-json>
 
 Where <entry-json> is a JSON string with keys: name, file, model, description, consumers.
 """
@@ -31,7 +31,7 @@ def upsert_agent(registry: dict, entry: dict) -> dict:
 
 def main():
     if len(sys.argv) < 3:
-        print("Usage: registry_sync.py <registry-path> <entry-json>", file=sys.stderr)
+        print("Usage: registry-sync.py <registry-path> <entry-json>", file=sys.stderr)
         sys.exit(1)
 
     registry_path = sys.argv[1]

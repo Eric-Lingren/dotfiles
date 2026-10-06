@@ -49,7 +49,7 @@ from pathlib import Path
 # ── Constants ────────────────────────────────────────────────────────────────
 
 SCRIPT_DIR = Path(__file__).parent.resolve()
-REPO_POLICY = SCRIPT_DIR.parent / "resources" / "repo-policy.json"
+REPO_POLICY = SCRIPT_DIR.parents[1] / "resources" / "repo-policy.json"
 AUTH_CACHE_BASE = Path.home() / ".cache" / "claude-browser-auth"
 FRESHNESS_TTL = 8 * 3600  # seconds before a state file is considered stale
 LOGIN_MARKERS = ["/login", "/signin", "/auth/login", "/accounts/login"]

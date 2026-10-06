@@ -2,7 +2,7 @@
 # Validate that /investigate SKILL.md contains --out flag parsing and routing logic.
 # Exit 0 on all checks pass, 1 on any failure.
 
-SKILL_MD="$(dirname "$0")/../skills/investigate/SKILL.md"
+SKILL_MD="$(dirname "$0")/../../skills/investigate/SKILL.md"
 
 if [[ ! -f "$SKILL_MD" ]]; then
   echo "FAIL: SKILL.md not found at $SKILL_MD"

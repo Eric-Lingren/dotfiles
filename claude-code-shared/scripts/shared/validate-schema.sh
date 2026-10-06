@@ -20,7 +20,7 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-CONTRACTS_DIR="$(cd "${SCRIPT_DIR}/../contracts" && pwd)"
+CONTRACTS_DIR="$(cd "${SCRIPT_DIR}/../../contracts" && pwd)"
 PY_SCRIPT="${SCRIPT_DIR}/validate-schema.py"
 
 # --help / -h

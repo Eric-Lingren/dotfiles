@@ -7,7 +7,7 @@
 set -uo pipefail
 
 PY=/usr/bin/python3
-SCRIPT="$HOME/.dotfiles/claude-code-shared/scripts/cc-usage-benchmark.py"
+SCRIPT="$HOME/.dotfiles/claude-code-shared/scripts/usage/cc-usage-benchmark.py"
 OUTDIR="${CC_USAGE_REPORT_DIR:-$HOME/.dotfiles/claude-code-shared/usage-reports}"
 mkdir -p "$OUTDIR"
 

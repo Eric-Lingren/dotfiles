@@ -43,7 +43,7 @@ enforce or automate them.
 - **Tier** — a model+effort pairing (T1–T4) defined in `resources/model-tiers.json`,
   keyed by skill name (`skills` map) or agent name (`agents` map). T1 = haiku/low
   (lookup), T2 = sonnet/medium (mechanical), T3 = sonnet/high (session default,
-  context-aware build), T4 = opus/xhigh (deep reasoning). `scripts/sync-model-tiers.py`
+  context-aware build), T4 = opus/xhigh (deep reasoning). `scripts/registration/sync-model-tiers.py`
   is the only thing that should propagate tier changes into skill/agent frontmatter.
 
 ## Browser verification glossary
@@ -122,7 +122,7 @@ enforce or automate them.
 3. **`resources/model-tiers.json` keys skills and agents by name.** Both the `skills`
    map and `agents` map must stay in sync with what's actually registered/present on
    disk, or tier-advisor and the usage report will silently miss items. Apply changes
-   via `scripts/sync-model-tiers.py --apply`, not by hand-editing frontmatter alone.
+   via `scripts/registration/sync-model-tiers.py --apply`, not by hand-editing frontmatter alone.
 4. **`.cch` and `.cco` are symlink farms into this repo, not independent copies.**
    `~/.cch/skills` and `~/.cco/skills` symlink to `~/.claude-code-shared/skills` (itself
    pointing at `claude-code-shared/` in this dotfiles repo), and likewise for `agents/`

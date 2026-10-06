@@ -704,7 +704,7 @@ def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument(
         "base_dir", nargs="?",
-        default=os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+        default=os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
         help="path to claude-code-shared/ root (default: parent of this script)",
     )
     parser.add_argument("--out", help="write graph JSON here instead of stdout")

@@ -1,5 +1,5 @@
 {
-  "_doc": "Single source of truth for per-skill and per-agent model+effort tiering. Edit this, then run scripts/sync-model-tiers.py --apply (or just commit; the pre-commit hook applies it). Full docs: resources/model-tiers.md",
+  "_doc": "Single source of truth for per-skill and per-agent model+effort tiering. Edit this, then run scripts/registration/sync-model-tiers.py --apply (or just commit; the pre-commit hook applies it). Full docs: resources/model-tiers.md",
   "tiers": {
     "T1": {
       "model": "haiku",

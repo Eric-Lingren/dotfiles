@@ -31,7 +31,7 @@ If the skill passed `anchors` that cover the event, use them as-is and go to Ste
 Otherwise, render the transcript to greppable plain text:
 
 ```bash
-python3 ~/.dotfiles/claude-code-shared/scripts/prep-transcript.py --transcript "<transcript_path>"
+python3 ~/.dotfiles/claude-code-shared/scripts/learning/prep-transcript.py --transcript "<transcript_path>"
 ```
 
 It prints `<out-path> <line-count>`. Each line is one content block, prefixed `[L<n>] <role>[/tool_use|/tool_result]:`. Newlines inside a block are already flattened, so text is verbatim with no JSON escapes. Search it with one `grep -n -i -E 'term1|term2|...'` built from `brief_evidence`. Read a narrow range only if grep context is not enough.
@@ -108,7 +108,7 @@ If no file exists, set `improves` to null. Do not invent a slug. Unassigned is a
 ## Step 3: ground and write in one call
 
 ```bash
-python3 ~/.dotfiles/claude-code-shared/scripts/verify-anchors.py --transcript "<transcript_path>" --write <<'ENTRY'
+python3 ~/.dotfiles/claude-code-shared/scripts/learning/verify-anchors.py --transcript "<transcript_path>" --write <<'ENTRY'
 <entry JSON>
 ENTRY
 ```

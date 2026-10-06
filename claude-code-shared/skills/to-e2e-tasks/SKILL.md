@@ -31,7 +31,7 @@ Analyze the current branch's changes, discover which critical user-facing workfl
 
 **Step-0 — validate output after writing:**
 ```bash
-bash ~/.dotfiles/claude-code-shared/scripts/validate-schema.sh \
+bash ~/.dotfiles/claude-code-shared/scripts/shared/validate-schema.sh \
   --instance ~/.dotfiles/claude-code-shared/contracts/task-schema.json \
   <output-path>
 ```
@@ -172,7 +172,7 @@ After the grill, build the task list:
 
 ### 7. Determine the next task ID
 
-Run `~/.dotfiles/claude-code-shared/scripts/next-task-id.sh docs/tasks/` to get the next available ID.
+Run `~/.dotfiles/claude-code-shared/scripts/scaffolding/next-task-id.sh docs/tasks/` to get the next available ID.
 
 ### 8. Confirm output directory
 
@@ -195,7 +195,7 @@ Also confirm: should the JSON file itself be saved on the current branch, or on 
 
 Derive the slug from the PRD filename if available (strip timestamp prefix and extension). If no PRD, derive from the branch name.
 
-Run `~/.dotfiles/claude-code-shared/scripts/task-filename.sh e2e-<slug>` to generate the filename.
+Run `~/.dotfiles/claude-code-shared/scripts/scaffolding/task-filename.sh e2e-<slug>` to generate the filename.
 
 If a file for this slug already exists (any prefix), ask whether to overwrite or merge (same logic as `/to-tasks`).
 
@@ -220,7 +220,7 @@ Next steps:
 
 Then run:
 ```bash
-python3 ~/.dotfiles/claude-code-shared/scripts/print-skill-next-steps.py to-e2e-tasks
+python3 ~/.dotfiles/claude-code-shared/scripts/shared/print-skill-next-steps.py to-e2e-tasks
 ```
 
 Append that output under the Next steps header. Do not hardcode skill names.

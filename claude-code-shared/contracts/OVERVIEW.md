@@ -49,8 +49,8 @@ SEED (seed-schema.json v2)          TASK (task-schema.json v1)         RUNNER-RE
 
 | Format | Schema | Version | Naming script |
 |---|---|---|---|
-| Seed | `seed-schema.json` | `"2"` | `scripts/doc-filename.sh <slug> json` |
-| Task | `task-schema.json` | `"1"` | `scripts/task-filename.sh <slug>` |
+| Seed | `seed-schema.json` | `"2"` | `scripts/scaffolding/doc-filename.sh <slug> json` |
+| Task | `task-schema.json` | `"1"` | `scripts/scaffolding/task-filename.sh <slug>` |
 | Runner result | `runner-result-schema.json` | `"1"` | n/a (inline agent response) |
 
 ## Validation
@@ -58,7 +58,7 @@ SEED (seed-schema.json v2)          TASK (task-schema.json v1)         RUNNER-RE
 Every format-touching skill has a `## Contract` section with a Step-0 bash invocation:
 
 ```bash
-bash ~/.dotfiles/claude-code-shared/scripts/validate-schema.sh \
+bash ~/.dotfiles/claude-code-shared/scripts/shared/validate-schema.sh \
   --instance ~/.dotfiles/claude-code-shared/contracts/<format>-schema.json \
   <file-path>
 ```

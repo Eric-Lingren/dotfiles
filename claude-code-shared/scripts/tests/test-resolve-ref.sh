@@ -3,7 +3,7 @@
 set -euo pipefail
 
 SCRIPTS_DIR="$(cd "$(dirname "$0")/.." && pwd)"
-RESOLVER="$SCRIPTS_DIR/resolve-ref.sh"
+RESOLVER="$SCRIPTS_DIR/scaffolding/resolve-ref.sh"
 
 TMP=$(mktemp -d)
 PASS=0

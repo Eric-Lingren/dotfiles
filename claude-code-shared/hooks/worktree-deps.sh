@@ -33,12 +33,12 @@ fi
 [ -d "$WT_PATH" ] || exit 0
 
 # Symlink gitignored local config (app/.env etc.) per repo-policy worktree_links.
-bash "$HOME/.claude-code-shared/scripts/ensure-worktree-links.sh" "$WT_PATH" >&2
+bash "$HOME/.claude-code-shared/scripts/shared/ensure-worktree-links.sh" "$WT_PATH" >&2
 
 [ -f "$WT_PATH/package.json" ] || exit 0
 
 # Repairs symlinked node_modules and installs only when needed.
-bash "$HOME/.claude-code-shared/scripts/ensure-worktree-deps.sh" --quiet "$WT_PATH" >&2
+bash "$HOME/.claude-code-shared/scripts/shared/ensure-worktree-deps.sh" --quiet "$WT_PATH" >&2
 
 # Never block worktree entry on install failure
 exit 0

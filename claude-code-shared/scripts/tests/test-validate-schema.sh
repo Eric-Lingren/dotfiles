@@ -6,7 +6,7 @@ set -euo pipefail
 
 SCRIPTS_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 CONTRACTS_DIR="$(cd "$SCRIPTS_DIR/.." && pwd)/contracts"
-VALIDATOR="$SCRIPTS_DIR/validate-schema.sh"
+VALIDATOR="$SCRIPTS_DIR/shared/validate-schema.sh"
 SCHEMA="$CONTRACTS_DIR/task-schema.json"
 TMP=$(mktemp -d)
 

@@ -18,7 +18,7 @@ import os
 import sys
 from pathlib import Path
 
-BASE = Path(__file__).resolve().parent.parent  # claude-code-shared/
+BASE = Path(__file__).resolve().parents[2]  # claude-code-shared/
 OUT_DEFAULT = BASE / "architecture_map.html"
 
 # ─── GROUP CONFIG ───────────────────────────────────────────────────────────

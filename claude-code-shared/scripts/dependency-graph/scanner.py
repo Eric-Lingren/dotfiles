@@ -101,7 +101,7 @@ def default_root_for(extractor_name):
     if extractor_name == "claude-tooling":
         # claude-tooling only makes sense against the claude-code-shared repo
         # this script itself lives in.
-        return os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        return os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
     return os.getcwd()
 
 

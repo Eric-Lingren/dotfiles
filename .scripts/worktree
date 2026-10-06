@@ -250,7 +250,7 @@ cmd_stop() {
 # share one path.
 #
 # $1 worktree dir.
-ENSURE_DEPS="$HOME/.dotfiles/claude-code-shared/scripts/ensure-worktree-deps.sh"
+ENSURE_DEPS="$HOME/.dotfiles/claude-code-shared/scripts/shared/ensure-worktree-deps.sh"
 install_deps() {
   local wt_dir="$1"
 
@@ -273,7 +273,7 @@ install_deps() {
 # post-checkout hook, so worktrees made outside wt get links too.
 #
 # $1 worktree dir.
-ENSURE_LINKS="$HOME/.dotfiles/claude-code-shared/scripts/ensure-worktree-links.sh"
+ENSURE_LINKS="$HOME/.dotfiles/claude-code-shared/scripts/shared/ensure-worktree-links.sh"
 link_local_config() {
   local wt_dir="$1"
 

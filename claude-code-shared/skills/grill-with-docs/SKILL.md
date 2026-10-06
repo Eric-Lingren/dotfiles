@@ -18,7 +18,7 @@ Read decisions from the live conversation only. Do not extract decisions from an
 ### Resume grill (argument present)
 
 Route the path through resolve-ref.sh before reading (see `resources/resolve-ref-pattern.md`):
-- Run `bash ~/.dotfiles/claude-code-shared/scripts/resolve-ref.sh $(basename <path>)`. On archive hit (output starts with `ARCHIVE:`), use the extracted content. On not-found (exit non-zero), surface the diagnostic and ask "Continue anyway?" — bypass rebuilds context from conversation.
+- Run `bash ~/.dotfiles/claude-code-shared/scripts/scaffolding/resolve-ref.sh $(basename <path>)`. On archive hit (output starts with `ARCHIVE:`), use the extracted content. On not-found (exit non-zero), surface the diagnostic and ask "Continue anyway?" — bypass rebuilds context from conversation.
 
 Then read the file and check for `open_threads`:
 
@@ -30,7 +30,7 @@ Then read the file and check for `open_threads`:
 
 **(b) open_threads is empty (status: ready):** stop immediately.
 - Tell the user: "This seed is already solidified — all threads are resolved. No grilling needed."
-- Show next steps by running: `python3 ~/.dotfiles/claude-code-shared/scripts/print-skill-next-steps.py grill-with-docs` and printing the output.
+- Show next steps by running: `python3 ~/.dotfiles/claude-code-shared/scripts/shared/print-skill-next-steps.py grill-with-docs` and printing the output.
 - Do not start a grill session.
 
 **(c) path is unreadable or missing:** say so plainly and ask what the user wants.

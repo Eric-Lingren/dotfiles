@@ -8,7 +8,7 @@
 set -uo pipefail
 
 SCRIPTS_DIR="$(cd "$(dirname "$0")/.." && pwd)"
-SCRIPT="$SCRIPTS_DIR/resolve-standups-dir.sh"
+SCRIPT="$SCRIPTS_DIR/standup/resolve-standups-dir.sh"
 
 PASS=0
 FAIL=0

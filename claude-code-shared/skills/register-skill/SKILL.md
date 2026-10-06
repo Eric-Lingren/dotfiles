@@ -156,7 +156,7 @@ The skill name added here must exactly match the skill's directory name under `s
 
 Run `validate-schema.sh contracts/provenance-schema.json` afterward to confirm the schema is still valid:
 ```bash
-bash ~/.dotfiles/claude-code-shared/scripts/validate-schema.sh \
+bash ~/.dotfiles/claude-code-shared/scripts/shared/validate-schema.sh \
   ~/.dotfiles/claude-code-shared/contracts/provenance-schema.json
 ```
 
@@ -211,10 +211,10 @@ This mirrors how step 2d writes into `model-tiers.json`'s `skills` map, but targ
 
 ```bash
 # Preview first
-python3 claude-code-shared/scripts/sync-model-tiers.py --check
+python3 claude-code-shared/scripts/registration/sync-model-tiers.py --check
 
 # Apply — stamps model: and effort: into the skill's SKILL.md frontmatter
-python3 claude-code-shared/scripts/sync-model-tiers.py --apply
+python3 claude-code-shared/scripts/registration/sync-model-tiers.py --apply
 ```
 
 ### 2f. Skill path — verify
@@ -229,7 +229,7 @@ echo '{"prompt": "/<skill-name>"}' | bash claude-code-shared/hooks/tier-advisor.
 head -6 claude-code-shared/skills/<skill-name>/SKILL.md
 
 # 3. model-tiers.json is consistent
-python3 claude-code-shared/scripts/sync-model-tiers.py --check
+python3 claude-code-shared/scripts/registration/sync-model-tiers.py --check
 ```
 
 Confirm `tier-advisor.sh` emits the advisory block with the correct tier. If it prints nothing for the skill name, the name in `model-tiers.json` does not match the slash-command name — fix the mismatch.
@@ -259,7 +259,7 @@ Confirm the skill's entry exists in `voice-routing.json`'s `skills` map, that th
 
 The usage analytics classifier (`cc-usage-benchmark.py`) maps slash commands to intent buckets. A skill missing from these sets lands in the "other" bucket in usage reports.
 
-Open `claude-code-shared/scripts/cc-usage-benchmark.py` and locate the CMD set definitions near the top (search for `# ---- intent classification ----`). Add the new skill name to the appropriate set:
+Open `claude-code-shared/scripts/usage/cc-usage-benchmark.py` and locate the CMD set definitions near the top (search for `# ---- intent classification ----`). Add the new skill name to the appropriate set:
 
 | Intent bucket | CMD set variable | When to use |
 |---|---|---|
@@ -282,7 +282,7 @@ Stamp the new skill with the managed learning-capture tail block and register it
 **Step 1 — inject the tail block:**
 
 ```bash
-python3 ~/.dotfiles/claude-code-shared/scripts/inject-learning-tail.py \
+python3 ~/.dotfiles/claude-code-shared/scripts/learning/inject-learning-tail.py \
   --apply --skills-dir ~/.dotfiles/claude-code-shared/skills
 ```
 
@@ -317,10 +317,10 @@ After editing the JSON, run the sync:
 
 ```bash
 # Preview
-python3 claude-code-shared/scripts/sync-model-tiers.py --check
+python3 claude-code-shared/scripts/registration/sync-model-tiers.py --check
 
 # Apply — stamps model: into the agent's frontmatter and updates registry.json
-python3 claude-code-shared/scripts/sync-model-tiers.py --apply
+python3 claude-code-shared/scripts/registration/sync-model-tiers.py --apply
 ```
 
 ### 3b. Agent path — verify frontmatter
@@ -345,7 +345,7 @@ Do not hand-edit `model:` — the sync owns that field.
 After verifying frontmatter, upsert the agent into `claude-code-shared/agents/registry.json`:
 
 ```bash
-python3 claude-code-shared/scripts/registry_sync.py \
+python3 claude-code-shared/scripts/registration/registry-sync.py \
   claude-code-shared/agents/registry.json \
   '{"name":"<name>","file":"agents/<name>.md","model":"<model>","description":"<description>","consumers":["<skill-1>","<skill-2>"]}'
 ```
@@ -355,7 +355,7 @@ Ask the user: "Which skills consume this agent?" Use their answer for the `consu
 After the upsert, run validate-registry.py to confirm consistency:
 
 ```bash
-python3 claude-code-shared/scripts/validate_registry.py
+python3 claude-code-shared/scripts/registration/validate-registry.py
 ```
 
 If validation fails, fix the registry before proceeding.
@@ -390,7 +390,7 @@ Registered: <name> (<skill|agent>)
 Run the architecture diagram generator to keep `architecture.html` in sync:
 
 ```bash
-python3 ~/.dotfiles/claude-code-shared/scripts/gen-architecture.py
+python3 ~/.dotfiles/claude-code-shared/scripts/registration/gen-architecture.py
 ```
 
 If it prints warnings about unclassified items, update the `SKILL_GROUPS` or `AGENT_GROUPS` config at the top of `gen-architecture.py` to classify the newly registered skill or agent, then re-run.

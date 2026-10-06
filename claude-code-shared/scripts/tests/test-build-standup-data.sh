@@ -8,7 +8,7 @@
 set -uo pipefail
 
 SCRIPTS_DIR="$(cd "$(dirname "$0")/.." && pwd)"
-SCRIPT="$SCRIPTS_DIR/build-standup-data.sh"
+SCRIPT="$SCRIPTS_DIR/standup/build-standup-data.sh"
 FIXTURES="$(dirname "$0")/fixtures/build-standup-data"
 
 LINEAR_FIXTURE="$FIXTURES/linear.json"

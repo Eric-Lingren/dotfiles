@@ -68,7 +68,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         "--base-dir",
-        default=os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+        default=os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
         help="path to claude-code-shared/ root (default: parent of this script)",
     )
     args = parser.parse_args()

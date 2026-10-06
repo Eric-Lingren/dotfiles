@@ -121,7 +121,7 @@
   },
   "statusLine": {
     "type": "command",
-    "command": "bash \"$HOME/.claude-code-shared/scripts/context-bar.sh\""
+    "command": "bash \"$HOME/.claude-code-shared/scripts/profile/context-bar.sh\""
   },
   "enabledPlugins": {
     "caveman@caveman": true,

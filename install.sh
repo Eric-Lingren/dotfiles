@@ -107,7 +107,7 @@ setup_claude_accounts() {
 
 setup_claude_plugins() {
   info "Installing Claude Code plugins..."
-  $DRY_RUN || bash "$DOTFILES/claude-code-shared/scripts/install-plugins.sh"
+  $DRY_RUN || bash "$DOTFILES/claude-code-shared/scripts/profile/install-plugins.sh"
 }
 
 setup_python_deps() {

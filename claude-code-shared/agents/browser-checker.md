@@ -15,7 +15,7 @@ The caller passes all context in the prompt. Expect:
 
 - `spec` — Check Spec JSON object (the `browser_verify` field from the task). Shape: `{role, viewports, steps, masks, expected_visual_change}`.
 - `base_url` — Candidate server URL (e.g. `http://localhost:5173`).
-- `base_server_url` — Base server URL for baseline capture (e.g. `http://localhost:5174`). The caller starts and stops this server using `~/.dotfiles/claude-code-shared/scripts/base-server.sh`.
+- `base_server_url` — Base server URL for baseline capture (e.g. `http://localhost:5174`). The caller starts and stops this server using `~/.dotfiles/claude-code-shared/scripts/build/base-server.sh`.
 - `repo` — Org/Repo string (e.g. `Eric-Lingren/SpawnedSapien`).
 - `run_dir` — Absolute path to the artifacts directory for this run. Created by the caller; do not recreate.
 - `base_sha` — Merge-base SHA string used as the baseline cache key.
@@ -57,7 +57,7 @@ If `spec.role` is `"anonymous"`:
 Otherwise, run:
 
 ```bash
-python3 ~/.dotfiles/claude-code-shared/scripts/browser-auth.py ensure \
+python3 ~/.dotfiles/claude-code-shared/scripts/build/browser-auth.py ensure \
   --repo "<repo>" \
   --role "<spec.role>"
 ```
@@ -92,7 +92,7 @@ mkdir -p <run_dir>/baselines
 Check the cache for every viewport. For each `{name, width, height}` in `spec.viewports`:
 
 ```bash
-python3 ~/.dotfiles/claude-code-shared/scripts/baseline-cache.py get \
+python3 ~/.dotfiles/claude-code-shared/scripts/build/baseline-cache.py get \
   --spec-hash "<spec_hash>" \
   --base-sha "<base_sha>" \
   --viewport "<width>x<height>" \
@@ -109,7 +109,7 @@ If any viewport had a cache miss, generate baselines:
 
 ```bash
 mkdir -p <run_dir>/base-run
-node ~/.dotfiles/claude-code-shared/scripts/browser-verify.mjs \
+node ~/.dotfiles/claude-code-shared/scripts/build/browser-verify.mjs \
   --spec "<run_dir>/spec.json" \
   --base-url "<base_server_url>" \
   --state "<storage_state>" \
@@ -127,7 +127,7 @@ On success, cache results for each viewport that missed and copy to staging:
 For each viewport that had a cache miss:
 
 ```bash
-python3 ~/.dotfiles/claude-code-shared/scripts/baseline-cache.py put \
+python3 ~/.dotfiles/claude-code-shared/scripts/build/baseline-cache.py put \
   --spec-hash "<spec_hash>" \
   --base-sha "<base_sha>" \
   --viewport "<width>x<height>" \
@@ -146,7 +146,7 @@ cp <run_dir>/base-run/*.png <run_dir>/baselines/ 2>/dev/null || true
 Run browser-verify.mjs against the Candidate server:
 
 ```bash
-node ~/.dotfiles/claude-code-shared/scripts/browser-verify.mjs \
+node ~/.dotfiles/claude-code-shared/scripts/build/browser-verify.mjs \
   --spec "<run_dir>/spec.json" \
   --base-url "<base_url>" \
   --state "<storage_state>" \

@@ -25,7 +25,7 @@ Before returning, self-validate with:
 ```bash
 printf '%s' '<your-json>' | python3 -c "import sys,json; json.load(sys.stdin)" && \
   printf '%s' '<your-json>' > /tmp/inv-code-result.json && \
-  bash ~/.dotfiles/claude-code-shared/scripts/validate-schema.sh \
+  bash ~/.dotfiles/claude-code-shared/scripts/shared/validate-schema.sh \
     --instance ~/.dotfiles/claude-code-shared/contracts/investigation-result-schema.json \
     /tmp/inv-code-result.json
 ```

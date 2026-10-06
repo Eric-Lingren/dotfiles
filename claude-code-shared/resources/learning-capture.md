@@ -6,7 +6,7 @@ decides whether anything is worth recording. Do not self-assess and skip.
 ## 1. Resolve the transcript path
 
 ```bash
-bash ~/.dotfiles/claude-code-shared/scripts/resolve-transcript-path.sh
+bash ~/.dotfiles/claude-code-shared/scripts/learning/resolve-transcript-path.sh
 ```
 
 Pass the printed absolute path as `transcript_path` (pass `null` if it printed `null`).

@@ -70,7 +70,7 @@ the same candidate list. It is advisory: it always exits 0 and never gates a tas
 `--check` does.
 
 ```bash
-python3 ~/.dotfiles/claude-code-shared/scripts/scanner.py --consistency [root]
+python3 ~/.dotfiles/claude-code-shared/scripts/dependency-graph/scanner.py --consistency [root]
 ```
 
 Current SHAPE rules:

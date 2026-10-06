@@ -20,7 +20,7 @@ Route and execute tasks from a task file by partitioning items into branches by 
 
 **Step-0 — validate input before processing:**
 ```bash
-bash ~/.dotfiles/claude-code-shared/scripts/validate-schema.sh \
+bash ~/.dotfiles/claude-code-shared/scripts/shared/validate-schema.sh \
   --instance ~/.dotfiles/claude-code-shared/contracts/task-schema.json \
   <input-path>
 ```
@@ -34,7 +34,7 @@ If a path argument was passed (e.g. `/dispatch-tasks docs/tasks/20260606-0129-my
 
 Otherwise, list all `*.json` files in `docs/tasks/` and ask the user to choose.
 
-Route the task file path through resolve-ref.sh before reading (see `resources/resolve-ref-pattern.md`): Run `bash ~/.dotfiles/claude-code-shared/scripts/resolve-ref.sh $(basename <path>)`. On archive hit (output starts with `ARCHIVE:`), use the extracted content. On not-found (exit non-zero), surface the diagnostic and ask "Continue anyway?" — bypass rebuilds context from conversation.
+Route the task file path through resolve-ref.sh before reading (see `resources/resolve-ref-pattern.md`): Run `bash ~/.dotfiles/claude-code-shared/scripts/scaffolding/resolve-ref.sh $(basename <path>)`. On archive hit (output starts with `ARCHIVE:`), use the extracted content. On not-found (exit non-zero), surface the diagnostic and ask "Continue anyway?" — bypass rebuilds context from conversation.
 
 Read the task file. Read `~/.dotfiles/claude-code-shared/resources/task-routing.json` to get the runners map.
 
@@ -204,7 +204,7 @@ Next steps:
 
 Then run:
 ```bash
-python3 ~/.dotfiles/claude-code-shared/scripts/print-skill-next-steps.py dispatch-tasks
+python3 ~/.dotfiles/claude-code-shared/scripts/shared/print-skill-next-steps.py dispatch-tasks
 ```
 
 Append that output under the Next steps header. If more branches remain, prepend a note: "Re-run `/dispatch-tasks <file>` to process the next branch." Do not hardcode skill names.

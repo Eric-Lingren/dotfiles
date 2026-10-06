@@ -17,7 +17,7 @@ ROOT=$(git rev-parse --show-toplevel 2>/dev/null) || {
   exit 1
 }
 
-ENSURE_DEPS="$HOME/.dotfiles/claude-code-shared/scripts/ensure-worktree-deps.sh"
+ENSURE_DEPS="$HOME/.dotfiles/claude-code-shared/scripts/shared/ensure-worktree-deps.sh"
 
 # ─── 1. JS deps ───────────────────────────────────────────────────────────────
 

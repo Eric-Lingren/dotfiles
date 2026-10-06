@@ -7,7 +7,7 @@
   <key>ProgramArguments</key>
   <array>
     <string>/bin/bash</string>
-    <string>/Users/eric/.dotfiles/claude-code-shared/scripts/weekly-usage-report.sh</string>
+    <string>/Users/eric/.dotfiles/claude-code-shared/scripts/usage/weekly-usage-report.sh</string>
   </array>
   <key>EnvironmentVariables</key>
   <dict>

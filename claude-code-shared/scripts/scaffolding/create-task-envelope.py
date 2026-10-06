@@ -79,9 +79,9 @@ def main():
         f.write("\n")
 
     scripts_dir = os.path.dirname(os.path.abspath(__file__))
-    schema_path = os.path.join(scripts_dir, "..", "contracts", "task-schema.json")
+    schema_path = os.path.join(scripts_dir, "..", "..", "contracts", "task-schema.json")
     result = subprocess.run(
-        ["bash", os.path.join(scripts_dir, "validate-schema.sh"),
+        ["bash", os.path.join(scripts_dir, "..", "shared", "validate-schema.sh"),
          "--instance", schema_path, args.output],
         capture_output=True, text=True,
     )

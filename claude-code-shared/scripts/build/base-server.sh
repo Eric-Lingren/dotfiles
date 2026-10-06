@@ -27,7 +27,7 @@ set -uo pipefail
 # ── Constants ──────────────────────────────────────────────────────────────
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-REPO_POLICY="$SCRIPT_DIR/../resources/repo-policy.json"
+REPO_POLICY="$SCRIPT_DIR/../../resources/repo-policy.json"
 WORKTREE_BASE="/tmp"
 HEALTH_POLL_INTERVAL=2   # seconds between polls
 HEALTH_TIMEOUT=60        # max seconds to wait for the server

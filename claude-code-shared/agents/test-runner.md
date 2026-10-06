@@ -13,7 +13,7 @@ model: haiku
 Your verdict MUST include `"schema_version": "1"` as a top-level field. Before returning, validate:
 ```bash
 printf '%s' '<your-json>' > /tmp/test-verdict.json && \
-  bash ~/.dotfiles/claude-code-shared/scripts/validate-schema.sh \
+  bash ~/.dotfiles/claude-code-shared/scripts/shared/validate-schema.sh \
     --instance ~/.dotfiles/claude-code-shared/contracts/runner-result-schema.json \
     /tmp/test-verdict.json
 ```
