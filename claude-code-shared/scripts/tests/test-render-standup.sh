@@ -92,10 +92,14 @@ fi
 
 # --- Test 3: all six sections present ---
 echo ""
-echo "=== T3: all six sections present ==="
-assert_contains "$OUT" "## In Review" "output contains ## In Review section"
-assert_contains "$OUT" "## Done" "output contains ## Done section"
-assert_contains "$OUT" "## In Progress" "output contains ## In Progress section"
+echo "=== T3: all sections present, Linear circles, Done first ==="
+assert_contains "$OUT" "## 🟢 In Review" "output contains ## 🟢 In Review section"
+assert_contains "$OUT" "## 🟣 Done" "output contains ## 🟣 Done section"
+assert_contains "$OUT" "## 🟡 In Progress" "output contains ## 🟡 In Progress section"
+assert_contains "$OUT" "## ⚪ Todo" "output contains ## ⚪ Todo section"
+FIRST_SECTION=$(echo "$OUT" | grep "^## " | head -1)
+assert_contains "$FIRST_SECTION" "Done" "Done is the first section"
+assert_contains "$OUT" "Shipped this cycle: 1" "Done section shows shipped count"
 assert_contains "$OUT" "## Blockers" "output contains ## Blockers section"
 assert_contains "$OUT" "## Theme" "output contains ## Theme section"
 assert_contains "$OUT" "## Talk track" "output contains ## Talk track section"
@@ -106,7 +110,7 @@ echo "=== T4: In Review content ==="
 # Should include PR 101 and SM-3008 ticket
 assert_contains "$OUT" "SM-3008" "In Review contains SM-3008"
 assert_contains "$OUT" "pull/101" "In Review contains PR 101 link"
-assert_contains "$OUT" "🟡" "In Review yellow bucket emoji present"
+assert_contains "$OUT" "⏳ \[#101\]" "In Review yellow bucket shows waiting marker"
 assert_contains "$OUT" "alice" "In Review shows reviewer alice"
 assert_contains "$OUT" "waiting 10d" "In Review shows age tag"
 
@@ -139,15 +143,18 @@ assert_contains "$OUT" "Steady delivery" "Theme section contains prose theme"
 # --- Test 9: Talk track format ---
 echo ""
 echo "=== T9: Talk track content ==="
-assert_contains "$OUT" "> Merged Feature X" "Talk track line 1 starts with >"
-assert_contains "$OUT" "> Dispatch redesign" "Talk track line 2 present"
-assert_contains "$OUT" "> Next:" "Talk track line 3 (next) present"
+assert_contains "$OUT" "> Shipped Feature X" "Talk track line 1 is the shipped line"
+assert_contains "$OUT" "> Dispatch redesign" "Talk track waiting line present"
+assert_contains "$OUT" "> Next:" "Talk track next line present"
+# Shipped lines render before the rest
+FIRST_TALK=$(echo "$OUT" | grep "^>" | head -1)
+assert_contains "$FIRST_TALK" "Shipped" "shipped_track renders first"
 # Talk track lines are quoted with >
 TALK_LINES=$(echo "$OUT" | grep -c "^>" || true)
-if [ "$TALK_LINES" -ge 3 ] && [ "$TALK_LINES" -le 4 ]; then
-  assert_pass "talk track has 3-4 quoted lines"
+if [ "$TALK_LINES" -eq 4 ]; then
+  assert_pass "talk track has 4 quoted lines (2 shipped + 2 talk)"
 else
-  assert_fail "talk track should have 3-4 lines starting with >, got $TALK_LINES"
+  assert_fail "talk track should have 4 lines starting with >, got $TALK_LINES"
 fi
 
 # --- Test 10: summaries are used ---
@@ -158,12 +165,15 @@ assert_contains "$OUT" "user-facing feature X" "SM-3011 summary text included"
 
 # --- Test 11: talk track word count validation ---
 echo ""
-echo "=== T11: talk track over-60-word validation ==="
-# Create a prose fixture with a talk track over 60 words
+echo "=== T11: talk track over-80-word validation ==="
+# Create a prose fixture with a talk track over 80 words
 cat > "$TMP/prose_too_long.json" << 'EOF'
 {
   "summaries": {},
   "theme": "Theme sentence.",
+  "shipped_track": [
+    "Shipped a long list of things that adds a good number of extra words to the count."
+  ],
   "talk_track": [
     "This is an extremely long first line that contains many many many many many many extra words to help push us well over the sixty word total limit.",
     "This is a second extremely long line with many many many many many many extra words that pushes us even further over the absolute limit.",
@@ -176,67 +186,85 @@ OUT11=$(bash "$SCRIPT" "$DATA_FIXTURE" "$TMP/prose_too_long.json" 2>"$TMP/t11.er
 EXIT11=$?
 set -e
 if [ "$EXIT11" -ne 0 ]; then
-  assert_pass "exits non-zero when talk track exceeds 60 words"
+  assert_pass "exits non-zero when talk track exceeds 80 words"
 else
-  assert_fail "should exit non-zero when talk track over 60 words (got exit 0)"
+  assert_fail "should exit non-zero when talk track over 80 words (got exit 0)"
 fi
-if grep -q "60 words" "$TMP/t11.err" 2>/dev/null; then
-  assert_pass "error message mentions 60 words"
+if grep -q "80 words" "$TMP/t11.err" 2>/dev/null; then
+  assert_pass "error message mentions 80 words"
 else
-  assert_fail "error message should mention 60 words. stderr: $(cat "$TMP/t11.err")"
+  assert_fail "error message should mention 80 words. stderr: $(cat "$TMP/t11.err")"
 fi
 
 # --- Test 12: talk track line count validation ---
 echo ""
 echo "=== T12: talk track line count validation ==="
-# 2 lines → should fail
-cat > "$TMP/prose_2lines.json" << 'EOF'
+# 1 talk_track line → should fail
+cat > "$TMP/prose_1line.json" << 'EOF'
 {
   "summaries": {},
   "theme": "Theme.",
+  "shipped_track": ["Shipped it."],
   "talk_track": [
-    "Line one.",
-    "Line two."
+    "Line one."
   ]
 }
 EOF
 set +e
-OUT12=$(bash "$SCRIPT" "$DATA_FIXTURE" "$TMP/prose_2lines.json" 2>"$TMP/t12.err")
+OUT12=$(bash "$SCRIPT" "$DATA_FIXTURE" "$TMP/prose_1line.json" 2>"$TMP/t12.err")
 EXIT12=$?
 set -e
 if [ "$EXIT12" -ne 0 ]; then
-  assert_pass "exits non-zero when talk track has 2 lines"
+  assert_pass "exits non-zero when talk track has 1 line"
 else
-  assert_fail "should exit non-zero for 2-line talk track"
+  assert_fail "should exit non-zero for 1-line talk track"
 fi
 
-# 5 lines → should fail
-cat > "$TMP/prose_5lines.json" << 'EOF'
+# 4 talk_track lines → should fail
+cat > "$TMP/prose_4lines.json" << 'EOF'
 {
   "summaries": {},
   "theme": "Theme.",
+  "shipped_track": ["Shipped it."],
   "talk_track": [
     "Line 1.",
     "Line 2.",
     "Line 3.",
-    "Line 4.",
-    "Line 5 extra line."
+    "Line 4 extra line."
   ]
 }
 EOF
 set +e
-OUT12b=$(bash "$SCRIPT" "$DATA_FIXTURE" "$TMP/prose_5lines.json" 2>"$TMP/t12b.err")
+OUT12b=$(bash "$SCRIPT" "$DATA_FIXTURE" "$TMP/prose_4lines.json" 2>"$TMP/t12b.err")
 EXIT12b=$?
 set -e
 if [ "$EXIT12b" -ne 0 ]; then
-  assert_pass "exits non-zero when talk track has 5 lines"
+  assert_pass "exits non-zero when talk track has 4 lines"
 else
-  assert_fail "should exit non-zero for 5-line talk track"
+  assert_fail "should exit non-zero for 4-line talk track"
 fi
 
-# --- Test 13: done_earlier renders as one-liner ---
+# Something shipped but no shipped_track → should fail
+cat > "$TMP/prose_no_shipped.json" << 'EOF'
+{
+  "summaries": {},
+  "theme": "Theme.",
+  "talk_track": ["Line 1.", "Line 2."]
+}
+EOF
+set +e
+OUT12c=$(bash "$SCRIPT" "$DATA_FIXTURE" "$TMP/prose_no_shipped.json" 2>"$TMP/t12c.err")
+EXIT12c=$?
+set -e
+if [ "$EXIT12c" -ne 0 ] && grep -q "shipped_track" "$TMP/t12c.err"; then
+  assert_pass "exits non-zero when work shipped but shipped_track missing"
+else
+  assert_fail "should require shipped_track when done items exist"
+fi
+
+# --- Test 13: done_earlier renders as full entries ---
 echo ""
-echo "=== T13: done_earlier one-liner ==="
+echo "=== T13: done_earlier full entries ==="
 # Create a data fixture with both done_new and done_earlier
 cat > "$TMP/data_with_earlier.json" << 'EOF'
 {
@@ -281,8 +309,9 @@ EXIT13=$?
 set -e
 
 assert_exit_zero "$EXIT13" "exits 0 with done_earlier fixture"
-assert_contains "$OUT13" "Earlier this cycle" "Done section has 'Earlier this cycle' one-liner"
-assert_contains "$OUT13" "SM-3009" "Earlier this cycle line contains SM-3009 link"
+assert_contains "$OUT13" "### Earlier this cycle" "Done section has 'Earlier this cycle' subsection"
+assert_contains "$OUT13" "SM-3009) Old fix" "Earlier this cycle lists SM-3009 as a full entry"
+assert_contains "$OUT13" "Shipped this cycle: 2" "shipped count includes earlier merges"
 
 # --- Test 14: violations render inline ---
 echo ""

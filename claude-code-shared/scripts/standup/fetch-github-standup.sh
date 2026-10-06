@@ -11,10 +11,15 @@
 #   ciRollup (success|failure|pending|none), unresolvedThreadCount (integer),
 #   changedFiles (integer)
 #
+# Covers open PRs plus PRs merged in the last 21 days. `gh pr list` defaults to
+# open only, so merged PRs need their own call or Done is always empty.
+# build-standup-data.sh trims merged PRs to the active Linear cycle.
+#
 # KEY id extraction (e.g. SM-3008, KEY-42) from branch names and PR titles.
 #
 # Test hooks (env vars — set in tests to avoid real gh calls):
-#   GH_PR_LIST_FIXTURE     path to JSON file replacing `gh pr list` output
+#   GH_PR_LIST_FIXTURE     path to JSON file replacing both `gh pr list` calls
+#   GH_PR_MERGED_FIXTURE   optional extra JSON list appended in fixture mode
 #   GH_PR_THREADS_FIXTURE  path to JSON file mapping PR numbers to unresolved
 #                          thread counts: {"1234": 2, "5678": 0}
 #
@@ -31,14 +36,40 @@ trap cleanup EXIT
 
 GH_FIELDS="number,title,body,headRefName,url,state,isDraft,createdAt,updatedAt,mergedAt,reviews,reviewRequests,statusCheckRollup,changedFiles"
 
+MERGED_LOOKBACK_DAYS=21
+
 if [ -n "${GH_PR_LIST_FIXTURE:-}" ]; then
-  cp "$GH_PR_LIST_FIXTURE" "$TMP/pr_list.json"
+  cp "$GH_PR_LIST_FIXTURE" "$TMP/open.json"
+  if [ -n "${GH_PR_MERGED_FIXTURE:-}" ]; then
+    cp "$GH_PR_MERGED_FIXTURE" "$TMP/merged.json"
+  else
+    echo '[]' > "$TMP/merged.json"
+  fi
 else
+  MERGED_SINCE=$(python3 -c "import datetime as d; print((d.date.today() - d.timedelta(days=$MERGED_LOOKBACK_DAYS)).isoformat())")
   gh pr list --author @me \
     --json "$GH_FIELDS" \
     --limit 100 \
-    > "$TMP/pr_list.json"
+    > "$TMP/open.json"
+  gh pr list --author @me --state merged \
+    --search "merged:>=$MERGED_SINCE" \
+    --json "$GH_FIELDS" \
+    --limit 100 \
+    > "$TMP/merged.json"
 fi
+
+# Concat open + merged, dedupe by PR number.
+python3 - "$TMP/open.json" "$TMP/merged.json" > "$TMP/pr_list.json" <<'PYEOF'
+import json, sys
+seen, out = set(), []
+for path in sys.argv[1:]:
+    with open(path) as f:
+        for pr in json.load(f):
+            if pr.get("number") not in seen:
+                seen.add(pr.get("number"))
+                out.append(pr)
+json.dump(out, sys.stdout)
+PYEOF
 
 # --- 2. Fetch unresolved review thread counts ---
 

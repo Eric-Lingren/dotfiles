@@ -6,13 +6,14 @@
 #
 # Args:
 #   linear_json      Path to JSON array output from fetch-linear-standup.sh
-#                    Each item: {id, key, title, status, url, parentKey, epicKey}
+#                    Each item: {id, key, title, status, statusType, completedAt,
+#                                cycleStartsAt, url, parentKey, epicKey, projectName}
 #   github_json      Path to JSON object output from fetch-github-standup.sh
 #                    Shape: {prs: [...], key_ids: [...]}
 #
 # Options:
 #   --standups-dir   Directory containing prior standups as YYYY-MM-DD.md files.
-#                    The newest filename date is used as the cutoff.
+#                    The newest filename date before today is used as the cutoff.
 #                    If missing or empty: all merged PRs go to done_new,
 #                    since_last_standup_cutoff is null.
 #
@@ -26,8 +27,10 @@
 #     "done_new":    [{ticket, prs}],
 #     "done_earlier":[{ticket, prs}],
 #     "in_progress": [{ticket, prs}],
+#     "todo":        [{ticket, prs: []}],
 #     "blockers":    [{ticket, prs}],
-#     "theme_signals":{distinct_reviewers, small_prs, ci_green_ratio, delivery_count},
+#     "theme_signals":{distinct_reviewers, small_prs, ci_green_ratio, delivery_count,
+#                      shipped_cycle_count},
 #     "violations":  [{type, ...}],
 #     "since_last_standup_cutoff": "YYYY-MM-DD" | null
 #   }
@@ -38,6 +41,14 @@
 #   green  — all reviewers have APPROVED (latest), at least one review, no issues
 #   yellow — everything else (no reviews yet, or review requested but no issues)
 #   white  — isDraft==true (listed under in_progress)
+#
+# Tickets with no open/merged PR route by Linear statusType:
+#   completed            → done_new / done_earlier (by completedAt vs cutoff)
+#   triage|backlog|unstarted → todo
+#   canceled|duplicate   → dropped
+#   started or unknown   → in_progress
+#
+# Merged PRs before the active cycle start (any ticket's cycleStartsAt) are dropped.
 #
 # Violations:
 #   multiple_prs       — a Linear ticket has more than one PR
@@ -142,10 +153,34 @@ if standups_dir:
         dates = []
         for f in sd.iterdir():
             m = DATE_RE.match(f.name)
-            if m:
+            # Skip today's file so a same-day rerun still compares to the prior standup
+            if m and m.group(1) < NOW.date().isoformat():
                 dates.append(m.group(1))
         if dates:
             cutoff_date_str = max(dates)
+
+# ── Active cycle start (trims merged PRs from earlier cycles) ────────────────
+
+cycle_start = None
+for t in linear_tickets:
+    cs = parse_iso(t.get("cycleStartsAt") or "")
+    if cs:
+        cycle_start = cs
+        break
+
+def merged_in_cycle(pr):
+    if cycle_start is None:
+        return True
+    merged_at = parse_iso(pr.get("mergedAt") or "")
+    return merged_at is None or merged_at >= cycle_start
+
+def is_new_since_cutoff(ts_str):
+    if not cutoff_date_str:
+        return True
+    ts = parse_iso(ts_str or "")
+    if ts is None:
+        return True
+    return ts.date() > datetime.fromisoformat(cutoff_date_str).date()
 
 # ── KEY extraction from PR branch + title ─────────────────────────────────────
 
@@ -308,6 +343,8 @@ def ticket_summary(tkey):
         "key": t["key"],
         "title": t["title"],
         "status": t["status"],
+        "statusType": t.get("statusType"),
+        "completedAt": t.get("completedAt"),
         "url": t["url"],
         "parentKey": t.get("parentKey"),
         "epicKey": t.get("epicKey"),
@@ -321,6 +358,7 @@ done_new_items    = []
 done_earlier_items = []
 
 seen_pr_numbers = set()
+placed_ticket_keys = set()
 
 for pr in prs:
     num = pr["number"]
@@ -335,29 +373,38 @@ for pr in prs:
     tkey = tkeys[0] if tkeys else None  # primary ticket (first match)
 
     if state == "MERGED":
-        merged_at_str = pr.get("mergedAt") or ""
-        merged_at = parse_iso(merged_at_str)
-        if cutoff_date_str and merged_at:
-            cutoff_dt = datetime.fromisoformat(cutoff_date_str).replace(tzinfo=timezone.utc)
-            if merged_at.date() > cutoff_dt.date():
-                done_new_items.append((tkey, pr))
-            else:
-                done_earlier_items.append((tkey, pr))
-        else:
+        if not merged_in_cycle(pr):
+            continue
+        if is_new_since_cutoff(pr.get("mergedAt")):
             done_new_items.append((tkey, pr))
+        else:
+            done_earlier_items.append((tkey, pr))
     elif bucket == "white":
         in_progress_items.append((tkey, pr))
     elif bucket in ("red", "yellow", "green"):
         in_review_items.append((tkey, pr))
+    else:
+        continue
+    placed_ticket_keys.update(tkeys)
 
-# Add tickets with no PR to in_progress
-matched_ticket_keys = set()
-for pr in prs:
-    for k in pr_to_tickets.get(pr["number"], []):
-        matched_ticket_keys.add(k)
+# Tickets with no placed PR route by Linear status type
+TODO_TYPES = {"triage", "backlog", "unstarted"}
+todo_items = []
 
 for t in linear_tickets:
-    if t["key"] not in matched_ticket_keys:
+    if t["key"] in placed_ticket_keys:
+        continue
+    stype = (t.get("statusType") or "").lower()
+    if stype in ("canceled", "duplicate"):
+        continue
+    if stype == "completed":
+        if is_new_since_cutoff(t.get("completedAt")):
+            done_new_items.append((t["key"], None))
+        else:
+            done_earlier_items.append((t["key"], None))
+    elif stype in TODO_TYPES:
+        todo_items.append((t["key"], None))
+    else:
         in_progress_items.append((t["key"], None))
 
 # ── Build grouped output ─────────────────────────────────────────────────────
@@ -412,7 +459,8 @@ def group_done(items):
         if k not in groups:
             groups[k] = []
             order.append(k)
-        groups[k].append(pr_summary(pr))
+        if pr is not None:
+            groups[k].append(pr_summary(pr))
     result = []
     for k in order:
         real_key = None if k == "__no_ticket__" else k
@@ -447,6 +495,7 @@ in_review_out   = group_in_review(in_review_items)
 done_new_out    = group_done(done_new_items)
 done_earlier_out = group_done(done_earlier_items)
 in_progress_out = group_in_progress(in_progress_items)
+todo_out        = group_by_ticket(todo_items)
 
 # ── Blockers: red-bucket in_review items ──────────────────────────────────────
 
@@ -488,14 +537,19 @@ if all_open_non_draft:
 else:
     ci_green_ratio = None
 
-# delivery_count: number of done_new PR groups
-delivery_count = sum(len(g["prs"]) for g in done_new_out)
+# delivery_count: shipped items since last standup (PRs, or the ticket when it has none)
+def shipped_count(groups):
+    return sum(len(g["prs"]) or 1 for g in groups)
+
+delivery_count = shipped_count(done_new_out)
+shipped_cycle_count = delivery_count + shipped_count(done_earlier_out)
 
 theme_signals = {
     "distinct_reviewers": distinct_reviewers,
     "small_prs": small_prs,
     "ci_green_ratio": ci_green_ratio,
     "delivery_count": delivery_count,
+    "shipped_cycle_count": shipped_cycle_count,
 }
 
 # ── Final output ──────────────────────────────────────────────────────────────
@@ -505,6 +559,7 @@ result = {
     "done_new":    done_new_out,
     "done_earlier": done_earlier_out,
     "in_progress": in_progress_out,
+    "todo":        todo_out,
     "blockers":    blockers_out,
     "theme_signals": theme_signals,
     "violations":  violations,

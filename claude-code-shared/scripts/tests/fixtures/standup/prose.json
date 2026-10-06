@@ -5,10 +5,12 @@
     "SM-3013": "Groundwork for the new notification pipeline"
   },
   "theme": "Steady delivery — Feature X shipped and the dispatch redesign is one review away.",
+  "shipped_track": [
+    "Shipped Feature X (SM-3011) for Platform Reliability — clean CI, reviewed by carol.",
+    "That puts the platform flag rollout in users' hands this cycle."
+  ],
   "talk_track": [
-    "Merged Feature X (SM-3011) for Platform Reliability — clean CI, reviewed by carol.",
     "Dispatch redesign (SM-3008) is waiting on alice's second pass.",
-    "Next: address alice's feedback and get SM-3008 merged.",
-    "Theme: steady delivery — one shipped, one almost across the line."
+    "Next: address alice's feedback and get SM-3008 merged."
   ]
 }
