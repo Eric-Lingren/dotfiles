@@ -2,7 +2,7 @@
 set -euo pipefail
 
 if [ $# -lt 3 ]; then
-  echo "usage: gh-issue.sh <title> <body> <org/repo>" >&2
+  echo "usage: github-issue.sh <title> <body> <org/repo>" >&2
   exit 1
 fi
 

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Characterization tests for the export-tasks-notion adapter scripts.
-# Tests check-token.sh (env var presence) and notion-page-api.sh (arg validation).
+# Tests notion-check-token.sh (env var presence) and notion-page-api.sh (arg validation).
 # No real Notion API calls are made.
 # After the move to agents/egress/notion/, update the path variables below.
 #
@@ -10,8 +10,8 @@
 set -uo pipefail
 
 # ---- scripts under test ------------------------------------------------------
-NOTION_DIR="$HOME/.dotfiles/claude-code-shared/agents/egress/notion"
-CHECK_TOKEN_SCRIPT="$NOTION_DIR/check-token.sh"
+NOTION_DIR="$HOME/.dotfiles/claude-code-shared/scripts/egress"
+CHECK_TOKEN_SCRIPT="$NOTION_DIR/notion-check-token.sh"
 API_SCRIPT="$NOTION_DIR/notion-page-api.sh"
 
 # ---- harness -----------------------------------------------------------------
@@ -74,26 +74,26 @@ echo ""
 
 # --- file existence ---
 echo "-- file existence --"
-assert_file_exists "$CHECK_TOKEN_SCRIPT" "check-token.sh exists at adapter location"
+assert_file_exists "$CHECK_TOKEN_SCRIPT" "notion-check-token.sh exists at adapter location"
 assert_file_exists "$API_SCRIPT" "notion-page-api.sh exists at adapter location"
 echo ""
 
-# --- check-token.sh behavior ---
-echo "-- check-token.sh: NOTION_PERSONAL_TOKEN absent --"
-# check-token.sh sources $HOME/.dotfiles/local/secrets.env, so we must use a
+# --- notion-check-token.sh behavior ---
+echo "-- notion-check-token.sh: NOTION_PERSONAL_TOKEN absent --"
+# notion-check-token.sh sources $HOME/.dotfiles/local/secrets.env, so we must use a
 # temp HOME to prevent the real secrets from being loaded:
 FAKE_HOME=$(mktemp -d)
 exit_no_token=0
 stderr_no_token=$(HOME="$FAKE_HOME" bash "$CHECK_TOKEN_SCRIPT" 2>&1) || exit_no_token=$?
 rm -rf "$FAKE_HOME"
-assert_exit_nonzero "$exit_no_token" "check-token.sh exits non-zero when NOTION_PERSONAL_TOKEN is not set"
-assert_contains "$stderr_no_token" "NOTION_PERSONAL_TOKEN" "check-token.sh stderr mentions NOTION_PERSONAL_TOKEN when missing"
+assert_exit_nonzero "$exit_no_token" "notion-check-token.sh exits non-zero when NOTION_PERSONAL_TOKEN is not set"
+assert_contains "$stderr_no_token" "NOTION_PERSONAL_TOKEN" "notion-check-token.sh stderr mentions NOTION_PERSONAL_TOKEN when missing"
 echo ""
 
-echo "-- check-token.sh: NOTION_PERSONAL_TOKEN present --"
+echo "-- notion-check-token.sh: NOTION_PERSONAL_TOKEN present --"
 exit_with_token=0
 NOTION_PERSONAL_TOKEN="ntn_fake_token_for_test" bash "$CHECK_TOKEN_SCRIPT" > /dev/null 2>&1 || exit_with_token=$?
-assert_exit_code 0 "$exit_with_token" "check-token.sh exits 0 when NOTION_PERSONAL_TOKEN is set"
+assert_exit_code 0 "$exit_with_token" "notion-check-token.sh exits 0 when NOTION_PERSONAL_TOKEN is set"
 echo ""
 
 # --- notion-page-api.sh argument validation ---
