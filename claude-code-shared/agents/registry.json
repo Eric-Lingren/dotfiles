@@ -126,16 +126,16 @@
     },
     {
       "name": "export-tasks",
-      "file": "agents/task-exporters/export-tasks.md",
+      "file": "agents/egress/export-tasks.md",
       "model": "sonnet",
-      "description": "Triage branch coordinator. Resolves routing, validates config, presents a dry-run table with wall-crossing warnings, then spawns adapter agents (export-tasks-gh, export-tasks-notion) to execute writes. Updates item status and export_url on success. Spawned by dispatch-tasks as an isolated agent.",
+      "description": "Triage branch coordinator. Resolves routing, validates config, presents a dry-run table with wall-crossing warnings, then spawns adapter agents (export-tasks-github, export-tasks-notion) to execute writes. Updates item status and export_url on success. Spawned by dispatch-tasks as an isolated agent.",
       "consumers": [
         "dispatch-tasks"
       ]
     },
     {
-      "name": "export-tasks-gh",
-      "file": "agents/egress/github/export-tasks-gh.md",
+      "name": "export-tasks-github",
+      "file": "agents/egress/github/export-tasks-github.md",
       "model": "haiku",
       "description": "GitHub Issues write adapter. Creates a single GitHub issue from structured JSON input. Spawned by the export-tasks coordinator per gh-issues item. Returns the created issue URL as the sole response line.",
       "consumers": [

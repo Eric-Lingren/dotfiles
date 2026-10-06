@@ -56,8 +56,8 @@ def titles(findings):
 class TestAgentWrapping:
     def test_mixed_wrapping_group_is_flagged(self, tmp_path):
         build_repo(tmp_path, agents=[
-            ("export-tasks", "agents/task-exporters/export-tasks.md"),
-            ("export-tasks-gh", "agents/task-exporters/export-tasks-gh/agent.md"),
+            ("export-tasks", "agents/egress/export-tasks.md"),
+            ("export-tasks-github", "agents/task-exporters/export-tasks-github/agent.md"),
             ("export-tasks-notion", "agents/task-exporters/export-tasks-notion/agent.md"),
         ])
         findings = extractor.consistency_findings(str(tmp_path))
@@ -65,7 +65,7 @@ class TestAgentWrapping:
         f = findings[0]
         assert "agents/task-exporters" in f["title"]
         assert set(f["nodes"]) == {
-            "agent:export-tasks", "agent:export-tasks-gh", "agent:export-tasks-notion",
+            "agent:export-tasks", "agent:export-tasks-github", "agent:export-tasks-notion",
         }
         # Evidence names each member and its shape.
         facts = " ".join(e["fact"] for e in f["evidence"])
@@ -142,8 +142,8 @@ class TestScannerCLI:
 
     def test_cli_emits_findings_envelope_and_exits_zero(self, tmp_path):
         build_repo(tmp_path, agents=[
-            ("export-tasks", "agents/task-exporters/export-tasks.md"),
-            ("export-tasks-gh", "agents/task-exporters/export-tasks-gh/agent.md"),
+            ("export-tasks", "agents/egress/export-tasks.md"),
+            ("export-tasks-github", "agents/task-exporters/export-tasks-github/agent.md"),
         ], scripts=["scripts/graph.example.json"])
         result = self._run(tmp_path)
         assert result.returncode == 0, result.stderr
