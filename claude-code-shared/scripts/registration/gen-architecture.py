@@ -93,6 +93,8 @@ def discover_agents():
     names = []
     for p in d.rglob("*.md"):
         name = p.stem
+        if p.name == "README.md":
+            continue
         if name not in names:
             names.append(name)
     return sorted(names)
