@@ -1,0 +1,122 @@
+{
+  "schema_version": "4",
+  "producer": "to-seed",
+  "source": {
+    "type": "session",
+    "ref": null
+  },
+  "title": "Normalize claude-code-shared/contracts as a flat directory",
+  "slug": "contracts-flat-normalize",
+  "created": "2026-10-03T07:55:59Z",
+  "iteration": 1,
+  "summary": "An audit of claude-code-shared/contracts/ (27 files, flat, plus one contract doc stored in resources/) found naming and placement drift rather than a grouping problem. check-spec.md and visual-verdict.md lack the -contract suffix the other contract docs use. The browser-check-result contract doc lives in resources/. The bare verdict-* pair is ambiguous next to visual-verdict, the runner-result verdict, and the investigation-result verdict axis. OVERVIEW.md and overview.html are stale (seed v2, task v1, run-tasks) and differ only by letter case. Several descriptions still name run-tasks after its rename to build-code. validate-schema.py counts learning-cause-vocabulary.json as a schema, two loaders glob contracts/*.json at the top level only, and the scanner checks only 38 of 154 live contract references. After weighing three layouts (group by pipeline, group by lifecycle/role, flat with normalized names), the user chose Option C: stay flat, normalize names with git mv, move the browser-check-result doc into contracts/, rename verdict-* to persona-verdict-*, replace OVERVIEW.md with a script-generated README.md, and apply the cross-cutting validator and stale-description fixes.",
+  "problem_statement": "contracts/ is hard to trust as the interface boundary CONTEXT.md says it is. Contract docs use inconsistent names, one contract doc sits in the wrong bucket, one name is ambiguous across four concepts, the index files are stale and hand-maintained, several descriptions name a renamed skill, and the validators either misclassify files or never check most references to this directory.",
+  "solution": "Keep contracts/ flat. Rename and move six files with git mv only, update the few references that point at them, generate README.md from the directory with a new script, tighten validate-schema.py and the scanner, and fix stale descriptions and the stale structure test.",
+  "evidence": "find contracts: 27 files, no subdirectories. validate-schema.sh: 14/14 OK, including 'OK: learning-cause-vocabulary.json: no examples (schema still valid)'. test-contracts-structure.sh: 2 FAIL (expects task-schema const '1' and seed-schema const '2'; actual '2' and '4'). pytest over 12 contract-touching files: 14 failed, 12 errors, 225 passed; only test_learning_contract_has_answer_skill is contract-related (skills/answer no longer exists). scanner.py --check: FAIL with 1 dangling reference (scripts/agent-eval/), none in contracts. Live references: 38 absolute (scanner-checked), 53 relative contracts/X, 63 bare filename. Top-level-only globs at scripts/shared/validate-schema.py:42, :317 and scripts/learning/log-learning.py:65. run-tasks was renamed to build-code in commit e636c15. resources/browser-check-result.md first appeared in be935c7, before contracts/ held browser contracts, and task T-0001 updated it in place.",
+  "decisions": [
+    "Adopt Option C: contracts/ stays a flat directory. No subfolders.",
+    "git mv contracts/check-spec.md contracts/check-spec-contract.md.",
+    "git mv contracts/visual-verdict.md contracts/visual-verdict-contract.md.",
+    "git mv resources/browser-check-result.md contracts/browser-check-result-contract.md. Per CONTEXT.md the file is a Contract (it describes an agent reply shape and has a schema), not a Resource.",
+    "git mv contracts/verdict-contract.md contracts/persona-verdict-contract.md and contracts/verdict-schema.json contracts/persona-verdict-schema.json. The $id changes from verdict-schema to persona-verdict-schema. No schema $refs verdict-schema today.",
+    "git mv contracts/OVERVIEW.md contracts/README.md, then replace its body with output from a new generator script.",
+    "Keep contracts/overview.html in place. Point skills/register-skill/SKILL.md (lines 62 and 101) at the generated contracts/README.md instead of instructing a hand-edit of the Mermaid diagram.",
+    "Keep learning-cause-vocabulary.json in contracts/ beside learning-schema.json.",
+    "Keep refutation-contract.md and refutation-schema.json under their current names. The name is not ambiguous.",
+    "Add scripts/registration/gen-contracts-readme.py that writes contracts/README.md: a table of contract pairs with schema versions, a lane grouping, and a flag on any file missing its pair.",
+    "validate-schema.py: skip JSON files that have no $schema, fail when a schema's $id does not equal its filename stem, and warn when examples is empty.",
+    "Switch the contracts globs to recursive at scripts/shared/validate-schema.py:42, scripts/shared/validate-schema.py:317, and scripts/learning/log-learning.py:65, so a future subfolder cannot silently break $ref resolution.",
+    "Teach the scanner (scripts/dependency-graph/claude_tooling_extractor.py) to check relative contracts/... references, not only absolute ~/.dotfiles/claude-code-shared/contracts/... paths.",
+    "Fix stale descriptions: run-tasks to build-code in runner-result-contract.md (lines 3, 15, 19), runner-result-schema.json:18, and task-schema.json (lines 50, 94, 392); reconcile runner-result-contract.md:3 (lint and test only) with :11 (lists e2e-runner); in learning-contract.md fix 'All 30' at :9, drop skills/vet at :38, add offload and sprout-seed; gen-architecture.py:497 'task.json v1' to v2.",
+    "Update the expected schema versions in scripts/tests/test-contracts-structure.sh (lines 36-40) to task '2' and seed '4'.",
+    "Remove the duplicated cause list from the learning-schema.json:61 description and point it at learning-cause-vocabulary.json.",
+    "Count check: 28 files in scope before (27 in contracts/ plus resources/browser-check-result.md) and 28 files in contracts/ after. Nothing is deleted.",
+    "Work happens on a branch (proposed chore/contracts-layout), never main. Moves and renames use git mv only. No commit until the user approves the diff."
+  ],
+  "implementation_decisions": [
+    "Reference updates for the moves: skills/debug/SKILL.md:97 (resources/browser-check-result.md to contracts/browser-check-result-contract.md); skills/debug/SKILL.md:280 (check-spec.md to check-spec-contract.md); skills/to-seed/SKILL.md:193 (verdict-contract.md to persona-verdict-contract.md); contracts/browser-check-result-schema.json:13 (path in description); persona-verdict-schema.json:3 ($id); persona-verdict-contract.md:2 and :8 (name and schema filename).",
+    "Update frontmatter name: lines to match new stems in check-spec-contract.md:2, visual-verdict-contract.md:2, browser-check-result-contract.md:2, and persona-verdict-contract.md:2. No script reads contract frontmatter and no contract is spawnable.",
+    "Regenerate claude-code-shared/architecture.html with scripts/registration/gen-architecture.py instead of hand-editing line 307, which names browser-check-result.md.",
+    "No loader path change is needed for Option C. Existing hardcoded contract paths in scripts and tests (validate-schema.sh, update-learning.py:32, create-task-envelope.py:82, test path constants) stay valid because no file they name moves.",
+    "Name-coupled identifiers stay unchanged except the verdict $id: every other $id, every schema_version, and the provenance-schema#/$defs/... $ref strings in task-schema.json:24,28, seed-schema.json:28,32, and validate-schema.py:166-167."
+  ],
+  "testing_decisions": [
+    "Verify with existing checks only: validate-schema.sh (all schemas plus --self-test), test-validate-schema.sh, test-contracts-structure.sh after its version fix, scanner.py --check, and a repo grep for old paths outside history and record directories.",
+    "No new unit tests. The $id-equals-stem and pairing checks live in validate-schema.py and the README generator, not in new test files.",
+    "Re-run the 12 contract-touching pytest files and confirm no new failures beyond the 14 failed and 12 errors that exist today."
+  ],
+  "risks_and_tradeoffs": [
+    "The verdict-schema to persona-verdict-schema $id rename breaks any caller that refers to the old name and is missed by grep.",
+    "A flat layout does not mirror the pipeline lanes chosen for agents/. The generated README lane grouping is the substitute. Folders may be needed again if the directory grows past about 50 files.",
+    "Replacing OVERVIEW.md's body after git mv may drop below git's rename-similarity threshold, so history for README.md may not follow automatically."
+  ],
+  "deferred": [
+    {
+      "text": "Fix the unrelated pytest failures in contract-touching test files: the missing skills/answer skill, post-github now being a live adapter instead of a stub, and the removed fact-check skill.",
+      "rationale": "These fail because of drift in skills and agents, not because of the contracts layout.",
+      "context": "14 failed and 12 errors across test_answer_skill.py, test_egress_stubs.py, test_relay_egress_orchestrator.py, and test_investigator_web.py. Only test_learning_contract_has_answer_skill reads a contract file.",
+      "source_seed": null
+    },
+    {
+      "text": "Check the personas:persona-* namespaced spawns in skills/to-seed/SKILL.md before the agents/ consolidation moves personas/ to seed-review/.",
+      "rationale": "This risk belongs to the agents/ seed (docs/seeds/20261003-0044-consolidate-agents-dir.json), which assumes moves do not break spawning.",
+      "context": "skills/to-seed/SKILL.md spawns personas:persona-* six times, using the subfolder as a namespace prefix.",
+      "source_seed": null
+    },
+    {
+      "text": "Decide whether unpaired files (sprout-handoff-schema.json with no .md, persona-input-contract.md with no schema, provenance-schema.json as a $defs library) need companion files to satisfy the CONTEXT.md pairing rule.",
+      "rationale": "Writing new contract content is not part of a layout normalization. The README generator will flag unpaired files so the gap stays visible.",
+      "context": "CONTEXT.md:20 defines a Contract as a paired .md plus .json schema under contracts/.",
+      "source_seed": null
+    }
+  ],
+  "out_of_scope": [
+    {
+      "text": "Option A: group contracts/ by pipeline lane (plan/, build/, investigate/, egress/, seed-review/, learning/, shared/).",
+      "rationale": "26 moves, recursive loaders, about 91 path edits, a new plan/ lane agents/ does not have, and it breaks the CONTEXT.md rule-6 path form contracts/<name>-schema.json."
+    },
+    {
+      "text": "Option B: group contracts/ by lifecycle and role (documents/, responses/, inputs/, shared/).",
+      "rationale": "Splits families such as the browser trio and the seed-review contracts across folders, at the same cost as Option A."
+    },
+    {
+      "text": "Retiring or deleting contracts/overview.html.",
+      "rationale": "The user kept it. Only register-skill's pointer changes."
+    },
+    {
+      "text": "Renaming refutation-contract.md or refutation-schema.json.",
+      "rationale": "The name is not ambiguous."
+    },
+    {
+      "text": "Editing history or record files: .claude/hillclimb/, .claude/agent-bench/, .claude/worktrees/, docs/archive/, docs/tasks/** and their .logs/, learnings/*.jsonl, evals/*/cases* and mutations.json.",
+      "rationale": "They are history or keyed data and must keep the paths they recorded."
+    },
+    {
+      "text": "Changing the browser-check-result-v2 wire string in scripts/build/browser-verify.mjs:424, any other $id, any schema_version, or .claude/settings.local.json:73,75.",
+      "rationale": "These are wire-format or already-consistent identifiers, and none of them names a file that moves."
+    }
+  ],
+  "further_notes": [
+    "No ADR covers contracts/. ADR-0001 and ADR-0002 cover agents/ and scripts/ only.",
+    "Rule conflict resolved: CONTEXT.md's Resource and Contract definitions both fit resources/browser-check-result.md. The Contract definition wins.",
+    "Rule conflict resolved: CLAUDE.md's scriptable-code rule wins over register-skill/SKILL.md:101's instruction to hand-edit the overview Mermaid diagram.",
+    "Scripts were regrouped into lane folders on 2026-10-06 (PR #62, commit 0ee94ac). Script paths in this seed were updated to match, for example scripts/shared/validate-schema.py, scripts/learning/log-learning.py, scripts/registration/validate-registry.py (renamed from validate_registry.py), and scripts/dependency-graph/claude_tooling_extractor.py. New generator scripts go in scripts/registration/. All cited line numbers were re-checked and still point at the same code."
+  ],
+  "open_threads": [],
+  "disposed_threads": [],
+  "next_action": "Run /to-tasks on this seed to break the contracts/ normalization into tasks, starting with creating the branch, then the git mv renames and reference updates, then the README generator, validator and scanner changes, and stale-description fixes.",
+  "status": "ready",
+  "verification": {
+    "iteration": 1,
+    "personas": [
+      "grounding",
+      "accuracy",
+      "completeness",
+      "coherence"
+    ],
+    "refutations_upheld": 0,
+    "refutations_screened": 1,
+    "clean": true,
+    "status": "verified"
+  }
+}

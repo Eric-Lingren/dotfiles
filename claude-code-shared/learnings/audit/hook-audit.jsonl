@@ -56,3 +56,5 @@
 {"ts": "2026-10-03T04:42:50Z", "skill": "improve-agent-benchmarks", "outcome": "ran"}
 {"ts": "2026-10-03T04:56:22Z", "skill": "improve-agent-benchmarks", "outcome": "ran"}
 {"ts": "2026-10-03T05:22:39Z", "skill": "improve-agent-benchmarks", "outcome": "ran"}
+{"ts": "2026-10-06T17:51:37Z", "skill": "standup", "outcome": "ran"}
+{"ts": "2026-10-06T17:57:59Z", "skill": "to-seed", "outcome": "ran"}

@@ -1,0 +1,274 @@
+{
+  "schema_version": "4",
+  "producer": "to-seed",
+  "source": {
+    "type": "session",
+    "ref": null
+  },
+  "title": "/pick skill: rank the next ticket to pick up from the current repo's tracker",
+  "slug": "pick-skill",
+  "created": "2026-10-06T17:52:17Z",
+  "iteration": 1,
+  "summary": "A new shared skill, /pick, run from inside a repo. It reads the repo's issue_tracker from repo-policy.json (Linear for Quaestor-Web, GitHub for SpawnedSapien) and prints a ranked shortlist of tickets the user could start next. Each repo defines up to 4 named buckets (predefined native tracker queries) under a pick_buckets key. A bare /pick opens a bucket menu; free text after the command skips it. Shared-pool buckets also ask for a focus built from the user's current sprint projects. Fetch scripts normalize candidates, a Sonnet scoring agent (pick-scorer) ranks the top 25 by effort with a one-line reason each, and blocker tiers (ready, stackable, blocked) plus teammate-overlap rules shape the list. Output is terminal-only and read-only: top 5 plus up to 3 'other repos' tickets, each with a start line (wt <branch> [base] plus the ticket ID). The user then starts a new session and grills the ticket manually.",
+  "problem_statement": "Choosing the next ticket costs 10 to 15 minutes of digging through queues, labels, and dependency chains. Three recurring cases: (a) in SpawnedSapien, picking from the GitHub issues queue by label priority (pre-launch before post-launch, opsec or polish by mood); (b) in Quaestor-Web, finding quick low-lift tickets from the Keystone Ready to Assign or Backlog pool when sprint scope runs low; (c) in Quaestor-Web, finding which follow-on tickets in the current sprint are not blocked while related PRs sit in review.",
+  "decisions": [
+    "Skill name is /pick. Set disable-model-invocation: true so it only runs when the user types /pick.",
+    "The skill runs from inside a repo. It resolves the repo via the origin remote, looks up its repo-policy.json entry, and reads issue_tracker to choose the GitHub or Linear adapter.",
+    "Repos with no issue_tracker (dotfiles, ericlingren, or any repo not in policy) get a clean exit message, e.g. 'no issue_tracker configured for <repo>'. No fallback source.",
+    "The predefined queries are called buckets. Hierarchy: repo -> tracker (automatic) -> bucket -> tickets. Menu prompt is 'Which bucket?'.",
+    "Bucket definitions live in repo-policy.json under a pick_buckets key in each repo's entry. No separate config file.",
+    "Each bucket bundles its own filter (where to look) and sort. One click picks both.",
+    "Filter logic and sort logic (hide blocked, smallest first, label tier) are shared code. Bucket definitions are per-repo config.",
+    "Each bucket's filter uses the tracker's native query syntax: a GitHub search string for GitHub repos, a Linear IssueFilter JSON object for Linear repos. The script resolves 'me' to the user's Linear user id.",
+    "Max 4 buckets per repo, matching the 4-option menu limit. No paging. Other labels stay reachable through the free-text 'Other' option.",
+    "Lens selection: a bare /pick opens the bucket menu. Free text after /pick (e.g. '/pick quick wins') is mapped to a bucket and skips the menu.",
+    "User-facing wording says 'sprint', never 'cycle'. The Linear API's cycle terminology stays internal.",
+    "Quaestor-Web buckets: my-sprint (assignee is me, active cycle, state not completed or canceled; sort ready then stackable, smallest first; no focus menu) and unclaimed (team Keystone, unassigned, state in Ready to Assign or Backlog; sort smallest first; focus menu shown). No third bucket.",
+    "Keystone is a Linear team, not a project. The unclaimed filter uses the team key.",
+    "SpawnedSapien buckets: pre-launch ('is:open label:pre-launch -label:triage'), opsec ('is:open label:opsec,legal'), polish ('is:open label:polish -label:post-launch'), seed-ready ('is:open label:seed-ready').",
+    "Focus is asked each run, only for shared-pool buckets (e.g. unclaimed). Options are built live from projects in the user's own current sprint work, plus 'No focus' and free-text 'Other'. Focus is a ranking boost, not a filter. No stored or dated focus config.",
+    "Focus is not asked for my-sprint or for SpawnedSapien buckets, where the bucket choice already serves as focus.",
+    "Effort scoring: a cheap pre-sort on tracker fields narrows each bucket to the top 25. A dedicated Sonnet agent, pick-scorer, reads each candidate and scores effort with a rubric covering points, frontend vs backend, review complexity, target repo, and how clearly the ticket is scoped. Each result carries a one-line reason.",
+    "pick-scorer has a fixed JSON input/output contract so /improve-agent-benchmarks can tune it later.",
+    "In unclaimed, Ready to Assign (team-pointed) vs Backlog (unpointed) is a soft penalty, not a hard tier. Unpointed tickets carry a visible '⚠ unpointed' tag and can still rank high if clearly tiny.",
+    "Blocker tiers: ready (no blockers, or all blockers merged/Done) ranks first; stackable (every open blocker has a PR in review) ranks next and shows the blocker's branch as the base; blocked (any blocker not started or in progress with no PR) is hidden, with a count shown.",
+    "Blocker sources: Linear native blockedBy relations with blocker state and linked PRs; GitHub native issue dependencies plus 'blocked by #N' body text as fallback.",
+    "Teammate overlap at the parent/epic level (a teammate has active sibling tickets under the same parent) is hard-excluded.",
+    "Teammate overlap at the project level is a neutral annotation only (e.g. '👥 <name> active in <project>'). It does not affect rank, because the overlap can help (a reviewer with context) or hurt (ramp-up cost).",
+    "Tickets whose code lives in a different repo than the one /pick runs from are shown in a separate 'other repos' section below the main list, tagged with the target repo.",
+    "Output is a terminal list only. No picker UI, no auto-handoff into grill. The user starts a new session in a worktree and grills manually.",
+    "Each list item includes a copy-paste start line: 'wt <branch> [base]' plus the ticket ID. Stackable items pass the blocker's branch as the base. wt takes base as its second positional arg (no --base flag) and defaults to main.",
+    "Branch name in start lines: Linear gitBranchName for Linear tickets; a slug built from the issue title for GitHub issues.",
+    "Strictly read-only. No writes to Linear or GitHub: no assigning, no state moves, no labels, no estimate write-back.",
+    "Output is terminal-only. No report file is written.",
+    "All fetching runs through scripts in claude-code-shared/scripts/: pick-fetch-linear.sh (Linear GraphQL via LINEAR_API_KEY, same approach as fetch-linear-standup.sh) and pick-fetch-gh.sh (gh CLI). Both emit normalized candidate JSON.",
+    "Shortlist size: top 5 in the main section, up to 3 under 'other repos'.",
+    "/pick runs at a low tier as a thin orchestrator: menu, scripts, scorer agent, render.",
+    "Registration: pick in model-tiers.json; pick-scorer in agents/registry.json; skill-pipeline.json edge pick -> grill-me ('ticket chosen, start a new session and grill it'); standard learning-capture tail block with slug pick; add pick_buckets to whatever schema the repo-policy validator checks."
+  ],
+  "implementation_decisions": [
+    "Example pick_buckets entry shape: { \"<bucket-name>\": { \"where\": <native query>, \"sort\": [\"hide-blocked\", \"smallest\"] } }, keyed under the repo's existing repo-policy.json entry.",
+    "Linear my-sprint filter: {\"cycle\":{\"isActive\":{\"eq\":true}},\"assignee\":{\"isMe\":{\"eq\":true}}} plus a state filter excluding completed and canceled.",
+    "Example list item: '1. ✅ QW-1482  <title>  ~1pt  FE' / 'why: <one-line reason>' / '👥 <name> active in <project>' / 'start: wt <branch> [base]  ->  /grill-me QW-1482'.",
+    "Menu headers show the active focus when one is chosen.",
+    "Free-text after /pick maps to a bucket name; it is plain English, not a flag."
+  ],
+  "risks_and_tradeoffs": [
+    "Linear workflow state names 'Ready to Assign' and 'Backlog' and the Keystone team key were not verified against the API in session. The build should verify them with one read-only GraphQL query.",
+    "disable-model-invocation: true was stated as supported in skill frontmatter but was not verified against Claude Code docs in session.",
+    "tests/test-standup-registration.sh validates the repo-policy schema. If it rejects unknown keys, pick_buckets must be added to the checked schema.",
+    "LLM effort estimates may be unreliable at first. The fixed pick-scorer contract allows tuning via /improve-agent-benchmarks; a code-peek scoring mode was considered and left for later.",
+    "grill-me fetches Linear IDs only. A GitHub start line like '/grill-me #205' will not auto-fetch the issue; the user accepted this since they start the grill manually.",
+    "The conversation did not settle whether blocker tiers apply to unclaimed and the SpawnedSapien buckets, or only to my-sprint. The SpawnedSapien pre-launch bucket was drafted with hide-blocked; unclaimed was drafted with smallest-first only."
+  ],
+  "deferred": [
+    {
+      "text": "Local scaffolding as a source (unconsumed seeds in docs/seeds, pending task files in docs/tasks).",
+      "rationale": "It belongs to a later pipeline stage, ranks on different signals, and hands off to /to-tasks or /build-code, not grill. It is a second source for every repo, not a no-tracker fallback.",
+      "context": "Raised as option C for no-tracker repos. User agreed it conflated pipeline phases and chose a clean exit for v1.",
+      "source_seed": null
+    },
+    {
+      "text": "Stacked work loop: produce an ordered stack of picks and feed them to grill sessions or seeds to build PRs in sequence.",
+      "rationale": "User framed this as down the road. v1 only identifies tickets.",
+      "context": "From the initial request: 'create a stacked order of work and then pass those off to grill sessions'.",
+      "source_seed": null
+    },
+    {
+      "text": "Pre-triage: writing estimates or labels back to the tracker before or during picking.",
+      "rationale": "/pick is strictly read-only. LLM estimates in a shared tracker would be unreviewed guesses. If wanted, it becomes its own skill with a review step.",
+      "context": "User noted 'we may need to do a little bit more triage work in advance before this is going to work in an ideal way.'",
+      "source_seed": null
+    },
+    {
+      "text": "Unbundled menu (pick queue and sort separately) for more combinations.",
+      "rationale": "Bundled buckets cover the three use cases with one click. User said it can be split later if more granularity is needed.",
+      "context": "Free text covers ad-hoc combinations in v1.",
+      "source_seed": null
+    },
+    {
+      "text": "Code-peek scoring: grep the repo for files or components a ticket mentions to refine effort estimates.",
+      "rationale": "Slower and costlier. Revisit if LLM-only scoring proves unreliable.",
+      "context": "Option C in the scoring branch.",
+      "source_seed": null
+    }
+  ],
+  "out_of_scope": [
+    {
+      "text": "Writing to Linear or GitHub in any form (assign, move state, label, estimate).",
+      "rationale": "User: 'do not make any changes to any of the task management systems'. Inline evaluation only."
+    },
+    {
+      "text": "A picker UI or auto-handoff that starts grill-me with the chosen ticket.",
+      "rationale": "User starts a new session in the right worktree and grills manually."
+    },
+    {
+      "text": "Adding GitHub issue fetching to grill-me.",
+      "rationale": "User: the skill's scope is to identify the ticket; they start the grill themselves."
+    },
+    {
+      "text": "Paging the bucket menu to support more than 4 buckets.",
+      "rationale": "User dropped bug and feature-request buckets rather than add paging. They stay reachable via free text."
+    },
+    {
+      "text": "Stored or dated focus config, and focus inferred from the whole team's active cycle.",
+      "rationale": "Focus is sprint-dependent with no fixed timeframes, and teammates work on separate projects. Focus is asked each run instead."
+    },
+    {
+      "text": "Demoting or excluding tickets for project-level teammate overlap.",
+      "rationale": "Overlap direction is ambiguous (reviewer with context vs ramp-up cost). Neutral annotation only."
+    },
+    {
+      "text": "Filtering out tickets whose code lives in another repo.",
+      "rationale": "They are shown in a separate 'other repos' section instead."
+    },
+    {
+      "text": "The names triage, find-work, next-up, pick-ticket, pick-issue, forage, and the terms piles, patches, queues, lists.",
+      "rationale": "triage collides with an existing task_type and GH label; queue transcribes as 'Q' in voice input; others were judged vague or awkward by the user."
+    }
+  ],
+  "open_threads": [],
+  "disposed_threads": [
+    {
+      "id": "dt-001",
+      "text": "Skill name",
+      "disposition": "decided",
+      "iteration": 1
+    },
+    {
+      "id": "dt-002",
+      "text": "Behavior in repos with no issue_tracker",
+      "disposition": "decided",
+      "iteration": 1
+    },
+    {
+      "id": "dt-003",
+      "text": "Local scaffolding as a source",
+      "disposition": "deferred",
+      "iteration": 1
+    },
+    {
+      "id": "dt-004",
+      "text": "Shared vs per-repo lenses and buckets",
+      "disposition": "decided",
+      "iteration": 1
+    },
+    {
+      "id": "dt-005",
+      "text": "Lens/bucket selection mechanism",
+      "disposition": "decided",
+      "iteration": 1
+    },
+    {
+      "id": "dt-006",
+      "text": "Bundled vs unbundled bucket menu",
+      "disposition": "decided",
+      "iteration": 1
+    },
+    {
+      "id": "dt-007",
+      "text": "Config location for bucket definitions",
+      "disposition": "decided",
+      "iteration": 1
+    },
+    {
+      "id": "dt-008",
+      "text": "Bucket filter syntax",
+      "disposition": "decided",
+      "iteration": 1
+    },
+    {
+      "id": "dt-009",
+      "text": "Effort scoring approach",
+      "disposition": "decided",
+      "iteration": 1
+    },
+    {
+      "id": "dt-010",
+      "text": "Adaptive focus mechanism",
+      "disposition": "decided",
+      "iteration": 1
+    },
+    {
+      "id": "dt-011",
+      "text": "Teammate overlap handling",
+      "disposition": "decided",
+      "iteration": 1
+    },
+    {
+      "id": "dt-012",
+      "text": "Blocker tiers including stackable",
+      "disposition": "decided",
+      "iteration": 1
+    },
+    {
+      "id": "dt-013",
+      "text": "Other-repo tickets",
+      "disposition": "decided",
+      "iteration": 1
+    },
+    {
+      "id": "dt-014",
+      "text": "Output and handoff shape",
+      "disposition": "decided",
+      "iteration": 1
+    },
+    {
+      "id": "dt-015",
+      "text": "grill-me GitHub issue fetch",
+      "disposition": "rejected",
+      "iteration": 1
+    },
+    {
+      "id": "dt-016",
+      "text": "Tracker side effects and pre-triage write-back",
+      "disposition": "decided",
+      "iteration": 1
+    },
+    {
+      "id": "dt-017",
+      "text": "Where LLM scoring runs",
+      "disposition": "decided",
+      "iteration": 1
+    },
+    {
+      "id": "dt-018",
+      "text": "Starting buckets per repo and the 4-bucket limit",
+      "disposition": "decided",
+      "iteration": 1
+    },
+    {
+      "id": "dt-019",
+      "text": "Ready to Assign vs Backlog ranking",
+      "disposition": "decided",
+      "iteration": 1
+    },
+    {
+      "id": "dt-020",
+      "text": "Term for the predefined queries (bucket)",
+      "disposition": "decided",
+      "iteration": 1
+    },
+    {
+      "id": "dt-021",
+      "text": "Defaults and registration bundle",
+      "disposition": "decided",
+      "iteration": 1
+    }
+  ],
+  "next_action": "Run /to-tasks on this seed to break /pick into buildable tasks.",
+  "status": "ready",
+  "verification": {
+    "iteration": 1,
+    "personas": [
+      "grounding",
+      "accuracy",
+      "completeness",
+      "coherence"
+    ],
+    "refutations_upheld": 0,
+    "refutations_screened": 1,
+    "clean": true,
+    "status": "verified"
+  }
+}
