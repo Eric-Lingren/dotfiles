@@ -14,7 +14,7 @@
     },
     {
       "name": "architecture-auditor",
-      "file": "agents/architecture-auditor.md",
+      "file": "agents/shared/architecture-auditor.md",
       "model": "sonnet",
       "description": "Read-only agent that audits a target SKILL.md for architecture anti-patterns and agent extraction opportunities. Detects 8 signals (A1-A8). Returns a JSON array of structured finding records.",
       "consumers": [
@@ -34,7 +34,7 @@
     },
     {
       "name": "context-loader",
-      "file": "agents/context-loader.md",
+      "file": "agents/shared/context-loader.md",
       "model": "haiku",
       "description": "Discovers and distills project context (CONTEXT.md, ADRs, and typed brand/design sources) into a structured JSON payload. Returns JSON only \u2014 vocabulary inlined, everything else as paths for the caller to deep-read.",
       "consumers": [
@@ -162,7 +162,7 @@
     },
     {
       "name": "capture-learning",
-      "file": "agents/capture-learning.md",
+      "file": "agents/learning/capture-learning.md",
       "model": "sonnet",
       "description": "End-of-run learning capture agent. Receives a rough correction-event description plus candidate verbatim anchors from a skill, expands it into a schema-valid v2 self-learning entry, grounds it with the deterministic verify-anchors.py script, and writes it to learnings/unified-learnings.jsonl if grounded. Spawned in the background by the managed tail block in every shared skill.",
       "consumers": [
@@ -210,7 +210,7 @@
     },
     {
       "name": "artifact-grounding-judge",
-      "file": "agents/artifact-grounding-judge.md",
+      "file": "agents/learning/artifact-grounding-judge.md",
       "model": "haiku",
       "description": "Artifact-evidence grounding judge. Receives a draft v2 attribution record from the attribution-tracer. Verifies each evidence entry against its cited artifact file \u2014 positive anchors (quote present) or absence anchors (criterion confirmed absent). Rejects fabricated evidence. On pass, calls log-learning.py to append the record. Never grades a record it drafted. Artifact-evidence counterpart to verify-anchors.py, which grounds transcript quotes for self records.",
       "consumers": [
@@ -219,7 +219,7 @@
     },
     {
       "name": "attribution-tracer",
-      "file": "agents/attribution-tracer.md",
+      "file": "agents/learning/attribution-tracer.md",
       "model": "sonnet",
       "description": "Attribution tracing agent. Receives a confirmed issue description and fix, walks the provenance chain backward to find the earliest escape point, classifies the cause, and drafts a v2 attribution learning record. Passes the draft to the artifact-grounding-judge for verification before writing. Spawned by skills (debug, pr-code-review) after confirming a root cause.",
       "consumers": [
@@ -229,7 +229,7 @@
     },
     {
       "name": "build-code",
-      "file": "agents/build-code.md",
+      "file": "agents/skill-agents/build-code.md",
       "model": "sonnet",
       "description": "Execute tasks from a tasks JSON file sequentially, one build-runner spawn per task. Handles branching, status updates, blocker detection, leaf/blocker failure policy, and deferred HITL tasks without halting independent work. Use when user wants to run AI tasks from a docs/tasks/ file.",
       "consumers": [
@@ -239,7 +239,7 @@
     },
     {
       "name": "pr-code-review",
-      "file": "agents/pr-code-review.md",
+      "file": "agents/skill-agents/pr-code-review.md",
       "model": "sonnet",
       "description": "Review the current diff, or a PR number/branch/path target, for correctness bugs and reuse/simplification/efficiency cleanups at the given effort level. Spawnable by any skill via subagent_type pr-code-review.",
       "consumers": [
@@ -249,7 +249,7 @@
     },
     {
       "name": "to-tasks",
-      "file": "agents/to-tasks.md",
+      "file": "agents/skill-agents/to-tasks.md",
       "model": "sonnet",
       "description": "Break a seed or PRD into independently-grabbable tasks using tracer-bullet vertical slices, then write a JSON task file to docs/tasks/. Use when user wants to convert a seed file or PRD into AI-ready tasks.",
       "consumers": [

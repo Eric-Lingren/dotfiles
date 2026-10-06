@@ -165,7 +165,7 @@ const FAKE = process.env.EVAL_FAKE;
 async function loadCases() {
   return readFileSync(join(EVAL_DIR, 'cases.legacy.jsonl'), 'utf8').split('\n').filter(Boolean).filter(l => !ONLY || ONLY.has(JSON.parse(l).id)).map(l => {
     const c = JSON.parse(l);
-    // Same shape attribution-tracer sends (agents/attribution-tracer.md Step 6).
+    // Same shape attribution-tracer sends (agents/learning/attribution-tracer.md Step 6).
     c.prompt = `## Draft attribution record\n${JSON.stringify(c.record, null, 2)}`;
     c.meta = { fixture: c.fixture, expected: c.expected };
     return c;
