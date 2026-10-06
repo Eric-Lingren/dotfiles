@@ -4,7 +4,7 @@
 
 ## What was built
 
-A full eval for `claude-code-shared/agents/personas/persona-accuracy.md`.
+A full eval for `claude-code-shared/agents/seed-review/persona-accuracy.md`.
 
 **Flow dir:** `.claude/hillclimb/persona-accuracy/`
 
@@ -100,7 +100,7 @@ Requires the origin session JSONLs still on disk at `~/.cch/projects/` and `~/.c
 /claude-api hillclimb
 ```
 
-Point it at `.claude/hillclimb/persona-accuracy`. The target to improve is `claude-code-shared/agents/personas/persona-accuracy.md`.
+Point it at `.claude/hillclimb/persona-accuracy`. The target to improve is `claude-code-shared/agents/seed-review/persona-accuracy.md`.
 
 After any harness file edit (runner, cases, mutations), re-approve:
 

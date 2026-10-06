@@ -12,7 +12,7 @@ enforce or automate them.
   instructions) that Claude loads on trigger match. May include `scripts/`, `resources/`,
   `assets/`, or `runs/` subdirectories per `resources/skill-directory-conventions.md`.
   Registered in `resources/model-tiers.json` under `skills`.
-- **Agent** — a subagent defined by a `.md` file under `agents/<name>.md` (frontmatter:
+- **Agent** — a subagent defined by a `.md` file under `agents/<group>/<name>.md` (frontmatter:
   name, description, tools, model) that a skill spawns via the Agent tool for a bounded,
   stateless piece of work (e.g. `context-loader`, `lint-runner`, `browser-checker`).
   Every agent must be listed in `agents/registry.json`, which is the **source of truth**
