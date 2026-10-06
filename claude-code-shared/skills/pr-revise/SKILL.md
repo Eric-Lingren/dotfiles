@@ -329,7 +329,7 @@ For each claim-bearing item — primarily `bug`-class items, plus any `change` o
 
 **Spawn all claim-bearing investigators in a single batch (one Agent call per claim, all in the same message).** Do not wait for one investigator to finish before spawning the next. Collect all results together before applying verdict-to-action mapping.
 
-The investigator is the Opus-tier orchestrator defined in `agents/investigator.md`. It decomposes the claim into sub-claims, routes each to the correct leaf agent (code, web, GitHub, Linear, Notion), and returns a schema-valid `investigation-result` per `contracts/investigation-result-schema.json`.
+The investigator is the Opus-tier orchestrator defined in `agents/investigate/investigator.md`. It decomposes the claim into sub-claims, routes each to the correct leaf agent (code, web, GitHub, Linear, Notion), and returns a schema-valid `investigation-result` per `contracts/investigation-result-schema.json`.
 
 Non-claim-bearing items (`question`, `nit`, `discuss`) do not require investigator invocation. Present the claim text and URL to the user for manual review; collect a `reviewed` verdict and any reclassification before proceeding.
 

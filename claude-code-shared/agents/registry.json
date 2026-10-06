@@ -3,7 +3,7 @@
   "agents": [
     {
       "name": "investigator",
-      "file": "agents/investigator.md",
+      "file": "agents/investigate/investigator.md",
       "model": "opus",
       "description": "Investigator orchestrator (Opus tier). Decomposes a question into sub-claims, routes each to the correct leaf agent (investigator-code, -web, -linear, -github, -notion), aggregates results, and enforces the INSUFFICIENT_EVIDENCE propagation rule. Emits a schema-valid investigation-result.",
       "consumers": [
@@ -285,7 +285,7 @@
     },
     {
       "name": "investigator-code",
-      "file": "agents/investigators/investigator-code.md",
+      "file": "agents/investigate/investigator-code.md",
       "model": "sonnet",
       "description": ">",
       "consumers": [
@@ -294,7 +294,7 @@
     },
     {
       "name": "investigator-github",
-      "file": "agents/investigators/investigator-github.md",
+      "file": "agents/investigate/investigator-github.md",
       "model": "sonnet",
       "description": ">",
       "consumers": [
@@ -303,7 +303,7 @@
     },
     {
       "name": "investigator-linear",
-      "file": "agents/investigators/investigator-linear.md",
+      "file": "agents/investigate/investigator-linear.md",
       "model": "sonnet",
       "description": ">",
       "consumers": [
@@ -312,7 +312,7 @@
     },
     {
       "name": "investigator-notion",
-      "file": "agents/investigators/investigator-notion.md",
+      "file": "agents/investigate/investigator-notion.md",
       "model": "sonnet",
       "description": ">",
       "consumers": [
@@ -321,7 +321,7 @@
     },
     {
       "name": "investigator-web",
-      "file": "agents/investigators/investigator-web.md",
+      "file": "agents/investigate/investigator-web.md",
       "model": "sonnet",
       "description": ">",
       "consumers": [
