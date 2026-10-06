@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Characterization tests for the export-tasks-gh adapter (github-issue.sh).
+# Characterization tests for the export-tasks-github adapter (github-issue.sh).
 # These tests capture argument-validation behavior only — no real gh CLI calls.
 # After the move to agents/egress/github/, update GH_SCRIPT path below.
 #
@@ -53,7 +53,7 @@ assert_file_exists() {
   fi
 }
 
-echo "=== export-tasks-gh characterization tests ==="
+echo "=== export-tasks-github characterization tests ==="
 echo ""
 
 # Test 1: script exists at expected location

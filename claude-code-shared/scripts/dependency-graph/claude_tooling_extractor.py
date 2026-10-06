@@ -435,7 +435,7 @@ def check_integrity(base_dir):
         for consumer in entry.get("consumers", []):
             # A consumer name is valid whether it names a skill (the common
             # case) or another registered agent (agent-to-agent spawns, e.g.
-            # export-tasks-gh's consumer 'export-tasks' names the export-tasks
+            # export-tasks-github's consumer 'export-tasks' names the export-tasks
             # coordinator agent, not a skill). Only flag it dangling if it
             # resolves to neither.
             if consumer not in skills and consumer not in agent_names:
@@ -593,7 +593,7 @@ def _consistency_agent_wrapping(base_dir):
     agent it is the file's parent dir; for a wrapped agent (basename
     `agent.md`) it is the parent of its wrapping subdir. This means a mixed
     group like agents/task-exporters/ (bare export-tasks.md alongside
-    export-tasks-gh/agent.md) is flagged, while a uniformly-bare group
+    export-tasks-github/agent.md) is flagged, while a uniformly-bare group
     (agents/seed-review/) and the top-level agents/ bucket (bare agents plus
     group *subdirectories*, which contribute their own groups, not agents at
     the agents/ level) are not."""

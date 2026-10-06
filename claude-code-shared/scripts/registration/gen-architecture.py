@@ -56,7 +56,7 @@ AGENT_GROUPS = {
     "PLAN": ["context-loader", "to-tasks"],
     "EXECUTE": ["build-runner", "build-code", "lint-runner", "test-runner", "browser-checker", "e2e-runner"],
     "EXPORT": [
-        "export-tasks", "export-tasks-gh", "export-tasks-linear",
+        "export-tasks", "export-tasks-github", "export-tasks-linear",
         "export-tasks-notion", "post-github", "post-linear", "post-slack",
     ],
     "IMPROVE": ["architecture-auditor"],
@@ -592,7 +592,7 @@ def render_export(skill_tiers, agent_tiers):
     )
 
     adapters = [
-        ("export-tasks-gh", 15, 160), ("export-tasks-linear", 190, 175),
+        ("export-tasks-github", 15, 160), ("export-tasks-linear", 190, 175),
         ("export-tasks-notion", 380, 175),
     ]
     for name, ax, w in adapters:

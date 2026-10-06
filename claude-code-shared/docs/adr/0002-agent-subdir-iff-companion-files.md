@@ -11,10 +11,10 @@ Agents in the flat shared pool (`agents/`, see
 shapes: a bare `agents/<name>.md`, or a wrapped `agents/<name>/agent.md` subdirectory. A
 consistency scan (`scanner.py --consistency`, SHAPE-1) flags any *group* that mixes the
 two shapes as an inconsistency, and will always flag `agents/task-exporters/`, where
-`export-tasks.md` is bare while `export-tasks-gh/` and `export-tasks-notion/` are wrapped.
+`export-tasks.md` is bare while `export-tasks-github/` and `export-tasks-notion/` are wrapped.
 
 The mixing is not sloppiness. The two wrapped agents each carry companion scripts
-(`export-tasks-gh/github-issue.sh`; `export-tasks-notion/notion-check-token.sh`,
+(`export-tasks-github/github-issue.sh`; `export-tasks-notion/notion-check-token.sh`,
 `notion-page-api.sh`; since relocated to `scripts/egress/`) that need a home next to their owner. `export-tasks` has no
 companion files, so it stays a bare `.md`. Across the whole pool this holds without
 exception: the only two agents with a personal subdirectory are exactly the two with

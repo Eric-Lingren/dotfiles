@@ -76,7 +76,7 @@ Reply to confirm, or tell me a different order / which branch to run.
 
 Read the `mode` and `runner` from `task-routing.json` for each branch. Show only branches that have eligible items.
 
-**Triage routing at a glance.** If the `triage` branch has eligible items, print a per-item routing table directly beneath the plan, *before* the gate. This resolves each item's destination up front so the user sees where every triage item lands before confirming, instead of waiting for the spawned `export-tasks` dry-run. Resolve each triage item exactly the way `export-tasks` does (see `agents/task-exporters/export-tasks.md` step 3):
+**Triage routing at a glance.** If the `triage` branch has eligible items, print a per-item routing table directly beneath the plan, *before* the gate. This resolves each item's destination up front so the user sees where every triage item lands before confirming, instead of waiting for the spawned `export-tasks` dry-run. Resolve each triage item exactly the way `export-tasks` does (see `agents/egress/export-tasks.md` step 3):
 
 - Read `destinations[item.domain]` from `task-routing.json`.
 - **Flat destination** (has a top-level `adapter`, e.g. `standard-metrics`): every deliverable routes to that adapter regardless of `deliverable`.
