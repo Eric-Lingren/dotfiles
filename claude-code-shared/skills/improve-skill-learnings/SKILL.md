@@ -204,7 +204,7 @@ After the declared type's paths, append the other three types' paths (same
 slug) as fallback candidates, in table order.
 
 Resolve the `agent` row with the recursive find every time it is used. Agent
-files can be nested (e.g. `agents/personas/<improves>.md`). The flat path alone
+files can be nested (e.g. `agents/seed-review/<improves>.md`). The flat path alone
 misses them.
 
 **Unassigned entries (`improves` is null):** Use `reported_by` as the slug.

@@ -594,7 +594,7 @@ def _consistency_agent_wrapping(base_dir):
     `agent.md`) it is the parent of its wrapping subdir. This means a mixed
     group like agents/task-exporters/ (bare export-tasks.md alongside
     export-tasks-gh/agent.md) is flagged, while a uniformly-bare group
-    (agents/personas/) and the top-level agents/ bucket (bare agents plus
+    (agents/seed-review/) and the top-level agents/ bucket (bare agents plus
     group *subdirectories*, which contribute their own groups, not agents at
     the agents/ level) are not."""
     registry_agents = load_registry(base_dir)
