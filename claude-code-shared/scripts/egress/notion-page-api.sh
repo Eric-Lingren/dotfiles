@@ -22,7 +22,7 @@ if [ -f "$SECRETS_FILE" ]; then
 fi
 
 if [ -z "${NOTION_PERSONAL_TOKEN:-}" ]; then
-  echo "error: NOTION_PERSONAL_TOKEN is not set. Run check-token.sh for setup instructions." >&2
+  echo "error: NOTION_PERSONAL_TOKEN is not set. Run notion-check-token.sh for setup instructions." >&2
   exit 1
 fi
 
