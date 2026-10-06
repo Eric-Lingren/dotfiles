@@ -91,7 +91,7 @@ class TestAgentWrapping:
         # the agents/ level, so agents/ stays uniformly bare.
         build_repo(tmp_path, agents=[
             ("context-loader", "agents/context-loader.md"),
-            ("build-runner", "agents/build-runner.md"),
+            ("build-runner", "agents/build/build-runner.md"),
             ("persona-accuracy", "agents/personas/persona-accuracy.md"),
             ("persona-judge", "agents/personas/persona-judge.md"),
         ])

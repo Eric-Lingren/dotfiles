@@ -13,7 +13,7 @@ Verdicts are embedded in `browser-check-result` v2 `captures[].visual_verdict` a
 
 ## Producers
 
-- `agents/visual-judge.md` — Sonnet-tier agent. Runs screener + optional 3-judge panel. Writes one verdict per (capture, viewport) pair.
+- `agents/build/visual-judge.md` — Sonnet-tier agent. Runs screener + optional 3-judge panel. Writes one verdict per (capture, viewport) pair.
 
 ## Consumers
 

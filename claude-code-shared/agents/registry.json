@@ -24,7 +24,7 @@
     },
     {
       "name": "browser-checker",
-      "file": "agents/browser-checker.md",
+      "file": "agents/build/browser-checker.md",
       "model": "haiku",
       "description": "Stateless single-run agent. Orchestrates browser-auth.py, baseline-cache.py, and browser-verify.mjs to execute a Check Spec against Baseline and Candidate servers. Returns a browser-check-result-v2 JSON. Never generates improvised scripts. Spawned by build-runner.",
       "consumers": [
@@ -47,7 +47,7 @@
     },
     {
       "name": "lint-runner",
-      "file": "agents/lint-runner.md",
+      "file": "agents/build/lint-runner.md",
       "model": "haiku",
       "description": "Read-only linting agent. Runs a resolved lint/format command in a workspace, parses tool JSON output, and returns a contract-shaped verdict per runner-result-contract.md. Spawned by build-runner for each touched workspace.",
       "consumers": [
@@ -56,7 +56,7 @@
     },
     {
       "name": "test-runner",
-      "file": "agents/test-runner.md",
+      "file": "agents/build/test-runner.md",
       "model": "haiku",
       "description": "Read-only test agent. Runs a workspace's unit/integration test suite and project-wide typecheck using resolved commands from the tooling manifest. Returns a contract-shaped verdict with counts and compressed failures.",
       "consumers": [
@@ -65,7 +65,7 @@
     },
     {
       "name": "e2e-runner",
-      "file": "agents/e2e-runner.md",
+      "file": "agents/build/e2e-runner.md",
       "model": "haiku",
       "description": "Read-only e2e test agent. Runs a committed Playwright test suite using the resolved command from the tooling manifest. Relies on playwright.config webServer block for app lifecycle. Not wired to any consumer skill.",
       "consumers": []
@@ -117,7 +117,7 @@
     },
     {
       "name": "build-runner",
-      "file": "agents/build-runner.md",
+      "file": "agents/build/build-runner.md",
       "model": "sonnet",
       "description": "Executes exactly ONE task end-to-end: seeds and runs the /tdd red-green-refactor cycle, spawns lint-runner/test-runner and browser-checker (when browser_verify is present), writes the full trace to docs/tasks/.logs/, and returns a compact receipt. Spawned by build-code's per-task orchestrator loop.",
       "consumers": [
@@ -201,7 +201,7 @@
     },
     {
       "name": "visual-judge",
-      "file": "agents/visual-judge.md",
+      "file": "agents/build/visual-judge.md",
       "model": "sonnet",
       "description": "Vision-model judge that evaluates a Baseline/Candidate capture pair against declared intent and returns a visual-verdict JSON object. One verdict per (capture_ref, viewport) pair.",
       "consumers": [
