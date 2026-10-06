@@ -322,7 +322,7 @@ Review findings are factual claims about the code. Before any finding is output 
 
 **Do not substitute Read tool calls for the investigator spawn.** Inline reads bypass sub-claim decomposition and the investigation-result contract.
 
-The investigator is the Opus-tier orchestrator defined in `agents/investigator.md`. It decomposes each claim into sub-claims, routes each to the correct leaf agent (code, web, GitHub, Linear, Notion), and returns a schema-valid `investigation-result` per `contracts/investigation-result-schema.json`.
+The investigator is the Opus-tier orchestrator defined in `agents/investigate/investigator.md`. It decomposes each claim into sub-claims, routes each to the correct leaf agent (code, web, GitHub, Linear, Notion), and returns a schema-valid `investigation-result` per `contracts/investigation-result-schema.json`.
 
 **Wait-guard:** Task-notification delivery is not guaranteed. If notifications for running investigators have not arrived after a reasonable wait, call ListAgents to check their status. If a completed agent is found without a notification, use SendMessage to retrieve its result. Do not rely solely on task-notification delivery when waiting for parallel investigators.
 

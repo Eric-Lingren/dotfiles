@@ -15,7 +15,7 @@ import pytest
 DOTFILES = pathlib.Path(__file__).resolve().parents[3]
 SHARED = DOTFILES / "claude-code-shared"
 SCHEMA_PATH = SHARED / "contracts" / "investigation-result-schema.json"
-AGENT_PATH = SHARED / "agents" / "investigator.md"
+AGENT_PATH = SHARED / "agents" / "investigate" / "investigator.md"
 REGISTRY_PATH = SHARED / "agents" / "registry.json"
 INVESTIGATE_SKILL_PATH = SHARED / "skills" / "investigate" / "SKILL.md"
 
@@ -57,10 +57,10 @@ def validate(instance, schema):
 
 
 def test_investigator_orchestrator_agent_exists():
-    """agents/investigator.md must exist at the top level (not inside investigators/)."""
+    """agents/investigate/investigator.md must exist in the investigate/ lane directory."""
     assert AGENT_PATH.exists(), (
         f"Missing: {AGENT_PATH}\n"
-        "The orchestrator must live at agents/investigator.md, not inside agents/investigators/."
+        "The orchestrator must live at agents/investigate/investigator.md, in the agents/investigate/ lane."
     )
 
 
@@ -204,11 +204,11 @@ def test_investigator_registered_with_correct_consumers(registry):
 
 
 def test_investigator_registered_file_path(registry):
-    """Registry file path must point to agents/investigator.md."""
+    """Registry file path must point to agents/investigate/investigator.md."""
     entry = next((a for a in registry["agents"] if a["name"] == "investigator"), None)
     assert entry is not None, "investigator not in registry"
-    assert entry.get("file") == "agents/investigator.md", (
-        f"Registry file path is '{entry.get('file')}', expected 'agents/investigator.md'."
+    assert entry.get("file") == "agents/investigate/investigator.md", (
+        f"Registry file path is '{entry.get('file')}', expected 'agents/investigate/investigator.md'."
     )
 
 

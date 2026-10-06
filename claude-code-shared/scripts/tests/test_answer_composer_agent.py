@@ -7,7 +7,7 @@ investigation-result to compose a voice-matched Slack reply. Rules:
   - No content added beyond what the investigation-result provides
   - Output is copy-only (manual paste to Slack)
   - Voice profile: slack-casual (registered in voice-routing.json)
-  - Invariant: agents/egress/ is NOT agents/investigators/ — nothing here emits
+  - Invariant: agents/egress/ is NOT agents/investigate/ — nothing here emits
     investigation-result; it consumes it.
 """
 
@@ -22,7 +22,7 @@ AGENT_PATH = SHARED / "agents" / "egress" / "answer-composer.md"
 REGISTRY_PATH = SHARED / "agents" / "registry.json"
 VOICE_ROUTING_PATH = SHARED / "resources" / "voice-routing.json"
 SLACK_CASUAL_PROFILE_PATH = SHARED / "resources" / "voice-profiles" / "slack-casual.md"
-INVESTIGATORS_DIR = SHARED / "agents" / "investigators"
+INVESTIGATORS_DIR = SHARED / "agents" / "investigate"
 
 
 # ---------------------------------------------------------------------------
@@ -65,11 +65,11 @@ def test_answer_composer_agent_exists():
 
 
 def test_answer_composer_is_in_egress_not_investigators():
-    """answer-composer must live under agents/egress/, not agents/investigators/."""
+    """answer-composer must live under agents/egress/, not agents/investigate/."""
     investigators_path = INVESTIGATORS_DIR / "answer-composer.md"
     assert not investigators_path.exists(), (
-        f"answer-composer.md found under agents/investigators/. "
-        "Everything in agents/investigators/ must produce an investigation-result. "
+        f"answer-composer.md found under agents/investigate/. "
+        "Everything in agents/investigate/ must produce an investigation-result. "
         "This agent consumes one — it belongs under agents/egress/."
     )
 

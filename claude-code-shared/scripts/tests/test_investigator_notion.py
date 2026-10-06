@@ -15,7 +15,7 @@ import pytest
 DOTFILES = pathlib.Path(__file__).resolve().parents[3]
 SHARED = DOTFILES / "claude-code-shared"
 SCHEMA_PATH = SHARED / "contracts" / "investigation-result-schema.json"
-AGENT_PATH = SHARED / "agents" / "investigators" / "investigator-notion.md"
+AGENT_PATH = SHARED / "agents" / "investigate" / "investigator-notion.md"
 
 # Matches https://www.notion.so/<...> or https://notion.so/<...>
 NOTION_URL_RE = re.compile(r"https://(?:www\.)?notion\.so/\S+")

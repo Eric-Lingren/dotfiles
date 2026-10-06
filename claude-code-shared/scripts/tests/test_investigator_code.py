@@ -18,7 +18,7 @@ import pytest
 DOTFILES = pathlib.Path(__file__).resolve().parents[3]
 SHARED = DOTFILES / "claude-code-shared"
 SCHEMA_PATH = SHARED / "contracts" / "investigation-result-schema.json"
-AGENT_PATH = SHARED / "agents" / "investigators" / "investigator-code.md"
+AGENT_PATH = SHARED / "agents" / "investigate" / "investigator-code.md"
 VET_SKILL_DIR = SHARED / "skills" / "vet"
 PIPELINE_PATH = SHARED / "skill-pipeline.json"
 
