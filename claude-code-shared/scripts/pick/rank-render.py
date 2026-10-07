@@ -79,6 +79,8 @@ def render(doc, top=5, scores=None):
         lines.append(f"{n}. {c['id']}  {c['title']}{pts}  [{tags}]")
         if c.get("_why"):
             lines.append(f"   why: {c['_why']}")
+        for note in c.get("notes", []):
+            lines.append(f"   {note}")
         lines.append(f"   start: wt {c['branch']}  ->  /grill-me {c['id']}")
     return "\n".join(lines)
 
@@ -95,10 +97,18 @@ if __name__ == "__main__":
         i = args.index("--scores")
         scores_path = args[i + 1]
         del args[i:i + 2]
+    activity_path = None
+    if "--activity" in args:  # teammate overlap (overlap.py)
+        i = args.index("--activity")
+        activity_path = args[i + 1]
+        del args[i:i + 2]
     want_input = "--scorer-input" in args
     if want_input:
         args.remove("--scorer-input")
     doc = json.loads(open(args[0]).read() if args else sys.stdin.read())
+    if activity_path:
+        import overlap
+        doc = overlap.apply(doc, json.load(open(activity_path)))
     if want_input:
         print(json.dumps(scorer_input(doc)))
     else:

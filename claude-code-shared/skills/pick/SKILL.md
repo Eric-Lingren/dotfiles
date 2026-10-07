@@ -51,6 +51,8 @@ Thin orchestrator: resolve repo, choose a bucket, run a fetch script, render. St
 
    This re-ranks by effort score, prints the top 5 with a `why:` line per item and a start line `wt <branch>  ->  /grill-me <ID>` (`#N` for GitHub, Linear ID plus `gitBranchName` for Linear). Unpointed tickets show `⚠ unpointed` and are never excluded. Without `--scores` the pre-sort order is used and no `why:` lines print.
 
+   Linear only: to apply teammate overlap, run `pick-fetch-linear-activity.sh > "$TMP/activity.json"` and add `--activity "$TMP/activity.json"` to every `rank-render.py` call (excludes tickets whose parent has a teammate active; annotates project overlap with 👥).
+
 5. Print the script output to the terminal as-is. Do not edit, assign, label, or comment on any issue. The user starts a new session and grills the ticket manually.
 
 <!-- learning-capture:start -->
