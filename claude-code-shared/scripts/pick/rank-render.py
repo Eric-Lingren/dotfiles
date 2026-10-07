@@ -21,6 +21,7 @@ import json, os, sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import blockers
 import focus_boost
+from sections import partition, render_other  # other-repos section
 
 PRESORT_CAP = 25  # max candidates handed to pick-scorer
 
@@ -74,6 +75,7 @@ def render(doc, top=5, scores=None):
     ranked = rank(doc)[:PRESORT_CAP]
     if scores is not None:
         ranked = focus_boost.boost(apply_scores(ranked, scores), doc.get("_focus"))
+    ranked, other = partition(ranked, doc["repo"])
     ranked = ranked[:top]
     lines = [f"{doc['repo']} / {doc['bucket']}  (top {len(ranked)})"]
     if focus_boost.active(doc.get("_focus")):
@@ -93,6 +95,7 @@ def render(doc, top=5, scores=None):
         lines.append(f"   start: wt {c['branch']}{base}  ->  /grill-me {c['id']}")
     if doc.get("_hidden"):
         lines += ["", f"{doc['_hidden']} blocked hidden"]
+    lines += render_other(other)
     return "\n".join(lines)
 
 
