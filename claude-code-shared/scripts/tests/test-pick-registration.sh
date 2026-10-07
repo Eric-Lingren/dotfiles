@@ -36,7 +36,8 @@ assert [e["skill"] for e in n]==["grill-me"]
 assert all(os.path.isdir(r+"/skills/"+e["skill"]) for e in n)')"
 check "pick tail block bakes /grill-me suggestion" "$(sed -n '/learning-capture:start/,/learning-capture:end/p' "$SHARED/skills/pick/SKILL.md" | grep -q '/grill-me' && echo true || echo false)"
 inj=$(python3 "$SHARED/scripts/learning/inject-learning-tail.py" --check --skills-dir "$SHARED/skills" --pipeline "$SHARED/skill-pipeline.json" 2>&1); injrc=$?
-check "injector validates pipeline slugs (rc 0, none missing)" "$([ $injrc -eq 0 ] && echo "$inj" | grep -q 'missing: 0' && echo true || echo false)"
+# Only the pick edge's slugs matter; ignored local dirs (e.g. skills/synced/) may show as MISSING.
+check "injector validates pick edge slugs (rc 0, pick and grill-me not missing)" "$([ $injrc -eq 0 ] && ! echo "$inj" | grep -Eq '^ +MISSING +(pick|grill-me) ' && echo true || echo false)"
 check "injector reports pick tail up to date" "$(echo "$inj" | grep -E '^ +ok +pick$' >/dev/null && echo true || echo false)"
 check "learning-contract lists skills/pick/" "$(grep -q '^- `skills/pick/`' "$SHARED/contracts/learning-contract.md" && echo true || echo false)"
 check "benchmark CMD set includes pick" "$(grep -q '"find-work", "pick"' "$SHARED/scripts/usage/cc-usage-benchmark.py" && echo true || echo false)"
