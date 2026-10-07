@@ -25,6 +25,8 @@ Thin orchestrator: resolve repo, choose a bucket, run a fetch script, render. St
 
 3. Choose the bucket. Bare `/pick`: ask "Which bucket?" with AskUserQuestion, one option per entry in `buckets` (max 4). Free text after `/pick` is not mapped yet; if it exactly equals a bucket name, use that bucket, else show the menu.
 
+3b. Focus (shared-pool buckets only): run `bash ~/.dotfiles/claude-code-shared/scripts/pick/focus-options.sh "<repo>" "<bucket>"`. If `ask` is false, skip. Otherwise ask "Focus?" with AskUserQuestion using `options` (projects from your current sprint, then "No focus"; the free-text "Other" is built in). Add `--focus "<choice>"` to both `rank-render.py` calls in step 4 (omit for "No focus"). Focus only boosts matching tickets to the top; it never filters and is never saved.
+
 4. Fetch, score, and render:
 
    ```bash
