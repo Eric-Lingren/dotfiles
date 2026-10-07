@@ -27,6 +27,7 @@ All 30 shared skills. Plugin skills (caveman, chrome-devtools) are excluded.
 - `skills/improve-skill-benchmarks/`
 - `skills/improve-skill-learnings/`
 - `skills/investigate/`
+- `skills/pick/`
 - `skills/prototype/`
 - `skills/register-skill/`
 - `skills/relay/`
