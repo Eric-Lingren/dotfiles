@@ -14,7 +14,7 @@
     "pr_auto_create": true,
     "issue_tracker": "linear",
     "pick_buckets": {
-      "my-sprint": {"filter": {"assignee": {"id": {"eq": "@me"}}, "cycle": {"isActive": {"eq": true}}, "state": {"type": {"nin": ["completed", "canceled"]}}}, "sort": ["hide-blocked", "smallest"], "focus": false},
+      "my-sprint": {"filter": {"assignee": {"id": {"eq": "@me"}}, "cycle": {"isActive": {"eq": true}}, "state": {"type": {"in": ["backlog", "unstarted"]}}}, "sort": ["hide-blocked", "smallest"], "focus": false},
       "unclaimed": {"filter": {"team": {"key": {"eq": "KEY"}}, "assignee": {"null": true}, "state": {"name": {"in": ["Ready to Assign", "Backlog"]}}}, "sort": ["hide-blocked", "smallest"], "focus": true, "aliases": ["quick wins", "quick win", "quick", "unassigned", "backlog", "ready to assign", "up for grabs"]}
     },
     "pick_verified": {"checked": "2026-10-06", "method": "live read-only Linear GraphQL (teams.states)", "team_key": "KEY", "team_name": "Keystone", "states": ["Ready to Assign", "Backlog"]},

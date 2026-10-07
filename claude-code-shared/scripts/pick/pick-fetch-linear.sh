@@ -3,7 +3,15 @@
 # candidate JSON (same shape as pick-fetch-gh.sh; see its header). Strictly
 # read-only: one viewer query plus one issues query, no writes of any kind.
 #
-# Usage: pick-fetch-linear.sh <Org/Repo> <bucket-name>
+# Usage: pick-fetch-linear.sh <Org/Repo> <bucket-name> [--all-states]
+#
+# Pickable guard (every bucket): only tickets in a not-yet-started state
+# (Linear state type backlog or unstarted: Backlog, Ready to Assign, Todo)
+# are emitted. In Progress, In Review, Done, Canceled, and Triage are dropped.
+# Parent tickets (any issue with sub-issues) are dropped too, since the work
+# lives in their children. --all-states disables both the guard and the
+# bucket's own state filter; focus-options.sh uses it to list projects from
+# all current sprint work, including tickets already in flight.
 #
 # Bucket config (repo-policy.json pick_buckets.<name>):
 #   filter   Linear IssueFilter object. The string "@me" anywhere is replaced
@@ -22,8 +30,10 @@
 # to a GraphQL "data" JSON with an issues.nodes list; skips network and auth).
 set -euo pipefail
 
-repo="${1:?usage: pick-fetch-linear.sh <Org/Repo> <bucket>}"
-bucket="${2:?usage: pick-fetch-linear.sh <Org/Repo> <bucket>}"
+repo="${1:?usage: pick-fetch-linear.sh <Org/Repo> <bucket> [--all-states]}"
+bucket="${2:?usage: pick-fetch-linear.sh <Org/Repo> <bucket> [--all-states]}"
+all_states=0
+[ "${3:-}" = "--all-states" ] && all_states=1
 POLICY="${PICK_POLICY:-$(cd "$(dirname "$0")" && pwd)/../../resources/repo-policy.json}"
 LINEAR_GRAPHQL="${LINEAR_GRAPHQL:-https://api.linear.app/graphql}"
 
@@ -38,7 +48,7 @@ if [ -z "${LINEAR_ISSUES_FIXTURE:-}" ] && [ -z "${LINEAR_API_KEY:-}" ]; then
 fi
 export LINEAR_API_KEY="${LINEAR_API_KEY:-}"
 
-REPO="$repo" BUCKET="$bucket" POLICY="$POLICY" GQL="$LINEAR_GRAPHQL" python3 - <<'PY'
+ALL_STATES="$all_states" REPO="$repo" BUCKET="$bucket" POLICY="$POLICY" GQL="$LINEAR_GRAPHQL" python3 - <<'PY'
 import json, os, sys, urllib.request
 
 repo, bucket = os.environ["REPO"], os.environ["BUCKET"]
@@ -55,6 +65,7 @@ query PickIssues($filter: IssueFilter) {
       state { name type }
       project { name }
       parent { identifier }
+      children(first: 1) { nodes { identifier } }
       assignee { name }
       labels { nodes { name } }
       attachments { nodes { url sourceType } }
@@ -93,12 +104,16 @@ def subst(o, me):
     return o
 
 
+all_states = os.environ.get("ALL_STATES") == "1"
+PICKABLE = ("backlog", "unstarted")  # Linear state types not yet started
+
 fixture = os.environ.get("LINEAR_ISSUES_FIXTURE")
 if fixture:
     data = json.load(open(fixture))
 else:
     me = gql("query { viewer { id } }")["viewer"]["id"]
-    data = gql(ISSUES_Q, {"filter": subst(cfg["filter"], me)})
+    flt = {k: v for k, v in cfg["filter"].items() if not (all_states and k == "state")}
+    data = gql(ISSUES_Q, {"filter": subst(flt, me)})
 
 
 def prs(att):
@@ -107,6 +122,11 @@ def prs(att):
 
 out = []
 for n in data["issues"]["nodes"]:
+    if not all_states:
+        if n["state"]["type"] not in PICKABLE:
+            continue  # already in flight, done, canceled, or in triage
+        if (n.get("children") or {}).get("nodes"):
+            continue  # parent ticket: pick its sub-issues instead
     blockers = []
     for rel in (n.get("inverseRelations") or {}).get("nodes", []):
         if rel.get("type") != "blocks":

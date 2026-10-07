@@ -7,7 +7,7 @@
 #   repo-policy.json (my-sprint, every SpawnedSapien bucket): never prompt.
 #   ask=true: options are the distinct projects on the user's own current
 #   sprint tickets (the repo's my-sprint bucket, fetched via
-#   pick-fetch-linear.sh), then "No focus". The caller adds free-text "Other".
+#   pick-fetch-linear.sh --all-states, so in-flight tickets count), then "No focus". The caller adds free-text "Other".
 # Nothing is written to disk. Test hooks: PICK_POLICY, LINEAR_ISSUES_FIXTURE
 # (fixture used for the my-sprint fetch).
 set -euo pipefail
@@ -24,7 +24,7 @@ if [ "$flag" != "1" ]; then
   echo '{"ask": false, "options": []}'
   exit 0
 fi
-bash "$HERE/pick-fetch-linear.sh" "$repo" my-sprint | python3 -c '
+bash "$HERE/pick-fetch-linear.sh" "$repo" my-sprint --all-states | python3 -c '
 import json, sys
 d = json.load(sys.stdin)
 ps = sorted({c["project"] for c in d["candidates"] if c.get("project")})

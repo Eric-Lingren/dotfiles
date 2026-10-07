@@ -103,6 +103,15 @@ assert e['consumers']==['pick'] and e['model']=='sonnet'
 import os; assert os.path.exists('$SHARED/'+e['file']); assert os.path.exists(os.path.dirname('$SHARED/'+e['file'])+'/pick-scorer-contract.json')" \
   && ok "registry lists pick-scorer; contract next to agent" || bad "registry pick-scorer"
 
+# Pickable guard: only not-started tickets, no parent tickets (linear-states.json)
+SFIX="$HERE/fixtures/pick/linear-states.json"
+ids=$(LINEAR_ISSUES_FIXTURE="$SFIX" bash "$P/pick-fetch-linear.sh" $QW my-sprint | python3 -c 'import json,sys;print(",".join(sorted(c["id"] for c in json.load(sys.stdin)["candidates"])))')
+check "linear guard keeps only Todo/Backlog/Ready to Assign, drops parent" "$([ "$ids" = "KEY-201,KEY-202,KEY-203" ] && echo true || echo false)"
+all=$(LINEAR_ISSUES_FIXTURE="$SFIX" bash "$P/pick-fetch-linear.sh" $QW my-sprint --all-states | python3 -c 'import json,sys;print(len(json.load(sys.stdin)["candidates"]))')
+check "--all-states keeps in-flight and parent tickets (focus source)" "$([ "$all" = 9 ] && echo true || echo false)"
+st=$(python3 -c 'import json,sys;print(sorted(json.load(open(sys.argv[1]))[sys.argv[2]]["pick_buckets"]["my-sprint"]["filter"]["state"]["type"]["in"]))' "$POLICY" "$QW")
+check "my-sprint filter limits state type to backlog/unstarted" "$([ "$st" = "['backlog', 'unstarted']" ] && echo true || echo false)"
+
 # Read-only guarantee: no write verbs in the skill or scripts (this test file excluded).
 hits=$(grep -rEn 'gh issue (edit|close|comment|create)|gh api.*-X *(POST|PATCH|PUT|DELETE)|mutation[ {(]' "$P" "$SHARED/skills/pick" || true)
 check "no write calls to GitHub/Linear" "$([ -z "$hits" ] && echo true || echo false)"
