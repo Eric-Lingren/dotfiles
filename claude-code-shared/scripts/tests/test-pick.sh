@@ -78,6 +78,31 @@ check "linear render: blocked KEY-103 hidden" "$(printf '%s' "$r" | grep -q 'KEY
 check "linear render: no 'cycle' wording" "$(printf '%s' "$r" | grep -qi cycle && echo false || echo true)"
 if LINEAR_ISSUES_FIXTURE="$LFIX" bash "$P/pick-fetch-linear.sh" $QW nope 2>/dev/null; then bad "linear unknown bucket should fail"; else ok "linear unknown bucket fails"; fi
 
+# pick-scorer (T-0030)
+C30="$HERE/fixtures/pick/candidates-30.json"
+SOUT="$HERE/fixtures/pick/scorer-output-25.json"
+SIN=$(mktemp)
+python3 "$P/rank-render.py" "$C30" --scorer-input > "$SIN"
+python3 "$P/validate-scorer.py" input "$SIN"
+check "scorer input valid and capped at 25 of 30" "$([ $? -eq 0 ] && [ "$(python3 -c 'import json,sys;print(len(json.load(open(sys.argv[1]))["candidates"]))' "$SIN")" = 25 ] && echo true || echo false)"
+python3 "$P/validate-scorer.py" output "$SOUT" --input "$SIN"
+check "scorer output fixture (25) schema-valid, ids match input" "$([ $? -eq 0 ] && echo true || echo false)"
+echo '{"scores":[{"id":"#1","score":11,"reason":"x"}]}' | python3 "$P/validate-scorer.py" output - 2>/dev/null
+check "scorer validator rejects out-of-range score" "$([ $? -ne 0 ] && echo true || echo false)"
+echo '{"scores":[{"id":"#1","score":3,"reason":"a\nb"}]}' | python3 "$P/validate-scorer.py" output - 2>/dev/null
+check "scorer validator rejects multi-line reason" "$([ $? -ne 0 ] && echo true || echo false)"
+r=$(python3 "$P/rank-render.py" "$C30" --scores "$SOUT")
+check "render: unpointed shown with warning, not excluded" "$(printf '%s' "$r" | grep -E '^1\. #307.*⚠ unpointed' >/dev/null && echo true || echo false)"
+check "render: why line per item" "$([ "$(printf '%s' "$r" | grep -c '   why: ')" = 5 ] && echo true || echo false)"
+rm -f "$SIN"
+python3 -c "
+import json
+d=json.load(open('$SHARED/agents/registry.json'))['agents']
+e=[a for a in d if a['name']=='pick-scorer'][0]
+assert e['consumers']==['pick'] and e['model']=='sonnet'
+import os; assert os.path.exists('$SHARED/'+e['file']); assert os.path.exists(os.path.dirname('$SHARED/'+e['file'])+'/pick-scorer-contract.json')" \
+  && ok "registry lists pick-scorer; contract next to agent" || bad "registry pick-scorer"
+
 # Read-only guarantee: no write verbs in the skill or scripts (this test file excluded).
 hits=$(grep -rEn 'gh issue (edit|close|comment|create)|gh api.*-X *(POST|PATCH|PUT|DELETE)|mutation[ {(]' "$P" "$SHARED/skills/pick" || true)
 check "no write calls to GitHub/Linear" "$([ -z "$hits" ] && echo true || echo false)"
