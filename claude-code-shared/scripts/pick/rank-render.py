@@ -12,8 +12,13 @@ Sort steps come from the bucket's `sort` array:
   smallest      points ascending (unpointed last)
 Ties break oldest first. Render: top N (default 5), one line per item plus a
 start line 'wt <branch>  ->  /grill-me <id>'.
+Scorer flow: --scorer-input prints the pick-scorer input (pre-sorted, capped at
+25); --scores FILE re-ranks by score and adds a 'why:' line per item.
+Unpointed items always show '⚠ unpointed' and are never excluded.
 """
 import json, sys
+
+PRESORT_CAP = 25  # max candidates handed to pick-scorer
 
 LABEL_TIER = {"pre-launch": 0, "opsec": 1, "legal": 1, "polish": 2,
               "seed-ready": 3, "post-launch": 8}
@@ -44,15 +49,36 @@ def rank(doc):
     return sorted(cands, key=key)
 
 
-def render(doc, top=5):
-    ranked = rank(doc)[:top]
+def scorer_input(doc):
+    """Pre-sorted top PRESORT_CAP candidates, trimmed to the pick-scorer contract."""
+    keep = ("id", "title", "labels", "points", "state", "project", "parent")
+    cs = [{k: c.get(k) for k in keep} for c in rank(doc)[:PRESORT_CAP]]
+    return {"repo": doc["repo"], "bucket": doc["bucket"], "candidates": cs}
+
+
+def apply_scores(ranked, scores):
+    """Stable re-rank by scorer effort (lower first); unscored keep pre-sort order."""
+    by = {s["id"]: s for s in scores}
+    for c in ranked:
+        s = by.get(c["id"])
+        c["_score"], c["_why"] = (s["score"], s["reason"]) if s else (99, None)
+    return sorted(ranked, key=lambda c: c["_score"])
+
+
+def render(doc, top=5, scores=None):
+    ranked = rank(doc)[:PRESORT_CAP]
+    if scores is not None:
+        ranked = apply_scores(ranked, scores)
+    ranked = ranked[:top]
     lines = [f"{doc['repo']} / {doc['bucket']}  (top {len(ranked)})", ""]
     if not ranked:
         lines.append("No candidates found.")
     for n, c in enumerate(ranked, 1):
         tags = ",".join(c.get("labels", [])[:3])
-        pts = f"  ~{c['points']}pt" if c.get("points") is not None else ""
+        pts = f"  ~{c['points']}pt" if c.get("points") is not None else "  ⚠ unpointed"
         lines.append(f"{n}. {c['id']}  {c['title']}{pts}  [{tags}]")
+        if c.get("_why"):
+            lines.append(f"   why: {c['_why']}")
         lines.append(f"   start: wt {c['branch']}  ->  /grill-me {c['id']}")
     return "\n".join(lines)
 
@@ -64,5 +90,17 @@ if __name__ == "__main__":
         i = args.index("--top")
         top = int(args[i + 1])
         del args[i:i + 2]
+    scores_path = None
+    if "--scores" in args:
+        i = args.index("--scores")
+        scores_path = args[i + 1]
+        del args[i:i + 2]
+    want_input = "--scorer-input" in args
+    if want_input:
+        args.remove("--scorer-input")
     doc = json.loads(open(args[0]).read() if args else sys.stdin.read())
-    print(render(doc, top))
+    if want_input:
+        print(json.dumps(scorer_input(doc)))
+    else:
+        scores = json.load(open(scores_path))["scores"] if scores_path else None
+        print(render(doc, top, scores))

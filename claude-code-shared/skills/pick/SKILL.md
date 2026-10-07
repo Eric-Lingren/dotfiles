@@ -25,14 +25,28 @@ Thin orchestrator: resolve repo, choose a bucket, run a fetch script, render. St
 
 3. Choose the bucket. Bare `/pick`: ask "Which bucket?" with AskUserQuestion, one option per entry in `buckets` (max 4). Free text after `/pick` is not mapped yet; if it exactly equals a bucket name, use that bucket, else show the menu.
 
-4. Fetch and render (GitHub):
+4. Fetch, score, and render (GitHub):
 
    ```bash
-   bash ~/.dotfiles/claude-code-shared/scripts/pick/pick-fetch-gh.sh "<repo>" "<bucket>" \
-     | python3 ~/.dotfiles/claude-code-shared/scripts/pick/rank-render.py
+   bash ~/.dotfiles/claude-code-shared/scripts/pick/pick-fetch-gh.sh "<repo>" "<bucket>" > "$TMP/cands.json"
+   python3 ~/.dotfiles/claude-code-shared/scripts/pick/rank-render.py "$TMP/cands.json" --scorer-input > "$TMP/scorer-in.json"
    ```
 
-   The fetch script emits normalized candidate JSON (shape documented in its header, checked by `validate-candidates.py`). `rank-render.py` applies the cheap pre-sort (blocked hidden, label tier) and prints the top 5 with a start line `wt <branch>  ->  /grill-me #N`.
+   The fetch script emits normalized candidate JSON (shape documented in its header, checked by `validate-candidates.py`). `--scorer-input` applies the cheap pre-sort (blocked hidden, label tier) and caps the list at the top 25.
+
+   Spawn the `pick-scorer` agent with the contents of `scorer-in.json` as its only input. Save its JSON reply to `$TMP/scores.json` and check it:
+
+   ```bash
+   python3 ~/.dotfiles/claude-code-shared/scripts/pick/validate-scorer.py output "$TMP/scores.json" --input "$TMP/scorer-in.json"
+   ```
+
+   If the reply is invalid or the agent fails, render without scores (below). Then render:
+
+   ```bash
+   python3 ~/.dotfiles/claude-code-shared/scripts/pick/rank-render.py "$TMP/cands.json" --scores "$TMP/scores.json"
+   ```
+
+   This re-ranks by effort score, prints the top 5 with a `why:` line per item and a start line `wt <branch>  ->  /grill-me #N`. Unpointed tickets show `⚠ unpointed` and are never excluded. Without `--scores` the pre-sort order is used and no `why:` lines print.
 
 5. Print the script output to the terminal as-is. Do not edit, assign, label, or comment on any issue. The user starts a new session and grills the ticket manually.
 
