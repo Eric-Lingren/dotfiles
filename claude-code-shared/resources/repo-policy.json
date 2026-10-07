@@ -46,6 +46,12 @@
     "domain": "spawned-sapien",
     "pr_auto_create": true,
     "issue_tracker": "github",
+    "pick_buckets": {
+      "pre-launch": {"where": "is:open label:pre-launch -label:triage", "sort": ["hide-blocked", "label-tier", "smallest"]},
+      "opsec": {"where": "is:open label:opsec,legal", "sort": ["hide-blocked", "label-tier", "smallest"]},
+      "polish": {"where": "is:open label:polish -label:post-launch", "sort": ["hide-blocked", "label-tier", "smallest"]},
+      "seed-ready": {"where": "is:open label:seed-ready", "sort": ["hide-blocked", "label-tier", "smallest"]}
+    },
     "worktree_links": [".env.local"],
     "exclude": ["docs/prototype/", "docs/browser-checks/", "docs/offload-output/", "docs/tasks/.sprout/", "docs/tasks/*-revisions-r*.json", "docs/visual-changes/", ".claude/hillclimb/*/traces/*", ".claude/hillclimb/*/ref/*", ".claude/hillclimb/*/trajectory/*", ".claude/hillclimb/*report.html", ".claude/hillclimb/*summary.html", ".claude/hillclimb/*progress.txt", ".claude/hillclimb/*errors.jsonl", "evals/*/fixtures/*", "*/evals/*/fixtures/*"],
     "verify_host": "local",
