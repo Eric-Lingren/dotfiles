@@ -14,11 +14,13 @@ Ties break oldest first. Render: top N (default 5), one line per item plus a
 start line 'wt <branch>  ->  /grill-me <id>'.
 Scorer flow: --scorer-input prints the pick-scorer input (pre-sorted, capped at
 25); --scores FILE re-ranks by score and adds a 'why:' line per item.
+--focus <project> boosts matching-project items to the top (never filters).
 Unpointed items always show '⚠ unpointed' and are never excluded.
 """
 import json, os, sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import blockers
+import focus_boost
 
 PRESORT_CAP = 25  # max candidates handed to pick-scorer
 
@@ -49,7 +51,7 @@ def rank(doc):
         k.append(c["id"])
         return tuple(k)
 
-    return sorted(cands, key=key)
+    return focus_boost.boost(sorted(cands, key=key), doc.get("_focus"))
 
 
 def scorer_input(doc):
@@ -71,9 +73,12 @@ def apply_scores(ranked, scores):
 def render(doc, top=5, scores=None):
     ranked = rank(doc)[:PRESORT_CAP]
     if scores is not None:
-        ranked = apply_scores(ranked, scores)
+        ranked = focus_boost.boost(apply_scores(ranked, scores), doc.get("_focus"))
     ranked = ranked[:top]
-    lines = [f"{doc['repo']} / {doc['bucket']}  (top {len(ranked)})", ""]
+    lines = [f"{doc['repo']} / {doc['bucket']}  (top {len(ranked)})"]
+    if focus_boost.active(doc.get("_focus")):
+        lines.append(f"Focus: {doc['_focus']}")
+    lines.append("")
     if not ranked:
         lines.append("No candidates found.")
     for n, c in enumerate(ranked, 1):
@@ -108,6 +113,11 @@ if __name__ == "__main__":
         i = args.index("--activity")
         activity_path = args[i + 1]
         del args[i:i + 2]
+    focus = None
+    if "--focus" in args:
+        i = args.index("--focus")
+        focus = args[i + 1]
+        del args[i:i + 2]
     want_input = "--scorer-input" in args
     if want_input:
         args.remove("--scorer-input")
@@ -115,6 +125,7 @@ if __name__ == "__main__":
     if activity_path:
         import overlap
         doc = overlap.apply(doc, json.load(open(activity_path)))
+    doc["_focus"] = focus
     if want_input:
         print(json.dumps(scorer_input(doc)))
     else:
