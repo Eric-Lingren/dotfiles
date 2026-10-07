@@ -42,6 +42,42 @@ check "render: blocked #210 hidden" "$(printf '%s' "$r" | grep -q '#210' && echo
 check "render: pre-launch+opsec #190 ranks first" "$(printf '%s' "$r" | grep -E '^1\. ' | grep -q '#190' && echo true || echo false)"
 check "render: start line" "$(printf '%s' "$r" | grep -q 'start: wt rotate-leaked-service-key-190  ->  /grill-me #190' && echo true || echo false)"
 
+# --- Linear path (fixture) ---
+LFIX="$HERE/fixtures/pick/linear-issues.json"
+QW=Quaestor-Technologies/Quaestor-Web
+out=$(PICK_REPO=$QW bash "$P/resolve-repo.sh")
+n=$(printf '%s' "$out" | python3 -c 'import json,sys;d=json.load(sys.stdin);print(",".join(d["buckets"]), d["issue_tracker"])')
+check "Quaestor-Web menu is exactly my-sprint,unclaimed (linear)" "$([ "$n" = "my-sprint,unclaimed linear" ] && echo true || echo false)"
+python3 -c "
+import json
+e=json.load(open('$POLICY'))['$QW']
+v=e['pick_verified']; b=e['pick_buckets']
+assert v['team_key']=='KEY' and v['states']==['Ready to Assign','Backlog']
+assert b['unclaimed']['filter']['team']['key']['eq']==v['team_key']
+assert b['unclaimed']['filter']['state']['name']['in']==v['states'] and b['unclaimed']['focus'] is True
+assert b['my-sprint']['focus'] is False
+assert 'cycle' not in ' '.join(b)" \
+  && ok "verified team key/state names recorded in buckets" || bad "verified team key/state names recorded in buckets"
+ljson=$(LINEAR_ISSUES_FIXTURE="$LFIX" bash "$P/pick-fetch-linear.sh" $QW unclaimed)
+printf '%s' "$ljson" | python3 "$P/validate-candidates.py"
+check "linear fetch emits JSON that validates" "$([ $? -eq 0 ] && echo true || echo false)"
+shape=$(python3 -c "
+import json,sys
+g=json.loads(sys.argv[1]); l=json.loads(sys.argv[2])
+print(sorted(g['candidates'][0])==sorted(k for k in l['candidates'][0] if k!='prs') and sorted(g)==sorted(k for k in l if k!='focus'))" "$json" "$ljson")
+check "linear candidate keys identical to gh shape" "$([ "$shape" = True ] && echo true || echo false)"
+chk=$(printf '%s' "$ljson" | python3 -c '
+import json,sys
+c={x["id"]:x for x in json.load(sys.stdin)["candidates"]}
+b=c["KEY-103"]["blockers"]
+print(c["KEY-101"]["branch"], c["KEY-101"]["points"], c["KEY-101"]["parent"], c["KEY-101"]["project"], c["KEY-102"]["assignees"][0], c["KEY-102"]["prs"][0].rsplit("/",1)[1], len(b), b[0]["id"], b[0]["state"], b[0]["pr_in_review"])')
+check "linear normalized fields (branch, points, parent, blockers, PRs)" "$([ "$chk" = "eric/key-101-trim-empty-rows-from-export 2 KEY-90 Exports Eric Lingren 77 1 KEY-100 In Review True" ] && echo true || echo false)"
+r=$(printf '%s' "$ljson" | python3 "$P/rank-render.py")
+check "linear render: start line uses gitBranchName" "$(printf '%s' "$r" | grep -q 'start: wt eric/key-101-trim-empty-rows-from-export  ->  /grill-me KEY-101' && echo true || echo false)"
+check "linear render: blocked KEY-103 hidden" "$(printf '%s' "$r" | grep -q 'KEY-103' && echo false || echo true)"
+check "linear render: no 'cycle' wording" "$(printf '%s' "$r" | grep -qi cycle && echo false || echo true)"
+if LINEAR_ISSUES_FIXTURE="$LFIX" bash "$P/pick-fetch-linear.sh" $QW nope 2>/dev/null; then bad "linear unknown bucket should fail"; else ok "linear unknown bucket fails"; fi
+
 # Read-only guarantee: no write verbs in the skill or scripts (this test file excluded).
 hits=$(grep -rEn 'gh issue (edit|close|comment|create)|gh api.*-X *(POST|PATCH|PUT|DELETE)|mutation[ {(]' "$P" "$SHARED/skills/pick" || true)
 check "no write calls to GitHub/Linear" "$([ -z "$hits" ] && echo true || echo false)"
