@@ -1,0 +1,344 @@
+{
+  "kind": "condensed",
+  "producer": "clean-scaffolding",
+  "slug": "consolidate-agents-dir",
+  "title": "Consolidate claude-code-shared/agents into pipeline-grouped layout",
+  "condensed_at": "2026-10-07T06:42:34Z",
+  "condensed_from": [
+    "20261003-0044-consolidate-agents-dir.json",
+    "20261006-1202-consolidate-agents-dir.json"
+  ],
+  "artifacts": [
+    {
+      "filename": "20261003-0044-consolidate-agents-dir.json",
+      "type": "seed",
+      "content": {
+        "schema_version": "4",
+        "producer": "to-seed",
+        "source": {
+          "type": "session",
+          "ref": null
+        },
+        "title": "Consolidate claude-code-shared/agents into pipeline-grouped layout",
+        "slug": "consolidate-agents-dir",
+        "created": "2026-10-03T07:39:24Z",
+        "iteration": 1,
+        "summary": "claude-code-shared/agents/ is half-grouped: 15 agents sit loose at the top level beside 4 subfolders on mixed axes (personas, investigators, task-exporters, egress). Orchestrators are split from their leaves (investigator.md at top level, its 5 leaves in investigators/; export-tasks.md alone in task-exporters/ while its adapters live in egress/<channel>/). Three .sh scripts live under agents/ despite the CLAUDE.md rule that scripts belong in scripts/. registry.json covers only 20 of 33 agents, validate-registry.py fails today (5 orphans) and only globs top-level files so 8 nested unregistered agents go unseen, and architecture-auditor says A1-A7 in the registry but A1-A8 in its frontmatter. After weighing three layouts (by pipeline, by role, flat with family prefixes), the user accepted Option A: group agents by pipeline into build/, investigate/, egress/, seed-review/, learning/, shared/, skill-agents/. Scripts move to scripts/egress/, the gh naming is consolidated to github for export-tasks-gh and gh-issue.sh, ADR-0002 is superseded by a new ADR-0006, the registry and validator are fixed, and a generated agents/README.md index is added. Nothing is deleted: every file is moved or renamed via git mv.",
+        "problem_statement": "The agents directory is hard to navigate and not self-documenting. Grouping is inconsistent, orchestrators are separated from the agents they call, scripts sit in the wrong bucket, and the registry that is meant to be the source of truth for agents is incomplete and its validator cannot see nested files.",
+        "solution": "Reorganize agents/ by pipeline lane with git mv only, move companion scripts into scripts/egress/, rename the gh-named GitHub adapter pieces to github, register every agent, make the validator recurse, record the scripts-placement decision in ADR-0006, and generate an agents/README.md index from the registry.",
+        "evidence": "find agents: 33 agent .md files, 3 .sh scripts, registry.json. validate-registry.py output: 'ERROR: orphaned agent file with no registry entry' for pr-code-review.md, artifact-grounding-judge.md, build-code.md, to-tasks.md, attribution-tracer.md (exit 1). validate-registry.py line 55 uses glob(os.path.join(agents_dir, \"*.md\")), top-level only. registry lists 20 names. install.sh:103 symlinks the whole agents dir into ~/$account/agents. zsh 'type gh' resolves to /opt/homebrew/bin/gh; gh-issue.sh runs 'gh issue create' and post-github.md uses 'gh api'. task-routing adapter key is already 'github-issues'.",
+        "decisions": [
+          "Adopt Option A (group by pipeline) for claude-code-shared/agents/. Final folders: build/, investigate/, egress/, seed-review/, learning/, shared/, skill-agents/, plus registry.json and a generated README.md at the agents/ root.",
+          "build/ holds build-runner, lint-runner, test-runner, e2e-runner, browser-checker, visual-judge.",
+          "investigate/ holds investigator.md (moved from agents/) and investigator-{code,web,github,linear,notion}.md (moved from investigators/).",
+          "egress/ keeps answer-composer.md at its root, gains export-tasks.md (moved from task-exporters/), and keeps channel subfolders github/ (post-github, export-tasks-github), linear/ (post-linear, export-tasks-linear), notion/ (export-tasks-notion), slack/ (post-slack).",
+          "seed-review/ holds persona-accuracy, persona-coherence, persona-completeness, persona-grounding, persona-judge (moved from personas/).",
+          "learning/ holds capture-learning, attribution-tracer, artifact-grounding-judge.",
+          "shared/ holds context-loader and architecture-auditor.",
+          "The three shim agents (to-tasks, build-code, pr-code-review) are a deliberate pattern for running a skill in an isolated context window, not clutter. Keep them, place them in skill-agents/ (not skill-shims/), and keep their names identical to the matching skills.",
+          "Nothing is deleted. Every file is moved or renamed with git mv so history survives. Only directories left empty (investigators/, personas/, task-exporters/) disappear. Agent count stays 33.",
+          "Consolidate gh naming to github: rename agent export-tasks-gh to export-tasks-github (file and frontmatter name), gh-issue.sh to github-issue.sh, and tests/characterization/test-gh-adapter.sh to test-github-adapter.sh.",
+          "Move companion scripts out of agents/ into scripts/egress/: gh-issue.sh becomes github-issue.sh, check-token.sh becomes notion-check-token.sh, notion-page-api.sh keeps its name.",
+          "CLAUDE.md scripts rule wins over ADR-0002. Add ADR-0006 recording that scripts live in scripts/, and mark ADR-0002 status superseded. ADR-0002's file stays in place.",
+          "ADR-0001 (flat shared pool) explicitly permits grouping subfolders inside agents/, so Option A complies with it. Update its example folder paths.",
+          "Register all 13 agents missing from registry.json, update every moved file path, apply the export-tasks-github rename, and fix the architecture-auditor A1-A7 drift to A1-A8.",
+          "Make validate-registry.py recurse into subfolders (**/*.md) so nested agents are validated.",
+          "Fix the export-tasks-linear description, which names tasks-to-linear as its caller.",
+          "Add scripts/registration/gen-agents-readme.py that writes agents/README.md from the registry (name, lane, model, consumers), with a line noting skill-agents run the same-named skill in an isolated context window.",
+          "Leave untouched: gh CLI invocations (gh issue create, gh api), the CircleCI slug gh/Quaestor-Technologies/Quaestor-Web in repo-policy.json, the github-issues adapter key in task-routing.json, and history under .claude/hillclimb/, .claude/agent-bench/, docs/archive/, and .claude/worktrees/.",
+          "Work happens on a branch (not main). No commit until the user approves the diff."
+        ],
+        "implementation_decisions": [
+          "Reference updates: registry.json file paths; export-tasks.md lines 19, 69, 152 (adapter name, notion check-token path, subagent_type); export-tasks-github.md name, heading, and script path (lines 2, 8, 46, 59); export-tasks-notion.md script paths (lines 47, 61, 69); notion-page-api.sh error text mentioning check-token.sh; answer-composer.md lines 21-22 (agents/investigators/ becomes agents/investigate/).",
+          "Skill reference updates: skills/debug/SKILL.md:97 (agents/browser-checker.md to agents/build/browser-checker.md); skills/pr-revise/SKILL.md:332 and skills/pr-code-review/SKILL.md:325 (agents/investigator.md to agents/investigate/investigator.md); skills/improve-skill-learnings/SKILL.md:207 example path (agents/personas/ to agents/seed-review/). skills/relay/SKILL.md needs no change because post-github and post-linear do not move.",
+          "Script and test updates: scripts/tests/test_answer_composer_agent.py path strings; tests/characterization/test-github-adapter.sh GH_SCRIPT path; scripts/tests/test_consistency_findings.py fixture names; scripts/registration/gen-architecture.py agent names, then regenerate architecture.html; comment references in scripts/dependency-graph/claude_tooling_extractor.py.",
+          "Doc updates: ADR-0001 example paths, CONTEXT.md line 15 agent path form (agents/<name>.md to agents/<group>/<name>.md), new ADR-0006, ADR-0002 status set to superseded.",
+          "Claude Code discovers agents recursively and spawns by frontmatter name, so moves do not break spawning. Only the export-tasks-github rename changes a spawn name; running sessions need a restart to see it. ~/.cch/agents and ~/.cco/agents symlink the whole directory and pick changes up automatically."
+        ],
+        "testing_decisions": [
+          "Verify with validate-registry.py (must pass after recursion fix and new entries), the existing tests touching agent paths, and a repo grep for old paths outside history directories.",
+          "Count check: 33 agent files and 3 scripts present after the move, matching the original inventory."
+        ],
+        "risks_and_tradeoffs": [
+          "The export-tasks-gh to export-tasks-github rename changes a spawnable name. Any caller not found by grep would fail to spawn the adapter.",
+          "shared/ is a catch-all for multi-consumer agents; it can grow vague if not policed."
+        ],
+        "out_of_scope": [
+          {
+            "text": "Option B (group by role: orchestrators/workers/judges/adapters).",
+            "rationale": "Splits families apart, e.g. investigator into orchestrators/ and its leaves into workers/."
+          },
+          {
+            "text": "Option C (flat directory with family-prefixed renames of every agent).",
+            "rationale": "Highest churn: every subagent_type call, model-tiers.json, name-keyed learnings, and agent-bench history would change. A shim- prefix would also break the intentional skill-agent name match."
+          },
+          {
+            "text": "Deleting the to-tasks, build-code, pr-code-review shim agents.",
+            "rationale": "They are a deliberate pattern for running skills in isolated context windows."
+          },
+          {
+            "text": "Renaming gh CLI calls, the CircleCI gh/ slug, or the github-issues routing key.",
+            "rationale": "gh is the GitHub CLI binary name, CircleCI requires the gh/ slug format, and github-issues is already consistent."
+          },
+          {
+            "text": "Editing historical records in .claude/hillclimb/, .claude/agent-bench/, docs/archive/, .claude/worktrees/.",
+            "rationale": "They are history and must keep the paths they recorded."
+          }
+        ],
+        "further_notes": [
+          "The user's stated reason for gh vs github (gh meaning a zsh script alias) did not match the code: no gh alias exists in dotfiles, gh resolves to the GitHub CLI, and the user's git scripts use the gx prefix. The user then chose to consolidate to github anyway.",
+          "A reusable inline audit prompt for applying the same process to other directories was produced in this conversation and printed for the user to copy.",
+          "Scripts were regrouped into lane folders on 2026-10-06 (PR #62, commit 0ee94ac). Script paths in this seed were updated to match, for example scripts/shared/validate-schema.py, scripts/learning/log-learning.py, scripts/registration/validate-registry.py (renamed from validate_registry.py), and scripts/dependency-graph/claude_tooling_extractor.py. New generator scripts go in scripts/registration/. All cited line numbers were re-checked and still point at the same code."
+        ],
+        "open_threads": [],
+        "disposed_threads": [],
+        "next_action": "Run /to-tasks on this seed to break the agents/ consolidation into tasks, starting with a branch, then git mv moves and renames, then reference updates, registry/validator fixes, ADR-0006, and the README generator.",
+        "status": "ready",
+        "verification": {
+          "iteration": 1,
+          "personas": [
+            "grounding",
+            "accuracy",
+            "completeness",
+            "coherence"
+          ],
+          "refutations_upheld": 0,
+          "refutations_screened": 0,
+          "clean": true,
+          "status": "verified"
+        }
+      }
+    },
+    {
+      "filename": "20261006-1202-consolidate-agents-dir.json",
+      "type": "task",
+      "content": {
+        "schema_version": "2",
+        "producer": "to-tasks",
+        "source": {
+          "type": "seed",
+          "ref": "20261003-0044-consolidate-agents-dir.json"
+        },
+        "generated_at": "2026-10-06T19:02:12Z",
+        "branching": {
+          "strategy": "single",
+          "branch": "chore/consolidate-agents-dir"
+        },
+        "tasks": [
+          {
+            "id": "T-0028",
+            "title": "Registry and validator cover all agents",
+            "type": "AFK",
+            "description": "Make scripts/registration/validate-registry.py recurse into subfolders (**/*.md) so nested agents are validated. Register all 13 agents missing from agents/registry.json at their current paths so the registry covers all 33. Fix architecture-auditor A1-A7 drift to A1-A8 in the registry entry. Fix the export-tasks-linear description so it no longer names tasks-to-linear as its caller. This is the verification net for every later move. Capture current behavior first: record the failing validate-registry.py output (5 orphans, nested agents unseen) before changing the validator.",
+            "acceptance_criteria": [
+              "validate-registry.py exits 0 with 33 agent files and 33 registry entries",
+              "validate-registry.py now fails when a nested agent .md under agents/ has no registry entry (verified by temporarily adding an unregistered nested file, then removing it)",
+              "registry.json architecture-auditor entry says A1-A8",
+              "export-tasks-linear description does not name tasks-to-linear as its caller"
+            ],
+            "blocked_by": [],
+            "status": "done",
+            "branch": null,
+            "pr": "gh pr create (pending push)",
+            "task_type": "code",
+            "commit": "c337c24bd1f1c39182faf1ac98efa67e2441364d",
+            "summary": "validate-registry.py recurses into agents/**/*.md; registry covers all 33 agents; architecture-auditor A1-A8; export-tasks-linear caller fixed.",
+            "files_touched": [
+              "claude-code-shared/scripts/registration/validate-registry.py",
+              "claude-code-shared/agents/registry.json",
+              "claude-code-shared/agents/egress/linear/export-tasks-linear.md"
+            ],
+            "tests": {
+              "passed": 0,
+              "failed": 0
+            },
+            "log_path": "docs/tasks/.logs/20261006-1202-consolidate-agents-dir/T-0028.md"
+          },
+          {
+            "id": "T-0029",
+            "title": "Move investigate lane into agents/investigate/",
+            "type": "AFK",
+            "description": "Create agents/investigate/ holding investigator.md (from agents/) and investigator-{code,web,github,linear,notion}.md (from agents/investigators/). Update registry.json paths, answer-composer.md lines 21-22 (agents/investigators/ becomes agents/investigate/), skills/pr-revise/SKILL.md:332 and skills/pr-code-review/SKILL.md:325 (agents/investigator.md becomes agents/investigate/investigator.md), and the path strings in scripts/tests/test_answer_composer_agent.py. Empty investigators/ dir disappears. Characterization first: before any git mv, run scripts/registration/validate-registry.py and confirm it passes (the T-0028 safety net), then move, then rerun. Use git mv only so history survives; no file deleted.",
+            "acceptance_criteria": [
+              "agents/investigate/ has exactly 6 agent files and agents/investigators/ and agents/investigator.md no longer exist",
+              "validate-registry.py exits 0",
+              "scripts/tests/test_answer_composer_agent.py passes",
+              "grep for 'agents/investigators' and 'agents/investigator.md' outside .claude/hillclimb, .claude/agent-bench, docs/archive, .claude/worktrees returns nothing"
+            ],
+            "blocked_by": [
+              "T-0028"
+            ],
+            "status": "done",
+            "branch": null,
+            "pr": "gh pr create (pending push)",
+            "task_type": "code",
+            "commit": "28dac101fdb66e4e327a4f8914cca509ea28afd2",
+            "summary": "Moved investigator.md and 5 leaves into agents/investigate/; updated registry, answer-composer, two SKILL.md, test paths. 3 pre-existing fact-check test failures unrelated.",
+            "log_path": "docs/tasks/.logs/20261006-1202-consolidate-agents-dir/T-0029.md"
+          },
+          {
+            "id": "T-0030",
+            "title": "Move build lane into agents/build/",
+            "type": "AFK",
+            "description": "Create agents/build/ holding build-runner, lint-runner, test-runner, e2e-runner, browser-checker, visual-judge (moved from agents/). Update registry.json paths and skills/debug/SKILL.md:97 (agents/browser-checker.md becomes agents/build/browser-checker.md). Characterization first: before any git mv, run scripts/registration/validate-registry.py and confirm it passes (the T-0028 safety net), then move, then rerun. Use git mv only so history survives; no file deleted.",
+            "acceptance_criteria": [
+              "agents/build/ has exactly 6 agent files and none of them remain at agents/ top level",
+              "validate-registry.py exits 0",
+              "grep for 'agents/browser-checker.md' and other old top-level build agent paths outside history dirs returns nothing"
+            ],
+            "blocked_by": [
+              "T-0028"
+            ],
+            "status": "done",
+            "branch": null,
+            "pr": "gh pr create (pending push)",
+            "task_type": "code",
+            "commit": "8e87fef59834d4e7e2747ad9818871c729cb0672",
+            "summary": "Moved 6 build agents into agents/build/; updated registry, debug SKILL.md, contract docs, test_consistency_findings.py.",
+            "log_path": "docs/tasks/.logs/20261006-1202-consolidate-agents-dir/T-0030.md"
+          },
+          {
+            "id": "T-0031",
+            "title": "Move personas into agents/seed-review/",
+            "type": "AFK",
+            "description": "Create agents/seed-review/ holding persona-accuracy, persona-coherence, persona-completeness, persona-grounding, persona-judge (moved from agents/personas/). Update registry.json paths and the example path at skills/improve-skill-learnings/SKILL.md:207 (agents/personas/ becomes agents/seed-review/). Characterization first: before any git mv, run scripts/registration/validate-registry.py and confirm it passes (the T-0028 safety net), then move, then rerun. Use git mv only so history survives; no file deleted.",
+            "acceptance_criteria": [
+              "agents/seed-review/ has exactly 5 agent files and agents/personas/ no longer exists",
+              "validate-registry.py exits 0",
+              "grep for 'agents/personas' outside history dirs returns nothing"
+            ],
+            "blocked_by": [
+              "T-0028"
+            ],
+            "status": "done",
+            "branch": null,
+            "pr": "gh pr create (pending push)",
+            "task_type": "code",
+            "commit": "eed8fceb9dcf0a471fa2b00819c0fff01a04a3b5",
+            "summary": "Moved 5 personas into agents/seed-review/; updated registry, improve-skill-learnings SKILL.md, tests, extractor, ADR-0001, persona-accuracy runner.",
+            "log_path": "docs/tasks/.logs/20261006-1202-consolidate-agents-dir/T-0031.md"
+          },
+          {
+            "id": "T-0032",
+            "title": "Move learning, shared, and skill-agent files into lanes",
+            "type": "AFK",
+            "description": "Create agents/learning/ (capture-learning, attribution-tracer, artifact-grounding-judge), agents/shared/ (context-loader, architecture-auditor), and agents/skill-agents/ (to-tasks, build-code, pr-code-review), all moved from agents/ top level. Keep the three skill-agent names identical to the matching skills so they spawn by frontmatter name. Update registry.json paths and any path-form references found by grep. Characterization first: before any git mv, run scripts/registration/validate-registry.py and confirm it passes (the T-0028 safety net), then move, then rerun. Use git mv only so history survives; no file deleted.",
+            "acceptance_criteria": [
+              "agents/learning/ has 3, agents/shared/ has 2, agents/skill-agents/ has 3 agent files",
+              "Only registry.json and the lane folders remain at agents/ top level besides egress/, build/, investigate/, seed-review/ (README.md comes later)",
+              "validate-registry.py exits 0",
+              "frontmatter name of to-tasks, build-code, pr-code-review agents unchanged"
+            ],
+            "blocked_by": [
+              "T-0028"
+            ],
+            "status": "done",
+            "branch": null,
+            "pr": "gh pr create (pending push)",
+            "task_type": "code",
+            "commit": "d46f162ac66309cae2340d1f782611bc71e0fb11",
+            "summary": "Moved 8 agents into agents/learning, agents/shared, agents/skill-agents; registry and grounding-judge runner paths updated.",
+            "log_path": "docs/tasks/.logs/20261006-1202-consolidate-agents-dir/T-0032.md"
+          },
+          {
+            "id": "T-0033",
+            "title": "Relocate companion scripts and rename gh test to github",
+            "type": "AFK",
+            "description": "Move agents/egress/github/gh-issue.sh to scripts/egress/github-issue.sh, agents/egress/notion/check-token.sh to scripts/egress/notion-check-token.sh, and agents/egress/notion/notion-page-api.sh to scripts/egress/notion-page-api.sh (name kept). Rename tests/characterization/test-gh-adapter.sh to test-github-adapter.sh and update its GH_SCRIPT path. Update script path references in export-tasks-gh.md (lines 46, 59), export-tasks-notion.md (lines 47, 61, 69), export-tasks.md notion check-token path, and the check-token.sh mention in notion-page-api.sh error text. Leave gh CLI invocations (gh issue create, gh api) untouched. Characterization first: run test-gh-adapter.sh before the move and confirm it passes, then move and rerun the renamed test. Use git mv only.",
+            "acceptance_criteria": [
+              "scripts/egress/ contains github-issue.sh, notion-check-token.sh, notion-page-api.sh and agents/ contains no .sh files",
+              "tests/characterization/test-github-adapter.sh passes against scripts/egress/github-issue.sh",
+              "validate-registry.py exits 0",
+              "grep for 'gh-issue.sh', 'check-token.sh' (without notion- prefix) and 'test-gh-adapter' outside history dirs returns nothing"
+            ],
+            "blocked_by": [
+              "T-0028"
+            ],
+            "status": "done",
+            "branch": null,
+            "pr": "gh pr create (pending push)",
+            "task_type": "code",
+            "commit": "a3181017e95fbfce300a164bc71be914d2792340",
+            "summary": "Moved 3 companion scripts to scripts/egress/ (github-issue.sh, notion-check-token.sh, notion-page-api.sh); renamed gh test to test-github-adapter.sh; refs updated; characterization 9/9.",
+            "log_path": "docs/tasks/.logs/20261006-1202-consolidate-agents-dir/T-0033.md"
+          },
+          {
+            "id": "T-0034",
+            "title": "Move export-tasks into egress and rename export-tasks-gh to github",
+            "type": "AFK",
+            "description": "Move agents/task-exporters/export-tasks.md to agents/egress/export-tasks.md. Rename agents/egress/github/export-tasks-gh.md to export-tasks-github.md with frontmatter name and heading updated. Update export-tasks.md lines 19, 69, 152 (adapter name, subagent_type), registry.json (paths and the export-tasks-github name), and any caller found by repo-wide grep for export-tasks-gh. Keep the task-routing.json github-issues key and gh CLI calls untouched. Empty task-exporters/ dir disappears. Spawn-name risk: grep must show no remaining 'export-tasks-gh' outside history dirs. Characterization first: before any git mv, run scripts/registration/validate-registry.py and confirm it passes (the T-0028 safety net), then move, then rerun. Use git mv only so history survives; no file deleted.",
+            "acceptance_criteria": [
+              "agents/egress/ has export-tasks.md and answer-composer.md at root plus github/, linear/, notion/, slack/ subfolders; agents/task-exporters/ no longer exists",
+              "agents/egress/github/export-tasks-github.md frontmatter name is export-tasks-github",
+              "validate-registry.py exits 0",
+              "grep -r 'export-tasks-gh\\b' outside .claude/hillclimb, .claude/agent-bench, docs/archive, .claude/worktrees returns nothing",
+              "tests/characterization/test-github-adapter.sh passes"
+            ],
+            "blocked_by": [
+              "T-0029",
+              "T-0033"
+            ],
+            "status": "done",
+            "branch": null,
+            "pr": "gh pr create (pending push)",
+            "task_type": "code",
+            "commit": "85d3f501b547490425994043ff730e0f01e3ba82",
+            "summary": "Moved export-tasks.md to agents/egress/; renamed adapter to export-tasks-github; registry, ADR-0002, architecture.html, gen-architecture.py, extractor, dispatch-tasks SKILL.md updated.",
+            "log_path": "docs/tasks/.logs/20261006-1202-consolidate-agents-dir/T-0034.md"
+          },
+          {
+            "id": "T-0035",
+            "title": "Generate agents/README.md index from registry",
+            "type": "AFK",
+            "description": "Add scripts/registration/gen-agents-readme.py that writes agents/README.md from agents/registry.json (name, lane, model, consumers), with a line noting skill-agents run the same-named skill in an isolated context window. Run it to produce the committed README.md. Wire into nothing else. Verification: running the generator twice yields an identical file and the README lists all 33 agents.",
+            "acceptance_criteria": [
+              "gen-agents-readme.py runs without error and writes agents/README.md listing all 33 agents grouped by lane",
+              "Running gen-agents-readme.py a second time produces no git diff",
+              "README includes the skill-agents isolated-context note",
+              "validate-registry.py exits 0"
+            ],
+            "blocked_by": [
+              "T-0029",
+              "T-0030",
+              "T-0031",
+              "T-0032",
+              "T-0034"
+            ],
+            "status": "done",
+            "branch": null,
+            "pr": "gh pr create (pending push)",
+            "task_type": "code",
+            "commit": "23e9f926942e15ecb7d08381f2e0e866528c6e32",
+            "summary": "Added gen-agents-readme.py; generated agents/README.md listing 33 agents by lane with skill-agents isolated-context note; validator skips README.",
+            "log_path": "docs/tasks/.logs/20261006-1202-consolidate-agents-dir/T-0035.md"
+          },
+          {
+            "id": "T-0036",
+            "title": "Update ADRs, CONTEXT, architecture graph and run final sweep",
+            "type": "AFK",
+            "description": "Add claude-code-shared/docs/adr/0006 recording that scripts live in scripts/ not agents/ (CLAUDE.md rule wins), mark ADR-0002 status superseded (file stays in place), update ADR-0001 example folder paths, and change claude-code-shared/CONTEXT.md line 15 agent path form from agents/<name>.md to agents/<group>/<name>.md. Update scripts/registration/gen-architecture.py agent names then regenerate architecture.html; update scripts/tests/test_consistency_findings.py fixture names and the comment references in scripts/dependency-graph/claude_tooling_extractor.py. Final sweep: repo grep for every old path outside .claude/hillclimb, .claude/agent-bench, docs/archive, .claude/worktrees, plus inventory count. Do not touch CircleCI gh/ slug in repo-policy.json or the github-issues routing key. No commit until the user approves the diff.",
+            "acceptance_criteria": [
+              "ADR-0006 exists, ADR-0002 status reads superseded, ADR-0001 and CONTEXT.md use the new path forms",
+              "gen-architecture.py runs and architecture.html is regenerated with new agent names",
+              "scripts/tests/test_consistency_findings.py and scripts/tests/test_answer_composer_agent.py pass",
+              "Count check: 33 agent .md files under agents/ (excluding README.md), 0 .sh files under agents/, 3 scripts under scripts/egress/ plus pre-existing post-pr-review.py",
+              "validate-registry.py exits 0",
+              "repo grep for old paths (agents/investigators, agents/personas, agents/task-exporters, export-tasks-gh, gh-issue.sh, check-token.sh, test-gh-adapter) outside history dirs returns nothing"
+            ],
+            "blocked_by": [
+              "T-0035"
+            ],
+            "status": "done",
+            "branch": null,
+            "pr": "gh pr create (pending push)",
+            "task_type": "code",
+            "commit": "077665b7c9d847dcdb78a5f4f7748a8909ec2aac",
+            "summary": "Added ADR-0006, superseded ADR-0002, updated ADR-0001 and CONTEXT.md paths, regenerated architecture.html, fixed fixtures; final sweep clean, 33 agents, 0 .sh under agents/.",
+            "log_path": "docs/tasks/.logs/20261006-1202-consolidate-agents-dir/T-0036.md"
+          }
+        ],
+        "follow_ups": []
+      }
+    }
+  ]
+}
