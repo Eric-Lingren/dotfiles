@@ -30,6 +30,7 @@ Thin orchestrator: resolve repo, choose a bucket, run a fetch script, render. St
    ```bash
    # issue_tracker github:
    bash ~/.dotfiles/claude-code-shared/scripts/pick/pick-fetch-gh.sh "<repo>" "<bucket>" > "$TMP/cands.json"
+   python3 ~/.dotfiles/claude-code-shared/scripts/pick/blockers.py resolve "$TMP/cands.json" > "$TMP/r.json" && mv "$TMP/r.json" "$TMP/cands.json"  # blocker tiers: ready, stackable (wt <branch> <base>), blocked (hidden)
    # issue_tracker linear:
    bash ~/.dotfiles/claude-code-shared/scripts/pick/pick-fetch-linear.sh "<repo>" "<bucket>" > "$TMP/cands.json"
    python3 ~/.dotfiles/claude-code-shared/scripts/pick/rank-render.py "$TMP/cands.json" --scorer-input > "$TMP/scorer-in.json"

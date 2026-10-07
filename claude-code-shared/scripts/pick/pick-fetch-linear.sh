@@ -61,7 +61,7 @@ query PickIssues($filter: IssueFilter) {
       inverseRelations {
         nodes {
           type
-          issue { identifier state { name type } attachments { nodes { url sourceType } } }
+          issue { identifier branchName state { name type } attachments { nodes { url sourceType } } }
         }
       }
     }
@@ -115,7 +115,8 @@ for n in data["issues"]["nodes"]:
         if b["state"]["type"] in ("completed", "canceled"):
             continue
         blockers.append({"id": b["identifier"], "state": b["state"]["name"],
-                         "pr_in_review": bool(prs(b.get("attachments"))) and b["state"]["name"] == "In Review"})
+                         "pr_in_review": bool(prs(b.get("attachments"))) and b["state"]["name"] == "In Review",
+                         "branch": b.get("branchName")})
     assignee = (n.get("assignee") or {}).get("name")
     out.append({
         "id": n["identifier"], "source": "linear", "repo": repo,

@@ -16,7 +16,9 @@ Scorer flow: --scorer-input prints the pick-scorer input (pre-sorted, capped at
 25); --scores FILE re-ranks by score and adds a 'why:' line per item.
 Unpointed items always show '⚠ unpointed' and are never excluded.
 """
-import json, sys
+import json, os, sys
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import blockers
 
 PRESORT_CAP = 25  # max candidates handed to pick-scorer
 
@@ -32,11 +34,12 @@ def label_tier(c):
 def rank(doc):
     sort = doc.get("sort", [])
     cands = list(doc["candidates"])
+    doc["_hidden"] = 0
     if "hide-blocked" in sort:
-        cands = [c for c in cands if not c.get("blockers")]
+        cands, doc["_hidden"] = blockers.apply(cands)
 
     def key(c):
-        k = []
+        k = [c.get("_tier", 0)]
         if "label-tier" in sort:
             k.append(label_tier(c))
         if "smallest" in sort:
@@ -79,7 +82,10 @@ def render(doc, top=5, scores=None):
         lines.append(f"{n}. {c['id']}  {c['title']}{pts}  [{tags}]")
         if c.get("_why"):
             lines.append(f"   why: {c['_why']}")
-        lines.append(f"   start: wt {c['branch']}  ->  /grill-me {c['id']}")
+        base = f" {c['_base']}" if c.get("_base") else ""
+        lines.append(f"   start: wt {c['branch']}{base}  ->  /grill-me {c['id']}")
+    if doc.get("_hidden"):
+        lines += ["", f"{doc['_hidden']} blocked hidden"]
     return "\n".join(lines)
 
 
