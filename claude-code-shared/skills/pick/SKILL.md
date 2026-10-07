@@ -21,7 +21,7 @@ Thin orchestrator: resolve repo, choose a bucket, run a fetch script, render. St
 
    If the output is not JSON (it reads `no issue_tracker configured for <repo>`), print it verbatim and stop. This is a clean exit, not an error.
 
-2. Otherwise parse `{repo, issue_tracker, buckets}`. If `issue_tracker` is `linear`, print `Linear path not available yet` and stop (added in a later task).
+2. Otherwise parse `{repo, issue_tracker, buckets}`. If `issue_tracker` is `linear`, use `pick-fetch-linear.sh` in step 4 instead of `pick-fetch-gh.sh` (same output shape; start line uses Linear's gitBranchName). Say "sprint", never "cycle", in anything shown to the user.
 
 3. Choose the bucket. Bare `/pick`: ask "Which bucket?" with AskUserQuestion, one option per entry in `buckets` (max 4). Free text after `/pick` is not mapped yet; if it exactly equals a bucket name, use that bucket, else show the menu.
 
@@ -31,6 +31,8 @@ Thin orchestrator: resolve repo, choose a bucket, run a fetch script, render. St
    bash ~/.dotfiles/claude-code-shared/scripts/pick/pick-fetch-gh.sh "<repo>" "<bucket>" \
      | python3 ~/.dotfiles/claude-code-shared/scripts/pick/rank-render.py
    ```
+
+   Linear: `bash ~/.dotfiles/claude-code-shared/scripts/pick/pick-fetch-linear.sh "<repo>" "<bucket>" | python3 ~/.dotfiles/claude-code-shared/scripts/pick/rank-render.py`
 
    The fetch script emits normalized candidate JSON (shape documented in its header, checked by `validate-candidates.py`). `rank-render.py` applies the cheap pre-sort (blocked hidden, label tier) and prints the top 5 with a start line `wt <branch>  ->  /grill-me #N`.
 
