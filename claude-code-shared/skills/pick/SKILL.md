@@ -68,4 +68,5 @@ Thin orchestrator: resolve repo, choose a bucket, run a fetch script, render. St
 Read and execute `~/.dotfiles/claude-code-shared/resources/learning-capture.md`.
 This skill's slug is `pick`.
 <!-- skill-done: pick -->
+  - `/grill-me` — ticket chosen, start a new session and grill it
 <!-- learning-capture:end -->
