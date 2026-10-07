@@ -16,7 +16,10 @@ Scorer flow: --scorer-input prints the pick-scorer input (pre-sorted, capped at
 25); --scores FILE re-ranks by score and adds a 'why:' line per item.
 Unpointed items always show '⚠ unpointed' and are never excluded.
 """
-import json, sys
+import json, os, sys
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from sections import partition, render_other  # other-repos section
 
 PRESORT_CAP = 25  # max candidates handed to pick-scorer
 
@@ -69,6 +72,7 @@ def render(doc, top=5, scores=None):
     ranked = rank(doc)[:PRESORT_CAP]
     if scores is not None:
         ranked = apply_scores(ranked, scores)
+    ranked, other = partition(ranked, doc["repo"])
     ranked = ranked[:top]
     lines = [f"{doc['repo']} / {doc['bucket']}  (top {len(ranked)})", ""]
     if not ranked:
@@ -80,6 +84,7 @@ def render(doc, top=5, scores=None):
         if c.get("_why"):
             lines.append(f"   why: {c['_why']}")
         lines.append(f"   start: wt {c['branch']}  ->  /grill-me {c['id']}")
+    lines += render_other(other)
     return "\n".join(lines)
 
 
