@@ -8,7 +8,7 @@ invokedBy: human
 
 # Standup
 
-Generate a standup report from today's GitHub PR and Linear ticket data.
+Generate a short, win-heavy async standup update (Shipped, In flight, Blockers) from today's GitHub PR and Linear ticket data. Every ticket and PR in the output is a clickable link.
 
 ## Process
 
@@ -40,64 +40,79 @@ LINEAR_JSON=$(bash ~/.dotfiles/claude-code-shared/scripts/standup/fetch-linear-s
 
 ### 4. Build structured standup data
 
-Write the JSON inputs to temp files, then run:
-
 ```bash
 TMP=$(mktemp -d)
 echo "$GH_JSON"     > "$TMP/github.json"
 echo "$LINEAR_JSON" > "$TMP/linear.json"
-DATA_JSON=$(bash ~/.dotfiles/claude-code-shared/scripts/standup/build-standup-data.sh \
+bash ~/.dotfiles/claude-code-shared/scripts/standup/build-standup-data.sh \
   "$TMP/linear.json" "$TMP/github.json" \
-  --standups-dir "$STANDUPS_DIR")
+  --standups-dir "$STANDUPS_DIR" > "$TMP/data.json"
 ```
+
+`data.json` is large. Do not cat it. Read only the fields you need: ticket `key`/`title`/`parentKey` per group, and per PR `number`, `bucket`, `reviewDecision`, `age_days`.
+
+`blockers` is split by cause. A PR appears under every cause it hits:
+
+| Cause | Meaning | Whose move |
+|---|---|---|
+| `ci_failing` | CI is red | mine |
+| `changes_requested` | a reviewer requested changes (GitHub `reviewDecision`) | mine |
+| `unresolved_threads` | open review threads | mine |
+| `stale_review` | still needs review, no activity for `--stale-days` (default 3) | reviewers |
+
+`age_days` counts from the PR's last activity, so a fresh push resets it.
 
 ### 5. Write prose (model turn)
 
-Read the structured data carefully, then write a `prose.json` scratch file using the Write tool. Do NOT use a python one-liner to write JSON — use the Write tool directly.
+Write `prose.json` with the Write tool (not a python one-liner), e.g. `/tmp/standup-prose-YYYYMMDD.json`:
 
-`prose.json` shape:
 ```json
 {
-  "summaries": {
-    "SM-3008": "One-line human summary of the ticket or PR",
-    "101": "Summary for PR #101 when there is no matched ticket"
+  "shipped": {
+    "lead": "Five wins landed since last standup, spanning dashboard polish and new field types.",
+    "items": [
+      "Smoother column rearranging in the Portfolio Dashboard ({KEY-2956})",
+      "Date UI component, the base for the rest of the date work ({KEY-2376})"
+    ]
   },
-  "theme": "One sentence that leads with what shipped, then the supporting signal.",
-  "shipped_track": [
-    "Line 1: what shipped since last standup, by plain-English outcome.",
-    "Line 2: what that unlocks, or the rest of what shipped this cycle.",
-    "Line 3 (optional): more shipped work or its impact."
-  ],
-  "talk_track": [
-    "Line 1: what is waiting and on whom.",
-    "Line 2: what is next.",
-    "Line 3 (optional): tie it to the Linear project or initiative."
-  ]
+  "in_flight": {
+    "lead": "Multi-select is moving fast, and the date stack is lined up right behind it.",
+    "items": [
+      "Multi-select: the core cell, row type and paste helper are all in review ({KEY-3788}, {KEY-3789}, {KEY-3790})",
+      "Next up: wiring multi-select into the company metrics table ({KEY-3791}, {KEY-3792})"
+    ]
+  },
+  "blockers": {
+    "lead": "Mostly in my hands: a few CI fixes and some review feedback, plus one review to unstick.",
+    "items": [
+      "Fixing CI on {#20363} ({KEY-3788}) and {#19649} ({KEY-2464})",
+      "Addressing requested changes on {#19657} ({KEY-2468})",
+      "Need eyes on {#19654} ({KEY-2466}), waiting 7 days"
+    ]
+  }
 }
 ```
 
-**Summaries:** Write one short human-readable line per ticket key (or per PR number when there is no ticket). Cover what the work does, not what the PR title says. Every `done_new` and `done_earlier` entry needs a summary. Skip summaries for `todo` tickets; that section renders as a tight title list. These are the lines people remember, so describe the outcome for users or the team.
+**Links.** Write every ticket as `{KEY-123}` and every PR as `{#123}`. The renderer turns them into clickable links. A bare `KEY-123` or `#123` fails the render.
 
-**Theme sentence:** Completed work comes first. When `shipped_cycle_count >= 1`, the sentence opens with what shipped this cycle (name the outcome, not a count alone). Then add the strongest supporting signal from `theme_signals`:
+**Tone.** Positive, optimistic, win-heavy. Each section opens with one short narrative `lead` sentence, then tight bullets. Describe outcomes for users or the team, not PR titles. No em dashes. No hedging.
 
-- *Steady delivery* — when `delivery_count >= 1` (shipped since last standup)
-- *Quality bar / no regressions* — when `ci_green_ratio >= 0.8`
-- *Cross-team collaboration* — when `distinct_reviewers >= 3`
-- *Small reviewable slices* — when `small_prs >= 3`
-- *Careful spec for accuracy and consistency* — only when `shipped_cycle_count == 0`
+**Shipped.** One bullet per `done_new` item, each naming its ticket (or PR when there is no ticket). If `done_new` is empty, cover `done_earlier` instead (the header switches to "Shipped this cycle"). Lead with the count and the theme of the wins.
 
-Wording is free. Write naturally, avoid jargon.
+**In flight.** Group by workstream, not by ticket. Use the bracket tag in titles (`[multi-select]`, `[date]`) or `parentKey`/`epicKey` to group. Cover:
+- non-blocker PRs in `in_review`, grouped (yellow = in review, green = approved: call it out as a win)
+- the next `todo` tickets in the active workstream, as "Next up"
+- the parent epic, when it ties the work together
 
-**Talk track rules.** The talk track is mostly about completed work. Lead with it, spend the most words on it.
-- `shipped_track`: 1–3 lines. Required whenever `shipped_cycle_count >= 1` (render fails without it). Start with `done_new` items. If `done_new` is empty, lead with `done_earlier` ("Earlier this cycle we shipped…"). Name the outcome and who it helps. Mention 🆕 items by name before older ones.
-- `talk_track`: 2–3 lines on what is waiting and what is next. Keep it short.
-- 80 words max across both lists. Aim for more words in `shipped_track` than in `talk_track`.
-- Phrase blockers as "need eyes on #X from Y" or "next step is Z", never as complaints.
-- Tie the theme to the Linear project name (`projectName`) when available.
-- Silver-lining tone: focus on momentum, not friction.
-- Only when nothing shipped this cycle (`shipped_cycle_count == 0`): leave `shipped_track` empty and open `talk_track` with the closest-to-done item.
+Do not list every todo ticket. 2 to 5 bullets.
 
-Write `prose.json` to a scratch path, e.g. `/tmp/standup-prose-YYYYMMDD.json`.
+**Blockers.** One bullet per cause that has entries, in this order and phrasing:
+- `ci_failing`: "Fixing CI on {#N} ({KEY})..."
+- `changes_requested`: "Addressing requested changes on {#N} ({KEY})..."
+- `unresolved_threads`: "Resolving open threads on {#N} ({KEY})..."
+- `stale_review`: "Need eyes on {#N} ({KEY}), waiting N days". Name the reviewer only if one is clearly pending.
+
+Never write "need eyes on" for a cause that is mine to fix. Every blocker PR must be referenced. The lead frames ownership positively (e.g. "Mostly in my hands..."). If there are no blockers, write a lead like "No blockers today." with an empty `items` list.
 
 ### 6. Render the report
 
@@ -106,11 +121,11 @@ REPORT=$(bash ~/.dotfiles/claude-code-shared/scripts/standup/render-standup.sh \
   "$TMP/data.json" "/tmp/standup-prose-YYYYMMDD.json")
 ```
 
-If render exits non-zero (talk track validation failed), revise `shipped_track` / `talk_track` in `prose.json` and retry once.
+On a non-zero exit, stderr lists every validation error (bare or unknown reference, em dash, missing lead, unreferenced shipped item or blocker PR, over 30 words per line, too many items). Fix `prose.json` and retry, at most twice.
 
 ### 7. Print the report to the terminal
 
-Print `$REPORT` verbatim (the full markdown report).
+Print `$REPORT` verbatim. Nothing else goes between it and the save step.
 
 ### 8. Save to standups directory
 
@@ -121,25 +136,27 @@ echo "$REPORT" > "$STANDUPS_DIR/$TODAY.md"
 echo "Saved to $STANDUPS_DIR/$TODAY.md"
 ```
 
-The `--ensure` flag creates `docs/standups/` and idempotently adds `docs/standups/` to the repo's `.git/info/exclude`. It never modifies `.gitignore`.
+The `--ensure` flag creates `docs/standups/` and idempotently adds `docs/standups/` to the repo's `.git/info/exclude`. It never modifies `.gitignore`. The filename date also sets the "since last standup" cutoff for the next run.
 
-## Output section order
+## Output shape
 
-The rendered report uses this section order: **🟣 Done, 🟢 In Review, 🟡 In Progress, ⚪ Todo, Blockers, Theme, Talk track**.
+```
+**Shipped since last standup** 🚀
+<lead sentence>
+- <win> ([KEY-1](...))
 
-Circles match Linear's status colors: ⚪ todo/backlog, 🟡 in progress, 🟢 in review, 🟣 done/shipped. Each ticket line gets the circle for its actual Linear status, so a ticket whose color doesn't match its section is out of sync in Linear. Circles mean Linear status only. PR review health uses separate markers.
+**In flight** ⚡
+<lead sentence>
+- <workstream status> ([KEY-2](...), [KEY-3](...))
 
-- **Done:** a "Shipped this cycle: N" count, then 🆕 entries (merged or completed since the last standup), then an "Earlier this cycle" subsection with full entries and summaries. Linear tickets marked Done with no PR count too. When no prior standup file exists, everything shipped this cycle is 🆕.
-- **In Review:** PR markers (🚩 needs attention, ⏳ waiting on reviewers with age, ✅ approved), ticket link, PR link, reviewer names.
-- **In Progress:** draft PRs (📝) and started tickets with no PR yet (tagged "(no PR yet)").
-- **Todo:** tickets in Linear's triage, backlog, or unstarted states. Canceled tickets are dropped.
-- **Blockers:** 🚩 PRs only. Phrased as "need eyes on" in the talk track, not in the rendered section.
-- **Talk track:** `shipped_track` lines first, then `talk_track`.
-- **Violations** (⚠️): multiple PRs per ticket, or status disagreement, marked inline.
+**Blockers** 🚧
+<lead sentence>
+- Fixing CI on [#101](...) ([KEY-4](...))
+```
 
 ## Notes
 
-- No flags or arguments — /standup always runs the full flow.
+- No flags or arguments. /standup always runs the full flow.
 - Do not use the Linear MCP. All data comes from the fetch scripts.
 - Do not include a "waiting on my review" section.
 - The skill saves the report but does not commit it (Quaestor-Web uses a separate commit workflow).

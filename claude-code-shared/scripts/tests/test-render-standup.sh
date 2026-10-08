@@ -60,18 +60,31 @@ assert_exit_zero() {
   fi
 }
 
+# Write a variant of the prose fixture. $1 = output path, $2 = python statements mutating `p`.
+mutate_prose() {
+  python3 - "$PROSE_FIXTURE" "$1" "$2" <<'PY'
+import json, sys
+p = json.load(open(sys.argv[1]))
+exec(sys.argv[3])
+json.dump(p, open(sys.argv[2], "w"))
+PY
+}
+
+# Run the renderer on a mutated prose; sets RC and ERR.
+run_variant() {
+  local name="$1" code="$2"
+  mutate_prose "$TMP/$name.json" "$code"
+  set +e
+  bash "$SCRIPT" "$DATA_FIXTURE" "$TMP/$name.json" >/dev/null 2>"$TMP/$name.err"
+  RC=$?
+  set -e
+  ERR=$(cat "$TMP/$name.err")
+}
+
 # --- Test 1: script exists and is executable ---
 echo "=== T1: script exists ==="
-if [ -f "$SCRIPT" ]; then
-  assert_pass "render-standup.sh exists"
-else
-  assert_fail "render-standup.sh not found at $SCRIPT"
-fi
-if [ -x "$SCRIPT" ]; then
-  assert_pass "render-standup.sh is executable"
-else
-  assert_fail "render-standup.sh is not executable"
-fi
+[ -f "$SCRIPT" ] && assert_pass "render-standup.sh exists" || assert_fail "render-standup.sh not found at $SCRIPT"
+[ -x "$SCRIPT" ] && assert_pass "render-standup.sh is executable" || assert_fail "render-standup.sh is not executable"
 
 # --- Test 2: full dry-run with fixtures ---
 echo ""
@@ -80,296 +93,89 @@ set +e
 OUT=$(bash "$SCRIPT" "$DATA_FIXTURE" "$PROSE_FIXTURE" 2>"$TMP/t2.err")
 EXIT2=$?
 set -e
-
 assert_exit_zero "$EXIT2" "exits 0 with fixture inputs"
+[ -n "$OUT" ] && assert_pass "output is non-empty" || { assert_fail "output is empty"; echo "  stderr: $(cat "$TMP/t2.err")"; }
 
-if [ -n "$OUT" ]; then
-  assert_pass "output is non-empty"
-else
-  assert_fail "output is empty"
-  echo "  stderr: $(cat "$TMP/t2.err")"
-fi
-
-# --- Test 3: all six sections present ---
+# --- Test 3: three sections in order ---
 echo ""
-echo "=== T3: all sections present, Linear circles, Done first ==="
-assert_contains "$OUT" "## 🟢 In Review" "output contains ## 🟢 In Review section"
-assert_contains "$OUT" "## 🟣 Done" "output contains ## 🟣 Done section"
-assert_contains "$OUT" "## 🟡 In Progress" "output contains ## 🟡 In Progress section"
-assert_contains "$OUT" "## ⚪ Todo" "output contains ## ⚪ Todo section"
-FIRST_SECTION=$(echo "$OUT" | grep "^## " | head -1)
-assert_contains "$FIRST_SECTION" "Done" "Done is the first section"
-assert_contains "$OUT" "Shipped this cycle: 1" "Done section shows shipped count"
-assert_contains "$OUT" "## Blockers" "output contains ## Blockers section"
-assert_contains "$OUT" "## Theme" "output contains ## Theme section"
-assert_contains "$OUT" "## Talk track" "output contains ## Talk track section"
+echo "=== T3: sections and order ==="
+ORDER=$(echo "$OUT" | grep '^\*\*' | tr '\n' '|')
+assert_eq "$ORDER" "**Shipped since last standup** 🚀|**In flight** ⚡|**Blockers** 🚧|" "Shipped, In flight, Blockers in order"
+assert_not_contains "$OUT" "## " "no old-style ## headers"
+assert_not_contains "$OUT" "Talk track" "no old talk track section"
 
-# --- Test 4: In Review section content ---
+# --- Test 4: lead sentence follows each header ---
 echo ""
-echo "=== T4: In Review content ==="
-# Should include PR 101 and SM-3008 ticket
-assert_contains "$OUT" "SM-3008" "In Review contains SM-3008"
-assert_contains "$OUT" "pull/101" "In Review contains PR 101 link"
-assert_contains "$OUT" "⏳ \[#101\]" "In Review yellow bucket shows waiting marker"
-assert_contains "$OUT" "alice" "In Review shows reviewer alice"
-assert_contains "$OUT" "waiting 10d" "In Review shows age tag"
+echo "=== T4: lead sentences ==="
+LEADS=$(echo "$OUT" | grep -A1 '^\*\*' | grep -v '^\*\*' | grep -v '^--$' | tr '\n' '|')
+assert_eq "$LEADS" "Feature X landed since last standup and is live for Platform Reliability.|The dispatch redesign is one review pass from landing.|One item, and it is in my hands.|" "each header followed by its lead"
 
-# --- Test 5: Done section content ---
+# --- Test 5: tokens become clickable links ---
 echo ""
-echo "=== T5: Done section content ==="
-# SM-3011 was merged after cutoff → done_new with 🆕
-assert_contains "$OUT" "🆕" "Done section has 🆕 new tag"
-assert_contains "$OUT" "SM-3011" "Done section contains SM-3011"
-assert_contains "$OUT" "pull/105" "Done section contains PR 105 link"
+echo "=== T5: links ==="
+assert_contains "$OUT" "^- Feature X is in users' hands behind the platform flag (\[SM-3011\](https://linear.app/sm/issue/SM-3011), \[#105\](" "ticket and PR tokens link in shipped"
+assert_contains "$OUT" "^- Addressing requested changes on \[#101\](https://github.com/owner/repo/pull/101) (\[SM-3008\](" "blocker bullet links PR and ticket"
+assert_not_contains "$OUT" "{SM-" "no raw ticket tokens left"
+assert_not_contains "$OUT" "{#" "no raw PR tokens left"
 
-# --- Test 6: In Progress section content ---
+# --- Test 6: shipped header falls back when nothing is new ---
 echo ""
-echo "=== T6: In Progress content ==="
-assert_contains "$OUT" "SM-3013" "In Progress contains SM-3013"
-assert_contains "$OUT" "no PR yet" "In Progress shows (no PR yet) tag"
+echo "=== T6: Shipped this cycle header ==="
+python3 -c "
+import json, sys
+d = json.load(open(sys.argv[1]))
+d['done_earlier'], d['done_new'] = d['done_new'], []
+json.dump(d, open(sys.argv[2], 'w'))
+" "$DATA_FIXTURE" "$TMP/data_earlier.json"
+OUT6=$(bash "$SCRIPT" "$TMP/data_earlier.json" "$PROSE_FIXTURE" 2>/dev/null)
+assert_contains "$OUT6" "^\*\*Shipped this cycle\*\* 🚀" "header reads Shipped this cycle when done_new is empty"
 
-# --- Test 7: Blockers section present (empty) ---
+# --- Test 7: validation failures ---
 echo ""
-echo "=== T7: Blockers section ==="
-# No blockers in fixture → should say (none)
-assert_contains "$OUT" "## Blockers" "Blockers section header present"
-assert_contains "$OUT" "none" "Blockers shows (none) when empty"
+echo "=== T7: validation ==="
+run_variant bare "p['in_flight']['items'][0] = 'Event loop work SM-3008'"
+assert_eq "$RC" "1" "bare ticket reference exits 1"
+assert_contains "$ERR" "bare reference 'SM-3008'" "bare ticket reference named in error"
 
-# --- Test 8: Theme section content ---
-echo ""
-echo "=== T8: Theme content ==="
-assert_contains "$OUT" "Steady delivery" "Theme section contains prose theme"
+run_variant barepr "p['blockers']['items'][0] = 'Addressing feedback on #101 ({#101})'"
+assert_contains "$ERR" "bare reference '#101'" "bare PR reference rejected"
 
-# --- Test 9: Talk track format ---
-echo ""
-echo "=== T9: Talk track content ==="
-assert_contains "$OUT" "> Shipped Feature X" "Talk track line 1 is the shipped line"
-assert_contains "$OUT" "> Dispatch redesign" "Talk track waiting line present"
-assert_contains "$OUT" "> Next:" "Talk track next line present"
-# Shipped lines render before the rest
-FIRST_TALK=$(echo "$OUT" | grep "^>" | head -1)
-assert_contains "$FIRST_TALK" "Shipped" "shipped_track renders first"
-# Talk track lines are quoted with >
-TALK_LINES=$(echo "$OUT" | grep -c "^>" || true)
-if [ "$TALK_LINES" -eq 4 ]; then
-  assert_pass "talk track has 4 quoted lines (2 shipped + 2 talk)"
-else
-  assert_fail "talk track should have 4 lines starting with >, got $TALK_LINES"
-fi
+run_variant unknown "p['in_flight']['items'][0] = 'Mystery ({SM-9999})'"
+assert_eq "$RC" "1" "unknown ticket exits 1"
+assert_contains "$ERR" "unknown ticket {SM-9999}" "unknown ticket named in error"
 
-# --- Test 10: summaries are used ---
-echo ""
-echo "=== T10: prose summaries injected ==="
-assert_contains "$OUT" "deterministic event loop" "SM-3008 summary text included"
-assert_contains "$OUT" "user-facing feature X" "SM-3011 summary text included"
+run_variant emdash "p['shipped']['lead'] = 'Feature X shipped — nice.'"
+assert_contains "$ERR" "em dash not allowed" "em dash rejected"
 
-# --- Test 11: talk track word count validation ---
+run_variant nolead "p['in_flight']['lead'] = ''"
+assert_contains "$ERR" "in_flight: lead sentence is required" "missing lead rejected"
+
+run_variant missingshipped "p['shipped']['items'] = ['Feature X ({#105})']"
+assert_contains "$ERR" "done_new ticket SM-3011 is not referenced" "unreferenced done_new ticket rejected"
+
+run_variant noshipped "p['shipped']['items'] = []"
+assert_contains "$ERR" "shipped: items are required" "empty shipped rejected when work shipped"
+
+run_variant missingblocker "p['blockers']['items'] = ['All clear ({SM-3008})']"
+assert_contains "$ERR" "changes_requested PR #101 is not referenced" "unreferenced blocker PR rejected"
+
+run_variant long "p['in_flight']['items'][0] = ' '.join(['word'] * 31) + ' ({SM-3008})'"
+assert_contains "$ERR" "31 words (max 30)" "over-30-word item rejected"
+
+run_variant toomany "p['blockers']['items'] = ['Item {#101}'] * 7"
+assert_contains "$ERR" "blockers: 7 items (max 6)" "too many blocker items rejected"
+
+run_variant nosection "del p['in_flight']"
+assert_contains "$ERR" "in_flight: missing section object" "missing section rejected"
+
+# --- Test 8: missing input files ---
 echo ""
-echo "=== T11: talk track over-80-word validation ==="
-# Create a prose fixture with a talk track over 80 words
-cat > "$TMP/prose_too_long.json" << 'EOF'
-{
-  "summaries": {},
-  "theme": "Theme sentence.",
-  "shipped_track": [
-    "Shipped a long list of things that adds a good number of extra words to the count."
-  ],
-  "talk_track": [
-    "This is an extremely long first line that contains many many many many many many extra words to help push us well over the sixty word total limit.",
-    "This is a second extremely long line with many many many many many many extra words that pushes us even further over the absolute limit.",
-    "And this third exceedingly long line ensures we are definitively and absolutely well over sixty total words in the entire talk track section here."
-  ]
-}
-EOF
+echo "=== T8: error on missing files ==="
 set +e
-OUT11=$(bash "$SCRIPT" "$DATA_FIXTURE" "$TMP/prose_too_long.json" 2>"$TMP/t11.err")
-EXIT11=$?
+bash "$SCRIPT" "/nonexistent/data.json" "$PROSE_FIXTURE" 2>/dev/null
+EXIT8=$?
 set -e
-if [ "$EXIT11" -ne 0 ]; then
-  assert_pass "exits non-zero when talk track exceeds 80 words"
-else
-  assert_fail "should exit non-zero when talk track over 80 words (got exit 0)"
-fi
-if grep -q "80 words" "$TMP/t11.err" 2>/dev/null; then
-  assert_pass "error message mentions 80 words"
-else
-  assert_fail "error message should mention 80 words. stderr: $(cat "$TMP/t11.err")"
-fi
-
-# --- Test 12: talk track line count validation ---
-echo ""
-echo "=== T12: talk track line count validation ==="
-# 1 talk_track line → should fail
-cat > "$TMP/prose_1line.json" << 'EOF'
-{
-  "summaries": {},
-  "theme": "Theme.",
-  "shipped_track": ["Shipped it."],
-  "talk_track": [
-    "Line one."
-  ]
-}
-EOF
-set +e
-OUT12=$(bash "$SCRIPT" "$DATA_FIXTURE" "$TMP/prose_1line.json" 2>"$TMP/t12.err")
-EXIT12=$?
-set -e
-if [ "$EXIT12" -ne 0 ]; then
-  assert_pass "exits non-zero when talk track has 1 line"
-else
-  assert_fail "should exit non-zero for 1-line talk track"
-fi
-
-# 4 talk_track lines → should fail
-cat > "$TMP/prose_4lines.json" << 'EOF'
-{
-  "summaries": {},
-  "theme": "Theme.",
-  "shipped_track": ["Shipped it."],
-  "talk_track": [
-    "Line 1.",
-    "Line 2.",
-    "Line 3.",
-    "Line 4 extra line."
-  ]
-}
-EOF
-set +e
-OUT12b=$(bash "$SCRIPT" "$DATA_FIXTURE" "$TMP/prose_4lines.json" 2>"$TMP/t12b.err")
-EXIT12b=$?
-set -e
-if [ "$EXIT12b" -ne 0 ]; then
-  assert_pass "exits non-zero when talk track has 4 lines"
-else
-  assert_fail "should exit non-zero for 4-line talk track"
-fi
-
-# Something shipped but no shipped_track → should fail
-cat > "$TMP/prose_no_shipped.json" << 'EOF'
-{
-  "summaries": {},
-  "theme": "Theme.",
-  "talk_track": ["Line 1.", "Line 2."]
-}
-EOF
-set +e
-OUT12c=$(bash "$SCRIPT" "$DATA_FIXTURE" "$TMP/prose_no_shipped.json" 2>"$TMP/t12c.err")
-EXIT12c=$?
-set -e
-if [ "$EXIT12c" -ne 0 ] && grep -q "shipped_track" "$TMP/t12c.err"; then
-  assert_pass "exits non-zero when work shipped but shipped_track missing"
-else
-  assert_fail "should require shipped_track when done items exist"
-fi
-
-# --- Test 13: done_earlier renders as full entries ---
-echo ""
-echo "=== T13: done_earlier full entries ==="
-# Create a data fixture with both done_new and done_earlier
-cat > "$TMP/data_with_earlier.json" << 'EOF'
-{
-  "in_review": [],
-  "done_new": [
-    {
-      "ticket": {"key": "SM-3011", "title": "Feature X", "status": "Done",
-                 "url": "https://linear.app/sm/issue/SM-3011",
-                 "parentKey": null, "epicKey": null, "projectName": null},
-      "prs": [{"number": 105, "title": "feat: SM-3011",
-               "headRefName": "feat/SM-3011", "url": "https://github.com/owner/repo/pull/105",
-               "state": "MERGED", "ciRollup": "success", "unresolvedThreadCount": 0,
-               "changedFiles": 7, "createdAt": "2026-09-30T10:00:00Z",
-               "updatedAt": "2026-09-30T10:00:00Z", "mergedAt": "2026-09-30T10:00:00Z",
-               "age_tag": "waiting 0d", "reviewers": ["carol"]}]
-    }
-  ],
-  "done_earlier": [
-    {
-      "ticket": {"key": "SM-3009", "title": "Old fix", "status": "Done",
-                 "url": "https://linear.app/sm/issue/SM-3009",
-                 "parentKey": null, "epicKey": null, "projectName": null},
-      "prs": [{"number": 103, "title": "fix: SM-3009",
-               "headRefName": "fix/SM-3009", "url": "https://github.com/owner/repo/pull/103",
-               "state": "MERGED", "ciRollup": "success", "unresolvedThreadCount": 0,
-               "changedFiles": 3, "createdAt": "2026-09-10T10:00:00Z",
-               "updatedAt": "2026-09-10T10:00:00Z", "mergedAt": "2026-09-10T10:00:00Z",
-               "age_tag": "waiting 20d", "reviewers": ["bob"]}]
-    }
-  ],
-  "in_progress": [],
-  "blockers": [],
-  "theme_signals": {"distinct_reviewers": 1, "small_prs": 1, "ci_green_ratio": 1.0, "delivery_count": 1},
-  "violations": [],
-  "since_last_standup_cutoff": "2026-09-28"
-}
-EOF
-
-set +e
-OUT13=$(bash "$SCRIPT" "$TMP/data_with_earlier.json" "$PROSE_FIXTURE" 2>"$TMP/t13.err")
-EXIT13=$?
-set -e
-
-assert_exit_zero "$EXIT13" "exits 0 with done_earlier fixture"
-assert_contains "$OUT13" "### Earlier this cycle" "Done section has 'Earlier this cycle' subsection"
-assert_contains "$OUT13" "SM-3009) Old fix" "Earlier this cycle lists SM-3009 as a full entry"
-assert_contains "$OUT13" "Shipped this cycle: 2" "shipped count includes earlier merges"
-
-# --- Test 14: violations render inline ---
-echo ""
-echo "=== T14: violations inline ==="
-cat > "$TMP/data_violations.json" << 'EOF'
-{
-  "in_review": [
-    {
-      "ticket": {"key": "SM-3008", "title": "Multi-PR",
-                 "url": "https://linear.app/sm/issue/SM-3008", "status": "In Progress",
-                 "parentKey": null, "epicKey": null, "projectName": null},
-      "prs": [
-        {"number": 101, "title": "PR 1", "headRefName": "feat/SM-3008-a",
-         "url": "https://github.com/owner/repo/pull/101", "state": "OPEN",
-         "ciRollup": "success", "unresolvedThreadCount": 0, "changedFiles": 3,
-         "createdAt": "2026-09-20T10:00:00Z", "updatedAt": "2026-09-20T10:00:00Z",
-         "mergedAt": null, "age_tag": "waiting 10d", "bucket": "yellow", "reviewers": []},
-        {"number": 102, "title": "PR 2", "headRefName": "feat/SM-3008-b",
-         "url": "https://github.com/owner/repo/pull/102", "state": "OPEN",
-         "ciRollup": "success", "unresolvedThreadCount": 0, "changedFiles": 2,
-         "createdAt": "2026-09-21T10:00:00Z", "updatedAt": "2026-09-21T10:00:00Z",
-         "mergedAt": null, "age_tag": "waiting 9d", "bucket": "yellow", "reviewers": []}
-      ]
-    }
-  ],
-  "done_new": [],
-  "done_earlier": [],
-  "in_progress": [],
-  "blockers": [],
-  "theme_signals": {"distinct_reviewers": 0, "small_prs": 2, "ci_green_ratio": 1.0, "delivery_count": 0},
-  "violations": [
-    {"type": "multiple_prs", "ticket_key": "SM-3008", "pr_numbers": [101, 102]}
-  ],
-  "since_last_standup_cutoff": null
-}
-EOF
-
-set +e
-OUT14=$(bash "$SCRIPT" "$TMP/data_violations.json" "$PROSE_FIXTURE" 2>"$TMP/t14.err")
-EXIT14=$?
-set -e
-
-assert_exit_zero "$EXIT14" "exits 0 with violations fixture"
-assert_contains "$OUT14" "⚠️" "violations render ⚠️ marker"
-assert_contains "$OUT14" "multiple PRs" "violation type shown inline"
-
-# --- Test 15: missing input files ---
-echo ""
-echo "=== T15: error on missing files ==="
-set +e
-bash "$SCRIPT" "/nonexistent/data.json" "$PROSE_FIXTURE" 2>"$TMP/t15.err"
-EXIT15=$?
-set -e
-if [ "$EXIT15" -ne 0 ]; then
-  assert_pass "exits non-zero when data_json not found"
-else
-  assert_fail "should fail when data_json missing"
-fi
+[ "$EXIT8" -ne 0 ] && assert_pass "exits non-zero when data_json not found" || assert_fail "should fail when data_json missing"
 
 # --- Results ---
 echo ""

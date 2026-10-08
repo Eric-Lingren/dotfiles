@@ -1,16 +1,21 @@
 {
-  "summaries": {
-    "SM-3008": "Replaces the dispatch queue with a deterministic event loop",
-    "SM-3011": "Adds user-facing feature X behind the platform flag",
-    "SM-3013": "Groundwork for the new notification pipeline"
+  "shipped": {
+    "lead": "Feature X landed since last standup and is live for Platform Reliability.",
+    "items": [
+      "Feature X is in users' hands behind the platform flag ({SM-3011}, {#105})"
+    ]
   },
-  "theme": "Steady delivery — Feature X shipped and the dispatch redesign is one review away.",
-  "shipped_track": [
-    "Shipped Feature X (SM-3011) for Platform Reliability — clean CI, reviewed by carol.",
-    "That puts the platform flag rollout in users' hands this cycle."
-  ],
-  "talk_track": [
-    "Dispatch redesign (SM-3008) is waiting on alice's second pass.",
-    "Next: address alice's feedback and get SM-3008 merged."
-  ]
+  "in_flight": {
+    "lead": "The dispatch redesign is one review pass from landing.",
+    "items": [
+      "Deterministic event loop replaces the dispatch queue ({SM-3008})",
+      "Notification pipeline groundwork is underway ({SM-3013})"
+    ]
+  },
+  "blockers": {
+    "lead": "One item, and it is in my hands.",
+    "items": [
+      "Addressing requested changes on {#101} ({SM-3008})"
+    ]
+  }
 }

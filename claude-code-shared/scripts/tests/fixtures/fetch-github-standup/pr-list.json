@@ -23,6 +23,7 @@
     "reviewRequests": [
       {"requestedReviewer": {"login": "carol"}}
     ],
+    "reviewDecision": "CHANGES_REQUESTED",
     "statusCheckRollup": [
       {"name": "ci/test", "status": "COMPLETED", "conclusion": "SUCCESS"},
       {"name": "ci/lint", "status": "COMPLETED", "conclusion": "SUCCESS"}

@@ -6,7 +6,7 @@
 #
 # Each PR object includes:
 #   number, title, body, headRefName, url, state, isDraft,
-#   createdAt, updatedAt, mergedAt, reviews, reviewRequests,
+#   createdAt, updatedAt, mergedAt, reviews, reviewRequests, reviewDecision,
 #   reviewers (deduped list of reviewer logins),
 #   ciRollup (success|failure|pending|none), unresolvedThreadCount (integer),
 #   changedFiles (integer)
@@ -34,7 +34,7 @@ trap cleanup EXIT
 
 # --- 1. Fetch PR list ---
 
-GH_FIELDS="number,title,body,headRefName,url,state,isDraft,createdAt,updatedAt,mergedAt,reviews,reviewRequests,statusCheckRollup,changedFiles"
+GH_FIELDS="number,title,body,headRefName,url,state,isDraft,createdAt,updatedAt,mergedAt,reviews,reviewRequests,reviewDecision,statusCheckRollup,changedFiles"
 
 MERGED_LOOKBACK_DAYS=21
 
@@ -182,6 +182,7 @@ for pr in pr_list:
         "mergedAt": pr.get("mergedAt"),
         "reviews": reviews,
         "reviewRequests": review_requests,
+        "reviewDecision": pr.get("reviewDecision") or None,
         "reviewers": reviewers,
         "ciRollup": ci_rollup,
         "unresolvedThreadCount": unresolved_count,

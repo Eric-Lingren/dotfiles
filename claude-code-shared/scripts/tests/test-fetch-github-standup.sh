@@ -501,6 +501,16 @@ else
   assert_fail "some unresolvedThreadCounts were non-zero with empty threads map"
 fi
 
+# --- Test 15: reviewDecision passes through, null when absent ---
+echo ""
+echo "=== T15: reviewDecision passthrough ==="
+DECISIONS=$(echo "$OUT14" | python3 -c "
+import json, sys
+d = json.load(sys.stdin)
+print(' '.join(f\"{p['number']}={p['reviewDecision']}\" for p in d['prs'][:2]))
+")
+assert_eq "$DECISIONS" "101=CHANGES_REQUESTED 102=None" "reviewDecision copied from gh, None when missing"
+
 # --- Results ---
 echo ""
 echo "Results: $PASS passed, $FAIL failed"
