@@ -1,0 +1,384 @@
+{
+  "schema_version": "2",
+  "producer": "to-tasks",
+  "source": {
+    "type": "seed",
+    "ref": "20261006-1057-pick-skill.json"
+  },
+  "generated_at": "2026-10-07T06:44:51Z",
+  "branching": {
+    "strategy": "single",
+    "branch": "feat/pick-skill"
+  },
+  "tasks": [
+    {
+      "id": "T-0028",
+      "title": "Tracer: /pick on GitHub path end to end",
+      "type": "AFK",
+      "task_type": "code",
+      "description": "New shared skill claude-code-shared/skills/pick/SKILL.md (disable-model-invocation: true, low tier, thin orchestrator, standard learning-capture tail with slug pick). Resolves the repo via the origin remote, looks up its repo-policy.json entry, reads issue_tracker. Repos with no issue_tracker exit cleanly with 'no issue_tracker configured for <repo>'. Adds pick_buckets to the SpawnedSapien entry (pre-launch, opsec, polish, seed-ready with the GitHub search strings and sort arrays from the seed). Bare /pick opens a 'Which bucket?' menu (max 4). scripts/pick/pick-fetch-gh.sh runs the bucket's native gh search and emits normalized candidate JSON. Cheap pre-sort on label tier, then render top 5 with a one-line item and a start line 'wt <branch>  ->  /grill-me #N' where branch is a slug from the issue title. Strictly read-only, terminal output only, no report file. Register pick in model-tiers.json. Add pick_buckets to the repo-policy schema checked by scripts/tests/test-standup-registration.sh if it rejects unknown keys.",
+      "acceptance_criteria": [
+        "Running /pick in a repo without issue_tracker prints 'no issue_tracker configured for <repo>' and exits 0",
+        "Running pick-fetch-gh.sh against a recorded gh fixture emits normalized candidate JSON that validates, checked by a smoke script in scripts/tests/",
+        "Bare /pick in SpawnedSapien shows a 'Which bucket?' menu with the four configured buckets and prints a top-5 list with start lines",
+        "Skill and scripts make no write calls to GitHub or Linear (grep confirms no gh issue edit, gh api -X POST/PATCH, or mutation)",
+        "model-tiers.json contains pick, and the existing registration test still passes with pick_buckets present in repo-policy.json"
+      ],
+      "blocked_by": [],
+      "status": "done",
+      "branch": null,
+      "pr": "gh pr create --base main --head feat/pick-skill",
+      "commit": "7d66e4f23475478d5e469331c805aeaf3d64875a",
+      "summary": "Added the /pick skill (GitHub path) with resolve-repo, pick-fetch-gh, validate-candidates and rank-render scripts, SpawnedSapien pick_buckets, a pick entry in model-tiers.json, and a fixture smoke test. The smoke test passes 14 of 14 and includes the existing standup registration test.",
+      "files_touched": [
+        "claude-code-shared/skills/pick/SKILL.md",
+        "claude-code-shared/scripts/pick/resolve-repo.sh",
+        "claude-code-shared/scripts/pick/pick-fetch-gh.sh",
+        "claude-code-shared/scripts/pick/validate-candidates.py",
+        "claude-code-shared/scripts/pick/rank-render.py",
+        "claude-code-shared/scripts/tests/test-pick.sh",
+        "claude-code-shared/scripts/tests/fixtures/pick/gh-issue-list.json",
+        "claude-code-shared/resources/repo-policy.json",
+        "claude-code-shared/resources/model-tiers.json"
+      ],
+      "tests": {
+        "passed": 14,
+        "failed": 0
+      },
+      "log_path": "docs/tasks/.logs/20261006-2343-pick-skill/T-0028.md"
+    },
+    {
+      "id": "T-0029",
+      "title": "Linear fetch and Quaestor-Web buckets",
+      "type": "AFK",
+      "task_type": "code",
+      "description": "Add scripts/pick/pick-fetch-linear.sh using Linear GraphQL via LINEAR_API_KEY, same approach as scripts/standup/fetch-linear-standup.sh. Resolves 'me' to the user's Linear user id and applies a Linear IssueFilter JSON object per bucket. Emits the same normalized candidate JSON shape as pick-fetch-gh.sh, including points, state, project, parent, assignee, gitBranchName, blockedBy relations with blocker state and linked PRs. First step: run one read-only GraphQL query to verify the 'Ready to Assign' and 'Backlog' workflow state names and the Keystone team key, and record the verified values. Add pick_buckets to the Quaestor-Web entry: my-sprint (assignee me, active cycle, state not completed or canceled, no focus) and unclaimed (team Keystone, unassigned, state Ready to Assign or Backlog, focus shown). User-facing wording says 'sprint', never 'cycle'. Start line uses Linear gitBranchName.",
+      "acceptance_criteria": [
+        "Verified Linear state names and Keystone team key are recorded in the bucket definitions, taken from a live read-only query",
+        "pick-fetch-linear.sh against a recorded GraphQL fixture emits candidate JSON identical in shape to the gh script output, checked by a smoke script",
+        "Bare /pick in Quaestor-Web shows exactly my-sprint and unclaimed in the menu and renders a top-5 list with 'wt <gitBranchName>  ->  /grill-me <ID>' start lines",
+        "No Linear mutation appears in the script"
+      ],
+      "blocked_by": [
+        "T-0028"
+      ],
+      "status": "done",
+      "branch": null,
+      "pr": "gh pr create --base main --head feat/pick-skill",
+      "commit": "7d593c426da5132f7a6383c72e6bc53d2f1ad0d1",
+      "summary": "Added pick-fetch-linear.sh (read-only Linear GraphQL, '@me' resolved via viewer, emits the gh candidate shape plus a 'prs' key) and Quaestor-Web my-sprint and unclaimed buckets. Live-verified team key KEY (Keystone) and states 'Ready to Assign' and 'Backlog' and recorded them under pick_verified in repo-policy.json. Smoke test 23/23.",
+      "files_touched": [
+        "claude-code-shared/scripts/pick/pick-fetch-linear.sh",
+        "claude-code-shared/resources/repo-policy.json",
+        "claude-code-shared/skills/pick/SKILL.md",
+        "claude-code-shared/scripts/tests/test-pick.sh",
+        "claude-code-shared/scripts/tests/fixtures/pick/linear-issues.json"
+      ],
+      "tests": {
+        "passed": 23,
+        "failed": 0
+      },
+      "log_path": "docs/tasks/.logs/20261006-2343-pick-skill/T-0029.md"
+    },
+    {
+      "id": "T-0030",
+      "title": "pick-scorer agent and effort scoring",
+      "type": "AFK",
+      "task_type": "code",
+      "description": "Add a Sonnet agent pick-scorer with a fixed JSON input/output contract (candidates in, per-candidate effort score plus one-line reason out) so /improve-agent-benchmarks can tune it later. Rubric covers points, frontend vs backend, review complexity, target repo, and how clearly the ticket is scoped. The skill pre-sorts each bucket on tracker fields to the top 25, calls pick-scorer, and renders the reason on a 'why:' line per item. In unclaimed, Ready to Assign vs Backlog is a soft penalty and unpointed tickets show '⚠ unpointed' but can still rank high if clearly tiny. Register pick-scorer in agents/registry.json with consumer pick.",
+      "acceptance_criteria": [
+        "pick-scorer returns schema-valid JSON for a fixture of 25 candidates, each with a score and a one-line reason, checked by a validation script",
+        "Pre-sort caps scorer input at 25 candidates regardless of bucket size",
+        "An unpointed fixture ticket renders with '⚠ unpointed' and is not hard-excluded",
+        "agents/registry.json lists pick-scorer and the contract file exists next to the agent"
+      ],
+      "blocked_by": [
+        "T-0028"
+      ],
+      "status": "done",
+      "branch": null,
+      "pr": "gh pr create --base main --head feat/pick-skill",
+      "commit": "5fd2604404118137fdd7bdb1f0028a6abcbfde32",
+      "summary": "Added the pick-scorer Sonnet agent with a JSON contract, validate-scorer.py, the 25-candidate cap and score re-rank with 'why:' lines and '⚠ unpointed' in rank-render.py. Registered pick-scorer in agents/registry.json and model-tiers.json (T2). Merge conflict with T-0029 in test-pick.sh and SKILL.md resolved by hand (additive). Combined smoke test 30/30.",
+      "files_touched": [
+        "claude-code-shared/agents/pick/pick-scorer.md",
+        "claude-code-shared/agents/pick/pick-scorer-contract.json",
+        "claude-code-shared/agents/registry.json",
+        "claude-code-shared/resources/model-tiers.json",
+        "claude-code-shared/scripts/pick/validate-scorer.py",
+        "claude-code-shared/scripts/pick/rank-render.py",
+        "claude-code-shared/skills/pick/SKILL.md",
+        "claude-code-shared/scripts/tests/test-pick.sh",
+        "claude-code-shared/scripts/tests/fixtures/pick/candidates-30.json",
+        "claude-code-shared/scripts/tests/fixtures/pick/scorer-output-25.json"
+      ],
+      "tests": {
+        "passed": 30,
+        "failed": 0
+      },
+      "log_path": "docs/tasks/.logs/20261006-2343-pick-skill/T-0030.md"
+    },
+    {
+      "id": "T-0031",
+      "title": "Blocker tiers and stackable start lines",
+      "type": "AFK",
+      "task_type": "code",
+      "description": "Classify each candidate as ready (no blockers or all blockers merged/Done), stackable (every open blocker has a PR in review), or blocked (any blocker not started or in progress with no PR). Rank ready first, then stackable; hide blocked and print the hidden count. Linear uses native blockedBy relations with blocker state and linked PRs. GitHub uses native issue dependencies with 'blocked by #N' body text as fallback. Stackable items show the blocker's branch and the start line passes it as the second positional arg: 'wt <branch> <base>'. Whether a bucket hides blocked tickets is driven by its sort array (hide-blocked) so each repo config decides; the seed left tiers for unclaimed and SpawnedSapien open, so default hide-blocked on for all four SpawnedSapien buckets and my-sprint, and apply tiers to unclaimed as well.",
+      "acceptance_criteria": [
+        "Fixture with one ready, one stackable, and one blocked ticket renders ready first, stackable second with a base branch in its start line, and the blocked one hidden with 'N blocked' shown",
+        "GitHub fixture with 'blocked by #N' in the body is classified the same as a native dependency",
+        "Stackable start line has the form 'wt <branch> <blocker-branch>' with base as the second positional arg and no --base flag"
+      ],
+      "blocked_by": [
+        "T-0028",
+        "T-0029"
+      ],
+      "status": "done",
+      "branch": null,
+      "pr": "gh pr create --base main --head feat/pick-skill",
+      "commit": "323a6f8c1f22e411190399dcf06360b94cf6eb84",
+      "summary": "Added blockers.py (ready/stackable/blocked tiers, GitHub native-dependency plus 'blocked by #N' resolve) hooked into rank-render.py. Ready then stackable, blocked hidden with a count; stackable start lines are 'wt <branch> <base>'. Linear fetch now emits blocker branches. Smoke 9/9.",
+      "files_touched": [
+        "claude-code-shared/scripts/pick/blockers.py",
+        "claude-code-shared/scripts/pick/rank-render.py",
+        "claude-code-shared/scripts/pick/pick-fetch-linear.sh",
+        "claude-code-shared/skills/pick/SKILL.md",
+        "claude-code-shared/scripts/tests/test-pick-blockers.sh",
+        "claude-code-shared/scripts/tests/fixtures/pick-blockers/"
+      ],
+      "tests": {
+        "passed": 39,
+        "failed": 0
+      },
+      "log_path": "docs/tasks/.logs/20261006-2343-pick-skill/T-0031.md"
+    },
+    {
+      "id": "T-0032",
+      "title": "Teammate overlap rules",
+      "type": "AFK",
+      "task_type": "code",
+      "description": "Hard-exclude any ticket whose parent/epic has a teammate with active sibling tickets. For project-level overlap, add a neutral annotation '👥 <name> active in <project>' that does not change rank. Applies to Linear candidates using parent, project, and assignee fields from the fetch script.",
+      "acceptance_criteria": [
+        "Fixture where a teammate has an active sibling under the same parent excludes that ticket from the list",
+        "Fixture with project-level overlap only keeps the ticket's rank unchanged and adds the 👥 annotation",
+        "Overlap logic is shared filter code, not duplicated per bucket"
+      ],
+      "blocked_by": [
+        "T-0029"
+      ],
+      "status": "done",
+      "branch": null,
+      "pr": "gh pr create --base main --head feat/pick-skill",
+      "commit": "5c711cea92ba299eb437519ca45a10d450937dcf",
+      "summary": "Added overlap.py (hard-exclude on parent-level teammate overlap, neutral '👥' annotation on project overlap) and read-only pick-fetch-linear-activity.sh, wired via rank-render.py --activity. Smoke 5/5. Activity query verified by fixture only, not live. Render conflict with T-0031 resolved by hand.",
+      "files_touched": [
+        "claude-code-shared/scripts/pick/overlap.py",
+        "claude-code-shared/scripts/pick/pick-fetch-linear-activity.sh",
+        "claude-code-shared/scripts/pick/rank-render.py",
+        "claude-code-shared/skills/pick/SKILL.md",
+        "claude-code-shared/scripts/tests/test-pick-overlap.sh",
+        "claude-code-shared/scripts/tests/fixtures/pick/overlap-activity.json",
+        "claude-code-shared/scripts/tests/fixtures/pick/overlap-cands.json"
+      ],
+      "tests": {
+        "passed": 35,
+        "failed": 0
+      },
+      "log_path": "docs/tasks/.logs/20261006-2343-pick-skill/T-0032.md"
+    },
+    {
+      "id": "T-0033",
+      "title": "Focus menu for shared-pool buckets",
+      "type": "AFK",
+      "task_type": "code",
+      "description": "For buckets flagged as shared-pool (unclaimed), ask 'Focus?' each run. Options are built live from projects in the user's own current sprint work, plus 'No focus' and free-text 'Other'. Focus is a ranking boost, not a filter, and the menu header shows the active focus. Not asked for my-sprint or any SpawnedSapien bucket. No stored or dated focus config.",
+      "acceptance_criteria": [
+        "unclaimed run asks for focus with options derived from the user's current sprint projects plus 'No focus'",
+        "Choosing a focus project moves a matching fixture ticket up without removing non-matching tickets",
+        "my-sprint and SpawnedSapien buckets never prompt for focus",
+        "No focus value is written to disk"
+      ],
+      "blocked_by": [
+        "T-0029",
+        "T-0030"
+      ],
+      "status": "done",
+      "branch": null,
+      "pr": "gh pr create --base main --head feat/pick-skill",
+      "commit": "e4dd54a8a0e7c1b9f3baecae654c13448f704d56",
+      "summary": "Added focus-options.sh (live options from my-sprint projects plus 'No focus') and focus_boost.py, wired via rank-render.py --focus. Boost only, never filters, nothing saved. Smoke 12/12. Flag-parsing conflict resolved by hand.",
+      "files_touched": [
+        "claude-code-shared/scripts/pick/focus-options.sh",
+        "claude-code-shared/scripts/pick/focus_boost.py",
+        "claude-code-shared/scripts/pick/rank-render.py",
+        "claude-code-shared/skills/pick/SKILL.md",
+        "claude-code-shared/scripts/tests/test-pick-focus.sh",
+        "claude-code-shared/scripts/tests/fixtures/pick-focus/"
+      ],
+      "tests": {
+        "passed": 42,
+        "failed": 0
+      },
+      "log_path": "docs/tasks/.logs/20261006-2343-pick-skill/T-0033.md"
+    },
+    {
+      "id": "T-0034",
+      "title": "Free-text bucket mapping and other-repos section",
+      "type": "AFK",
+      "task_type": "code",
+      "description": "Free text after /pick (e.g. '/pick quick wins') is mapped to a bucket by plain-English match and skips the menu. Tickets whose code lives in a different repo than the current one are not filtered out. They render in a separate 'other repos' section below the main list, tagged with the target repo. Main list shows top 5, other-repos section shows up to 3.",
+      "acceptance_criteria": [
+        "'/pick quick wins' in Quaestor-Web selects unclaimed without showing the menu",
+        "Fixture with 8 candidates, 4 of them in another repo, renders 5 main items max and at most 3 under 'other repos' with repo tags",
+        "Unmatched free text falls back to the bucket menu"
+      ],
+      "blocked_by": [
+        "T-0028",
+        "T-0029"
+      ],
+      "status": "done",
+      "branch": null,
+      "pr": "gh pr create --base main --head feat/pick-skill",
+      "commit": "fb00f6698813f5b38cc6a74312bca40901c7f001",
+      "summary": "Added map-bucket.py (free text to bucket via aliases, exit 1 falls back to menu) and sections.py (other-repos section, up to 3 tagged items). Quaestor-Web unclaimed got aliases incl. 'quick wins'. Smoke 7/7. Render conflict resolved by hand; SKILL.md overlap step made required.",
+      "files_touched": [
+        "claude-code-shared/scripts/pick/map-bucket.py",
+        "claude-code-shared/scripts/pick/sections.py",
+        "claude-code-shared/scripts/pick/rank-render.py",
+        "claude-code-shared/skills/pick/SKILL.md",
+        "claude-code-shared/resources/repo-policy.json",
+        "claude-code-shared/scripts/tests/test-pick-sections.sh",
+        "claude-code-shared/scripts/tests/fixtures/pick/sections-8.json"
+      ],
+      "tests": {
+        "passed": 37,
+        "failed": 0
+      },
+      "log_path": "docs/tasks/.logs/20261006-2343-pick-skill/T-0034.md"
+    },
+    {
+      "id": "T-0035",
+      "title": "Pipeline registration and final checks",
+      "type": "AFK",
+      "task_type": "code",
+      "description": "Add skill-pipeline.json edge pick -> grill-me with when 'ticket chosen, start a new session and grill it'. Confirm the standard learning-capture tail with slug pick is present and consistent with the injector. Verify against Claude Code docs that disable-model-invocation: true is a supported skill frontmatter field, and fall back to the supported mechanism if not. Extend or add a registration smoke script covering pick in model-tiers.json, pick-scorer in agents/registry.json, the pipeline edge, and pick_buckets in repo-policy.json.",
+      "acceptance_criteria": [
+        "Registration smoke script passes for pick, pick-scorer, pipeline edge, and pick_buckets",
+        "inject-learning-tail.py validates every slug in the pick edge as an existing skill directory",
+        "disable-model-invocation behavior is confirmed against docs and recorded in the task summary"
+      ],
+      "blocked_by": [
+        "T-0028",
+        "T-0030"
+      ],
+      "status": "done",
+      "branch": null,
+      "pr": "gh pr create --base main --head feat/pick-skill",
+      "commit": "7c35a178995642b13c8e31359eb1fc9144514c0c",
+      "summary": "Added pick -> grill-me pipeline edge (baked into pick tail), pick in learning-contract producers and benchmark PLAN_CMDS, and test-pick-registration.sh. disable-model-invocation: true confirmed supported per code.claude.com/docs/en/skills.md (blocks auto-invocation, /pick still works). Tier already consistent (T1 haiku/low). Injector check scoped to pick edge slugs after ignored skills/synced/ dir caused a local false failure. All pick smoke scripts pass (76).",
+      "files_touched": [
+        "claude-code-shared/skill-pipeline.json",
+        "claude-code-shared/skills/pick/SKILL.md",
+        "claude-code-shared/contracts/learning-contract.md",
+        "claude-code-shared/scripts/usage/cc-usage-benchmark.py",
+        "claude-code-shared/scripts/tests/test-pick-registration.sh"
+      ],
+      "tests": {
+        "passed": 76,
+        "failed": 0
+      },
+      "log_path": "docs/tasks/.logs/20261006-2343-pick-skill/T-0035.md"
+    },
+    {
+      "id": "T-0036",
+      "title": "Local scaffolding as a source (unconsumed seeds in docs/seeds, pending task files in docs/tasks)",
+      "type": "AFK",
+      "task_type": "triage",
+      "description": "Local scaffolding as a source (unconsumed seeds in docs/seeds, pending task files in docs/tasks).\n\nRaised as option C for no-tracker repos. User agreed it conflated pipeline phases and chose a clean exit for v1.",
+      "acceptance_criteria": [
+        "Item has been exported to its destination by export-tasks"
+      ],
+      "blocked_by": [],
+      "status": "not_started",
+      "branch": null,
+      "pr": null,
+      "domain": "personal",
+      "deliverable": "code",
+      "seed_ref": "20261006-1057-pick-skill.json",
+      "task_ref": "20261006-2343-pick-skill.json"
+    },
+    {
+      "id": "T-0037",
+      "title": "Stacked work loop: produce an ordered stack of picks and feed them to grill sessions or seeds to build PRs in sequence",
+      "type": "AFK",
+      "task_type": "triage",
+      "description": "Stacked work loop: produce an ordered stack of picks and feed them to grill sessions or seeds to build PRs in sequence.\n\nFrom the initial request: 'create a stacked order of work and then pass those off to grill sessions'.",
+      "acceptance_criteria": [
+        "Item has been exported to its destination by export-tasks"
+      ],
+      "blocked_by": [],
+      "status": "not_started",
+      "branch": null,
+      "pr": null,
+      "domain": "personal",
+      "deliverable": "code",
+      "seed_ref": "20261006-1057-pick-skill.json",
+      "task_ref": "20261006-2343-pick-skill.json"
+    },
+    {
+      "id": "T-0038",
+      "title": "Pre-triage: writing estimates or labels back to the tracker before or during picking",
+      "type": "AFK",
+      "task_type": "triage",
+      "description": "Pre-triage: writing estimates or labels back to the tracker before or during picking.\n\nUser noted 'we may need to do a little bit more triage work in advance before this is going to work in an ideal way.'",
+      "acceptance_criteria": [
+        "Item has been exported to its destination by export-tasks"
+      ],
+      "blocked_by": [],
+      "status": "not_started",
+      "branch": null,
+      "pr": null,
+      "domain": "personal",
+      "deliverable": "code",
+      "seed_ref": "20261006-1057-pick-skill.json",
+      "task_ref": "20261006-2343-pick-skill.json"
+    },
+    {
+      "id": "T-0039",
+      "title": "Unbundled menu (pick queue and sort separately) for more combinations",
+      "type": "AFK",
+      "task_type": "triage",
+      "description": "Unbundled menu (pick queue and sort separately) for more combinations.\n\nFree text covers ad-hoc combinations in v1.",
+      "acceptance_criteria": [
+        "Item has been exported to its destination by export-tasks"
+      ],
+      "blocked_by": [],
+      "status": "not_started",
+      "branch": null,
+      "pr": null,
+      "domain": "personal",
+      "deliverable": "code",
+      "seed_ref": "20261006-1057-pick-skill.json",
+      "task_ref": "20261006-2343-pick-skill.json"
+    },
+    {
+      "id": "T-0040",
+      "title": "Code-peek scoring: grep the repo for files or components a ticket mentions to refine effort estimates",
+      "type": "AFK",
+      "task_type": "triage",
+      "description": "Code-peek scoring: grep the repo for files or components a ticket mentions to refine effort estimates.\n\nOption C in the scoring branch.",
+      "acceptance_criteria": [
+        "Item has been exported to its destination by export-tasks"
+      ],
+      "blocked_by": [],
+      "status": "not_started",
+      "branch": null,
+      "pr": null,
+      "domain": "personal",
+      "deliverable": "code",
+      "seed_ref": "20261006-1057-pick-skill.json",
+      "task_ref": "20261006-2343-pick-skill.json"
+    }
+  ],
+  "follow_ups": []
+}

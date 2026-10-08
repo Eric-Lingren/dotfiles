@@ -13,6 +13,11 @@
     "pr_draft": true,
     "pr_auto_create": true,
     "issue_tracker": "linear",
+    "pick_buckets": {
+      "my-sprint": {"filter": {"assignee": {"id": {"eq": "@me"}}, "cycle": {"isActive": {"eq": true}}, "state": {"type": {"in": ["backlog", "unstarted"]}}}, "sort": ["hide-blocked", "smallest"], "focus": false},
+      "unclaimed": {"filter": {"team": {"key": {"eq": "KEY"}}, "assignee": {"null": true}, "state": {"name": {"in": ["Ready to Assign", "Backlog"]}}}, "sort": ["hide-blocked", "smallest"], "focus": true, "aliases": ["quick wins", "quick win", "quick", "unassigned", "backlog", "ready to assign", "up for grabs"]}
+    },
+    "pick_verified": {"checked": "2026-10-06", "method": "live read-only Linear GraphQL (teams.states)", "team_key": "KEY", "team_name": "Keystone", "states": ["Ready to Assign", "Backlog"]},
     "domain": "standard-metrics",
     "worktree_links": ["app/.env", "local_settings.py"],
     "exclude": ["docs", "docs/adr/", "docs/prototype/", "docs/browser-checks/", "docs/seeds/", "docs/tasks/", "docs/handoffs/", "docs/prd/", "docs/archive/", "docs/offload-output/", ".gitignore", "docs/visual-changes/", "docs/standups/", ".claude/hillclimb/", "evals/*/fixtures/*", "*/evals/*/fixtures/*"],
@@ -46,6 +51,12 @@
     "domain": "spawned-sapien",
     "pr_auto_create": true,
     "issue_tracker": "github",
+    "pick_buckets": {
+      "pre-launch": {"where": "is:open label:pre-launch -label:triage", "sort": ["hide-blocked", "label-tier", "smallest"]},
+      "opsec": {"where": "is:open label:opsec,legal", "sort": ["hide-blocked", "label-tier", "smallest"]},
+      "polish": {"where": "is:open label:polish -label:post-launch", "sort": ["hide-blocked", "label-tier", "smallest"]},
+      "seed-ready": {"where": "is:open label:seed-ready", "sort": ["hide-blocked", "label-tier", "smallest"]}
+    },
     "worktree_links": [".env.local"],
     "exclude": ["docs/prototype/", "docs/browser-checks/", "docs/offload-output/", "docs/tasks/.sprout/", "docs/tasks/*-revisions-r*.json", "docs/visual-changes/", ".claude/hillclimb/*/traces/*", ".claude/hillclimb/*/ref/*", ".claude/hillclimb/*/trajectory/*", ".claude/hillclimb/*report.html", ".claude/hillclimb/*summary.html", ".claude/hillclimb/*progress.txt", ".claude/hillclimb/*errors.jsonl", "evals/*/fixtures/*", "*/evals/*/fixtures/*"],
     "verify_host": "local",

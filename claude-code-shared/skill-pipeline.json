@@ -1,6 +1,11 @@
 {
   "_comment": "Workflow DAG for the shared skill pipeline. Consumed by inject-learning-tail.py to bake each skill's closing next-step suggestion. Shape: skills[slug].next is an array of {skill, when} edges. Terminal skills have next: []. The injector validates that every slug in 'next' exists as a directory under claude-code-shared/skills/.",
   "skills": {
+    "pick": {
+      "next": [
+        {"skill": "grill-me", "when": "ticket chosen, start a new session and grill it"}
+      ]
+    },
     "grill-me": {
       "next": [
         {"skill": "to-seed", "when": "decisions are crisp and ready to capture"}

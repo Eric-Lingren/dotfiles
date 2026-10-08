@@ -46,8 +46,18 @@ compute_staged_list() {
   git diff --cached --name-only
 }
 
+# Build output that is never committed, even when .gitignore misses it (e.g. a stale pre-move client/ dir)
+BUILD_ARTIFACT_EXCLUDES=(
+  ':(exclude,glob)**/.next/**'
+  ':(exclude,glob)**/node_modules/**'
+  ':(exclude,glob)**/docs-build/**'
+  ':(exclude,glob)**/storybook-static/**'
+  ':(exclude,glob)**/.turbo/**'
+  ':(exclude,glob)**/*.tsbuildinfo'
+)
+
 compute_will_add() {
-  { git diff --name-only --diff-filter=ACMRT; git ls-files --others --exclude-standard; } | sort -u
+  { git diff --name-only --diff-filter=ACMRT -- . "${BUILD_ARTIFACT_EXCLUDES[@]}"; git ls-files --others --exclude-standard -- . "${BUILD_ARTIFACT_EXCLUDES[@]}"; } | sort -u
 }
 
 compute_will_delete() {
@@ -75,7 +85,7 @@ _matches_exclude() {
 
 compute_excluded() {
   local all_files
-  all_files=$({ git diff --name-only; git ls-files --others --exclude-standard; } | sort -u)
+  all_files=$({ git diff --name-only -- . "${BUILD_ARTIFACT_EXCLUDES[@]}"; git ls-files --others --exclude-standard -- . "${BUILD_ARTIFACT_EXCLUDES[@]}"; } | sort -u)
   while IFS= read -r f; do
     [[ -z "$f" ]] && continue
     _matches_exclude "$f" && echo "$f"
@@ -141,7 +151,9 @@ if [[ -n "$UPSTREAM" ]]; then
 else
   UNPUSHED_RANGE="origin/$BASE..HEAD"
 fi
-AHEAD=$(git rev-list --count "$UNPUSHED_RANGE" 2>/dev/null || echo 0)
+# Follow only this branch's history; merges list just their conflict-resolved files, not the merged-in base commits
+FIRST_PARENT_LOG=(--first-parent --diff-merges=cc)
+AHEAD=$(git rev-list --count --first-parent "$UNPUSHED_RANGE" 2>/dev/null || echo 0)
 
 # --- Compute preview data ---
 STAGED=$(compute_staged_list)
@@ -217,11 +229,11 @@ fi
 echo ""
 
 if [[ "$AHEAD" -gt 0 ]]; then
-  COMMITTED_CHANGED=$(git log --name-only --pretty=format: --diff-filter=ACMRT "$UNPUSHED_RANGE" 2>/dev/null | awk 'NF' | sort -u)
-  COMMITTED_DELETED=$(git log --name-only --pretty=format: --diff-filter=D "$UNPUSHED_RANGE" 2>/dev/null | awk 'NF' | sort -u)
+  COMMITTED_CHANGED=$(git log "${FIRST_PARENT_LOG[@]}" --name-only --pretty=format: --diff-filter=ACMRT "$UNPUSHED_RANGE" 2>/dev/null | awk 'NF' | sort -u)
+  COMMITTED_DELETED=$(git log "${FIRST_PARENT_LOG[@]}" --name-only --pretty=format: --diff-filter=D "$UNPUSHED_RANGE" 2>/dev/null | awk 'NF' | sort -u)
 
   echo "UNPUSHED COMMITS ($AHEAD, already committed — will be pushed):"
-  git log --oneline "$UNPUSHED_RANGE" | sed 's/^/  /'
+  git log --oneline --first-parent "$UNPUSHED_RANGE" | sed 's/^/  /'
   echo ""
 
   echo "  Files added / modified in those commits:"
@@ -316,7 +328,7 @@ if ! $MODE_PUSH_ONLY; then
   if $MODE_PICK; then
     git add -p
   else
-    git add -A
+    git add -A -- . "${BUILD_ARTIFACT_EXCLUDES[@]}"
     unstage_excluded
   fi
 

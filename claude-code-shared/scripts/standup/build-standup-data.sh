@@ -2,7 +2,7 @@
 # build-standup-data.sh — build structured standup JSON from Linear + GitHub data
 #
 # Usage:
-#   build-standup-data.sh <linear_json> <github_json> [--standups-dir <path>]
+#   build-standup-data.sh <linear_json> <github_json> [--standups-dir <path>] [--stale-days <n>]
 #
 # Args:
 #   linear_json      Path to JSON array output from fetch-linear-standup.sh
@@ -16,6 +16,8 @@
 #                    The newest filename date before today is used as the cutoff.
 #                    If missing or empty: all merged PRs go to done_new,
 #                    since_last_standup_cutoff is null.
+#   --stale-days     Days since last PR activity before a PR still waiting on
+#                    review counts as a stale_review blocker. Default 3.
 #
 # Env:
 #   STANDUP_NOW      ISO 8601 datetime string for "now" (for deterministic tests).
@@ -28,7 +30,8 @@
 #     "done_earlier":[{ticket, prs}],
 #     "in_progress": [{ticket, prs}],
 #     "todo":        [{ticket, prs: []}],
-#     "blockers":    [{ticket, prs}],
+#     "blockers":    {ci_failing, changes_requested, unresolved_threads,
+#                     stale_review: [{ticket, pr}]},
 #     "theme_signals":{distinct_reviewers, small_prs, ci_green_ratio, delivery_count,
 #                      shipped_cycle_count},
 #     "violations":  [{type, ...}],
@@ -36,9 +39,10 @@
 #   }
 #
 # Bucket rules (for OPEN non-draft PRs in in_review):
-#   red    — ciRollup=="failure" OR any reviewer's latest state=="CHANGES_REQUESTED"
-#            OR unresolvedThreadCount > 0
-#   green  — all reviewers have APPROVED (latest), at least one review, no issues
+#   red    — ciRollup=="failure" OR changes requested (reviewDecision or any
+#            reviewer's latest state) OR unresolvedThreadCount > 0
+#   green  — reviewDecision=="APPROVED", or (no reviewDecision) all reviewers'
+#            latest state is APPROVED, and no issues
 #   yellow — everything else (no reviews yet, or review requested but no issues)
 #   white  — isDraft==true (listed under in_progress)
 #
@@ -55,6 +59,13 @@
 #   status_disagreement — PR merged but ticket not in a done-type status,
 #                         OR ticket done but PR still open/not-merged
 #
+# Blockers are split by cause. A PR lands under every cause it hits:
+#   ci_failing          — ciRollup=="failure" (mine to fix)
+#   changes_requested   — a reviewer requested changes (mine to address)
+#   unresolved_threads  — unresolvedThreadCount > 0 (mine to resolve)
+#   stale_review        — yellow bucket and age_days >= --stale-days (waiting on others)
+# age_days counts from updatedAt (last activity), so a fresh push resets it.
+#
 # Exit 0 on success, exit 1 on error.
 
 set -euo pipefail
@@ -62,12 +73,17 @@ set -euo pipefail
 # ─── Argument parsing ─────────────────────────────────────────────────────────
 
 STANDUPS_DIR=""
+STALE_DAYS=3
 POSITIONAL=()
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --standups-dir)
       STANDUPS_DIR="$2"
+      shift 2
+      ;;
+    --stale-days)
+      STALE_DAYS="$2"
       shift 2
       ;;
     *)
@@ -78,12 +94,17 @@ while [[ $# -gt 0 ]]; do
 done
 
 if [[ ${#POSITIONAL[@]} -lt 2 ]]; then
-  echo "Usage: $0 <linear_json> <github_json> [--standups-dir <path>]" >&2
+  echo "Usage: $0 <linear_json> <github_json> [--standups-dir <path>] [--stale-days <n>]" >&2
   exit 1
 fi
 
 LINEAR_JSON="${POSITIONAL[0]}"
 GITHUB_JSON="${POSITIONAL[1]}"
+
+if ! [[ "$STALE_DAYS" =~ ^[0-9]+$ ]]; then
+  echo "Error: --stale-days must be a non-negative integer: $STALE_DAYS" >&2
+  exit 1
+fi
 
 if [[ ! -f "$LINEAR_JSON" ]]; then
   echo "Error: linear_json not found: $LINEAR_JSON" >&2
@@ -97,7 +118,7 @@ fi
 
 # ─── Main processing (Python) ─────────────────────────────────────────────────
 
-python3 - "$LINEAR_JSON" "$GITHUB_JSON" "$STANDUPS_DIR" "${STANDUP_NOW:-}" <<'PYEOF'
+python3 - "$LINEAR_JSON" "$GITHUB_JSON" "$STANDUPS_DIR" "${STANDUP_NOW:-}" "$STALE_DAYS" <<'PYEOF'
 import json
 import os
 import re
@@ -109,6 +130,7 @@ linear_path  = sys.argv[1]
 github_path  = sys.argv[2]
 standups_dir = sys.argv[3]  # may be empty string
 now_str      = sys.argv[4]  # may be empty string
+stale_days   = int(sys.argv[5])
 
 # ── "Now" ────────────────────────────────────────────────────────────────────
 
@@ -209,6 +231,19 @@ def latest_review_states(reviews):
             latest[login] = state
     return latest
 
+def blocker_causes(pr):
+    """Return the red-bucket causes a PR hits, in blocker-section order."""
+    causes = []
+    if (pr.get("ciRollup") or "none") == "failure":
+        causes.append("ci_failing")
+    reviews = latest_review_states(pr.get("reviews") or [])
+    if (pr.get("reviewDecision") == "CHANGES_REQUESTED"
+            or any(s == "CHANGES_REQUESTED" for s in reviews.values())):
+        causes.append("changes_requested")
+    if int(pr.get("unresolvedThreadCount") or 0) > 0:
+        causes.append("unresolved_threads")
+    return causes
+
 def classify_bucket(pr):
     """Return bucket string: red, yellow, green, or white."""
     if pr.get("isDraft"):
@@ -219,17 +254,14 @@ def classify_bucket(pr):
     if state != "OPEN":
         return None
 
-    ci = pr.get("ciRollup") or "none"
-    unresolved = int(pr.get("unresolvedThreadCount") or 0)
-    reviews = latest_review_states(pr.get("reviews") or [])
-
-    has_changes_requested = any(s == "CHANGES_REQUESTED" for s in reviews.values())
-    has_ci_failure = ci == "failure"
-    has_unresolved = unresolved > 0
-
-    if has_ci_failure or has_changes_requested or has_unresolved:
+    if blocker_causes(pr):
         return "red"
 
+    decision = pr.get("reviewDecision")
+    if decision:
+        return "green" if decision == "APPROVED" else "yellow"
+
+    reviews = latest_review_states(pr.get("reviews") or [])
     all_approved = bool(reviews) and all(s == "APPROVED" for s in reviews.values())
     if all_approved:
         return "green"
@@ -238,13 +270,17 @@ def classify_bucket(pr):
 
 # ── Age tag ───────────────────────────────────────────────────────────────────
 
-def age_tag(pr):
-    """Return 'waiting Nd' based on updatedAt (last activity)."""
+def age_days(pr):
+    """Days since updatedAt (last activity), or None when unknown."""
     ts = parse_iso(pr.get("updatedAt") or "") or parse_iso(pr.get("createdAt") or "")
     if ts is None:
-        return "waiting ?d"
-    days = max(0, (NOW - ts).days)
-    return f"waiting {days}d"
+        return None
+    return max(0, (NOW - ts).days)
+
+def age_tag(pr):
+    """Return 'waiting Nd' based on updatedAt (last activity)."""
+    days = age_days(pr)
+    return "waiting ?d" if days is None else f"waiting {days}d"
 
 # ── Build ticket index ────────────────────────────────────────────────────────
 
@@ -327,6 +363,8 @@ def pr_summary(pr, bucket=None):
         "updatedAt": pr.get("updatedAt"),
         "mergedAt": pr.get("mergedAt"),
         "age_tag": age_tag(pr),
+        "age_days": age_days(pr),
+        "reviewDecision": pr.get("reviewDecision"),
         "reviewers": pr.get("reviewers") or [],
     }
     if bucket:
@@ -497,13 +535,16 @@ done_earlier_out = group_done(done_earlier_items)
 in_progress_out = group_in_progress(in_progress_items)
 todo_out        = group_by_ticket(todo_items)
 
-# ── Blockers: red-bucket in_review items ──────────────────────────────────────
+# ── Blockers: in_review PRs split by cause ────────────────────────────────────
 
-blockers_out = []
+blockers_out = {"ci_failing": [], "changes_requested": [], "unresolved_threads": [], "stale_review": []}
 for group in in_review_out:
-    red_prs = [p for p in group["prs"] if p.get("bucket") == "red"]
-    if red_prs:
-        blockers_out.append({"ticket": group["ticket"], "prs": red_prs})
+    for p in group["prs"]:
+        causes = blocker_causes(pr_by_number[p["number"]]) if p.get("bucket") == "red" else []
+        if p.get("bucket") == "yellow" and p.get("age_days") is not None and p["age_days"] >= stale_days:
+            causes = ["stale_review"]
+        for cause in causes:
+            blockers_out[cause].append({"ticket": group["ticket"], "pr": p})
 
 # ── Theme signals ─────────────────────────────────────────────────────────────
 

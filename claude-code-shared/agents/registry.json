@@ -320,6 +320,15 @@
       ]
     },
     {
+      "name": "pick-scorer",
+      "file": "agents/pick/pick-scorer.md",
+      "model": "sonnet",
+      "description": "Scores up to 25 pre-sorted /pick candidates for effort and returns a per-candidate score plus a one-line reason as JSON. Contract in pick-scorer-contract.json next to the agent file.",
+      "consumers": [
+        "pick"
+      ]
+    },
+    {
       "name": "investigator-web",
       "file": "agents/investigate/investigator-web.md",
       "model": "sonnet",

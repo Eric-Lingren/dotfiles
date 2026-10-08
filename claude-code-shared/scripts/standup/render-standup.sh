@@ -1,40 +1,35 @@
 #!/usr/bin/env bash
-# render-standup.sh — render a standup report from structured data + model prose.
+# render-standup.sh — render an async standup update from structured data + model prose.
 #
 # Usage: render-standup.sh <data_json> <prose_json>
 #
 # Arguments:
 #   data_json   Path to JSON output from build-standup-data.sh.
-#   prose_json  Path to JSON with model-written prose:
+#   prose_json  Path to JSON with model-written prose, one block per section:
 #               {
-#                 "summaries": {"SM-3008": "short summary", "101": "PR-only summary"},
-#                 "theme": "Theme sentence here.",
-#                 "shipped_track": ["What shipped.", "What it unlocks."],
-#                 "talk_track": ["What is waiting.", "What is next."]
+#                 "shipped":   {"lead": "One narrative sentence.", "items": ["Bullet ({KEY-1})", ...]},
+#                 "in_flight": {"lead": "...", "items": [...]},
+#                 "blockers":  {"lead": "...", "items": ["Fixing CI on {#101} ({KEY-1})", ...]}
 #               }
 #
-# Output: markdown report to stdout with sections:
-#   ## 🟣 Done
-#   ## 🟢 In Review
-#   ## 🟡 In Progress
-#   ## ⚪ Todo
-#   ## Blockers
-#   ## Theme
-#   ## Talk track   (shipped_track lines first, then talk_track)
+# Link tokens: {KEY-123} renders as [KEY-123](<Linear url>), {#123} as [#123](<PR url>).
+# Every ticket key or PR number in prose must be a token, so every reference is clickable.
+#
+# Output: markdown to stdout:
+#   **Shipped since last standup** 🚀   ("Shipped this cycle" when nothing is new)
+#   **In flight** ⚡
+#   **Blockers** 🚧
+# Each section: the lead sentence, then one bullet per item.
 #
 # Exit 0 on success.
-# Exit 1 if talk track validation fails:
-#   shipped_track 1-3 lines (required when anything shipped this cycle, else 0-3),
-#   talk_track 2-3 lines, 80 words max across both.
-#
-# Status circles match Linear's workflow colors, keyed off the ticket's statusType:
-#   ⚪  todo / backlog   🟡  in progress   🟢  in review   🟣  done / shipped
-#
-# PR review markers (open PRs only, kept off the circles so colors mean one thing):
-#   🚩  needs my attention (CI failing, changes requested, unresolved threads)
-#   ⏳  waiting on reviewers
-#   ✅  approved
-#   📝  draft
+# Exit 1 if validation fails (all errors printed to stderr):
+#   - unknown or bare (untokenized) ticket/PR reference
+#   - em dash anywhere in prose
+#   - missing lead, or lead/item over 30 words (tokens not counted)
+#   - shipped items missing when something shipped this cycle, or a done_new
+#     ticket (or PR when it has no ticket) not referenced in shipped
+#   - a blocker PR (any cause) not referenced in blockers
+#   - more than 8 shipped, 6 in_flight, or 6 blocker items
 
 set -euo pipefail
 
@@ -58,225 +53,139 @@ fi
 
 python3 - "$DATA_JSON" "$PROSE_JSON" <<'PYEOF'
 import json
+import re
 import sys
 
-data_path  = sys.argv[1]
-prose_path = sys.argv[2]
-
-with open(data_path) as f:
+with open(sys.argv[1]) as f:
     data = json.load(f)
-
-with open(prose_path) as f:
+with open(sys.argv[2]) as f:
     prose = json.load(f)
 
-summaries     = prose.get("summaries") or {}
-theme         = (prose.get("theme") or "").strip()
-shipped_track = prose.get("shipped_track") or []
-talk_track    = prose.get("talk_track") or []
+SECTIONS = [
+    # key, max items
+    ("shipped", 8),
+    ("in_flight", 6),
+    ("blockers", 6),
+]
+MAX_WORDS = 30
 
-done_new     = data.get("done_new") or []
+TICKET_TOKEN = re.compile(r"\{([A-Z][A-Z0-9]*-\d+)\}")
+PR_TOKEN = re.compile(r"\{#(\d+)\}")
+BARE_TICKET = re.compile(r"\b[A-Z][A-Z0-9]*-\d+\b")
+BARE_PR = re.compile(r"#\d+\b")
+
+# ── Index every ticket and PR in the data ─────────────────────────────────────
+
+tickets, prs = {}, {}
+
+def index_group(g):
+    t = g.get("ticket")
+    if t and t.get("key"):
+        tickets[t["key"]] = t.get("url") or ""
+    for p in g.get("prs") or ([g["pr"]] if g.get("pr") else []):
+        prs[str(p["number"])] = p.get("url") or ""
+
+for key in ("in_review", "done_new", "done_earlier", "in_progress", "todo"):
+    for g in data.get(key) or []:
+        index_group(g)
+blockers = data.get("blockers") or {}
+for entries in blockers.values():
+    for e in entries:
+        index_group(e)
+
+# ── Validate ──────────────────────────────────────────────────────────────────
+
+errors = []
+
+def strip_tokens(text):
+    return PR_TOKEN.sub("", TICKET_TOKEN.sub("", text))
+
+def check_text(where, text):
+    if "—" in text:
+        errors.append(f"{where}: em dash not allowed: {text!r}")
+    for k in TICKET_TOKEN.findall(text):
+        if k not in tickets:
+            errors.append(f"{where}: unknown ticket {{{k}}}")
+    for n in PR_TOKEN.findall(text):
+        if n not in prs:
+            errors.append(f"{where}: unknown PR {{#{n}}}")
+    bare = strip_tokens(text)
+    for ref in BARE_TICKET.findall(bare) + BARE_PR.findall(bare):
+        errors.append(f"{where}: bare reference {ref!r}, wrap it as {{{ref}}}")
+    words = sum(1 for w in bare.split() if any(c.isalnum() for c in w))
+    if words > MAX_WORDS:
+        errors.append(f"{where}: {words} words (max {MAX_WORDS})")
+
+def refs(section):
+    text = " ".join((prose.get(section) or {}).get("items") or [])
+    return set(TICKET_TOKEN.findall(text)), set(PR_TOKEN.findall(text))
+
+for section, max_items in SECTIONS:
+    block = prose.get(section)
+    if not isinstance(block, dict):
+        errors.append(f"{section}: missing section object")
+        continue
+    lead = (block.get("lead") or "").strip()
+    items = block.get("items") or []
+    if not lead:
+        errors.append(f"{section}: lead sentence is required")
+    elif "\n" in lead:
+        errors.append(f"{section}: lead must be one line")
+    else:
+        check_text(f"{section}.lead", lead)
+    if len(items) > max_items:
+        errors.append(f"{section}: {len(items)} items (max {max_items})")
+    for i, item in enumerate(items):
+        check_text(f"{section}.items[{i}]", item)
+
+done_new = data.get("done_new") or []
 done_earlier = data.get("done_earlier") or []
 
-def shipped_count(groups):
-    return sum(len(g.get("prs") or []) or 1 for g in groups)
+shipped_tickets, shipped_prs = refs("shipped")
+if (done_new or done_earlier) and not (prose.get("shipped") or {}).get("items"):
+    errors.append("shipped: items are required when anything shipped this cycle")
+for g in done_new:
+    t = g.get("ticket")
+    if t:
+        if t["key"] not in shipped_tickets:
+            errors.append(f"shipped: done_new ticket {t['key']} is not referenced")
+    else:
+        for p in g.get("prs") or []:
+            if str(p["number"]) not in shipped_prs:
+                errors.append(f"shipped: done_new PR #{p['number']} is not referenced")
 
-signals = data.get("theme_signals") or {}
-shipped_new   = shipped_count(done_new)
-shipped_cycle = signals.get("shipped_cycle_count")
-if shipped_cycle is None:
-    shipped_cycle = shipped_new + shipped_count(done_earlier)
+_, blocker_prs = refs("blockers")
+for cause, entries in blockers.items():
+    for e in entries:
+        n = str(e["pr"]["number"])
+        if n not in blocker_prs:
+            errors.append(f"blockers: {cause} PR #{n} is not referenced")
 
-# ── Validate talk track ────────────────────────────────────────────────────────
-
-def fail(msg):
-    print(f"Error: {msg}", file=sys.stderr)
+if errors:
+    for e in sorted(set(errors)):
+        print(f"Error: {e}", file=sys.stderr)
     sys.exit(1)
 
-if shipped_cycle > 0 and not shipped_track:
-    fail(f"shipped_track is required when {shipped_cycle} item(s) shipped this cycle")
-if len(shipped_track) > 3:
-    fail(f"shipped_track must be at most 3 lines (got {len(shipped_track)})")
-if len(talk_track) < 2 or len(talk_track) > 3:
-    fail(f"talk_track must be 2-3 lines (got {len(talk_track)})")
+# ── Render ────────────────────────────────────────────────────────────────────
 
-word_count = sum(len(line.split()) for line in shipped_track + talk_track)
-if word_count > 80:
-    fail(f"talk track exceeds 80 words (got {word_count})")
+def link(text):
+    text = TICKET_TOKEN.sub(lambda m: f"[{m.group(1)}]({tickets[m.group(1)]})" if tickets[m.group(1)] else m.group(1), text)
+    return PR_TOKEN.sub(lambda m: f"[#{m.group(1)}]({prs[m.group(1)]})" if prs[m.group(1)] else f"#{m.group(1)}", text)
 
-# ── Helpers ───────────────────────────────────────────────────────────────────
-
-CIRCLE = {"todo": "⚪", "progress": "🟡", "review": "🟢", "done": "🟣"}
-
-REVIEW_MARKER = {
-    "red":    "🚩",
-    "yellow": "⏳",
-    "green":  "✅",
-    "white":  "📝",
+titles = {
+    "shipped": ("Shipped since last standup" if done_new else "Shipped this cycle") + "** 🚀",
+    "in_flight": "In flight** ⚡",
+    "blockers": "Blockers** 🚧",
 }
 
-TODO_TYPES = {"triage", "backlog", "unstarted"}
+out = []
+for section, _ in SECTIONS:
+    block = prose[section]
+    out.append(f"**{titles[section]}")
+    out.append(link(block["lead"].strip()))
+    for item in block.get("items") or []:
+        out.append(f"- {link(item.strip())}")
+    out.append("")
 
-def ticket_circle(ticket, fallback):
-    """Linear status color for a ticket; fallback is the section's phase."""
-    if ticket is None:
-        return CIRCLE[fallback]
-    stype = (ticket.get("statusType") or "").lower()
-    name = (ticket.get("status") or "").lower()
-    if stype == "completed":
-        return CIRCLE["done"]
-    if stype in TODO_TYPES:
-        return CIRCLE["todo"]
-    if stype == "started":
-        return CIRCLE["review"] if "review" in name else CIRCLE["progress"]
-    return CIRCLE[fallback]
-
-def pr_marker(pr):
-    state = (pr.get("state") or "").upper()
-    if state == "MERGED":
-        return CIRCLE["done"]
-    bucket = pr.get("bucket")
-    if bucket:
-        return REVIEW_MARKER.get(bucket, "")
-    if pr.get("isDraft"):
-        return REVIEW_MARKER["white"]
-    return ""
-
-def pr_link(pr):
-    num = pr.get("number", "")
-    url = pr.get("url") or ""
-    return f"[#{num}]({url})" if url else f"#{num}"
-
-def pr_summary_str(pr, is_done=False):
-    num = pr.get("number", "")
-    title = pr.get("title") or ""
-    reviewers = pr.get("reviewers") or []
-    age_tag = pr.get("age_tag") or ""
-    bucket = pr.get("bucket") or ""
-
-    summary = summaries.get(str(num)) or ""
-
-    parts = [f"  - {pr_marker(pr)} {pr_link(pr)} {title}"]
-    if summary:
-        parts.append(f" — {summary}")
-    if not is_done and age_tag and bucket == "yellow":
-        parts.append(f" ({age_tag})")
-    if reviewers:
-        parts.append(" · " + ", ".join(reviewers))
-    return "".join(parts)
-
-def ticket_header(ticket):
-    if ticket is None:
-        return "(no ticket)"
-    key = ticket.get("key") or ""
-    url = ticket.get("url") or ""
-    title = ticket.get("title") or ""
-    project = ticket.get("projectName") or ""
-
-    link = f"[{key}]({url})" if url else key
-    summary = summaries.get(key) or ""
-
-    parts = [f"**{link} {title}**"]
-    if summary:
-        parts.append(f" — {summary}")
-    if project:
-        parts.append(f" · *{project}*")
-    return "".join(parts)
-
-def render_group(group, phase, prefix="", is_done=False, no_pr_note="(no PR yet)"):
-    ticket = group.get("ticket")
-    prs = group.get("prs") or []
-    lines = [f"- {ticket_circle(ticket, phase)} {prefix}{ticket_header(ticket)}"]
-    if prs:
-        for pr in prs:
-            lines.append(pr_summary_str(pr, is_done=is_done))
-    elif no_pr_note:
-        lines.append(f"  - {no_pr_note}")
-    return lines
-
-# ── Check for violations ───────────────────────────────────────────────────────
-
-violations = data.get("violations") or []
-violation_by_ticket = {}
-for v in violations:
-    tkey = v.get("ticket_key")
-    if tkey:
-        violation_by_ticket.setdefault(tkey, []).append(v)
-
-def violation_lines(ticket, types):
-    tkey = (ticket or {}).get("key")
-    out = []
-    for v in violation_by_ticket.get(tkey, []):
-        vtype = v.get("type")
-        if vtype not in types:
-            continue
-        if vtype == "multiple_prs":
-            prs_str = ", ".join(f"#{n}" for n in v.get("pr_numbers", []))
-            out.append(f"  ⚠️ multiple PRs: {prs_str}")
-        elif vtype == "status_disagreement":
-            out.append(f"  ⚠️ status mismatch: {v.get('detail', '')}")
-    return out
-
-# ── Render sections ────────────────────────────────────────────────────────────
-
-output_lines = []
-
-def section(title, groups, phase, empty="_(none)_", compact=False, **kw):
-    output_lines.append(f"## {title}\n")
-    if not groups:
-        output_lines.append(f"{empty}\n")
-        return
-    for group in groups:
-        output_lines.extend(render_group(group, phase, **kw))
-        output_lines.extend(violation_lines(group.get("ticket"), {"multiple_prs", "status_disagreement"}))
-        if not compact:
-            output_lines.append("")
-    if compact:
-        output_lines.append("")
-
-# --- Done (first: shipped work leads the report) ---
-output_lines.append(f"## {CIRCLE['done']} Done\n")
-if shipped_cycle:
-    output_lines.append(f"**Shipped this cycle: {shipped_cycle}** · {shipped_new} since last standup\n")
-if done_new:
-    output_lines.append("### 🆕 Since last standup\n")
-    for group in done_new:
-        output_lines.extend(render_group(group, "done", prefix="🆕 ", is_done=True, no_pr_note=None))
-        output_lines.extend(violation_lines(group.get("ticket"), {"status_disagreement"}))
-        output_lines.append("")
-if done_earlier:
-    output_lines.append("### Earlier this cycle\n")
-    for group in done_earlier:
-        output_lines.extend(render_group(group, "done", is_done=True, no_pr_note=None))
-        output_lines.append("")
-if not done_new and not done_earlier:
-    output_lines.append("_(none)_\n")
-
-section(f"{CIRCLE['review']} In Review", data.get("in_review") or [], "review")
-section(f"{CIRCLE['progress']} In Progress", data.get("in_progress") or [], "progress")
-section(f"{CIRCLE['todo']} Todo", data.get("todo") or [], "todo", compact=True, no_pr_note=None)
-
-# --- Blockers ---
-output_lines.append("## Blockers\n")
-blockers = data.get("blockers") or []
-if blockers:
-    for group in blockers:
-        output_lines.extend(render_group(group, "review"))
-        output_lines.append("")
-else:
-    output_lines.append("_(none)_\n")
-
-# --- Theme ---
-output_lines.append("## Theme\n")
-output_lines.append(theme if theme else "_(no theme)_")
-output_lines.append("")
-
-# --- Talk track ---
-output_lines.append("## Talk track\n")
-for line in shipped_track + talk_track:
-    output_lines.append(f"> {line}")
-output_lines.append("")
-
-# ── Emit ──────────────────────────────────────────────────────────────────────
-
-print("\n".join(output_lines))
+print("\n".join(out).rstrip())
 PYEOF

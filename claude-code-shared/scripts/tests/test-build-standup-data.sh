@@ -460,33 +460,35 @@ print('NOT_FOUND')
 ")
 assert_eq "$SM3013_IN_PROGRESS" "FOUND_prs=0" "SM-3013 (no PR) appears in in_progress with 0 prs"
 
-# --- Test 18: blockers contain red-bucket items ---
+# --- Test 18: blockers split by cause ---
 echo ""
-echo "=== T18: blockers ==="
-BLOCKER_KEYS=$(echo "$OUT" | python3 -c "
+echo "=== T18: blockers by cause ==="
+CAUSES=$(echo "$OUT" | python3 -c "
 import json, sys
-d = json.load(sys.stdin)
-keys = []
-for g in d['blockers']:
-    t = g['ticket']
-    k = t['key'] if t else '(no ticket)'
-    for pr in g['prs']:
-        keys.append(k + ':' + str(pr['number']))
-print(sorted(keys))
+d = json.load(sys.stdin)['blockers']
+print(json.dumps({k: sorted(e['pr']['number'] for e in v) for k, v in d.items()}, sort_keys=True))
 ")
-assert_contains "$BLOCKER_KEYS" "SM-3008" "SM-3008 red PRs appear in blockers"
-assert_contains "$BLOCKER_KEYS" "SM-3012" "SM-3012 red PR appears in blockers"
+assert_eq "$CAUSES" '{"changes_requested": [101], "ci_failing": [102, 107], "stale_review": [106], "unresolved_threads": [110]}' \
+  "blockers grouped by cause (default --stale-days 3)"
+assert_not_contains "$CAUSES" "108" "approved PR 108 not a blocker"
+assert_not_contains "$CAUSES" "104" "draft PR 104 not a blocker"
 
-# All blocker PRs should have bucket=red
-ALL_BLOCKERS_RED=$(echo "$OUT" | python3 -c "
+AGE_106=$(echo "$OUT" | python3 -c "
 import json, sys
 d = json.load(sys.stdin)
-all_red = all(pr['bucket'] == 'red'
-              for g in d['blockers']
-              for pr in g['prs'])
-print('OK' if all_red else 'NOK')
+print([p['age_days'] for g in d['in_review'] for p in g['prs'] if p['number'] == 106][0])
 ")
-assert_eq "$ALL_BLOCKERS_RED" "OK" "all blocker PRs have bucket=red"
+assert_eq "$AGE_106" "8" "PR 106 age_days = 8"
+
+STALE=$(bash "$SCRIPT" "$LINEAR_FIXTURE" "$GITHUB_FIXTURE" --stale-days 9 2>/dev/null \
+  | python3 -c "import json,sys; print(len(json.load(sys.stdin)['blockers']['stale_review']))")
+assert_eq "$STALE" "0" "--stale-days 9 drops 8-day-old PR 106 from stale_review"
+
+set +e
+bash "$SCRIPT" "$LINEAR_FIXTURE" "$GITHUB_FIXTURE" --stale-days abc >/dev/null 2>&1
+EXIT18=$?
+set -e
+assert_eq "$EXIT18" "1" "non-integer --stale-days exits 1"
 
 # --- Test 19: CHANGES_REQUESTED superseded by later APPROVED ---
 echo ""
@@ -539,6 +541,33 @@ for group in d['in_review']:
 print('NOT_FOUND')
 ")
 assert_eq "$BUCKET_200" "green" "PR with CHANGES_REQUESTED superseded by APPROVED → green"
+
+# reviewDecision wins over per-reviewer states (author's own COMMENTED no longer blocks green)
+cat > "$TMP/gh_decision.json" << 'EOF'
+{
+  "prs": [
+    {"number": 301, "title": "TEST-1 approved by decision", "headRefName": "feat/TEST-1-a",
+     "state": "OPEN", "isDraft": false, "createdAt": "2026-09-30T10:00:00Z",
+     "updatedAt": "2026-09-30T10:00:00Z", "mergedAt": null,
+     "reviews": [{"login": "me", "state": "COMMENTED"}, {"login": "alice", "state": "APPROVED"}],
+     "reviewRequests": [], "reviewDecision": "APPROVED", "ciRollup": "success",
+     "unresolvedThreadCount": 0, "changedFiles": 1},
+    {"number": 302, "title": "TEST-1 changes requested by decision", "headRefName": "feat/TEST-1-b",
+     "state": "OPEN", "isDraft": false, "createdAt": "2026-09-30T10:00:00Z",
+     "updatedAt": "2026-09-30T10:00:00Z", "mergedAt": null,
+     "reviews": [], "reviewRequests": [], "reviewDecision": "CHANGES_REQUESTED",
+     "ciRollup": "success", "unresolvedThreadCount": 0, "changedFiles": 1}
+  ],
+  "key_ids": ["TEST-1"]
+}
+EOF
+DEC=$(bash "$SCRIPT" "$TMP/linear_superseded.json" "$TMP/gh_decision.json" 2>/dev/null | python3 -c "
+import json, sys
+d = json.load(sys.stdin)
+b = {p['number']: p['bucket'] for g in d['in_review'] for p in g['prs']}
+print(b.get(301), b.get(302), [e['pr']['number'] for e in d['blockers']['changes_requested']])
+")
+assert_eq "$DEC" "green red [302]" "reviewDecision APPROVED → green, CHANGES_REQUESTED → red blocker"
 
 # --- Test 20: error on missing input file ---
 echo ""
