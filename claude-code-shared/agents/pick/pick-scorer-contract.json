@@ -40,7 +40,8 @@
           "properties": {
             "id": {"type": "string"},
             "score": {"type": "integer", "minimum": 1, "maximum": 10, "description": "estimated effort, 1 tiny to 10 large; lower ranks first"},
-            "reason": {"type": "string", "maxLength": 120, "description": "one line, no newlines"}
+            "reason": {"type": "string", "maxLength": 120, "description": "one line, no newlines"},
+            "stack": {"enum": ["fe", "be", "full", "infra"], "description": "where the work lands: fe frontend, be backend/data, full both, infra CI/config/deps"}
           }
         }
       }

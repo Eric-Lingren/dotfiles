@@ -9,6 +9,7 @@ Reads stdin when FILE is '-'. Exit 0 if valid.
 import json, sys
 
 MAX = 25
+STACKS = {"fe", "be", "full", "infra"}
 
 
 def input_errors(doc):
@@ -48,6 +49,8 @@ def output_errors(doc, inp=None):
             errs.append(f"scores[{n}].reason missing or empty")
         elif "\n" in r or len(r) > 120:
             errs.append(f"scores[{n}].reason must be one line, <=120 chars")
+        if "stack" in s and s["stack"] not in STACKS:
+            errs.append(f"scores[{n}].stack must be one of {sorted(STACKS)}")
     if inp is not None:
         want = [c["id"] for c in inp.get("candidates", [])]
         got = [s.get("id") for s in ss]
