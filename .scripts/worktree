@@ -26,6 +26,12 @@ USAGE
 FLAGS
   --no-install        skip the dependency install step
   --no-links          skip the local config symlink step
+  --no-sync           skip the background upstream sync on attach
+
+UPSTREAM SYNC
+  Attaching to an existing worktree or local branch fetches its upstream in
+  the background and moves the branch onto it. Skipped when the branch has
+  commits not on the remote. Uncommitted edits are kept, or the sync aborts.
 
 WORKTREE LOCATION
   ~/Documents/dev/worktrees/<repo>/<branch>
@@ -287,15 +293,45 @@ link_local_config() {
   "$ENSURE_LINKS" "$wt_dir" >&2 || true
 }
 
+# ─── Upstream sync ────────────────────────────────────────────────────────────
+
+# Fetches the branch's upstream in the background and moves the branch onto it.
+# Attaching to an existing worktree otherwise leaves it at whatever was checked
+# out last, so a force-pushed or newer remote goes unnoticed.
+#
+# Only moves when every local commit already exists upstream (by patch-id), so
+# unpushed work is never dropped. reset --keep aborts instead of clobbering
+# uncommitted edits. Silent: output goes to /dev/null so $(wt ...) returns now.
+#
+# $1 worktree dir.
+sync_with_upstream() {
+  local wt_dir="$1"
+
+  [[ "$SYNC_UPSTREAM" == true ]] || return 0
+
+  (
+    upstream=$(git -C "$wt_dir" rev-parse --abbrev-ref --symbolic-full-name @{u} 2>/dev/null) || exit 0
+    git -C "$wt_dir" fetch --quiet "${upstream%%/*}" "${upstream#*/}" || exit 0
+    unpushed=$(git -C "$wt_dir" cherry "$upstream" HEAD) || exit 0
+    [[ "$unpushed" == *+* ]] && exit 0
+
+    before=$(git -C "$wt_dir" rev-parse HEAD)
+    git -C "$wt_dir" reset --quiet --keep "$upstream" || exit 0
+    [[ "$(git -C "$wt_dir" rev-parse HEAD)" != "$before" ]] && install_deps "$wt_dir"
+  ) </dev/null >/dev/null 2>&1 &
+}
+
 # ─── Flag extraction ──────────────────────────────────────────────────────────
 
 INSTALL_DEPS=true
 LINK_CONFIG=true
+SYNC_UPSTREAM=true
 WT_ARGS=()
 for wt_arg in "$@"; do
   case "$wt_arg" in
     --no-install) INSTALL_DEPS=false ;;
     --no-links) LINK_CONFIG=false ;;
+    --no-sync) SYNC_UPSTREAM=false ;;
     *) WT_ARGS+=("$wt_arg") ;;
   esac
 done
@@ -382,6 +418,7 @@ if [[ -d "$WORKTREE_DIR" ]]; then
   echo "attaching to existing branch $BRANCH" >&2
   link_local_config "$WORKTREE_DIR"
   install_deps "$WORKTREE_DIR"
+  sync_with_upstream "$WORKTREE_DIR"
   emit_path "$WORKTREE_DIR"
   exit 0
 fi
@@ -392,6 +429,7 @@ if git show-ref --verify --quiet "refs/heads/$BRANCH" 2>/dev/null; then
   git worktree add "$WORKTREE_DIR" "$BRANCH" >&2
   link_local_config "$WORKTREE_DIR"
   install_deps "$WORKTREE_DIR"
+  sync_with_upstream "$WORKTREE_DIR"
   emit_path "$WORKTREE_DIR"
   exit 0
 fi
