@@ -123,3 +123,9 @@ After writing, display the agent's output directly to the user — exactly as th
 ```
 Output: <path>
 ```
+
+<!-- learning-capture:start -->
+Read and execute `~/.dotfiles/claude-code-shared/resources/learning-capture.md`.
+This skill's slug is `offload`.
+<!-- skill-done: offload -->
+<!-- learning-capture:end -->

@@ -311,3 +311,9 @@ is printed before the error so the user can resume manually if needed.
 
 On failure, the handoff file for the failed phase is available at
 `docs/tasks/.sprout/<phase>.json` and contains the error details.
+
+<!-- learning-capture:start -->
+Read and execute `~/.dotfiles/claude-code-shared/resources/learning-capture.md`.
+This skill's slug is `sprout-seed`.
+<!-- skill-done: sprout-seed -->
+<!-- learning-capture:end -->

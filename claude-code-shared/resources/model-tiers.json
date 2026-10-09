@@ -58,6 +58,7 @@
     "offload": "T2",
     "ci-fix": "T3",
     "standup": "T2",
+    "retro": "T2",
     "pick": "T1"
   },
   "agents": {

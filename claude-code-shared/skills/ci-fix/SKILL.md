@@ -290,5 +290,4 @@ omit the mechanical section.
 Read and execute `~/.dotfiles/claude-code-shared/resources/learning-capture.md`.
 This skill's slug is `ci-fix`.
 <!-- skill-done: ci-fix -->
-  - `/loop` — wrap ci-fix in a polling loop to auto-fix on repeated failures
 <!-- learning-capture:end -->

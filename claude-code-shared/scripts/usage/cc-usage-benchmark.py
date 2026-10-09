@@ -135,7 +135,7 @@ REFAC_CMDS  = {"improve-component", "improve-codebase-architecture", "simplify",
                "improve-directory-structure"}
 "improve-skill", "improve-skill-learnings", "register-skill",
 RESEARCH_CMDS = {"how-to", "deep-research", "tldr-tech", "investigate",
-                 "cc-usage-analytics", "standup"}
+                 "cc-usage-analytics", "standup", "retro"}
 RUNTASK_CMDS = {"run-tasks", "run-task-followups", "tasks-to-linear",
                 "build-code", "dispatch-tasks"}
 BUGFIX_CMDS  = {"debug", "ci-fix"}
