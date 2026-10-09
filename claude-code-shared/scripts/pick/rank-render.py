@@ -15,12 +15,14 @@ start line 'wt <branch>  ->  /grill-me <id>'.
 Scorer flow: --scorer-input prints the pick-scorer input (pre-sorted, capped at
 25); --scores FILE re-ranks by score and adds a 'why:' line per item.
 --focus <project> boosts matching-project items to the top (never filters).
+FE preference (stack_pref.py) adds a penalty to backend/infra items in both sorts.
 Unpointed items always show '⚠ unpointed' and are never excluded.
 """
 import json, os, sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import blockers
 import focus_boost
+import stack_pref
 from sections import partition, render_other  # other-repos section
 
 PRESORT_CAP = 25  # max candidates handed to pick-scorer
@@ -45,6 +47,7 @@ def rank(doc):
         k = [c.get("_tier", 0)]
         if "label-tier" in sort:
             k.append(label_tier(c))
+        k.append(stack_pref.penalty(c))
         if "smallest" in sort:
             p = c.get("points")
             k.append(p if p is not None else 1e9)
@@ -63,12 +66,13 @@ def scorer_input(doc):
 
 
 def apply_scores(ranked, scores):
-    """Stable re-rank by scorer effort (lower first); unscored keep pre-sort order."""
+    """Stable re-rank by scorer effort plus FE preference (lower first); unscored keep pre-sort order."""
     by = {s["id"]: s for s in scores}
     for c in ranked:
         s = by.get(c["id"])
         c["_score"], c["_why"] = (s["score"], s["reason"]) if s else (99, None)
-    return sorted(ranked, key=lambda c: c["_score"])
+        c["_stack"] = s.get("stack") if s else None
+    return sorted(ranked, key=lambda c: c["_score"] + stack_pref.penalty(c))
 
 
 def render(doc, top=5, scores=None):
@@ -86,7 +90,9 @@ def render(doc, top=5, scores=None):
     for n, c in enumerate(ranked, 1):
         tags = ",".join(c.get("labels", [])[:3])
         pts = f"  ~{c['points']}pt" if c.get("points") is not None else "  ⚠ unpointed"
-        lines.append(f"{n}. {c['id']}  {c['title']}{pts}  [{tags}]")
+        st = stack_pref.stack(c)
+        st = f"  {st.upper()}" if st else ""
+        lines.append(f"{n}. {c['id']}  {c['title']}{pts}  [{tags}]{st}")
         if c.get("_why"):
             lines.append(f"   why: {c['_why']}")
         for note in c.get("notes", []):
