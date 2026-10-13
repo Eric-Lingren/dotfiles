@@ -1,20 +1,13 @@
 ================================================================
-CC USAGE DIGEST -- 2026-W39 (vs 2026-W38, last complete weeks)
+CC USAGE DIGEST -- 2026-W41 (vs 2026-W40, last complete weeks)
 ================================================================
-  spend    $  1,379   v49%
-  opus%        89%   ^8pt
-  adher.       19%   ^19pt   (23/123)
+  spend    $  2,121   v39%
+  opus%        79%   ^66pt
+  adher.       22%   v2pt   (4/18)
 
   DRIFT (act):
-  improve-skill-learnings    exp sonnet -> opus:18       18/18  1wk  -> re-tier up or add model override
-  pr-code-review             exp sonnet -> opus:17       17/17  1wk  -> re-tier up or add model override
-  to-seed                    exp sonnet -> opus:15       15/15  1wk  -> re-tier up or add model override
-  tdd                        exp sonnet -> opus:14       14/14  1wk  -> re-tier up or add model override
-  to-tasks                   exp sonnet -> opus:9        9/9  1wk  -> re-tier up or add model override
-  pr-revise                  exp sonnet -> opus:7        7/7  1wk  -> re-tier up or add model override
-  build-code                 exp sonnet -> opus:7        7/7  1wk  -> re-tier up or add model override
-  dispatch-tasks             exp sonnet -> opus:5        5/5  1wk  -> re-tier up or add model override
-  ci-fix                     exp sonnet -> opus:4        4/4  1wk  -> re-tier up or add model override
-  relay                      exp sonnet -> opus:3        3/3  1wk  -> re-tier up or add model override
+  to-tasks                   exp sonnet -> opus:4        4/4  3wk  -> re-tier up or add model override
+  pr-code-review             exp sonnet -> opus:1        1/1  3wk  -> re-tier up or add model override
+  pick                       exp haiku  -> opus:8        8/8  1wk  -> T1 ran pricier -> check launch path / hook
   DRIFT (minor / watch):
-  improve-skill-benchmarks   exp sonnet -> opus:1        1/1  1wk  -> re-tier up or add model override
+  debug                      exp opus   -> sonnet:1      1/1  1wk  -> ran cheaper -> check model override / hook

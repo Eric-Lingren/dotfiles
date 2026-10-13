@@ -385,5 +385,173 @@
         }
       }
     }
+  },
+  "2026-W40": {
+    "adherence": {
+      "match": 24,
+      "n": 99,
+      "overall_pct": 24.2,
+      "skills": {
+        "build-code": {
+          "exp": "sonnet",
+          "mix": {
+            "opus": 2
+          }
+        },
+        "build-runner": {
+          "exp": "sonnet",
+          "mix": {
+            "opus": 1
+          }
+        },
+        "clean-scaffolding": {
+          "exp": "haiku",
+          "mix": {
+            "opus": 2
+          }
+        },
+        "debug": {
+          "exp": "opus",
+          "mix": {
+            "opus": 3
+          }
+        },
+        "dispatch-tasks": {
+          "exp": "sonnet",
+          "mix": {
+            "opus": 2
+          }
+        },
+        "grill-me": {
+          "exp": "opus",
+          "mix": {
+            "opus": 2
+          }
+        },
+        "improve-agent-benchmarks": {
+          "exp": "sonnet",
+          "mix": {
+            "sonnet": 6
+          }
+        },
+        "improve-skill-learnings": {
+          "exp": "sonnet",
+          "mix": {
+            "opus": 15,
+            "sonnet": 1
+          }
+        },
+        "pr-code-review": {
+          "exp": "sonnet",
+          "mix": {
+            "opus": 3,
+            "sonnet": 7
+          }
+        },
+        "pr-revise": {
+          "exp": "sonnet",
+          "mix": {
+            "opus": 1,
+            "sonnet": 3
+          }
+        },
+        "register-skill": {
+          "exp": "sonnet",
+          "mix": {
+            "opus": 1
+          }
+        },
+        "relay": {
+          "exp": "sonnet",
+          "mix": {
+            "opus": 2
+          }
+        },
+        "standup": {
+          "exp": "sonnet",
+          "mix": {
+            "opus": 1
+          }
+        },
+        "tdd": {
+          "exp": "sonnet",
+          "mix": {
+            "haiku": 36,
+            "opus": 1,
+            "sonnet": 1
+          }
+        },
+        "to-seed": {
+          "exp": "sonnet",
+          "mix": {
+            "opus": 4
+          }
+        },
+        "to-tasks": {
+          "exp": "sonnet",
+          "mix": {
+            "opus": 4,
+            "sonnet": 1
+          }
+        }
+      }
+    }
+  },
+  "2026-W41": {
+    "adherence": {
+      "match": 4,
+      "n": 18,
+      "overall_pct": 22.2,
+      "skills": {
+        "debug": {
+          "exp": "opus",
+          "mix": {
+            "sonnet": 1
+          }
+        },
+        "dispatch-tasks": {
+          "exp": "sonnet",
+          "mix": {
+            "sonnet": 1
+          }
+        },
+        "grill-me": {
+          "exp": "opus",
+          "mix": {
+            "opus": 1
+          }
+        },
+        "improve-skill-learnings": {
+          "exp": "sonnet",
+          "mix": {
+            "sonnet": 1
+          }
+        },
+        "pick": {
+          "exp": "haiku",
+          "mix": {
+            "opus": 8
+          }
+        },
+        "pr-code-review": {
+          "exp": "sonnet",
+          "mix": {
+            "opus": 1
+          }
+        },
+        "pr-revise": {
+          "exp": "sonnet",
+          "mix": {
+            "sonnet": 1
+          }
+        },
+        "to-tasks": {
+          "exp": "sonnet",
+          "mix": {
+            "opus": 4
+          }
+        }
+      }
+    }
   }
 }

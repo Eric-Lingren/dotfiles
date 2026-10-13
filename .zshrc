@@ -236,15 +236,15 @@ function migrate {
 # ─────────────────────────────────────────#
 
 # Account Switchers (Using your fnm Node v24 global binary with isolated config directories)
-alias cch="CLAUDE_CONFIG_DIR=\$HOME/.cch /Users/eric/.local/share/fnm/node-versions/v24.19.0/installation/bin/claude"
-alias cco="CLAUDE_CONFIG_DIR=\$HOME/.cco /Users/eric/.local/share/fnm/node-versions/v24.19.0/installation/bin/claude"
+alias cch="CLAUDE_CONFIG_DIR=\$HOME/.cch $HOME/.local/bin/claude"
+alias cco="CLAUDE_CONFIG_DIR=\$HOME/.cco $HOME/.local/bin/claude"
 
 # Diagnostics for each isolated environment
-alias cch-doctor="CLAUDE_CONFIG_DIR=\$HOME/.cch /Users/eric/.local/share/fnm/node-versions/v24.19.0/installation/bin/claude doctor"
-alias cco-doctor="CLAUDE_CONFIG_DIR=\$HOME/.cco /Users/eric/.local/share/fnm/node-versions/v24.19.0/installation/bin/claude doctor"
+alias cch-doctor="CLAUDE_CONFIG_DIR=\$HOME/.cch $HOME/.local/bin/claude doctor"
+alias cco-doctor="CLAUDE_CONFIG_DIR=\$HOME/.cco $HOME/.local/bin/claude doctor"
 
 # Updaters (Since fnm handles the global binaries, this updates the actual package your aliases point to)
-alias cc-update="npm install -g @anthropic-ai/claude-code@latest"
+alias cc-update="$HOME/.local/bin/claude update"
 alias cch-update="cc-update"
 alias cco-update="cc-update"
 
@@ -301,3 +301,4 @@ alias pr-desc="$GX_SCRIPTS_DIR/pr-desc"
 
 [[ -f ~/.dotfiles/local/zshrc.local ]] && source ~/.dotfiles/local/zshrc.local
 
+export PATH="$HOME/.local/bin:$PATH"
