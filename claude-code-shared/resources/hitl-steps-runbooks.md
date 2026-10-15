@@ -138,3 +138,27 @@ Enrichment:
 - Find table/column names: read the relevant migration files or grep the schema.
 - Build the exact SQL from the task context. Include column names, values, WHERE clauses.
 - Build a SELECT verification query the user can run to confirm.
+
+---
+
+## Create gitignored local config before first run
+
+Use when a tool loads a gitignored config file (e.g. `config.local.json`, `.env.local`) and ships only an example (`config.example.json`). Add this as a step BEFORE any "run it the first time" follow-up.
+
+Steps:
+1. `cd {repo_root}`
+2. Confirm the target is ignored: `git check-ignore -v {local_config}`. It must print a matching `.gitignore` rule.
+3. `cp {example_config} {local_config}`
+4. Fill each required key in `{local_config}`. One row per key: `{key}`: value `{value}`, found via `{lookup_command_or_dashboard_path}`.
+5. Validate: `{check_command}`. Expect `{check_success_line}`.
+
+Notes:
+- Real values (org, login, email, team key) go only in the gitignored file. Never in the example, tests, or committed docs.
+- A config `check` command often validates shape only and never calls the remote API. Treat values as unverified until the first real run succeeds.
+- Do not paste secrets into chat. If a key is a secret, route it through the wizard snippet (`ask_secret`), not this runbook.
+
+Enrichment:
+- Find the loader: grep for the example filename (e.g. `grep -rn "config.example" .`) and read the required-keys list (e.g. `REQUIRED_KEYS`). Also list optional keys the loader accepts that the example omits.
+- Find the check command: grep the CLI for a `check`, `doctor`, or `validate` subcommand.
+- Pre-fill values from local sources where possible: GitHub org via `gh org list` or a sibling work repo's `git remote get-url origin`; login via `gh api user --jq .login`; work email via `git log --author="{name}" --format=%ae | sort | uniq -c`; Linear team key via the most common `[A-Z]+-[0-9]+` prefix in work-repo branch names.
+- Write values straight into the gitignored file. Report each value with its source and say whether it was verified.
