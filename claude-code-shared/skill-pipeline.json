@@ -74,7 +74,9 @@
       ]
     },
     "pr-code-review": {
-      "next": []
+      "next": [
+        { "skill": "dispatch-tasks", "when": "start a new session and pass it the absolute task file path to fix the findings" }
+      ]
     },
     "improve-skill-benchmarks": {
       "next": []

@@ -403,12 +403,12 @@ python3 ~/.dotfiles/claude-code-shared/scripts/scaffolding/create-task-envelope.
 
 On non-zero exit: STOP. Report stderr. Do not print the `task_file_path:` output line.
 
-**Output line (always last in the skill output, after human-readable findings):**
+**Output line (after human-readable findings):**
 ```
 task_file_path: docs/tasks/<filename>
 ```
 
-The caller reads this line to route the task file to `build-code` (sprout-seed mode) or `dispatch-tasks` (standalone mode).
+The caller reads this line to route the task file to `build-code` (sprout-seed mode). In standalone mode, the Step 6 handoff block follows it and is the last thing printed.
 
 ---
 
@@ -449,11 +449,33 @@ Then resolve `review_mode`:
 - `sprout-seed` caller → `fix`
 - `--fix` / `--comment` arg → that mode
 - otherwise → ask with `AskUserQuestion` (single question, header `Next`):
-  - `Comment` → post findings to PR
-  - `Fix` → apply fixes via dispatch-tasks
-  - `Done` → keep task file for `/dispatch-tasks <path>` later
+  - `Comment` → post findings to PR, then hand off
+  - `Fix` → hand off the task file to a new session for fixing
+  - `Done` → hand off the task file for later
 
   Omit `Comment` when no PR exists. Act on the answer using the modes below. If the question times out, is dismissed, or gets any other answer, treat it as `show`. This is safe because Step 5 already wrote the task file, so no finding depends on the answer.
+
+**Never run fixes in this session.** A review fills most of the context window. Every mode ends with the new-session handoff block below. Do not invoke `dispatch-tasks`, `build-code`, or any fix work inline. Do not ask a follow-up question after the handoff.
+
+### New-session handoff block (every mode)
+
+Resolve the absolute task file path with `realpath docs/tasks/<filename>`. Print this block as the last output of the skill, after any mode-specific output:
+
+````
+task_file_path: docs/tasks/<filename>
+
+Context is spent. Start a new session to act on the findings.
+Task file:
+```
+<absolute task file path>
+```
+In the new session, run:
+```
+/dispatch-tasks <absolute task file path>
+```
+````
+
+Use the absolute path in both fences, so the user can paste it into a session started from any directory.
 
 ### `comment` mode
 
@@ -478,19 +500,15 @@ python3 ~/.dotfiles/claude-code-shared/scripts/egress/post-pr-review.py \
   --findings /tmp/pr-review-comments.json
 ```
 
-The script checks each line against the PR diff. It moves `line: 0` findings and findings outside the diff into the review summary body. This avoids a 422 that would reject the whole review. On non-zero exit, STOP and report stderr. On success, relay the `inline: N  folded: M` line and the review URL.
+The script checks each line against the PR diff. It moves `line: 0` findings and findings outside the diff into the review summary body. This avoids a 422 that would reject the whole review. On non-zero exit, STOP and report stderr. On success, relay the `inline: N  folded: M` line and the review URL. Then print the handoff block.
 
 ### `fix` mode
 
-Print the `task_file_path:` line, then invoke dispatch-tasks:
-
-```
-Skill("dispatch-tasks", args="<task-file-path>")
-```
+Print the handoff block. Do not invoke `dispatch-tasks` here. The user runs it in the new session.
 
 ### `show` mode
 
-Print the `task_file_path:` line. Take no further action. The user can manually run `/dispatch-tasks <path>` later.
+Print the handoff block. Take no further action.
 
 <!-- attribution-capture:start -->
 Read and execute `~/.dotfiles/claude-code-shared/resources/attribution-capture.md`.
@@ -500,4 +518,5 @@ Read and execute `~/.dotfiles/claude-code-shared/resources/attribution-capture.m
 Read and execute `~/.dotfiles/claude-code-shared/resources/learning-capture.md`.
 This skill's slug is `pr-code-review`.
 <!-- skill-done: pr-code-review -->
+  - `/dispatch-tasks` — start a new session and pass it the absolute task file path to fix the findings
 <!-- learning-capture:end -->
