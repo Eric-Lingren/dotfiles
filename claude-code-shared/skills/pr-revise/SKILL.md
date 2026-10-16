@@ -170,11 +170,13 @@ and it does not depend on the `[bot]` login suffix (integrations like `chromatic
 
 **Review threads** (`reviewThreads.nodes`):
 - Keep only threads where `isResolved === false`.
-- From each kept thread, take all `comments.nodes`.
-- Exclude comments where `author.login === $me`.
+- **Self-note threads.** If the thread's first comment (`comments.nodes[0]`) is by `$me`, the
+  author left a revision note on their own PR. Harvest that first comment as one item with
+  source type `inline thread (self-note)`. Skip the rest of the thread's comments.
+- **All other threads.** Take all `comments.nodes`, excluding comments where
+  `author.login === $me` (the author's replies to reviewers are never feedback).
 - Bot-authored comments are kept here (inline threads are a first-class bot channel).
-- After filtering, drop any thread that has zero remaining comments (a thread where every
-  comment was self-authored). Such threads never reach the harvest display or triage.
+- After filtering, drop any non-self-note thread with zero remaining comments.
 
 **Review summary bodies** (`reviews.nodes`):
 - Include reviews where `body` is non-empty, `author.login !== $me`, and
@@ -240,7 +242,7 @@ If the file exists and contains a non-empty URL (e.g. `https://claude.ai/artifac
 Print a numbered list of all harvested items (PR items from Step 3e followed by Verification
 Report items from Step 3f). Each entry shows:
 - Item number
-- Source type (inline thread / review summary / PR comment / **verification-report**)
+- Source type (inline thread / inline thread (self-note) / review summary / PR comment / **verification-report**)
 - Author login (or `"reviewer"` for verification-report items)
 - Comment or artifact URL
 - First 120 characters of body (truncated with `…` if longer)
@@ -333,6 +335,8 @@ The investigator is the Opus-tier orchestrator defined in `agents/investigate/in
 
 Non-claim-bearing items (`question`, `nit`, `discuss`) do not require investigator invocation. Present the claim text and URL to the user for manual review; collect a `reviewed` verdict and any reclassification before proceeding.
 
+**Self-notes bypass the investigator.** An `inline thread (self-note)` item is the PR author's own instruction, not an untrusted claim. Move it straight to the HITL gate with diligence status `author-note`.
+
 **Verification Report items bypass the investigator.** A `source_type: "verification-report"` item carries a screenshot pair confirmed by a human reviewer — the visual evidence IS the claim. Do not spawn an investigator for these items. They move directly to the HITL gate in Step 6 with diligence status `reviewer-confirmed`. Auto-classify them as `change` unless the user overrides in Step 4.
 
 ### Verdict-to-action mapping
@@ -383,7 +387,8 @@ The **Action** column shows what Step 8 will capture in the seed for each item a
 - `confirmed_escape` bugs: attribution-tracer spawned (Step 7), plus a non-null `fix` (→ code task) and a `reply_body` (→ reply task blocked by it)
 - `false_flag`, `not_an_escape`, `unverified` bugs: a `reply_body` (plus a `fix` when a change is still warranted), no attribution
 - Non-bug items: a `reply_body`, plus a `fix` only when the item needs a change on this PR
-- Every substantive item gets a `reply_body`; nothing is posted during this skill's run
+- Self-notes: a `fix` plus `resolve_only: true` (→ resolve-only reply task; no reply is posted, relay just resolves the thread)
+- Every other substantive item gets a `reply_body`; nothing is posted during this skill's run
 
 Prompt the user: "Confirm this categorization and proceed, or override any row before actions fire."
 
@@ -435,9 +440,9 @@ Walk every substantive item (post-diligence, post-HITL). For each, set two thing
 - **`fix`** — the code change to make on THIS PR, or `null` when no code change is warranted:
   - Non-null for: bug `confirmed_escape`; bug `not_an_escape` that still warrants a change; `change` accepted for this PR; `diligence` that adds a test or doc.
   - `null` for: `question`; `nit` accepted-trivial or declined; bug `false_flag`; `discuss`; any `change`/fix deferred to a later PR.
-- **`reply_body`** — the ready-to-post draft reply (quality bar below). Every substantive item gets one.
+- **`reply_body`** — the ready-to-post draft reply (quality bar below). Every substantive item gets one, except self-notes: omit `reply_body` and set `resolve_only: true` instead, since replying to yourself is noise.
 
-A non-null `fix` becomes a `code` task plus a `reply` task blocked by it (so the reply can cite the fixing commit). A null `fix` becomes a reply-only task. `to-tasks` does this wiring; here you only set `fix` and `reply_body`.
+A non-null `fix` becomes a `code` task plus a `reply` task blocked by it (so the reply can cite the fixing commit). A null `fix` becomes a reply-only task. A `resolve_only` item (self-notes) becomes a code task plus a resolve-only reply task blocked by it, so relay resolves the thread once the fix lands. `to-tasks` does this wiring; here you only set `fix` and `reply_body`.
 
 ### 8b. Reply-body quality bar
 
@@ -471,6 +476,7 @@ Build this block and hand it to `/to-seed` (it becomes the seed's `provenance`, 
       "reply_body": "<the drafted reply for this thread>",
       "reply_url": "<the originating comment URL from Step 3 harvest>",
       "fix": "<the code scope to change on this PR, or null>",
+      "resolve_only": "<true for self-notes only; omit otherwise. When true, omit reply_body>",
       "original_comment_body": "<the verbatim comment body captured at Step 3c-capture>",
       "original_comment_author": "<the author.login captured at Step 3c-capture>",
       "thread_database_id": "<string: str(databaseId) if databaseId is not None else ''; coerce numeric IDs to string before inserting; schema requires a string, never a number or null>"

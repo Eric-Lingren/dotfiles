@@ -54,6 +54,11 @@ PY
 rl=$(printf '%s' "$lin" | python3 "$P/rank-render.py")
 check "linear: ready first, stackable with base, blocked hidden" "$(printf '%s' "$rl" | grep -E '^1\. ' | grep -q K-3 && printf '%s' "$rl" | grep -q 'start: wt br-K-1 eric/k-9' && printf '%s' "$rl" | grep -q '1 blocked hidden' && ! printf '%s' "$rl" | grep -q K-2 && echo true || echo false)"
 
+# Sections: low-effort waiting item never outranks ready one; blockers listed
+rs=$(printf '%s' "$lin" | python3 "$P/rank-render.py" /dev/stdin --scores <(printf '{"scores":[{"id":"K-1","score":1,"reason":"r","stack":"fe"},{"id":"K-3","score":5,"reason":"r","stack":"fe"}]}'))
+check "sections: ready before waiting even when scored lower" "$(printf '%s' "$rs" | grep -E '^1\. ' | grep -q K-3 && printf '%s' "$rs" | grep -E '^2\. ' | grep -q K-1 && echo true || echo false)"
+check "sections: headers and blocked-by line" "$(printf '%s' "$rs" | grep -q '^ready (no open blockers)' && printf '%s' "$rs" | grep -q '^waiting on blockers' && printf '%s' "$rs" | grep -q 'blocked by: K-9 (In Review)' && echo true || echo false)"
+
 python3 -c "
 import json
 b=json.load(open('$SHARED/resources/repo-policy.json'))

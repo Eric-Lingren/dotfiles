@@ -10,8 +10,10 @@ Sort steps come from the bucket's `sort` array:
   hide-blocked  drop candidates that have any blocker
   label-tier    order by label priority (LABEL_TIER, lower first)
   smallest      points ascending (unpointed last)
-Ties break oldest first. Render: top N (default 5), one line per item plus a
-start line 'wt <branch>  ->  /grill-me <id>'.
+Ties break oldest first. Render: top N (default 5) in two sections, 'ready'
+(no open blockers) then 'waiting on blockers' (blocker PR in review, not merged;
+each item lists its open blockers). Numbering runs across both sections. One
+line per item plus a start line 'wt <branch>  ->  /grill-me <id>'.
 Scorer flow: --scorer-input prints the pick-scorer input (pre-sorted, capped at
 25); --scores FILE re-ranks by score and adds a 'why:' line per item.
 --focus <project> boosts matching-project items to the top (never filters).
@@ -25,6 +27,7 @@ import focus_boost
 import stack_pref
 from sections import partition, render_other  # other-repos section
 
+SECTIONS = ("ready (no open blockers)", "waiting on blockers (PR in review, not merged)")
 PRESORT_CAP = 25  # max candidates handed to pick-scorer
 
 LABEL_TIER = {"pre-launch": 0, "opsec": 1, "legal": 1, "polish": 2,
@@ -80,14 +83,20 @@ def render(doc, top=5, scores=None):
     if scores is not None:
         ranked = focus_boost.boost(apply_scores(ranked, scores), doc.get("_focus"))
     ranked, other = partition(ranked, doc["repo"])
-    ranked = ranked[:top]
+    ready = [c for c in ranked if not c.get("_tier")]
+    waiting = [c for c in ranked if c.get("_tier")]
+    ranked = (ready + waiting)[:top]
     lines = [f"{doc['repo']} / {doc['bucket']}  (top {len(ranked)})"]
     if focus_boost.active(doc.get("_focus")):
         lines.append(f"Focus: {doc['_focus']}")
-    lines.append("")
     if not ranked:
-        lines.append("No candidates found.")
+        lines += ["", "No candidates found."]
+    section = None
     for n, c in enumerate(ranked, 1):
+        tier = 1 if c.get("_tier") else 0
+        if tier != section:
+            section = tier
+            lines += ["", SECTIONS[tier], ""]
         tags = ",".join(c.get("labels", [])[:3])
         pts = f"  ~{c['points']}pt" if c.get("points") is not None else "  ⚠ unpointed"
         st = stack_pref.stack(c)
@@ -95,6 +104,9 @@ def render(doc, top=5, scores=None):
         lines.append(f"{n}. {c['id']}  {c['title']}{pts}  [{tags}]{st}")
         if c.get("_why"):
             lines.append(f"   why: {c['_why']}")
+        if tier:
+            bl = ", ".join(f"{b['id']} ({b.get('state') or '?'})" for b in blockers.open_blockers(c))
+            lines.append(f"   blocked by: {bl}")
         for note in c.get("notes", []):
             lines.append(f"   {note}")
         base = f" {c['_base']}" if c.get("_base") else ""

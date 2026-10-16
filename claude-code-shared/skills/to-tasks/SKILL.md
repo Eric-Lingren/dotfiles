@@ -260,6 +260,12 @@ For each entry in `provenance.items[]`, in order:
 
 **If `fix` is null**, emit a `reply` task only (no code task), with `blocked_by: []` and the reply fields above.
 
+**If `resolve_only` is true** (pr-revise self-notes), emit the `code` task as above (when `fix` is non-null) plus a resolve-only `reply` task:
+  - Same reply-task fields as above, except: omit `reply_body`, set `resolve_only: true`, title `Resolve: <short thread descriptor>`, and `acceptance_criteria: ["Thread resolved"]`
+  - `blocked_by`: `[<the paired code task id>]`, or `[]` when `fix` is null
+
+**If `thread_id` is null** (verification-report items), emit the `code` task only. No reply task.
+
 Assign IDs from `next-task-id.sh` (step 4). Append these tasks to `tasks[]` after the build slices. Never put `browser_verify` on a reply task.
 
 ### 3b. Infer follow-ups from the source artifact

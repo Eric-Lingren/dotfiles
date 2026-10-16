@@ -21,12 +21,12 @@ import json, os, re, subprocess, sys
 DONE = {"done", "completed", "closed", "merged", "canceled", "cancelled"}
 
 
-def _open_blockers(c):
+def open_blockers(c):
     return [b for b in c.get("blockers", []) if (b.get("state") or "").lower() not in DONE]
 
 
 def classify(c):
-    open_b = _open_blockers(c)
+    open_b = open_blockers(c)
     if not open_b:
         return 0, None
     if all(b.get("pr_in_review") and b.get("branch") for b in open_b):

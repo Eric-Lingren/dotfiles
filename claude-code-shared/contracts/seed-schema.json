@@ -294,6 +294,10 @@
                 "enum": ["unverified", "confirmed_escape", "false_flag", "not_an_escape", null],
                 "description": "Final disposition for bug-class items, or null for non-bug items."
               },
+              "resolve_only": {
+                "type": "boolean",
+                "description": "PR-feedback only. True for the PR author's own self-note threads. No reply_body is drafted; to-tasks emits a resolve-only reply task so relay resolves the thread once the fix lands."
+              },
               "reply_body": {
                 "type": "string",
                 "description": "PR-feedback only. Draft reply for this thread, written by pr-revise, grounded in the diligence finding. The reviewer's handle is omitted (the thread already targets them), and no commit SHA is hand-written (relay stitches the fixing commit in at post time). to-tasks copies this verbatim onto the generated reply task's reply_body."

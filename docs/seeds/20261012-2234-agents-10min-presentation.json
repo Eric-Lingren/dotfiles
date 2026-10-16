@@ -1,0 +1,177 @@
+{
+  "schema_version": "4",
+  "producer": "to-seed",
+  "source": {
+    "type": "session",
+    "ref": null
+  },
+  "title": "10-minute agent-focused presentation built on KEY-1879",
+  "slug": "agents-10min-presentation",
+  "created": "2026-10-13T05:30:00Z",
+  "iteration": 1,
+  "status": "ready",
+  "summary": "Cut the existing 17-slide 'Treating AI Like Untrusted Code' deck (claude-code-shared/ai_architecture_presentation.html) into a new, separate 9-slide, exactly 10:00 deck for an internal engineering audience. The agents are the cast. One real Quaestor-Web feature, KEY-1879 (the portco TopBar and Tabs cutover, merged 2026-07-31 as PR #18097), is followed through the pipeline agents: grill-me, to-seed and the 4 critics, to-tasks, build-runner with Haiku verifiers, pr-code-review, pr-revise, and the learning loop. Each middle slide is one agent at work with one real artifact. Engagement comes from the story plus a show-of-hands opener. The focus stays on what the agents do, not on the author's misses. Real names, files and screenshots are allowed on screen.",
+  "problem_statement": "The existing deck has 17 slides, no timing, and spreads agent content across three separate diagrams (slides 10-12) with no single story connecting them. It cannot be delivered in 10 minutes, and it does not make the agents the focus.",
+  "solution": "A new HTML deck with 9 slides, no speaker notes, reusing the current deck's CSS, keyboard/swipe/progress-bar navigation and inline-SVG style. The thesis is 'Treat agents like untrusted code: one job each, a typed contract, a different agent checks the work, and the system learns.' A single real feature, KEY-1879, is the through-line. Each pipeline agent appears when it does its job on that feature.",
+  "decisions": [
+    "Target length is exactly 10:00 across 9 slides. The 17-slide deck is kept unchanged as the long version.",
+    "Build the 10-minute deck as a NEW file, proposed name claude-code-shared/agents_10min_presentation.html. Reuse the existing deck's CSS theme, nav script and SVG diagram style. Do not cut the existing file in place.",
+    "No speaker notes and no presenter clock. The author will rehearse to time.",
+    "Audience is internal engineers. Show real artifacts: real screenshot, real file names, real claims, real JSON and log snippets from KEY-1879. No sanitizing or renaming.",
+    "Thesis: 'Treat agents like untrusted code: one job each, a typed contract, a different agent checks the work, and the system learns.' The agents are the proof of the thesis, not a catalog tour.",
+    "Engagement device: follow ONE real feature through the agents as a story. Each agent appears when needed, so there is no catalog. A live demo and a failure gallery were not chosen.",
+    "Hero feature is KEY-1879, the portco TopBar and Tabs cutover (PR #18097, July 2026). The /ci-fix skill (dotfiles) and the date-field work (KEY-2318, PR #19659) were considered and not chosen.",
+    "Framing: agents are the heroes, each doing its own job. Catches are shown as proof the design works. Do not frame them as the author's misses, failures or reliance on the system.",
+    "Slide 1, Hook (0:30): 'Junior dev with root access' hook plus a show of hands: 'Who's had an AI tell you it ran the tests when it didn't?'",
+    "Slide 2, Meet the team (1:00): slim pipeline diagram with each agent and its model tier labeled, plus the real KEY-1879 TopBar screenshot. An optional audience guess 'how many agents touched this PR?' may be kept or dropped in rehearsal. The user's pick of the show of hands over the guess was tentative ('maybe the latter? idk'), so the show of hands is the default.",
+    "Slide 3, grill-me, to-seed and the 4 critics (1:30): the 07-15 grill found a hidden 9th route (investment-details-beta riding on Company.tsx). The seed had 21 decisions, then the critics screened it. Artifact: a seed JSON snippet.",
+    "Slide 4, to-tasks and build-runner (1:30): typed task contracts, then a red-green-refactor build, with Haiku verifiers running lint and tests. Artifact: the build log line showing 2211 passed.",
+    "Slide 5, pr-code-review (1:00): a separate reviewer agent reviews the author's work and flags the isHydrated state leak across company switches (learning row 942c2e1d, 2026-07-24). Artifact: the finding itself. This is agent-checks-agent proof.",
+    "Slide 6, pr-revise (1:30): the 07-30 round turned 10 review threads (2 Cursor Bugbot, 8 human) into a seed, then 18 tasks (8 code, 10 reply drafts), with no hand triage. Artifact: the thread-to-task mapping.",
+    "Slide 7, the learning loop (1:30): Cursor Bugbot flagged the dropped key= remount (state leaking across company switches, 07-27). pr-revise recorded it as learning 18bc42e9 on 07-28 (cause_label candidate, improves grill-me). Commit 1f7325714d fixed the code, and the learning became a rule at grill-me/SKILL.md:46 (deletion audit for key= remounts). The slide may show attribution-tracer and the artifact-grounding-judge as the general loop mechanism, but must not claim either one ran on or verified this specific learning: the trail records attribution-tracer firing only once, for the 07-31 seed's confirmed_escape. Reveal: 'I planned this talk with that same grill skill. It asked me about deleted components because of this bug.' Do not say 'root cause proven'.",
+    "Slide 8, Steal these (1:00): three takeaways. (1) One agent, one job, with a typed contract (seed.json, task.json, runner-result.json). (2) The author never checks its own work. A different agent verifies, and verification runs on a cheap tier. (3) Every escape becomes a rule, via the learning loop to a file:line in a skill.",
+    "Slide 9, Close (0:30): 'Disagree? Good.' Time budget in order: 0:30, 1:00, 1:30, 1:30, 1:00, 1:30, 1:30, 1:00, 0:30, which sums to 10:00.",
+    "Cut from the long deck: slides 2-7 (folded into the story), slide 13 (principles table), slide 14 (why local), and the diagrams on slides 9-12 as standalone slides. Agent content appears inside the story beats.",
+    "The unsourced percentage claims on old slide 16 ('40% token cut', '80% to Haiku', '13 blocking gates') are cut. They have no source in this story and invite measurement questions.",
+    "The slide 2 screenshot is a real screenshot the user took of a portco page in the app (TopBar with tabs, seeded fake company data). It is embedded in the HTML as a base64 data URI so the deck stays a single file. A copy was saved at /private/tmp/claude-501/-Users-eric--dotfiles/40be86b9-8726-4976-85a5-19ebbceaaa0c/scratchpad/key-1879-topbar.png (original 2008x218). The original was in a macOS temp folder."
+  ],
+  "open_threads": [],
+  "disposed_threads": [
+    {
+      "id": "dt-001",
+      "text": "Audience-participation beat: spot-the-bug on slide 5, guess-the-agent-count on slide 2, or show of hands on slide 1",
+      "disposition": "decided",
+      "iteration": 1
+    },
+    {
+      "id": "dt-002",
+      "text": "Which feature is the hero (ci-fix, date fields, portco cutover, multi-select)",
+      "disposition": "decided",
+      "iteration": 1
+    },
+    {
+      "id": "dt-003",
+      "text": "Spot-the-bug audience beat on slide 5",
+      "disposition": "rejected",
+      "iteration": 1
+    },
+    {
+      "id": "dt-004",
+      "text": "Speaker notes with per-slide target times",
+      "disposition": "rejected",
+      "iteration": 1
+    },
+    {
+      "id": "dt-005",
+      "text": "New file vs cutting the existing deck in place",
+      "disposition": "decided",
+      "iteration": 1
+    },
+    {
+      "id": "dt-006",
+      "text": "Source of the slide 2 screenshot: real screenshot vs HTML recreation vs placeholder",
+      "disposition": "decided",
+      "iteration": 1
+    },
+    {
+      "id": "dt-007",
+      "text": "Thesis wording (untrusted code with agents as proof, vs confidently-wrong reframe)",
+      "disposition": "decided",
+      "iteration": 1
+    },
+    {
+      "id": "dt-008",
+      "text": "The three Steal these takeaways on slide 8",
+      "disposition": "decided",
+      "iteration": 1
+    },
+    {
+      "id": "dt-009",
+      "text": "Which catch carries the slide 7 learning-loop reveal",
+      "disposition": "decided",
+      "iteration": 1
+    },
+    {
+      "id": "dt-010",
+      "text": "Audience and how much real code/UI may be shown",
+      "disposition": "decided",
+      "iteration": 1
+    },
+    {
+      "id": "dt-011",
+      "text": "Engagement device for the 10 minutes",
+      "disposition": "decided",
+      "iteration": 1
+    },
+    {
+      "id": "dt-012",
+      "text": "Keep the unsourced percentage claims from old slide 16",
+      "disposition": "rejected",
+      "iteration": 1
+    }
+  ],
+  "out_of_scope": [
+    {
+      "text": "Spot-the-bug audience participation on slide 5",
+      "rationale": "The author questioned it. It puts a bug from their own PR on screen, which conflicts with the instruction to focus on agents, not misses. The isHydrated leak needs too much context to spot in 10 seconds, and the room may include the PR's reviewers."
+    },
+    {
+      "text": "Speaker notes, per-slide target-time markers, and an elapsed-time clock",
+      "rationale": "The user said 'no speakernotes'. The author will rehearse to time."
+    },
+    {
+      "text": "The unsourced percentage claims from old slide 16 ('40% token cut', '80% to Haiku', '13 blocking gates')",
+      "rationale": "No source in the KEY-1879 story. They invite how-did-you-measure questions that eat Q&A time."
+    },
+    {
+      "text": "Cutting the 17-slide deck down in place",
+      "rationale": "The long version stays for a longer slot. About 70% of the 10-minute content is new, so a clean new file is simpler than editing 1368 lines."
+    },
+    {
+      "text": "Sanitizing or renaming Quaestor-Web components, files and UI in the deck",
+      "rationale": "The audience is internal engineers, and the user chose to show real artifacts."
+    }
+  ],
+  "deferred": [],
+  "evidence": "KEY-1879 trail facts checked by Haiku investigator agents against Quaestor-Web docs, git/gh and the learnings log: PR #18097 opened 2026-07-24, squash-merged 2026-07-31 as 95c0ba47bc. 48 files changed (+635/-1733) and 25 commits on the PR. 15 GitHub review threads (13 kgilles, 2 Cursor Bugbot), 13 resolved. 24 days from prep (07-07) to merge and 7 days from PR open to merge. Build log: 2211 passed, 14 skipped in the portfolio-company module (T-0116 log). 07-15 grill seed: 21 decisions, persona verification refutations_screened 1, upheld 0, clean. 07-30 seed: 10 threads, 18 tasks (8 code, 10 reply). Learnings (all status applied): 942c2e1d (isHydrated, pr-code-review, improves to-seed, fix not found in skills), 358758a8 (InvestmentsProvider, landed at to-tasks/SKILL.md:136), 18bc42e9 (key= remount, candidate, landed at grill-me/SKILL.md:46), ef148af1 (shared shell claim, landed at build-runner.md:100-101). The existing deck has 17 slides, 1368 lines, inline SVG on slides 8 and 10-12, and no speaker notes or timing.",
+  "implementation_decisions": [
+    "Output file: claude-code-shared/agents_10min_presentation.html. Source to copy structure from: claude-code-shared/ai_architecture_presentation.html. The CSS block is at lines 4-714, the deck wrapper is at line 717, the nav bar is at line 1328, and the inline script is at lines 1334-1368.",
+    "Each slide is a div with class 'slide' and a data-slide attribute, with an inner 'slide-inner' div. Slide 1 carries 'active'. Navigation: ArrowRight/Space next, ArrowLeft prev, Home/End, button clicks, and a 50px touch swipe. Progress bar and a counter reading 'N / 9'.",
+    "Embed the screenshot as a base64 data URI in an img tag on slide 2. The deck must remain one file with no external assets.",
+    "Slide 2 labels each agent with its model tier. Known tiers from the existing deck: build-runner is Sonnet, lint-runner, test-runner and browser-checker are Haiku, and the investigator orchestrator is Opus. Verify the tiers of grill-me, to-seed, to-tasks, pr-code-review, pr-revise, attribution-tracer and the critics against model-tiers.json before printing them.",
+    "Keep the contract file names consistent across slides: use runner-result.json (not result.json, which slide 8 of the old deck uses).",
+    "Call the screenshot 'the TopBar today', not 'the July cutover'. It shows 8 tabs (Overview, Metrics, Metrics (Legacy), Documents, Investment Details, Valuations, Information Requests, Benchmarks), while the July spec had 10 tabs."
+  ],
+  "testing_decisions": [
+    "Verify by opening the HTML in a browser: all 9 slides render, keyboard/swipe/button navigation works, the counter shows N / 9, the screenshot displays, and there is no horizontal overflow at common projector widths. Rehearse once against the 10:00 budget."
+  ],
+  "risks_and_tradeoffs": [
+    "The KEY-1879 trail has unreconciled inconsistencies: the 07-15 task file's ID range (T-0085..T-0090) does not match the KEY-1935 file (T-0093..T-0097). The branch and PR title say 8 routes while the grill and task title say 9. The 07-31 seed records refutations_upheld 1 with refutations_screened 0 and clean false. A 07-24 cutover-patch task JSON and the 07-28 bugbot-escapes seed are missing on disk. Use only figures that checked out: 48 files, 15 review threads, 2211 tests passed, 24 days, the 10 threads to 18 tasks round.",
+    "Learning 18bc42e9 (key= remount) has cause_label candidate, not confirmed. The fix still landed at grill-me/SKILL.md:46, but the slide must not claim a proven root cause.",
+    "Learning 942c2e1d (isHydrated, shown on slide 5) improves to-seed, and its fix was not found in the skills, agents or scripts. Slide 5 shows the catch only. Do not claim it became a rule.",
+    "Slide 6 needs the 07-30 round's numbers (10 threads, 18 tasks: 8 code, 10 reply). The earlier grill phrasing '15 threads became 8 code tasks and 10 reply drafts' mixed the 15 total GitHub threads with the 07-30 round and must not be used.",
+    "The 2211-tests figure comes from the T-0116 log's portfolio-company module run. A 951-test figure comes from a 72-file subset (T-0115). Label the number with its scope on the slide.",
+    "The optional slide 2 agent-count guess has no verified number. Count the agents that actually touched PR #18097 from the trail before showing any figure.",
+    "The scratchpad copy of the screenshot lasts only for the session. The deck build must embed it before the session ends, or the user must re-supply it.",
+    "The trail has no record of attribution-tracer running on, or the artifact-grounding-judge verifying, learning 18bc42e9. Show the tracer and judge on slide 7 only as how the loop works in general, not as what happened to this learning."
+  ],
+  "further_notes": [
+    "The grill ran with caveman-ultra response mode active. The seed content is written in plain prose.",
+    "During the hero search, six learnings tagged ci-fix (2026-09-29 to 09-30) were found not landed in the ci-fix SKILL.md. That is a side finding unrelated to this presentation and was not addressed in this grill.",
+    "The 17-slide deck's slide 8 SVG labels the output 'result.json' while slides 9 and 11 use 'runner-result.json'. The new deck should use runner-result.json throughout."
+  ],
+  "next_action": "Run /to-tasks (or /to-spec first) to build claude-code-shared/agents_10min_presentation.html from this seed, embedding the saved TopBar screenshot as a base64 data URI before the session ends.",
+  "verification": {
+    "iteration": 1,
+    "personas": [
+      "grounding",
+      "accuracy",
+      "completeness",
+      "coherence"
+    ],
+    "refutations_upheld": 1,
+    "refutations_screened": 8,
+    "clean": false,
+    "status": "verified"
+  }
+}

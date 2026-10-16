@@ -297,6 +297,10 @@
             "type": ["string", "null"],
             "description": "Fixing commit SHA recorded by build-code at end-of-run push (the branch HEAD after gxpush). Written onto code tasks so a downstream reply task can cite it as a permalink. null until the fix is pushed. Optional — omit for legacy files."
           },
+          "resolve_only": {
+            "type": "boolean",
+            "description": "Reply-task only. When true, relay resolves the review thread without posting a reply, and reply_body is absent. Used for the PR author's own self-note threads. Requires thread_id_type 'graphql_node_id'."
+          },
           "reply_body": {
             "type": "string",
             "description": "Reply-task only. The ready-to-post draft reply body for a PR review thread, written by pr-revise. The reviewer's handle is omitted from the body — the thread already targets them. Present only when task_type is 'reply'."

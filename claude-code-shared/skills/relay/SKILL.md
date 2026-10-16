@@ -60,6 +60,10 @@ For each eligible task, inspect `reply_url` to determine the target channel adap
 | `linear.app`        | `agents/egress/linear/post-linear.md`    |
 | (other / missing)   | Warn the user; skip the task             |
 
+**Resolve-only tasks** (`resolve_only: true`) post nothing, so they use no channel adapter.
+They require a `github.com` `reply_url` and `thread_id_type: "graphql_node_id"`. If either is
+missing, warn the user and skip the task.
+
 Also read the blocking code task's `commit` and `pr` fields. These are passed to the channel
 adapter so it can construct channel-specific formatting (e.g. commit permalink for GitHub).
 relay does not construct commit permalinks directly — that is channel-specific logic owned
@@ -97,6 +101,19 @@ DRAFT:
 Commit reference: <commit SHA — will be formatted as permalink by the adapter>
 ```
 
+For a resolve-only task, show the thread and original comment with no draft:
+
+```
+── T-0003 · Resolve: <short thread descriptor> ──
+Action: resolve thread (no reply posted)
+Thread: <reply_url>
+
+── Original comment by @<original_comment_author> ──
+"<original_comment_body>"
+```
+
+Its send confirmation reads `This will resolve the thread at <reply_url>. Proceed? (y/n)`.
+
 Ask the user to approve, edit, or skip each draft. Apply their edits to the printed copy.
 This is the content review gate — the reply text is locked in here.
 
@@ -120,6 +137,16 @@ For each task that passed both approval gates, delegate to the resolved channel 
 - `thread_id` — the thread node id or database id (present only when task carries it)
 - `thread_id_type` — `"graphql_node_id"` or `"database_id"` (disambiguates thread_id)
 - `thread_database_id` — REST numeric comment id (present only when task carries it); used by the GitHub adapter's idempotency check and as `in_reply_to` for inline review replies
+
+**Resolve-only tasks** skip the adapter. Run the resolve script directly:
+
+```bash
+bash ~/.dotfiles/claude-code-shared/scripts/egress/resolve-review-thread.sh --thread-id <thread_id>
+```
+
+It prints one JSON line. `status` `resolved` or `already_resolved` → record `resolved`.
+`status` `failed` → treat as a failed post (failure prompt below; show the `error` field).
+The script makes one write attempt and never retries on its own.
 
 The channel adapter returns a schema-valid egress-result with `status: "posted"`,
 `"copy-only"`, or `"failed"`. Record the result for the step 5 summary.
@@ -151,12 +178,14 @@ After all tasks are processed, print a per-task result table followed by totals:
 T-0002 · Reply: msw hook mocks: posted → https://github.com/owner/repo/pull/42#issuecomment-123
 T-0003 · Reply: auth token: skipped (user skipped)
 T-0004 · Reply: cache invalidation: failed → <error message>
+T-0005 · Resolve: drop stale comment: resolved → https://github.com/owner/repo/pull/42#discussion_r456
 
-Posted: 1 | Skipped: 1 | Failed: 1 | Copy-only: 0
+Posted: 1 | Resolved: 1 | Skipped: 1 | Failed: 1 | Copy-only: 0
 ```
 
 Count each outcome:
 - **posted** — adapter returned `status: "posted"`
+- **resolved** — resolve-only task; the script returned `resolved` or `already_resolved`
 - **skipped** — user skipped at content approval, declined the send confirmation, task was
   not ready (blocked_by not done), or unprocessed due to abort
 - **failed** — adapter returned `status: "failed"` and user chose skip (or abort triggered)

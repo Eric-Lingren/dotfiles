@@ -26,6 +26,7 @@
 - `linear_url`: written back by tasks-to-linear after syncing; null until then
 - `commit`: fixing commit SHA recorded by build-code at end-of-run push; cited by `reply` tasks
 - `reply_body` / `reply_url` / `thread_id` / `thread_id_type`: present only on `reply` tasks (written by pr-revise)
+- `resolve_only`: `reply` tasks only. `true` means relay resolves the thread and posts nothing; `reply_body` is absent
 
 ## browser_verify field (Check Spec)
 
