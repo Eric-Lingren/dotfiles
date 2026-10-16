@@ -30,7 +30,7 @@ the current model. Delegate only the menial searching.
 
 **Caller-context output modes:**
 - `sprout-seed` caller: auto-select `fix` mode (the task file feeds to `build-code`)
-- args contain `--fix` or `--comment`: preselect that mode
+- args contain `--fix` or `--comment`: preselect that mode (`--comment` still runs the pick, preview, and approval gate)
 - standalone invocation with no flag: review first, then offer actions in Step 6
 
 Every mode produces the same task file. The mode only decides what happens after.
@@ -449,7 +449,7 @@ Then resolve `review_mode`:
 - `sprout-seed` caller → `fix`
 - `--fix` / `--comment` arg → that mode
 - otherwise → ask with `AskUserQuestion` (single question, header `Next`):
-  - `Comment` → post findings to PR, then hand off
+  - `Comment` → pick findings, preview drafts, post only on approval, then hand off
   - `Fix` → hand off the task file to a new session for fixing
   - `Done` → hand off the task file for later
 
@@ -479,9 +479,22 @@ Use the absolute path in both fences, so the user can paste it into a session st
 
 ### `comment` mode
 
-Post findings as one PR review with an inline comment on each finding's line. Requires a PR to exist (from Step 1).
+Post the findings the user picks as one PR review, with an inline comment on each finding's line. Requires a PR to exist (from Step 1).
 
-Write a JSON array to `/tmp/pr-review-comments.json` with the Write tool. Add one entry per verified finding, including praise, each anchored to its own line:
+**Posting is a hard HITL gate.** Choosing `Comment` or passing `--comment` only starts this flow. It never approves a post. Nothing reaches GitHub until the user picks the findings, sees every draft, and approves in a new message.
+
+**1. Pick findings.** Ask with `AskUserQuestion` (single question, header `Post which`):
+- `Bugs + risks (Recommended)`
+- `Bugs + risks + questions`
+- `Everything` (adds nits and praise)
+
+The user can also answer with finding numbers from the findings block via "Other". If the question times out, is dismissed, or the answer is unclear, do not post. Fall through to `show` mode.
+
+**2. Draft and preview.** Write only the picked findings to the JSON below. Then print every draft verbatim as `<file>:<line>` followed by its full `body`, and end with a count (`N comments will post to PR #<number>`). Ask the user to reply `post` to send, name changes, or `cancel`. End your turn here.
+
+**3. Approve.** Post only when the user's next message explicitly approves (`post`, `yes`, `send`). If they ask for changes, edit the JSON, re-print the full preview, and wait again. On `cancel` or any other reply, do not post. Fall through to `show` mode.
+
+Write a JSON array to `/tmp/pr-review-comments.json` with the Write tool. Add one entry per picked finding, each anchored to its own line:
 
 ```json
 [
@@ -492,7 +505,7 @@ Write a JSON array to `/tmp/pr-review-comments.json` with the Write tool. Add on
 
 Posted bodies use a plain-text label (`bug:`, `risk:`, `q:`, `nit -`). Praise has no label. Never post the severity emoji, finding counts, or the verdict. Those are for the in-session output only. Drop praise with `line: 0` rather than fold it into a summary.
 
-Write each `body` in the Step 1a voice. Then post with no `--summary`:
+Write each `body` in the Step 1a voice. After approval, post with no `--summary`:
 
 ```bash
 python3 ~/.dotfiles/claude-code-shared/scripts/egress/post-pr-review.py \
@@ -500,7 +513,7 @@ python3 ~/.dotfiles/claude-code-shared/scripts/egress/post-pr-review.py \
   --findings /tmp/pr-review-comments.json
 ```
 
-The script checks each line against the PR diff. It moves `line: 0` findings and findings outside the diff into the review summary body. This avoids a 422 that would reject the whole review. On non-zero exit, STOP and report stderr. On success, relay the `inline: N  folded: M` line and the review URL. Then print the handoff block.
+The script checks each line against the PR diff. It moves `line: 0` findings and findings outside the diff into the review summary body. This avoids a 422 that would reject the whole review. On non-zero exit, STOP and report stderr. Then check `gh api repos/<owner>/<repo>/pulls/<number>/reviews` for a review that landed anyway. Never re-run the script. On success, relay the `inline: N  folded: M` line and the review URL. Then print the handoff block.
 
 ### `fix` mode
 
