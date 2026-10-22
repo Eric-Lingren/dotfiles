@@ -47,7 +47,7 @@ LFIX="$HERE/fixtures/pick/linear-issues.json"
 QW=Quaestor-Technologies/Quaestor-Web
 out=$(PICK_REPO=$QW bash "$P/resolve-repo.sh")
 n=$(printf '%s' "$out" | python3 -c 'import json,sys;d=json.load(sys.stdin);print(",".join(d["buckets"]), d["issue_tracker"])')
-check "Quaestor-Web menu is exactly my-sprint,unclaimed (linear)" "$([ "$n" = "my-sprint,unclaimed linear" ] && echo true || echo false)"
+check "Quaestor-Web menu is exactly my-sprint,unclaimed,next-sprint (linear)" "$([ "$n" = "my-sprint,unclaimed,next-sprint linear" ] && echo true || echo false)"
 python3 -c "
 import json
 e=json.load(open('$POLICY'))['$QW']

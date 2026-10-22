@@ -29,7 +29,7 @@ Thin orchestrator: resolve repo, choose a bucket, run a fetch script, render. St
    python3 ~/.dotfiles/claude-code-shared/scripts/pick/map-bucket.py "<free text>" --repo "<repo>" <bucket> [<bucket> ...]
    ```
 
-   Exit 0 prints the bucket to use. Exit 1 (no match) or bare `/pick`: ask "Which bucket?" with AskUserQuestion, one option per entry in `buckets` (max 4).
+   Exit 0 prints the bucket to use. Exit 1 (no match) or bare `/pick`: ask "Which bucket?" with AskUserQuestion, one option per entry in `buckets` (max 4). Describe Linear buckets as: `my-sprint` "Tickets assigned to you in the current sprint", `unclaimed` "Unassigned tickets in the sprint pool", `next-sprint` "Tickets assigned to you in next sprint (same rules as my-sprint)".
 
 3b. Focus (shared-pool buckets only): run `bash ~/.dotfiles/claude-code-shared/scripts/pick/focus-options.sh "<repo>" "<bucket>"`. If `ask` is false, skip. Otherwise ask "Focus?" with AskUserQuestion using `options` (projects from your current sprint, then "No focus"; the free-text "Other" is built in). Add `--focus "<choice>"` to both `rank-render.py` calls in step 4 (omit for "No focus"). Focus only boosts matching tickets to the top; it never filters and is never saved.
 
