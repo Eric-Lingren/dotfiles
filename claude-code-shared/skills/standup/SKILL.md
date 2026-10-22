@@ -123,11 +123,7 @@ REPORT=$(bash ~/.dotfiles/claude-code-shared/scripts/standup/render-standup.sh \
 
 On a non-zero exit, stderr lists every validation error (bare or unknown reference, em dash, missing lead, unreferenced shipped item or blocker PR, over 30 words per line, too many items). Fix `prose.json` and retry, at most twice.
 
-### 7. Print the report to the terminal
-
-Print `$REPORT` verbatim. Nothing else goes between it and the save step.
-
-### 8. Save to standups directory
+### 7. Save to standups directory
 
 ```bash
 bash ~/.dotfiles/claude-code-shared/scripts/standup/resolve-standups-dir.sh --ensure
@@ -137,6 +133,10 @@ echo "Saved to $STANDUPS_DIR/$TODAY.md"
 ```
 
 The `--ensure` flag creates `docs/standups/` and idempotently adds `docs/standups/` to the repo's `.git/info/exclude`. It never modifies `.gitignore`. The filename date also sets the "since last standup" cutoff for the next run.
+
+### 8. Print the report inline (final message)
+
+Always print the full `$REPORT` verbatim as assistant text in the turn's **final message**, after the save and after spawning the learning-capture agent. Bash output is not visible to the user, and text from earlier messages gets buried, so the final message is the only reliable place. Do not replace it with "Saved to ..." or any summary. Only the learning-capture footer lines may follow the report.
 
 ## Output shape
 
