@@ -553,5 +553,77 @@
         }
       }
     }
+  },
+  "2026-W42": {
+    "adherence": {
+      "match": 1,
+      "n": 9,
+      "overall_pct": 11.1,
+      "skills": {
+        "cc-usage-analytics": {
+          "exp": "sonnet",
+          "mix": {
+            "opus": 1
+          }
+        },
+        "ci-fix": {
+          "exp": "sonnet",
+          "mix": {
+            "opus": 1
+          }
+        },
+        "grill-me": {
+          "exp": "opus",
+          "mix": {
+            "opus": 1
+          }
+        },
+        "pr-code-review": {
+          "exp": "sonnet",
+          "mix": {
+            "opus": 2
+          }
+        },
+        "pr-revise": {
+          "exp": "sonnet",
+          "mix": {
+            "opus": 1
+          }
+        },
+        "tdd": {
+          "exp": "sonnet",
+          "mix": {
+            "opus": 1
+          }
+        },
+        "to-tasks": {
+          "exp": "sonnet",
+          "mix": {
+            "opus": 2
+          }
+        }
+      }
+    }
+  },
+  "2026-W43": {
+    "adherence": {
+      "match": 3,
+      "n": 3,
+      "overall_pct": 100.0,
+      "skills": {
+        "grill-me": {
+          "exp": "opus",
+          "mix": {
+            "opus": 2
+          }
+        },
+        "grill-with-docs": {
+          "exp": "opus",
+          "mix": {
+            "opus": 1
+          }
+        }
+      }
+    }
   }
 }

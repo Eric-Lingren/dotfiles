@@ -41,12 +41,13 @@ fi
 
 [ -z "$(g status --porcelain)" ] || { echo "refused: worktree has uncommitted changes" >&2; exit 3; }
 
-trunk=""
+# Exclude every trunk ref: a stale local main must not hide newer origin/main commits.
+excludes=()
 for ref in main master origin/main origin/master; do
-  g rev-parse --verify --quiet "$ref" >/dev/null && { trunk="$ref"; break; }
+  g rev-parse --verify --quiet "$ref" >/dev/null && excludes+=("^$ref")
 done
-own=$(g rev-list HEAD "^$base_sha" ${trunk:+"^$trunk"} | wc -l | tr -d ' ')
-[ "$own" = "0" ] || { echo "refused: worktree has $own commit(s) not in base or ${trunk:-trunk}" >&2; exit 3; }
+own=$(g rev-list HEAD "^$base_sha" ${excludes[@]+"${excludes[@]}"} | wc -l | tr -d ' ')
+[ "$own" = "0" ] || { echo "refused: worktree has $own commit(s) not in base or trunk" >&2; exit 3; }
 
 g reset --keep "$base_sha" >/dev/null
 echo "synced ${head_sha:0:10} -> ${base_sha:0:10}"

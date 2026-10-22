@@ -1,0 +1,481 @@
+================================================================
+CC USAGE DIGEST -- 2026-W42 (vs 2026-W41, last complete weeks)
+================================================================
+  spend    $  2,375   ^12%
+  opus%        87%   ^8pt
+  adher.       11%   v11pt   (1/9)
+
+  DRIFT (act):
+  to-tasks                   exp sonnet -> opus:2        2/2  4wk  -> re-tier up or add model override
+  pr-code-review             exp sonnet -> opus:2        2/2  4wk  -> re-tier up or add model override
+  DRIFT (minor / watch):
+  ci-fix                     exp sonnet -> opus:1        1/1  1wk  -> re-tier up or add model override
+  cc-usage-analytics         exp sonnet -> opus:1        1/1  1wk  -> re-tier up or add model override
+  pr-revise                  exp sonnet -> opus:1        1/1  1wk  -> re-tier up or add model override
+  tdd                        exp sonnet -> opus:1        1/1  1wk  -> re-tier up or add model override
+
+Claude Code usage report — 2026-10-19
+================================================================
+
+================================================================
+PROFILE: OFFICE  (/Users/eric/.cco/projects)
+================================================================
+Date range : 2026-09-15 -> 2026-10-16
+Sessions   : 826
+Human reqs : 4593  (work=4434, continuation/ack=126)
+Noise dropped: 59  (/exit, local-command-caveat)
+Asst turns : 50172
+Reqs/session: 5.6
+
+--- PROJECTS (sessions) ---
+    89  -Users-eric-Documents-dev-worktrees-Quaestor-Web-KEY-2464-date-schema-migrations
+    30  -Users-eric-Documents-dev-Quaestor-Web
+    27  -Users-eric-Documents-dev-worktrees-Quaestor-Web-KEY-2468-date-enum-type-maps-formatting
+    26  -Users-eric-Documents-dev-worktrees-Quaestor-Web-KEY-2470-datemetriccell-feature-flag-wiring
+    18  -Users-eric-Documents-dev-worktrees-Quaestor-Web-feat-KEY-2980-7-14a-multi-select-field-type-picker
+    17  -Users-eric-Documents-dev-worktrees-Quaestor-Web-feat-KEY-2347-4-14-multi-select-fe-ir-response-inp
+    16  -Users-eric-Documents-dev-worktrees-Quaestor-Web-feat-KEY-3789-11-14a-2-multi-select-fe-multiselect
+    13  -Users-eric-Documents-dev-worktrees-Quaestor-Web-feat-KEY-2982-7-14c-multi-select-field-type-picker
+    12  -Users-eric-Documents-dev-worktrees-Quaestor-Web-KEY-2467-date-codesite-propagation
+    11  -Users-eric-Documents-dev-worktrees-Quaestor-Web-KEY-2466-date-types-and-icons
+    11  -Users-eric-Documents-dev-worktrees-Quaestor-Web-feat-KEY-2956-improve-column-rearranging-in-portfo
+    10  -Users-eric-Documents-dev-worktrees-Quaestor-Web-KEY-2349-513-date-be-datumtype-date7-migration-type-system-propagation
+
+--- MODEL MIX (assistant turns) ---
+   44.6%  haiku      22373
+   42.2%  opus       21191
+   13.2%  sonnet     6599
+    0.0%  synthetic  9
+
+--- TOKENS + ROUGH COST (USD) ---
+  opus     in=    37,472 out=15,821,678 cacheW=127,597,069 cacheR=2,428,183,661  $7,221.91
+  sonnet   in=    10,090 out=7,010,329 cacheW= 48,443,219 cacheR= 623,296,778  $473.84
+  haiku    in=   180,964 out=12,312,097 cacheW= 91,496,190 cacheR= 860,038,585  $262.12
+  TOTAL    ~ $7,957.86
+
+--- DEEP THINKING ---
+   30.5% of assistant turns had a thinking block (15318)
+
+--- TOP TOOLS ---
+   34.9%  Bash                               8224
+   23.1%  Read                               5450
+   23.1%  Grep                               5441
+    6.9%  Agent                              1621
+    3.8%  Edit                               903
+    1.7%  ListAgents                         410
+    1.2%  Write                              279
+    0.9%  AskUserQuestion                    206
+    0.8%  ToolSearch                         193
+    0.6%  Skill                              145
+    0.6%  mcp__claude_ai_Linear__get_issue   139
+    0.3%  mcp__claude_ai_Linear__save_issue  72
+    0.3%  SendMessage                        72
+    0.2%  mcp__claude_ai_CircleCI__list_runs 44
+    0.2%  mcp__claude_ai_CircleCI__list_run_workflows 39
+
+--- SLASH COMMANDS / SKILLS ---
+    93  /debug
+    60  /dispatch-tasks
+    58  /pr-code-review
+    32  /to-tasks
+    30  /ci-fix
+    26  /model
+    17  /pr-revise
+    13  /to-seed
+    12  /investigate
+    12  /grill-me
+     8  /pick
+     7  /standup
+     7  /offload
+     2  /mcp
+     1  /claude-api
+     1  /effort
+     1  /to-spec
+
+--- GIT BRANCH WORK-TYPE (by prompt) ---
+   29.2%  feat               1341
+    9.0%  key-2464-date-schema-migrations 414
+    8.8%  head               405
+    8.8%  main               403
+    5.4%  key-2470-datemetriccell-feature-flag-wiring 249
+    3.7%  key-3011-1114b-date-company-metrics-table-datecell-wiring-fe 172
+    3.0%  key-2981-714b-date-field-type-picker-fe-addcustommetricmodal 136
+    2.9%  key-2468-date-enum-type-maps-formatting 134
+    2.6%  key-3781-ir-change-1-pr-5c-instructions-editing-in-shadcn 120
+    2.4%  key-2376-1414-date-ui-component-fe-prereq 112
+    2.3%  key-2467-date-codesite-propagation 106
+    2.1%  key-2466-date-types-and-icons 95
+
+--- REQUEST INTENT (primary bucket, work requests only) ---
+   22.2%  feature-code   983
+   19.2%  other          853
+   16.2%  testing        718
+   15.0%  planning       664
+   13.4%  review         594
+    5.7%  bugfix         252
+    4.1%  git-ops        182
+    2.1%  refactor       93
+    1.8%  research       80
+    0.3%  discussion     15
+
+--- REQUEST INTENT (all labels, multi-count) ---
+   69.7%  feature-code   3090
+   32.8%  testing        1455
+   27.6%  bugfix         1225
+   27.3%  git-ops        1211
+   23.4%  review         1036
+   19.2%  other          853
+   15.0%  refactor       667
+   15.0%  planning       664
+   10.7%  research       475
+    0.3%  discussion     15
+
+================================================================
+PROFILE: PERSONAL  (/Users/eric/.cch/projects)
+================================================================
+Date range : 2026-09-19 -> 2026-10-19
+Sessions   : 1236
+Human reqs : 2985  (work=2767, continuation/ack=206)
+Noise dropped: 25  (/exit, local-command-caveat)
+Asst turns : 30884
+Reqs/session: 2.4
+
+--- PROJECTS (sessions) ---
+   134  -Users-eric--dotfiles
+    15  -Users-eric-Documents-dev-personal-portfolio-v2
+     7  -Users-eric-Documents-dev-personal-SpawnedSapien
+     6  -Users-eric-dev-personal-sprint-review
+     4  -private-tmp-claude-501--Users-eric--dotfiles-dda2a2b9-7757-497b-bd02-7d1c8a5f47bb-scratchpad-box
+     4  -private-tmp-claude-501--Users-eric--dotfiles-dda2a2b9-7757-497b-bd02-7d1c8a5f47bb-scratchpad
+     1  -Users-eric-Documents-dev-personal-ericlingren
+     1  -Users-eric-Documents-dev-personal-metrics
+     1  -Users-eric-Documents-dev-personal-sprint-review
+     1  -private-tmp-claude-501--Users-eric--dotfiles-07e82454-f373-41d8-bf25-ae4ca292a3a8-scratchpad
+     1  -private-var-folders-28-6kx9nw655ln5p-lgqlzbnm8w0000gn-T-agj-sandbox-08YXa7
+     1  -private-var-folders-28-6kx9nw655ln5p-lgqlzbnm8w0000gn-T-agj-sandbox-0Gaxyd
+
+--- MODEL MIX (assistant turns) ---
+   64.0%  haiku      19764
+   31.1%  opus       9594
+    4.3%  sonnet     1317
+    0.7%  synthetic  209
+
+--- TOKENS + ROUGH COST (USD) ---
+  opus     in=    19,017 out=7,826,025 cacheW= 34,834,050 cacheR=1,290,874,025  $3,176.69
+  sonnet   in=     2,222 out=1,705,540 cacheW= 11,020,077 cacheR= 102,008,636  $97.52
+  haiku    in=   163,506 out=12,690,917 cacheW= 81,087,809 cacheR= 488,437,426  $213.82
+  TOTAL    ~ $3,488.03
+
+--- DEEP THINKING ---
+   36.7% of assistant turns had a thinking block (11343)
+
+--- TOP TOOLS ---
+   33.8%  Read                               4470
+   32.5%  Bash                               4293
+   20.7%  Grep                               2733
+    4.0%  Edit                               528
+    3.9%  Agent                              512
+    1.1%  mcp__plugin_chrome-devtools-mcp_chrome-devtools__evaluate_script 141
+    0.9%  Write                              117
+    0.8%  AskUserQuestion                    100
+    0.7%  mcp__plugin_chrome-devtools-mcp_chrome-devtools__take_screenshot 94
+    0.5%  mcp__plugin_chrome-devtools-mcp_chrome-devtools__navigate_page 72
+    0.3%  Skill                              35
+    0.2%  ToolSearch                         29
+    0.1%  mcp__plugin_chrome-devtools-mcp_chrome-devtools__new_page 17
+    0.1%  mcp__plugin_chrome-devtools-mcp_chrome-devtools__resize_page 17
+    0.1%  mcp__plugin_chrome-devtools-mcp_chrome-devtools__emulate 14
+
+--- SLASH COMMANDS / SKILLS ---
+    33  /improve-skill-learnings
+    15  /dispatch-tasks
+    11  /model
+    10  /to-tasks
+     8  /grill-me
+     7  /to-seed
+     6  /improve-agent-benchmarks
+     5  /sprint-review
+     4  /claude-api
+     3  /debug
+     3  /prototype
+     2  /handoff
+     2  /clean-scaffolding
+     1  /run-task-followups
+     1  /cycle-review
+
+--- GIT BRANCH WORK-TYPE (by prompt) ---
+   37.9%  main               1132
+   37.3%  head               1113
+   18.8%  feat               561
+    2.6%  fix                79
+    1.1%  chore              33
+    1.0%  master             31
+    1.0%  prototype          30
+    0.1%  worktree-agent-a580748d6d6eb8fa9 3
+    0.1%  worktree-agent-a0cb2be355c264ed1 2
+    0.0%  worktree-agent-a3cd2a2212ffe5c1e 1
+
+--- REQUEST INTENT (primary bucket, work requests only) ---
+   33.3%  other          921
+   17.8%  feature-code   492
+   14.3%  review         395
+   12.3%  testing        340
+   12.3%  planning       339
+    5.5%  bugfix         151
+    2.1%  git-ops        57
+    1.4%  refactor       39
+    0.6%  discussion     17
+    0.6%  research       16
+
+--- REQUEST INTENT (all labels, multi-count) ---
+   59.5%  feature-code   1647
+   34.3%  bugfix         950
+   33.3%  other          921
+   26.3%  testing        729
+   21.2%  review         587
+   20.1%  git-ops        555
+   17.4%  refactor       481
+   12.3%  planning       339
+    4.6%  research       126
+    0.6%  discussion     17
+
+================================================================
+AGGREGATE (all profiles combined)
+================================================================
+Date range : 2026-09-15 -> 2026-10-19
+Sessions   : 2062
+Human reqs : 7578  (work=7201, continuation/ack=332)
+Noise dropped: 84  (/exit, local-command-caveat)
+Asst turns : 81056
+Reqs/session: 3.7
+
+--- PROJECTS (sessions) ---
+   137  -Users-eric--dotfiles
+    89  -Users-eric-Documents-dev-worktrees-Quaestor-Web-KEY-2464-date-schema-migrations
+    30  -Users-eric-Documents-dev-Quaestor-Web
+    27  -Users-eric-Documents-dev-worktrees-Quaestor-Web-KEY-2468-date-enum-type-maps-formatting
+    26  -Users-eric-Documents-dev-worktrees-Quaestor-Web-KEY-2470-datemetriccell-feature-flag-wiring
+    18  -Users-eric-Documents-dev-worktrees-Quaestor-Web-feat-KEY-2980-7-14a-multi-select-field-type-picker
+    17  -Users-eric-Documents-dev-worktrees-Quaestor-Web-feat-KEY-2347-4-14-multi-select-fe-ir-response-inp
+    16  -Users-eric-Documents-dev-worktrees-Quaestor-Web-feat-KEY-3789-11-14a-2-multi-select-fe-multiselect
+    15  -Users-eric-Documents-dev-personal-portfolio-v2
+    13  -Users-eric-Documents-dev-worktrees-Quaestor-Web-feat-KEY-2982-7-14c-multi-select-field-type-picker
+    12  -Users-eric-Documents-dev-worktrees-Quaestor-Web-KEY-2467-date-codesite-propagation
+    11  -Users-eric-Documents-dev-worktrees-Quaestor-Web-KEY-2466-date-types-and-icons
+
+--- MODEL MIX (assistant turns) ---
+   52.0%  haiku      42137
+   38.0%  opus       30785
+    9.8%  sonnet     7916
+    0.3%  synthetic  218
+
+--- TOKENS + ROUGH COST (USD) ---
+  opus     in=    56,489 out=23,647,703 cacheW=162,431,119 cacheR=3,719,057,686  $10,398.60
+  sonnet   in=    12,312 out=8,715,869 cacheW= 59,463,296 cacheR= 725,305,414  $571.35
+  haiku    in=   344,470 out=25,003,014 cacheW=172,583,999 cacheR=1,348,476,011  $475.94
+  TOTAL    ~ $11,445.89
+
+--- DEEP THINKING ---
+   32.9% of assistant turns had a thinking block (26661)
+
+--- TOP TOOLS ---
+   34.0%  Bash                               12517
+   27.0%  Read                               9920
+   22.2%  Grep                               8174
+    5.8%  Agent                              2133
+    3.9%  Edit                               1431
+    1.1%  ListAgents                         413
+    1.1%  Write                              396
+    0.8%  AskUserQuestion                    306
+    0.6%  ToolSearch                         222
+    0.5%  Skill                              180
+    0.4%  mcp__plugin_chrome-devtools-mcp_chrome-devtools__evaluate_script 141
+    0.4%  mcp__claude_ai_Linear__get_issue   139
+    0.3%  mcp__plugin_chrome-devtools-mcp_chrome-devtools__take_screenshot 94
+    0.2%  SendMessage                        75
+    0.2%  mcp__plugin_chrome-devtools-mcp_chrome-devtools__navigate_page 73
+
+--- SLASH COMMANDS / SKILLS ---
+    96  /debug
+    75  /dispatch-tasks
+    58  /pr-code-review
+    42  /to-tasks
+    37  /model
+    33  /improve-skill-learnings
+    30  /ci-fix
+    20  /to-seed
+    20  /grill-me
+    17  /pr-revise
+    12  /investigate
+     8  /pick
+     7  /standup
+     7  /offload
+     6  /improve-agent-benchmarks
+     5  /claude-api
+     5  /sprint-review
+     3  /prototype
+     2  /mcp
+     2  /handoff
+     2  /clean-scaffolding
+     1  /effort
+     1  /to-spec
+     1  /run-task-followups
+     1  /cycle-review
+
+--- GIT BRANCH WORK-TYPE (by prompt) ---
+   25.1%  feat               1902
+   20.3%  main               1535
+   20.0%  head               1518
+    5.5%  key-2464-date-schema-migrations 414
+    3.3%  key-2470-datemetriccell-feature-flag-wiring 249
+    2.3%  key-3011-1114b-date-company-metrics-table-datecell-wiring-fe 172
+    1.8%  key-2981-714b-date-field-type-picker-fe-addcustommetricmodal 136
+    1.8%  key-2468-date-enum-type-maps-formatting 134
+    1.6%  key-3781-ir-change-1-pr-5c-instructions-editing-in-shadcn 120
+    1.5%  key-2376-1414-date-ui-component-fe-prereq 112
+    1.4%  key-2467-date-codesite-propagation 106
+    1.3%  fix                97
+
+--- REQUEST INTENT (primary bucket, work requests only) ---
+   24.6%  other          1774
+   20.5%  feature-code   1475
+   14.7%  testing        1058
+   13.9%  planning       1003
+   13.7%  review         989
+    5.6%  bugfix         403
+    3.3%  git-ops        239
+    1.8%  refactor       132
+    1.3%  research       96
+    0.4%  discussion     32
+
+--- REQUEST INTENT (all labels, multi-count) ---
+   65.8%  feature-code   4737
+   30.3%  testing        2184
+   30.2%  bugfix         2175
+   24.6%  other          1774
+   24.5%  git-ops        1766
+   22.5%  review         1623
+   15.9%  refactor       1148
+   13.9%  planning       1003
+    8.3%  research       601
+    0.4%  discussion     32
+
+================================================================
+INTENT SPLIT BY PROFILE (primary %)
+================================================================
+  bucket        office      personal    AGG
+  planning      15.0%       12.3%       13.9%
+  feature-code  22.2%       17.8%       20.5%
+  testing       16.2%       12.3%       14.7%
+  bugfix        5.7%        5.5%        5.6%
+  review        13.4%       14.3%       13.7%
+  refactor      2.1%        1.4%        1.8%
+  research      1.8%        0.6%        1.3%
+  git-ops       4.1%        2.1%        3.3%
+  discussion    0.3%        0.6%        0.4%
+  other         19.2%       33.3%       24.6%
+
+
+================================================================
+WEEKLY TREND
+================================================================
+================================================================
+WEEKLY MODEL TREND (assistant turns + est cost)
+================================================================
+  week       turns  opus%   son%   hai%      est$
+  2026-W38    7333    94%     5%     0% $   2,010
+  2026-W39    5160    89%    10%     0% $   1,379
+  2026-W40   54239    13%     8%    77% $   3,482
+  2026-W41    6908    79%    20%     0% $   2,121
+  2026-W42    6880    87%    11%     0% $   2,375
+  2026-W43     318    64%    35%     0% $      79
+
+
+================================================================
+TIER ADHERENCE
+================================================================
+================================================================
+TIER ADHERENCE (skills + agents: expected vs actual model)
+================================================================
+  Only meaningful for sessions AFTER tiering rollout (older runs used the session model).
+  skill                            exp      match     n  actual-mix
+  build-code                       sonnet    0.0%     9  opus:9
+  build-runner                     sonnet    0.0%     1  opus:1
+  cc-usage-analytics               sonnet    0.0%     1  opus:1
+  ci-fix                           sonnet    0.0%     5  opus:5
+  clean-scaffolding                haiku     0.0%     2  opus:2
+  debug                            opus     93.8%    16  opus:15, sonnet:1
+  dispatch-tasks                   sonnet   12.5%     8  opus:7, sonnet:1
+  grill-me                         opus    100.0%    16  opus:16
+  grill-with-docs                  opus    100.0%     2  opus:2
+  improve-agent-benchmarks         sonnet  100.0%     6  sonnet:6
+  improve-skill-benchmarks         sonnet    0.0%     1  opus:1
+  improve-skill-learnings          sonnet    5.7%    35  opus:33, sonnet:2
+  pick                             haiku     0.0%     8  opus:8
+  pr-code-review                   sonnet   23.3%    30  opus:23, sonnet:7
+  pr-revise                        sonnet   30.8%    13  opus:9, sonnet:4
+  register-skill                   sonnet    0.0%     1  opus:1
+  relay                            sonnet    0.0%     5  opus:5
+  standup                          sonnet    0.0%     1  opus:1
+  tdd                              sonnet    1.9%    53  haiku:36, opus:16, sonnet:1
+  to-seed                          sonnet    0.0%    19  opus:19
+  to-tasks                         sonnet    5.0%    20  opus:19, sonnet:1
+
+  OVERALL adherence: 21.8% (55/252)
+
+
+================================================================
+SKILL LATENCY
+================================================================
+==============================================================================
+SKILL LATENCY  (work_s drops human idle; each gap capped at 300s)
+==============================================================================
+  skill                         n   med_s   p90_s  turns  tools  agents  out_tok
+  build-code                   24     933    3237     30     24       4    19000
+  pr-revise                    18     910    2394     31     28       8    18944
+  pr-code-review               61     887    1624     24     24       9    24659
+  offload                       7     578     960     10      9       2    10083
+  improve-agent-benchmarks      6     533     868     11      9       1     4008
+  to-seed                      40     520    1272     23     19       6    11559
+  improve-skill-learnings      35     462    1743     20     13       4     9652
+  debug                       101     433     929     12     13       1     5047
+  relay                         7     366     736     11      8       0     3038
+  investigate                  16     328     745      6      3       2     2244
+  dispatch-tasks               89     311    1298     12     10       0     4506
+  standup                       7     307     576     10      8       1     4408
+  prototype                     5     306     887     22     26       0    13814
+  sprint-review                 7     300     513      3      2       0     2590
+  ci-fix                       32     299     938     18     21       0     5310
+  pick                          8     297     580      9      8       1     3371
+  to-tasks                     50     242     646     11     12       2     7206
+  grill-me                     33     216     890      4      2       1     2675
+  handoff                       7      80     295      7      5       1     4072
+  tdd                          45      21     162      3      4       0     2497
+
+==============================================================================
+PARALLELISM  (hops = turns that spawned agents = serial depth)
+==============================================================================
+  skill                       agents   hops  fanout  async%  verdict
+  build-code                     138     85    1.62   99.3%  batched
+  pr-revise                      129     49    2.63   98.4%  batched
+  pr-code-review                 623    175    3.56  100.0%  batched
+  offload                         11     11    1.00  100.0%  serial: batch these
+  improve-agent-benchmarks         6      6    1.00  100.0%  serial: batch these
+  to-seed                        280    122    2.30   98.6%  batched
+  improve-skill-learnings        207    132    1.57  100.0%  batched
+  debug                           88     82    1.07  100.0%  serial: batch these
+  relay                           10      5    2.00  100.0%  batched
+  investigate                     25     25    1.00  100.0%  serial: batch these
+  dispatch-tasks                 146     99    1.47   98.6%  serial: batch these
+  standup                          5      5    1.00  100.0%  serial: batch these
+  ci-fix                          19     19    1.00   94.7%  serial: batch these
+  pick                            11     11    1.00  100.0%  serial: batch these
+  to-tasks                        71     71    1.00  100.0%  serial: batch these
+  grill-me                        39     31    1.26  100.0%  serial: batch these
+  handoff                          7      7    1.00  100.0%  serial: batch these
+
+==============================================================================
+NO DELEGATION  (>=10 median turns, zero agents spawned)
+==============================================================================
+  prototype                     5 runs    22 turns     306s median
+

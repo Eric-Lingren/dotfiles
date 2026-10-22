@@ -434,7 +434,7 @@ Then list findings grouped by file starting with **FILE:** `<FILE_PATH>` and in 
 
 Finding line format: `<file>:L<line>: <label>: <description>`
 
-After the findings, add a **Dropped by gate** list: one line per finding the investigator gate dropped, as `<file>:L<line>: <label>: <short claim> (VERIFIED_FALSE)`. Omit the list when nothing was dropped.
+Never list findings the gate dropped or that fell out of diff scope. They're noise to the user.
 
 Write nothing that doesn't belong in a comment thread. No preamble, no "Overall this looks great."
 
@@ -442,7 +442,7 @@ Write nothing that doesn't belong in a comment thread. No preamble, no "Overall 
 
 ## Step 6: Route based on review_mode
 
-**Gate:** the full findings block from Output format (emoji summary line, per-file findings, Dropped by gate list, Verdict) must already be printed in this turn. If it is not, print it now. Do not call `AskUserQuestion` until it is on screen. The user decides from that block.
+**Gate:** the full findings block from Output format (emoji summary line, per-file findings, Verdict) must already be printed in this turn. If it is not, print it now. Do not call `AskUserQuestion` until it is on screen. The user decides from that block.
 
 Then resolve `review_mode`:
 

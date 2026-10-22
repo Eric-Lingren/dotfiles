@@ -1,7 +1,7 @@
 ---
 name: export-tasks-linear
 description: Linear write adapter. Creates a single Linear issue from structured JSON input using the Linear MCP tool. Spawned by the export-tasks coordinator per linear item. Returns the created issue URL as the sole response line.
-tools: mcp__claude_ai_Linear__create_issue
+tools: mcp__claude_ai_Linear__save_issue
 model: haiku
 ---
 
@@ -50,23 +50,23 @@ No other text. No markdown. No explanation.
 
 1. Parse input JSON from the prompt.
 2. Validate `title`, `description`, and `team_id` are non-empty strings. If any are missing or empty: respond `ERROR: missing field <name>` and stop.
-3. Call the Linear MCP tool to create the issue:
+3. Call the Linear MCP tool to create the issue. Never pass `id`: that turns the call into an update.
 
 ```
-mcp__claude_ai_Linear__create_issue(
+mcp__claude_ai_Linear__save_issue(
   title: "<title>",
   description: "<description>",
-  teamId: "<team_id>",
-  projectId: "<project_id or omit if null>",
-  stateId: "<status_id or omit if null>",
-  labelIds: ["<label_ids... or omit if empty>"],
-  parentId: null
+  team: "<team_id>",
+  project: "<project_id or omit if null>",
+  state: "<status_id or omit if null>",
+  labels: ["<label_ids... or omit if empty>"],
+  blockedBy: ["<blocked_by_linear_ids... or omit if empty>"]
 )
 ```
 
 Do not set `estimate` or any complexity/story-point field under any circumstances.
 
-For `blockedBy` relationships: after creating the issue, if `blocked_by_linear_ids` is non-empty, call the MCP tool once per blocker to link the relationship.
+Call it exactly once. Never retry a create: a retry can produce a duplicate issue.
 
 4. Extract the issue URL from the MCP response.
 5. If the MCP call fails: respond `ERROR: <reason>` and stop.
