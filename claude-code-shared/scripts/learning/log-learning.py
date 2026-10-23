@@ -155,7 +155,8 @@ def main():
         print(f"ERROR: could not write to {out_path}: {e}", file=sys.stderr)
         sys.exit(1)
 
-    print(f"OK: appended learning entry (type={entry['type']}, id={entry['id']}) to {out_path}")
+    lesson = " ".join(str(entry.get("lesson", "")).split())
+    print(f"OK: appended learning entry (type={entry['type']}, id={entry['id']}) to {out_path} | lesson: {lesson}")
 
 
 if __name__ == "__main__":

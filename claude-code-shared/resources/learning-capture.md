@@ -44,5 +44,7 @@ Then, as the very last lines of the turn, print exactly:
 
 On its completion notification, print one line and nothing else:
 
-- written: `✅ Learning captured: <id from the agent's output line>`
+- written: `✅ Learning captured: <lesson> (<id>)`. Take both from the agent's
+  output line: `id=` value, and text after `| lesson: `. Shorten lesson to one
+  sentence if longer.
 - skipped: `Learning capture: <the agent's SKIP line>`

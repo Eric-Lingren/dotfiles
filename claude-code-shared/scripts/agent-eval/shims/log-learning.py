@@ -24,4 +24,5 @@ if dest and isinstance(entry, dict):
 shim_lib.record({"shim": "log-learning.py", "tool": "Bash", "args": sys.argv[1:], "stdin": stdin,
                  "input": {"command": "log-learning.py " + " ".join(sys.argv[1:]), "stdin": stdin},
                  "writes": [dest] if dest else [], "returned": f"OK: appended learning entry (type={etype}, id={lid})"})
-print(f"OK: appended learning entry (type={etype}, id={lid}) to {dest or 'unified-learnings.jsonl'}")
+lesson = " ".join(str(entry.get("lesson", "")).split()) if isinstance(entry, dict) else ""
+print(f"OK: appended learning entry (type={etype}, id={lid}) to {dest or 'unified-learnings.jsonl'} | lesson: {lesson}")
