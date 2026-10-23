@@ -60,6 +60,19 @@ emit_path() {
   echo "$1"
 }
 
+# Prints the path of the worktree that has $1 checked out, if any.
+# Catches worktrees whose folder no longer matches the branch (renamed branch).
+worktree_for_branch() {
+  local branch="$1" path="" line
+  while IFS= read -r line; do
+    case "$line" in
+      "worktree "*) path="${line#worktree }" ;;
+      "branch refs/heads/$branch") echo "$path"; return 0 ;;
+    esac
+  done < <(git -C "$REPO_ROOT" worktree list --porcelain 2>/dev/null)
+  return 1
+}
+
 # ─── Repo resolution helper ────────────────────────────────────────────────────
 
 # Resolve the MAIN worktree root, never the current one.
@@ -423,10 +436,20 @@ if [[ -d "$WORKTREE_DIR" ]]; then
   exit 0
 fi
 
+# Case 1b: branch already checked out in a worktree at another path
+if EXISTING_DIR=$(worktree_for_branch "$BRANCH"); then
+  echo "attaching to existing branch $BRANCH at $EXISTING_DIR" >&2
+  link_local_config "$EXISTING_DIR"
+  install_deps "$EXISTING_DIR"
+  sync_with_upstream "$EXISTING_DIR"
+  emit_path "$EXISTING_DIR"
+  exit 0
+fi
+
 # Case 2: branch exists locally but no worktree folder
 if git show-ref --verify --quiet "refs/heads/$BRANCH" 2>/dev/null; then
   mkdir -p "$(dirname "$WORKTREE_DIR")"
-  git worktree add "$WORKTREE_DIR" "$BRANCH" >&2
+  git worktree add "$WORKTREE_DIR" "$BRANCH" >&2 || exit 1
   link_local_config "$WORKTREE_DIR"
   install_deps "$WORKTREE_DIR"
   sync_with_upstream "$WORKTREE_DIR"
@@ -438,7 +461,7 @@ fi
 if git ls-remote --heads origin "$BRANCH" 2>/dev/null | grep -q "refs/heads/$BRANCH"; then
   git fetch origin "$BRANCH" >&2
   mkdir -p "$(dirname "$WORKTREE_DIR")"
-  git worktree add --track -b "$BRANCH" "$WORKTREE_DIR" "origin/$BRANCH" >&2
+  git worktree add --track -b "$BRANCH" "$WORKTREE_DIR" "origin/$BRANCH" >&2 || exit 1
   link_local_config "$WORKTREE_DIR"
   install_deps "$WORKTREE_DIR"
   emit_path "$WORKTREE_DIR"
@@ -454,7 +477,7 @@ if [[ "$CONFIRM" == "n" || "$CONFIRM" == "N" ]]; then
 fi
 
 mkdir -p "$(dirname "$WORKTREE_DIR")"
-git worktree add -b "$BRANCH" "$WORKTREE_DIR" "$BASE" >&2
+git worktree add -b "$BRANCH" "$WORKTREE_DIR" "$BASE" >&2 || exit 1
 link_local_config "$WORKTREE_DIR"
 install_deps "$WORKTREE_DIR"
 emit_path "$WORKTREE_DIR"

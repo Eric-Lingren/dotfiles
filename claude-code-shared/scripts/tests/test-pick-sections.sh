@@ -8,13 +8,13 @@ PASS=0; FAIL=0
 check() { if [ "$2" = true ]; then echo "  PASS: $1"; PASS=$((PASS+1)); else echo "  FAIL: $1"; FAIL=$((FAIL+1)); fi; }
 QW=Quaestor-Technologies/Quaestor-Web
 
-out=$(python3 "$P/map-bucket.py" "quick wins" --repo $QW my-sprint unclaimed)
+out=$(python3 "$P/map-bucket.py" "quick wins" --repo $QW my-current-sprint unclaimed)
 check "'quick wins' -> unclaimed" "$([ "$out" = unclaimed ] && echo true || echo false)"
-out=$(python3 "$P/map-bucket.py" "my sprint" --repo $QW my-sprint unclaimed)
-check "'my sprint' -> my-sprint" "$([ "$out" = my-sprint ] && echo true || echo false)"
-out=$(python3 "$P/map-bucket.py" "unclaimed" --repo $QW my-sprint unclaimed)
+out=$(python3 "$P/map-bucket.py" "my sprint" --repo $QW my-current-sprint unclaimed)
+check "'my sprint' -> my-current-sprint" "$([ "$out" = my-current-sprint ] && echo true || echo false)"
+out=$(python3 "$P/map-bucket.py" "unclaimed" --repo $QW my-current-sprint unclaimed)
 check "exact name" "$([ "$out" = unclaimed ] && echo true || echo false)"
-python3 "$P/map-bucket.py" "banana smoothie" --repo $QW my-sprint unclaimed >/dev/null
+python3 "$P/map-bucket.py" "banana smoothie" --repo $QW my-current-sprint unclaimed >/dev/null
 check "unmatched text exits 1 (menu fallback)" "$([ $? -eq 1 ] && echo true || echo false)"
 
 # fixture: 8 candidates, 4 in another repo

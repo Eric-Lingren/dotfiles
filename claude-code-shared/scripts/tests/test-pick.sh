@@ -47,7 +47,7 @@ LFIX="$HERE/fixtures/pick/linear-issues.json"
 QW=Quaestor-Technologies/Quaestor-Web
 out=$(PICK_REPO=$QW bash "$P/resolve-repo.sh")
 n=$(printf '%s' "$out" | python3 -c 'import json,sys;d=json.load(sys.stdin);print(",".join(d["buckets"]), d["issue_tracker"])')
-check "Quaestor-Web menu is exactly my-sprint,unclaimed,next-sprint (linear)" "$([ "$n" = "my-sprint,unclaimed,next-sprint linear" ] && echo true || echo false)"
+check "Quaestor-Web menu is exactly my-current-sprint,my-next-sprint,unclaimed (linear)" "$([ "$n" = "my-current-sprint,my-next-sprint,unclaimed linear" ] && echo true || echo false)"
 python3 -c "
 import json
 e=json.load(open('$POLICY'))['$QW']
@@ -55,7 +55,7 @@ v=e['pick_verified']; b=e['pick_buckets']
 assert v['team_key']=='KEY' and v['states']==['Ready to Assign','Backlog']
 assert b['unclaimed']['filter']['team']['key']['eq']==v['team_key']
 assert b['unclaimed']['filter']['state']['name']['in']==v['states'] and b['unclaimed']['focus'] is True
-assert b['my-sprint']['focus'] is False
+assert b['my-current-sprint']['focus'] is False
 assert 'cycle' not in ' '.join(b)" \
   && ok "verified team key/state names recorded in buckets" || bad "verified team key/state names recorded in buckets"
 ljson=$(LINEAR_ISSUES_FIXTURE="$LFIX" bash "$P/pick-fetch-linear.sh" $QW unclaimed)
@@ -105,12 +105,12 @@ import os; assert os.path.exists('$SHARED/'+e['file']); assert os.path.exists(os
 
 # Pickable guard: only not-started tickets, no parent tickets (linear-states.json)
 SFIX="$HERE/fixtures/pick/linear-states.json"
-ids=$(LINEAR_ISSUES_FIXTURE="$SFIX" bash "$P/pick-fetch-linear.sh" $QW my-sprint | python3 -c 'import json,sys;print(",".join(sorted(c["id"] for c in json.load(sys.stdin)["candidates"])))')
+ids=$(LINEAR_ISSUES_FIXTURE="$SFIX" bash "$P/pick-fetch-linear.sh" $QW my-current-sprint | python3 -c 'import json,sys;print(",".join(sorted(c["id"] for c in json.load(sys.stdin)["candidates"])))')
 check "linear guard keeps only Todo/Backlog/Ready to Assign, drops parent" "$([ "$ids" = "KEY-201,KEY-202,KEY-203" ] && echo true || echo false)"
-all=$(LINEAR_ISSUES_FIXTURE="$SFIX" bash "$P/pick-fetch-linear.sh" $QW my-sprint --all-states | python3 -c 'import json,sys;print(len(json.load(sys.stdin)["candidates"]))')
+all=$(LINEAR_ISSUES_FIXTURE="$SFIX" bash "$P/pick-fetch-linear.sh" $QW my-current-sprint --all-states | python3 -c 'import json,sys;print(len(json.load(sys.stdin)["candidates"]))')
 check "--all-states keeps in-flight and parent tickets (focus source)" "$([ "$all" = 9 ] && echo true || echo false)"
-st=$(python3 -c 'import json,sys;print(sorted(json.load(open(sys.argv[1]))[sys.argv[2]]["pick_buckets"]["my-sprint"]["filter"]["state"]["type"]["in"]))' "$POLICY" "$QW")
-check "my-sprint filter limits state type to backlog/unstarted" "$([ "$st" = "['backlog', 'unstarted']" ] && echo true || echo false)"
+st=$(python3 -c 'import json,sys;print(sorted(json.load(open(sys.argv[1]))[sys.argv[2]]["pick_buckets"]["my-current-sprint"]["filter"]["state"]["type"]["in"]))' "$POLICY" "$QW")
+check "my-current-sprint filter limits state type to backlog/unstarted" "$([ "$st" = "['backlog', 'unstarted']" ] && echo true || echo false)"
 
 # Read-only guarantee: no write verbs in the skill or scripts (this test file excluded).
 hits=$(grep -rEn 'gh issue (edit|close|comment|create)|gh api.*-X *(POST|PATCH|PUT|DELETE)|mutation[ {(]' "$P" "$SHARED/skills/pick" || true)

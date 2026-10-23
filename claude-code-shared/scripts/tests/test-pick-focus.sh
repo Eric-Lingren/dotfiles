@@ -17,8 +17,8 @@ o=$(LINEAR_ISSUES_FIXTURE="$FX/sprint.json" bash "$P/focus-options.sh" $QW uncla
 v=$(printf '%s' "$o" | python3 -c 'import json,sys;d=json.load(sys.stdin);print(d["ask"],",".join(d["options"]))')
 check "unclaimed asks; options = sprint projects + No focus" "$(eq "$v" "True Billing,Exports,No focus")"
 
-o=$(LINEAR_ISSUES_FIXTURE="$FX/sprint.json" bash "$P/focus-options.sh" $QW my-sprint)
-check "my-sprint never prompts" "$(eq "$o" '{"ask": false, "options": []}')"
+o=$(LINEAR_ISSUES_FIXTURE="$FX/sprint.json" bash "$P/focus-options.sh" $QW my-current-sprint)
+check "my-current-sprint never prompts" "$(eq "$o" '{"ask": false, "options": []}')"
 
 for b in $(python3 -c 'import json;print(" ".join(json.load(open("'"$SHARED"'/resources/repo-policy.json"))["Eric-Lingren/SpawnedSapien"]["pick_buckets"]))'); do
   o=$(bash "$P/focus-options.sh" Eric-Lingren/SpawnedSapien "$b")
